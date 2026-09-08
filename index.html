@@ -11,7 +11,7 @@
   #gameContainer { position:relative; width:100%; height:100%; touch-action:none; overscroll-behavior:none; background:#0a0a12; }
   #game3d { display:block; width:100%; height:100%; }
 
-  #hud { position:absolute; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top, 0px) + 46px) 18px 0 18px; display:flex; justify-content:center; z-index:5; pointer-events:none;}
+  #hud { position:absolute; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top, 0px) + 100px) 18px 0 18px; display:flex; justify-content:center; z-index:5; pointer-events:none;}
   #statsBar{ display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.18); padding:8px 16px; border-radius:999px; color:#fff; font-weight:700; font-size:14px; text-shadow:0 2px 4px rgba(0,0,0,.6); white-space:nowrap; }
   #statsBar .sep{ opacity:0.3; }
   #coinCount::before { content:"🧟 "; }
@@ -81,7 +81,7 @@
   #screen-game{ display:none; }
   #screen-game.active{ display:flex; position:fixed; inset:0; z-index:30; padding:0; touch-action:none; overscroll-behavior:none; background:#0a0a12; }
 
-  .exit-run-btn{ position:absolute; top:14px; left:14px; width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.95rem; line-height:30px; text-align:center; cursor:pointer; z-index:6; }
+  .exit-run-btn{ position:absolute; top:calc(env(safe-area-inset-top, 0px) + 100px); left:14px; width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.95rem; line-height:30px; text-align:center; cursor:pointer; z-index:6; }
   .no-attempts-screen{ position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(10,10,20,.92), rgba(20,10,30,.96)); color:#fff; text-align:center; z-index:20; padding:20px; }
 </style>
 </head>
@@ -185,6 +185,7 @@
     attemptsDate: localStorage.getItem('cr3d_attemptsDate') || ''
   };
   const MAX_ATTEMPTS = 10;
+  const UNLIMITED_ATTEMPTS = true; // auf false setzen, um das 10/Tag-Limit wieder zu aktivieren
 
   function todayStr(){
     return new Date().toDateString();
@@ -198,6 +199,7 @@
     }
   }
   function attemptsRemaining(){
+    if (UNLIMITED_ATTEMPTS) return Infinity;
     checkAttemptsReset();
     return Math.max(0, MAX_ATTEMPTS - store.attemptsUsed);
   }
@@ -225,8 +227,9 @@
     document.getElementById('exchangeBtn').disabled = lastPersonScore <= 0;
 
     const remaining = attemptsRemaining();
-    document.getElementById('attemptsBadge').textContent = '🎮 ' + remaining + '/' + MAX_ATTEMPTS;
-    document.getElementById('homeAttemptsText').textContent = remaining + '/' + MAX_ATTEMPTS + ' Versuche heute übrig';
+    const remainingText = UNLIMITED_ATTEMPTS ? '∞' : remaining;
+    document.getElementById('attemptsBadge').textContent = '🎮 ' + remainingText;
+    document.getElementById('homeAttemptsText').textContent = UNLIMITED_ATTEMPTS ? 'Unbegrenzte Versuche' : (remaining + '/' + MAX_ATTEMPTS + ' Versuche heute übrig');
   }
 
   let lastPersonScore = 0;
@@ -456,7 +459,7 @@
     obstacles = [];
     people = [];
     particles = [];
-    baseSpeed = 0.24;
+    baseSpeed = 0.27;
     speed = baseSpeed;
     personScore = 0;
     distance = 0;
@@ -546,11 +549,11 @@
     } else if (score < 200){
       s = baseSpeed + 0.028 + (score-100) * 0.00075;
     } else {
-      // Ab 200 Zombies: beschleunigtes Wachstum -- je mehr Zombies, desto staerker steigt das Tempo an
+      // Ab 200 Zombies: stetig steigendes Tempo, aber gemaessigter (mittelschwer statt extrem)
       const over = score - 200;
-      s = baseSpeed + 0.103 + over * 0.0015 + Math.pow(over, 1.5) * 0.00006;
+      s = baseSpeed + 0.103 + over * 0.0011 + Math.pow(over, 1.3) * 0.00003;
     }
-    return Math.min(s, baseSpeed + 4.5);
+    return Math.min(s, baseSpeed + 2.2);
   }
 
   function commitRun(){
@@ -603,13 +606,13 @@
       if (d.position.z > END_Z + 4) d.position.z -= dashCountPerLine * (DASH_LEN+DASH_GAP);
     });
 
-    // spawn obstacles (mehr Verkehr, manchmal gleich zwei Autos auf einmal)
+    // spawn obstacles (mehr Verkehr am Anfang, aber bei hohem Tempo nicht ueberflutend)
     spawnTimer -= speed * dt * 60;
     if (spawnTimer <= 0){
       const firstLane = spawnObstacle();
-      if (Math.random() < 0.35) spawnObstacle(firstLane);
+      if (Math.random() < 0.22) spawnObstacle(firstLane);
       const speedDiff = speed - baseSpeed;
-      spawnTimer = 20 - Math.min(speedDiff*140, 12) + Math.random()*7;
+      spawnTimer = 22 - Math.min(speedDiff*55, 8) + Math.random()*8;
     }
     // spawn zombies (seltener)
     personTimer -= speed * dt * 60;
