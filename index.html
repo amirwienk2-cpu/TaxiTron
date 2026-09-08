@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Coin Runner</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
@@ -741,9 +742,17 @@
   refreshMenus();
 
   if (window.Telegram && window.Telegram.WebApp){
-    window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand();
-    if (window.Telegram.WebApp.disableVerticalSwipes) window.Telegram.WebApp.disableVerticalSwipes();
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    // Fullscreen entfernt den Ziehgriff/Sheet komplett (Bot API 8.0+).
+    // Fällt auf expand() zurück, wenn der Telegram-Client das noch nicht unterstützt.
+    if (typeof tg.requestFullscreen === 'function') {
+      tg.requestFullscreen();
+    } else {
+      tg.expand();
+    }
+    if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+    if (typeof tg.disableSwipeToClose === 'function') tg.disableSwipeToClose();
   }
 })();
 </script>
