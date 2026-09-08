@@ -1,13 +1,22 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Coin Runner 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  :root{
+    --bg:#0a0a12; --surface:#15141f; --surface-2:#1b1a29; --border:#262436; --border-soft:#211f2e;
+    --text:#f4f2f8; --text-muted:#948fa8; --gold:#ffd93d; --gold-deep:#b8860b; --coral:#ff6b6b;
+    --font-display:'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+    --font-body:'Inter', 'Segoe UI', Arial, sans-serif;
+  }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height:100%; overflow:hidden; background:#0a0a12; font-family: 'Segoe UI', Arial, sans-serif; }
+  html, body { height:100%; overflow:hidden; background:#0a0a12; font-family: var(--font-body); }
   #gameContainer { position:relative; width:100%; height:100%; touch-action:none; overscroll-behavior:none; background:#0a0a12; }
   #game3d { display:block; width:100%; height:100%; }
 
@@ -39,31 +48,55 @@
 
   /* ---------- APP SHELL / NAVIGATION ---------- */
   #appShell{ position:relative; width:100%; height:100%; display:flex; flex-direction:column; max-width:480px; margin:0 auto; }
-  .topbar{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px 10px 18px; flex-shrink:0; }
-  .brand{ font-size:1.05rem; font-weight:800; letter-spacing:0.5px; background:linear-gradient(90deg,#ffd93d,#ff6b6b); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .coin-pill{ display:flex; align-items:center; gap:6px; background:#1c1c2a; border:1px solid #322f42; padding:6px 14px; border-radius:999px; font-weight:800; font-size:0.95rem; color:#ffd93d; }
-  .coin-pill::before{ content:"🪙"; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding:16px 18px 12px 18px; flex-shrink:0; }
+  .brand{ display:flex; align-items:center; gap:9px; }
+  .brand-mark{ width:30px; height:30px; border-radius:9px; background:linear-gradient(155deg,var(--gold),#ffb703); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 3px 0 var(--gold-deep); }
+  .brand-name{ font-family:var(--font-display); font-size:1.02rem; font-weight:700; letter-spacing:0.2px; color:var(--text); line-height:1.05; }
+  .brand-name small{ display:block; font-family:var(--font-body); font-size:0.62rem; font-weight:500; letter-spacing:0.6px; color:var(--text-muted); margin-top:1px; }
+  .coin-pill{ display:flex; align-items:center; gap:7px; background:var(--surface-2); border:1px solid var(--border); padding:7px 14px 7px 10px; border-radius:999px; font-family:var(--font-display); font-weight:700; font-size:0.95rem; color:var(--gold); }
+  .topbar-right{ display:flex; align-items:center; gap:8px; }
+  .lang-pill{ display:flex; align-items:center; gap:5px; background:var(--surface-2); border:1px solid var(--border); padding:7px 10px; border-radius:999px; font-family:var(--font-body); font-weight:700; font-size:0.72rem; letter-spacing:0.3px; color:var(--text); cursor:pointer; }
+  .lang-pill svg{ stroke:var(--text-muted); flex-shrink:0; }
+  [dir="rtl"] body{ font-family:var(--font-body); }
 
-  .screen{ display:none; flex:1; min-height:0; padding:6px 18px 18px 18px; overflow-y:auto; color:#fff; }
+  .screen{ display:none; flex:1; min-height:0; padding:4px 18px 18px 18px; overflow-y:auto; color:#fff; }
   .screen.active{ display:flex; flex-direction:column; gap:16px; }
 
-  .hero{ position:relative; border-radius:16px; padding:24px 20px; background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; }
-  .hero h1{ margin:0 0 6px 0; font-size:1.45rem; line-height:1.2; background:linear-gradient(90deg,#ffd93d,#ff6b6b); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .hero p{ margin:0 0 18px 0; color:#a8a3b8; font-size:0.92rem; }
-  .menu-btn{ font-weight:800; font-size:0.92rem; border:none; border-radius:14px; padding:14px 18px; cursor:pointer; color:#3a2a00; background:linear-gradient(180deg,#ffd93d,#ffb703); box-shadow:0 5px 0 #b8860b; width:100%; }
-  .menu-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 #b8860b; }
+  .hero{ position:relative; overflow:hidden; border-radius:18px; padding:26px 22px 22px 22px; background:linear-gradient(165deg,#1c1c2a,#0f0e17); border:1px solid #2c2a3a; }
+  .hero > *{ position:relative; z-index:1; }
+  .hero-road{ position:absolute !important; left:0; right:0; bottom:0; height:64%; z-index:0 !important; opacity:0.9; pointer-events:none; }
+  .hero h1{ font-family:var(--font-display); margin:0 0 8px 0; font-size:1.5rem; font-weight:700; line-height:1.25; color:var(--text); max-width:15ch; }
+  .hero p{ margin:0 0 20px 0; color:var(--text-muted); font-size:0.9rem; line-height:1.55; max-width:34ch; }
+  .menu-btn{ font-family:var(--font-body); font-weight:700; font-size:0.93rem; border:none; border-radius:13px; padding:14px 18px; cursor:pointer; color:#3a2a00; background:linear-gradient(180deg,var(--gold),#ffb703); box-shadow:0 5px 0 var(--gold-deep); width:100%; }
+  .menu-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 var(--gold-deep); }
   .menu-btn.secondary{ background:transparent; color:#fff; border:1px solid #3a3750; box-shadow:none; }
+  .attempts-pill{ display:inline-flex; align-items:center; gap:6px; margin-top:12px; padding:5px 12px; border-radius:999px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); color:var(--text-muted); font-size:0.78rem; font-weight:500; }
+  .attempts-pill .dot{ width:6px; height:6px; border-radius:50%; background:#7fdc7f; flex-shrink:0; }
 
   .stat-row{ display:flex; gap:10px; }
-  .stat-card{ flex:1; background:#15151f; border:1px solid #262436; border-radius:12px; padding:12px 12px; }
-  .stat-card .label{ font-size:0.68rem; color:#8b86a0; letter-spacing:0.4px; }
-  .stat-card .value{ font-size:1.2rem; font-weight:800; margin-top:2px; }
-  .stat-card.gold .value{ color:#ffd93d; }
-  .stat-card.coral .value{ color:#ff6b6b; }
+  .stat-card{ flex:1; background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:13px 12px; }
+  .stat-card .stat-icon{ width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+  .stat-card.gold .stat-icon{ background:rgba(255,217,61,0.12); }
+  .stat-card.coral .stat-icon{ background:rgba(255,107,107,0.12); }
+  .stat-card:not(.gold):not(.coral) .stat-icon{ background:rgba(255,255,255,0.06); }
+  .stat-card .label{ font-size:0.72rem; color:var(--text-muted); font-weight:500; }
+  .stat-card .value{ font-family:var(--font-display); font-size:1.28rem; font-weight:700; margin-top:3px; color:var(--text); }
+  .stat-card.gold .value{ color:var(--gold); }
+  .stat-card.coral .value{ color:var(--coral); }
 
-  .howto{ background:#15151f; border:1px solid #262436; border-radius:12px; padding:14px 16px; }
-  .howto h3{ margin:0 0 8px 0; font-size:0.92rem; color:#ffd93d; }
-  .howto ul{ margin:0; padding-left:18px; color:#a8a3b8; font-size:0.88rem; line-height:1.6; }
+  .howto{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:6px 16px; }
+  .howto h3{ margin:0; padding:14px 0 12px 0; font-family:var(--font-display); font-size:0.95rem; font-weight:600; color:var(--text); border-bottom:1px solid var(--border-soft); }
+  .howto-list{ list-style:none; }
+  .howto-item{ display:flex; align-items:flex-start; gap:12px; padding:13px 0; }
+  .howto-item + .howto-item{ border-top:1px solid var(--border-soft); }
+  .howto-icon{ width:30px; height:30px; border-radius:9px; background:var(--surface-2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.95rem; }
+  .howto-text{ color:#c7c2d6; font-size:0.86rem; line-height:1.5; padding-top:5px; }
+
+  .soon-badge{ display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; padding:5px 12px; border-radius:999px; background:rgba(255,217,61,0.1); border:1px solid rgba(255,217,61,0.25); color:var(--gold); font-size:0.74rem; font-weight:600; }
+  .soon-badge .dot{ width:6px; height:6px; border-radius:50%; background:var(--gold); flex-shrink:0; }
+  .tournament-stat{ display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:16px 18px; }
+  .tournament-stat .label{ font-size:0.82rem; color:var(--text-muted); font-weight:500; }
+  .tournament-stat .value{ font-family:var(--font-display); font-size:1.6rem; font-weight:700; color:var(--gold); }
 
   .wallet-hero{ background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; border-radius:16px; padding:24px; text-align:center; }
   .wallet-hero .big-coin{ font-size:2.3rem; font-weight:900; color:#ffd93d; }
@@ -74,10 +107,11 @@
   .exchange-box .exchange-info b{ color:#ffd93d; font-size:1.15rem; }
   .exchange-box .menu-btn:disabled{ opacity:0.4; cursor:not-allowed; box-shadow:none; }
 
-  .bottomnav{ display:flex; flex-shrink:0; border-top:1px solid #211f2e; background:#0e0e16; }
-  .bottomnav button{ flex:1; background:none; border:none; color:#8b86a0; padding:9px 4px 11px 4px; font-size:0.7rem; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; font-family:inherit; }
-  .bottomnav button .ic{ font-size:1.1rem; }
-  .bottomnav button.active{ color:#ffd93d; }
+  .bottomnav{ display:flex; flex-shrink:0; border-top:1px solid var(--border-soft); background:#0e0e16; }
+  .bottomnav button{ flex:1; background:none; border:none; color:var(--text-muted); padding:10px 4px 12px 4px; font-size:0.68rem; font-weight:500; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; font-family:var(--font-body); }
+  .bottomnav button .ic{ width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
+  .bottomnav button .ic svg{ stroke:currentColor; }
+  .bottomnav button.active{ color:var(--gold); }
 
   #screen-game{ display:none; }
   #screen-game.active{ display:flex; position:fixed; inset:0; z-index:30; padding:0; touch-action:none; overscroll-behavior:none; background:#0a0a12; }
@@ -90,30 +124,65 @@
 <div id="appShell">
 
   <div class="topbar">
-    <div class="brand">COIN RUNNER 3D</div>
-    <div class="coin-pill" id="topCoinDisplay">0</div>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 17L9 12L3 7" stroke="#3a2a00" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17L18 12L12 7" stroke="#3a2a00" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/></svg>
+      </div>
+      <div class="brand-name">Coin Runner<small data-i18n="brand_tag">3D · ENDLOS-FAHRT</small></div>
+    </div>
+    <div class="topbar-right">
+      <button class="lang-pill" id="langToggle" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke-width="1.6"/><path d="M3 12h18M12 3a14 14 0 010 18 14 14 0 010-18z" stroke-width="1.6"/></svg>
+        <span id="langToggleLabel">EN</span>
+      </button>
+      <div class="coin-pill">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#ffd93d" stroke-width="2"/><path d="M12 8.2v7.6M9.6 10.2c0-1.1 1-1.7 2.4-1.7s2.4.6 2.4 1.5c0 2.1-4.8 1-4.8 3.1 0 .9 1 1.5 2.4 1.5s2.4-.6 2.4-1.7" stroke="#ffd93d" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span id="topCoinDisplay">0</span>
+      </div>
+    </div>
   </div>
 
   <!-- HOME -->
   <main class="screen active" id="screen-home">
     <div class="hero">
-      <h1>Sammle Zombies.<br>Weiche aus.</h1>
-      <p>Lenke dein Auto in 3D durch die Spuren und sammle Zombies ein. Im Wallet tauschst du sie gegen Münzen ein.</p>
-      <button class="menu-btn" id="homePlayBtn">▶ Fahrt starten</button>
-      <div style="text-align:center;margin-top:8px;color:#a8a3b8;font-size:0.82rem;" id="homeAttemptsText">10/10 Versuche heute übrig</div>
+      <svg class="hero-road" viewBox="0 0 400 220" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="roadFade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#312f47"/>
+            <stop offset="1" stop-color="#1c1c2a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M58 220 L172 54 L228 54 L342 220 Z" fill="url(#roadFade)"/>
+        <line x1="200" y1="54" x2="200" y2="220" stroke="#ffd93d" stroke-width="2.5" stroke-dasharray="9 13" opacity="0.55"/>
+        <line x1="115" y1="220" x2="185" y2="70" stroke="#3a3750" stroke-width="1.5" opacity="0.6"/>
+        <line x1="285" y1="220" x2="215" y2="70" stroke="#3a3750" stroke-width="1.5" opacity="0.6"/>
+      </svg>
+      <h1 data-i18n="hero_home_h1">Sammle Zombies. Weiche dem Verkehr aus.</h1>
+      <p data-i18n="hero_home_p">Du steuerst dein Auto durch drei Spuren, sammelst Zombies für dein Wallet und wechselst sie später gegen Münzen ein.</p>
+      <button class="menu-btn" id="homePlayBtn" data-i18n="btn_start_ride">Fahrt starten</button>
+      <div class="attempts-pill"><span class="dot"></span><span id="homeAttemptsText">10/10 Versuche heute übrig</span></div>
     </div>
     <div class="stat-row">
-      <div class="stat-card gold"><div class="label">Wallet</div><div class="value" id="homeCoins">0</div></div>
-      <div class="stat-card"><div class="label">Bestwert</div><div class="value" id="homeBest">0</div></div>
-      <div class="stat-card coral"><div class="label">Fahrten</div><div class="value" id="homeRuns">0</div></div>
+      <div class="stat-card gold">
+        <div class="stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#ffd93d" stroke-width="2"/></svg></div>
+        <div class="label" data-i18n="label_wallet">Wallet</div><div class="value" id="homeCoins">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.4 5.8L21 9.3l-4.6 4.1L17.6 20 12 16.6 6.4 20l1.2-6.6L3 9.3l6.6-.5z" stroke="#c7c2d6" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+        <div class="label" data-i18n="label_best">Bestwert</div><div class="value" id="homeBest">0</div>
+      </div>
+      <div class="stat-card coral">
+        <div class="stat-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 18l4-9 4 6 3-5 5 8" stroke="#ff6b6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="label" data-i18n="label_runs">Fahrten</div><div class="value" id="homeRuns">0</div>
+      </div>
     </div>
     <div class="howto">
-      <h3>So funktioniert's</h3>
-      <ul>
-        <li>Pfeiltasten, A/D oder Wischen zum Spurwechsel</li>
-        <li>Zombies einsammeln — je mehr an Bord, desto schneller wird dein Auto</li>
-        <li>Anderen Autos ausweichen — ein Treffer beendet die Fahrt</li>
-        <li>Im Wallet gesammelte Zombies gegen Münzen eintauschen (2 Münzen pro Zombie)</li>
+      <h3 data-i18n="howto_title">So funktioniert's</h3>
+      <ul class="howto-list">
+        <li class="howto-item"><div class="howto-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 6L3 12L9 18M15 6L21 12L15 18" stroke="#c7c2d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="howto-text" data-i18n="howto_1">Pfeiltasten, A/D oder Wischen wechseln die Spur</div></li>
+        <li class="howto-item"><div class="howto-icon">🧟</div><div class="howto-text" data-i18n="howto_2">Zombies einsammeln — je mehr an Bord, desto schneller wird dein Auto</div></li>
+        <li class="howto-item"><div class="howto-icon">🚗</div><div class="howto-text" data-i18n="howto_3">Anderen Autos ausweichen — ein Treffer beendet die Fahrt</div></li>
+        <li class="howto-item"><div class="howto-icon">🪙</div><div class="howto-text" data-i18n="howto_4">Im Wallet gesammelte Zombies gegen Münzen eintauschen (2 Münzen pro Zombie)</div></li>
       </ul>
     </div>
   </main>
@@ -122,14 +191,45 @@
   <main class="screen" id="screen-wallet">
     <div class="wallet-hero">
       <div class="big-coin"><span id="walletCoinsDisplay">0</span> 🪙</div>
-      <div class="sub">Münzen-Guthaben</div>
+      <div class="sub" data-i18n="wallet_balance_label">Münzen-Guthaben</div>
     </div>
     <div class="exchange-box">
-      <div class="exchange-info"><b id="walletPersonsDisplay">0</b> 🧟 gesammelt — noch nicht eingetauscht</div>
-      <button class="menu-btn" id="exchangeBtn">Eintauschen (2 🪙 pro Zombie)</button>
+      <div class="exchange-info"><b id="walletPersonsDisplay">0</b> 🧟 <span data-i18n="wallet_collected_suffix">gesammelt — noch nicht eingetauscht</span></div>
+      <button class="menu-btn" id="exchangeBtn" data-i18n="btn_exchange">Eintauschen (2 🪙 pro Zombie)</button>
     </div>
-    <div class="note-box">Münzen sind eine virtuelle Spielwährung nur für den Shop. Kein echtes Geld, keine Kryptowährung.</div>
-    <button class="menu-btn secondary" id="toHomeBtn">Zur Startseite</button>
+    <div class="note-box" data-i18n="wallet_note">Münzen sind eine virtuelle Spielwährung nur für den Shop. Kein echtes Geld, keine Kryptowährung.</div>
+    <button class="menu-btn secondary" id="toHomeBtn" data-i18n="btn_to_home">Zur Startseite</button>
+  </main>
+
+  <!-- TOURNAMENT -->
+  <main class="screen" id="screen-tournament">
+    <div class="hero">
+      <svg class="hero-road" viewBox="0 0 400 220" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="roadFade2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#312f47"/>
+            <stop offset="1" stop-color="#1c1c2a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="M58 220 L172 54 L228 54 L342 220 Z" fill="url(#roadFade2)"/>
+        <line x1="200" y1="54" x2="200" y2="220" stroke="#ffd93d" stroke-width="2.5" stroke-dasharray="9 13" opacity="0.55"/>
+      </svg>
+      <div class="soon-badge"><span class="dot"></span><span data-i18n="tournament_soon">Bald verfügbar</span></div>
+      <h1 data-i18n="tournament_title">Turnier</h1>
+      <p data-i18n="tournament_desc">Tritt bald gegen andere Fahrer an und sichere dir deinen Platz auf der Bestenliste.</p>
+    </div>
+    <div class="tournament-stat">
+      <div class="label" data-i18n="tournament_best_label">Dein aktueller Bestwert</div>
+      <div class="value" id="tournamentBest">0</div>
+    </div>
+    <div class="howto">
+      <h3 data-i18n="tournament_howto_title">Das erwartet dich</h3>
+      <ul class="howto-list">
+        <li class="howto-item"><div class="howto-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 18l4-9 4 6 3-5 5 8" stroke="#c7c2d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="howto-text" data-i18n="tournament_howto_1">Wöchentliche Bestenliste mit den schnellsten Fahrern</div></li>
+        <li class="howto-item"><div class="howto-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.4 5.8L21 9.3l-4.6 4.1L17.6 20 12 16.6 6.4 20l1.2-6.6L3 9.3l6.6-.5z" stroke="#c7c2d6" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="howto-text" data-i18n="tournament_howto_2">Münz-Prämien für die vorderen Plätze</div></li>
+        <li class="howto-item"><div class="howto-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#c7c2d6" stroke-width="2"/><path d="M12 8.2v7.6M9.6 10.2c0-1.1 1-1.7 2.4-1.7s2.4.6 2.4 1.5c0 2.1-4.8 1-4.8 3.1 0 .9 1 1.5 2.4 1.5s2.4-.6 2.4-1.7" stroke="#c7c2d6" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="howto-text" data-i18n="tournament_howto_3">Faires Ranking auf Basis deiner besten Fahrt</div></li>
+      </ul>
+    </div>
   </main>
 
   <!-- GAME (3D) -->
@@ -140,9 +240,9 @@
       <div class="exit-run-btn" id="exitRunBtn">✕</div>
 
       <div class="no-attempts-screen" id="noAttemptsScreen">
-        <h1>Keine Versuche mehr</h1>
+        <h1 data-i18n="no_attempts_title">Keine Versuche mehr</h1>
         <div class="subtitle" id="noAttemptsText">Du hast heute alle 10 Fahrten aufgebraucht. Komm morgen wieder!</div>
-        <button class="btn" id="noAttemptsHomeBtn">Zur Startseite</button>
+        <button class="btn" id="noAttemptsHomeBtn" data-i18n="btn_to_home">Zur Startseite</button>
       </div>
 
       <div id="hud">
@@ -158,27 +258,123 @@
       </div>
 
       <div id="gameOverScreen">
-        <h1>CRASH!</h1>
+        <h1 data-i18n="crash_title">CRASH!</h1>
         <div class="finalScore" id="finalScore">0</div>
         <div class="bestScore" id="bestScoreText"></div>
-        <div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:10px;">Im Wallet gegen Münzen eintauschbar (2 🪙 pro Zombie)</div>
-        <button class="btn" id="retryBtn">Nochmal</button>
-        <button class="btn" id="goHomeBtn" style="margin-top:12px;background:linear-gradient(180deg,#3a3750,#26243a);color:#fff;box-shadow:0 6px 0 #17162280;">Zur Startseite</button>
+        <div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:10px;" data-i18n="game_over_note">Im Wallet gegen Münzen eintauschbar (2 🪙 pro Zombie)</div>
+        <button class="btn" id="retryBtn" data-i18n="btn_retry">Nochmal</button>
+        <button class="btn" id="goHomeBtn" style="margin-top:12px;background:linear-gradient(180deg,#3a3750,#26243a);color:#fff;box-shadow:0 6px 0 #17162280;" data-i18n="btn_to_home">Zur Startseite</button>
       </div>
 
-      <div class="hint" id="hint">◀ ▶ Pfeiltasten, A/D oder Wischen</div>
+      <div class="hint" id="hint" data-i18n="hint_controls">◀ ▶ Pfeiltasten, A/D oder Wischen</div>
     </div>
   </main>
 
   <nav class="bottomnav" id="bottomnav">
-    <button data-screen="home" class="active"><span class="ic">🏠</span>Home</button>
-    <button data-screen="wallet"><span class="ic">👛</span>Wallet</button>
+    <button data-screen="home" class="active"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 11.5L12 4l8 7.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9a1 1 0 001 1h3v-6h4v6h3a1 1 0 001-1v-9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-i18n="nav_home">Start</span></button>
+    <button data-screen="game"><span class="ic"><svg width="17" height="17" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5-13-7.5z" fill="currentColor"/></svg></span><span data-i18n="nav_play">Play</span></button>
+    <button data-screen="tournament"><span class="ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 4h10v3a5 5 0 01-5 5 5 5 0 01-5-5V4z" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3M11 12v3M8.5 19h7M9.5 15.5h5l.5 3.5h-6z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-i18n="nav_tournament">Turnier</span></button>
+    <button data-screen="wallet"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="6.5" width="18" height="13" rx="2.2" stroke-width="2"/><path d="M3 10.5h18" stroke-width="2"/><circle cx="16.5" cy="14.5" r="1.3" fill="currentColor" stroke="none"/></svg></span><span data-i18n="nav_wallet">Wallet</span></button>
   </nav>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
+  /* ================= I18N ================= */
+  const I18N = {
+    en: {
+      brand_tag: '3D · ENDLESS RUN',
+      hero_home_h1: 'Collect zombies. Dodge traffic.',
+      hero_home_p: 'Steer your car across three lanes, collect zombies for your wallet, and trade them in for coins later.',
+      btn_start_ride: 'Start Ride',
+      label_wallet: 'Wallet',
+      label_best: 'Best Score',
+      label_runs: 'Runs',
+      howto_title: 'How it works',
+      howto_1: 'Arrow keys, A/D, or swipe to change lanes',
+      howto_2: 'Collect zombies — the more on board, the faster your car gets',
+      howto_3: 'Dodge other cars — one hit ends the ride',
+      howto_4: 'Trade collected zombies for coins in your Wallet (2 coins per zombie)',
+      wallet_balance_label: 'Coin Balance',
+      wallet_collected_suffix: 'zombies collected — not yet exchanged',
+      btn_exchange: 'Exchange (2 🪙 per zombie)',
+      wallet_note: 'Coins are a virtual in-game currency for the shop only. No real money, no cryptocurrency.',
+      btn_to_home: 'Back to Home',
+      tournament_soon: 'Coming soon',
+      tournament_title: 'Tournament',
+      tournament_desc: "Soon you'll race other drivers and claim your spot on the leaderboard.",
+      tournament_best_label: 'Your Current Best',
+      tournament_howto_title: 'What to expect',
+      tournament_howto_1: 'Weekly leaderboard with the fastest drivers',
+      tournament_howto_2: 'Coin rewards for the top ranks',
+      tournament_howto_3: 'Fair ranking based on your best run',
+      no_attempts_title: 'No Attempts Left',
+      crash_title: 'CRASH!',
+      game_over_note: 'Exchangeable for coins in your Wallet (2 🪙 per zombie)',
+      btn_retry: 'Try Again',
+      hint_controls: '◀ ▶ Arrow keys, A/D, or swipe',
+      nav_home: 'Home', nav_play: 'Play', nav_tournament: 'Tournament', nav_wallet: 'Wallet',
+      attempts_text: (remaining, max, unlimited) => unlimited ? 'Unlimited attempts' : (remaining + '/' + max + ' attempts left today'),
+      no_attempts_text: (max) => "You've used all " + max + " rides today. Come back tomorrow!",
+      best_score_text: (best) => 'Best: ' + best + ' zombies'
+    },
+    fa: {
+      brand_tag: 'سه‌بعدی · دوی بی‌پایان',
+      hero_home_h1: 'زامبی‌ها را جمع کن. از ترافیک بگذر.',
+      hero_home_p: 'ماشینت را در سه خط برون، زامبی‌ها را برای کیف‌پولت جمع کن و بعداً با سکه معاوضه‌شان کن.',
+      btn_start_ride: 'شروع مسیر',
+      label_wallet: 'کیف‌پول',
+      label_best: 'بهترین امتیاز',
+      label_runs: 'تعداد مسیرها',
+      howto_title: 'روش بازی',
+      howto_1: 'کلیدهای جهت‌دار، A/D یا کشیدن انگشت برای تغییر خط',
+      howto_2: 'زامبی‌ها را جمع کن — هرچه بیشتر سوار باشند، ماشین سریع‌تر می‌شود',
+      howto_3: 'از ماشین‌های دیگر دوری کن — یک برخورد پایان مسیر است',
+      howto_4: 'زامبی‌های جمع‌شده را در کیف‌پول با سکه معاوضه کن (۲ سکه برای هر زامبی)',
+      wallet_balance_label: 'موجودی سکه',
+      wallet_collected_suffix: 'زامبی جمع‌آوری‌شده — هنوز معاوضه نشده',
+      btn_exchange: 'معاوضه (۲ 🪙 برای هر زامبی)',
+      wallet_note: 'سکه‌ها فقط یک ارز مجازی درون‌بازی برای فروشگاه هستند؛ نه پول واقعی، نه ارز دیجیتال.',
+      btn_to_home: 'بازگشت به صفحه اصلی',
+      tournament_soon: 'به‌زودی',
+      tournament_title: 'مسابقه',
+      tournament_desc: 'به‌زودی با رانندگان دیگر رقابت می‌کنی و جایگاهت را در جدول امتیازات ثبت می‌کنی.',
+      tournament_best_label: 'بهترین امتیاز فعلی تو',
+      tournament_howto_title: 'چه چیزی در انتظار توست',
+      tournament_howto_1: 'جدول امتیازات هفتگی سریع‌ترین رانندگان',
+      tournament_howto_2: 'جوایز سکه‌ای برای رتبه‌های برتر',
+      tournament_howto_3: 'رتبه‌بندی عادلانه بر اساس بهترین مسیر تو',
+      no_attempts_title: 'دیگر فرصتی باقی نمانده',
+      crash_title: 'تصادف!',
+      game_over_note: 'قابل معاوضه با سکه در کیف‌پول (۲ 🪙 برای هر زامبی)',
+      btn_retry: 'دوباره تلاش کن',
+      hint_controls: '◀ ▶ کلیدهای جهت‌دار، A/D یا کشیدن انگشت',
+      nav_home: 'خانه', nav_play: 'بازی', nav_tournament: 'مسابقه', nav_wallet: 'کیف‌پول',
+      attempts_text: (remaining, max, unlimited) => unlimited ? 'فرصت نامحدود' : (remaining + '/' + max + ' فرصت باقی‌مانده امروز'),
+      no_attempts_text: (max) => 'امروز همه ' + max + ' فرصت خود را استفاده کردی. فردا دوباره سر بزن!',
+      best_score_text: (best) => 'بهترین: ' + best + ' زامبی'
+    }
+  };
+  let currentLang = localStorage.getItem('cr3d_lang') || 'en';
+
+  function applyLanguage(lang){
+    if (!I18N[lang]) lang = 'en';
+    currentLang = lang;
+    localStorage.setItem('cr3d_lang', lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (typeof I18N[lang][key] === 'string') el.textContent = I18N[lang][key];
+    });
+    document.getElementById('langToggleLabel').textContent = lang.toUpperCase();
+    refreshTopUI();
+    updateWeaponHud();
+    document.getElementById('noAttemptsText').textContent = I18N[lang].no_attempts_text(MAX_ATTEMPTS);
+    if (typeof best !== 'undefined') document.getElementById('bestScoreText').textContent = I18N[lang].best_score_text(best);
+  }
+
   /* ================= APP-STATE / STORAGE ================= */
   const store = {
     coins: parseInt(localStorage.getItem('cr3d_coins') || '0', 10),
@@ -224,6 +420,7 @@
     document.getElementById('topCoinDisplay').textContent = store.coins;
     document.getElementById('homeCoins').textContent = store.coins;
     document.getElementById('homeBest').textContent = store.best;
+    document.getElementById('tournamentBest').textContent = store.best;
     document.getElementById('homeRuns').textContent = store.runs;
     document.getElementById('walletCoinsDisplay').textContent = store.coins;
     document.getElementById('walletPersonsDisplay').textContent = lastPersonScore;
@@ -232,7 +429,7 @@
     const remaining = attemptsRemaining();
     const remainingText = UNLIMITED_ATTEMPTS ? '∞' : remaining;
     document.getElementById('attemptsBadge').textContent = '🎮 ' + remainingText;
-    document.getElementById('homeAttemptsText').textContent = UNLIMITED_ATTEMPTS ? 'Unbegrenzte Versuche' : (remaining + '/' + MAX_ATTEMPTS + ' Versuche heute übrig');
+    document.getElementById('homeAttemptsText').textContent = I18N[currentLang].attempts_text(remaining, MAX_ATTEMPTS, UNLIMITED_ATTEMPTS);
   }
 
   let lastPersonScore = 0;
@@ -254,12 +451,14 @@
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
     refreshTopUI();
   }
-  navButtons.forEach(b => b.addEventListener('click', () => showScreen(b.dataset.screen)));
+  navButtons.forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.screen === 'game'){ enterGame(); return; }
+    showScreen(b.dataset.screen);
+  }));
   document.getElementById('toHomeBtn').addEventListener('click', () => showScreen('home'));
 
   function showNoAttemptsScreen(){
-    document.getElementById('noAttemptsText').textContent =
-      'Du hast heute alle ' + MAX_ATTEMPTS + ' Fahrten aufgebraucht. Komm morgen wieder!';
+    document.getElementById('noAttemptsText').textContent = I18N[currentLang].no_attempts_text(MAX_ATTEMPTS);
     document.getElementById('noAttemptsScreen').style.display = 'flex';
   }
   document.getElementById('noAttemptsHomeBtn').addEventListener('click', () => {
@@ -862,7 +1061,7 @@
     spawnParticles(playerCar.position.x, 0.6, playerCar.position.z, 0xff6b6b);
     commitRun();
     document.getElementById('finalScore').textContent = personScore;
-    document.getElementById('bestScoreText').textContent = 'Bestwert: ' + best + ' Zombies';
+    document.getElementById('bestScoreText').textContent = I18N[currentLang].best_score_text(best);
     document.getElementById('gameOverScreen').style.display = 'flex';
     // Hinweis: Telegram.WebApp.sendData() wuerde die Mini App automatisch schliessen
     // und die Daten als Nachricht in den Bot-Chat schreiben -- deshalb bewusst entfernt.
@@ -1042,6 +1241,11 @@
   camera.lookAt(0, 1.2, -14);
   loop();
   refreshTopUI();
+
+  document.getElementById('langToggle').addEventListener('click', () => {
+    applyLanguage(currentLang === 'en' ? 'fa' : 'en');
+  });
+  applyLanguage(currentLang);
 
   if (window.Telegram && window.Telegram.WebApp){
     const tg = window.Telegram.WebApp;
