@@ -571,10 +571,8 @@
     document.getElementById('finalScore').textContent = personScore;
     document.getElementById('bestScoreText').textContent = 'Bestwert: ' + best + ' Zombies';
     document.getElementById('gameOverScreen').style.display = 'flex';
-
-    if (window.Telegram && window.Telegram.WebApp){
-      try { window.Telegram.WebApp.sendData(JSON.stringify({ persons: personScore, distance: Math.floor(distance) })); } catch(e){}
-    }
+    // Hinweis: Telegram.WebApp.sendData() wuerde die Mini App automatisch schliessen
+    // und die Daten als Nachricht in den Bot-Chat schreiben -- deshalb bewusst entfernt.
   }
   document.getElementById('retryBtn').addEventListener('click', () => {
     document.getElementById('gameOverScreen').style.display = 'none';
