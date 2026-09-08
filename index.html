@@ -12,9 +12,19 @@
     height: 100%;
     overflow: hidden;
     background: #05060a;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Tahoma, sans-serif;
     touch-action: none;
     user-select: none;
+  }
+
+  html[dir="rtl"] .page,
+  html[dir="rtl"] #home-hero,
+  html[dir="rtl"] #overlay {
+    direction: rtl;
+  }
+  /* Steuerung, HUD und Navigation bleiben immer in fester Reihenfolge, egal welche Sprache */
+  #controls, #bottom-nav, #hud, #canvas, #lang-switch {
+    direction: ltr;
   }
 
   .screen {
@@ -111,6 +121,25 @@
   }
 
   /* Home */
+  #lang-switch {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    display: flex;
+    gap: 6px;
+    z-index: 5;
+  }
+  .lang-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #9599ab;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 999px;
+  }
+  .lang-btn.active { color: #ffd447; border-color: rgba(255,212,71,0.5); background: rgba(255,212,71,0.08); }
+
   #home-hero {
     display: flex;
     flex-direction: column;
@@ -441,56 +470,60 @@
 
 <!-- ================= HOME ================= -->
 <div class="screen active" id="screen-home">
+  <div id="lang-switch">
+    <button class="lang-btn" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="fa">فا</button>
+  </div>
   <div id="home-hero">
     <h1>COIN RUNNER</h1>
-    <div class="subtitle">Scrap Edition</div>
-    <img id="home-car-img" src="" alt="Dein Auto">
+    <div class="subtitle" data-i18n="subtitle">Scrap Edition</div>
+    <img id="home-car-img" src="" alt="Your car">
     <div class="balance-pill">🪙 <span id="home-balance">0</span></div>
-    <div class="hint">Fahr los, sammle Münzen und weiche den Steinen aus. Dein Guthaben landet in deiner Wallet.</div>
+    <div class="hint" data-i18n="home_hint">Drive, collect coins and dodge the rocks. Your balance goes to your wallet.</div>
   </div>
 </div>
 
 <!-- ================= SHOP ================= -->
 <div class="screen" id="screen-shop">
   <div class="page">
-    <div class="page-title">Shop</div>
+    <div class="page-title" data-i18n="shop_title">Shop</div>
     <div class="balance-pill">🪙 <span id="shop-balance">0</span></div>
     <div class="shop-grid">
       <div class="shop-card selected">
         <img id="shop-car-img" src="" alt="Scrap Car">
-        <div class="name">Scrap Runner</div>
-        <div class="price">Aktiv</div>
+        <div class="name" data-i18n="shop_car_name">Scrap Runner</div>
+        <div class="price" data-i18n="shop_active">Active</div>
       </div>
       <div class="shop-card">
         <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-size:28px;">🔒</div>
         <div class="name">???</div>
-        <div class="locked-badge">Bald verfügbar</div>
+        <div class="locked-badge" data-i18n="shop_soon">Coming soon</div>
       </div>
       <div class="shop-card">
         <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-size:28px;">🔒</div>
         <div class="name">???</div>
-        <div class="locked-badge">Bald verfügbar</div>
+        <div class="locked-badge" data-i18n="shop_soon">Coming soon</div>
       </div>
       <div class="shop-card">
         <div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-size:28px;">🔒</div>
         <div class="name">???</div>
-        <div class="locked-badge">Bald verfügbar</div>
+        <div class="locked-badge" data-i18n="shop_soon">Coming soon</div>
       </div>
     </div>
-    <div class="empty-note">Weitere Autos &amp; Power-Ups folgen bald.</div>
+    <div class="empty-note" data-i18n="shop_note">More cars &amp; power-ups coming soon.</div>
   </div>
 </div>
 
 <!-- ================= WALLET ================= -->
 <div class="screen" id="screen-wallet">
   <div class="page">
-    <div class="page-title">Wallet</div>
+    <div class="page-title" data-i18n="wallet_title">Wallet</div>
     <div class="wallet-hero">
       <div class="amount">🪙 <span id="wallet-balance">0</span></div>
-      <div class="label">Gesamtguthaben</div>
+      <div class="label" data-i18n="wallet_total">Total balance</div>
     </div>
     <div id="wallet-history"></div>
-    <div class="empty-note" id="wallet-empty">Noch keine Runden gespielt – deine gesammelten Münzen erscheinen hier nach dem Spiel.</div>
+    <div class="empty-note" id="wallet-empty" data-i18n="wallet_empty">No rounds played yet – your collected coins will appear here after playing.</div>
   </div>
 </div>
 
@@ -498,6 +531,7 @@
 <div class="screen" id="screen-game">
 <div id="game-wrap">
   <canvas id="canvas"></canvas>
+
 
   <div id="hud">
     <div class="hud-col">
@@ -521,16 +555,16 @@
 
   <div id="overlay">
     <h1>COIN RUNNER</h1>
-    <div class="subtitle">Level 1 · Scrap Edition</div>
-    <p>Dein Auto fährt automatisch. Weiche aus, sammle Münzen und baue Combos auf.</p>
+    <div class="subtitle" data-i18n="game_subtitle">Level 1 · Scrap Edition</div>
+    <p data-i18n="game_intro">Your car drives automatically. Dodge, collect coins and build up combos.</p>
     <div class="legend">
       <div class="legend-item"><div class="legend-badge">🪙</div>+1</div>
-      <div class="legend-item"><div class="legend-badge">🧲</div>Magnet</div>
-      <div class="legend-item"><div class="legend-badge">🛡️</div>Schild</div>
-      <div class="legend-item"><div class="legend-badge">🪨</div>Crash</div>
+      <div class="legend-item"><div class="legend-badge">🧲</div><span data-i18n="legend_magnet">Magnet</span></div>
+      <div class="legend-item"><div class="legend-badge">🛡️</div><span data-i18n="legend_shield">Shield</span></div>
+      <div class="legend-item"><div class="legend-badge">🪨</div><span data-i18n="legend_crash">Crash</span></div>
     </div>
-    <button class="main-btn" id="start-btn">Spiel starten</button>
-    <button class="secondary-btn" id="back-to-menu-btn">Zurück zum Menü</button>
+    <button class="main-btn" id="start-btn" data-i18n="start_btn">Start game</button>
+    <button class="secondary-btn" id="back-to-menu-btn" data-i18n="back_to_menu">Back to menu</button>
   </div>
 </div>
 </div>
@@ -538,18 +572,123 @@
 <!-- ================= BOTTOM NAV ================= -->
 <div id="bottom-nav">
   <button class="nav-item" id="nav-shop" data-screen="shop">
-    <span class="nav-icon">🛒</span><span class="label">Shop</span>
+    <span class="nav-icon">🛒</span><span class="label" data-i18n="nav_shop">Shop</span>
   </button>
   <button class="nav-item play-item" id="nav-play" data-screen="game">
-    <span class="nav-icon">▶</span><span class="label">Play</span>
+    <span class="nav-icon">▶</span><span class="label" data-i18n="nav_play">Play</span>
   </button>
   <button class="nav-item" id="nav-wallet" data-screen="wallet">
-    <span class="nav-icon">👛</span><span class="label">Wallet</span>
+    <span class="nav-icon">👛</span><span class="label" data-i18n="nav_wallet">Wallet</span>
   </button>
 </div>
 
+
 <script>
 (function () {
+  // ---------- Übersetzungen ----------
+  var LANG = {
+    en: {
+      subtitle: "Scrap Edition",
+      home_hint: "Drive, collect coins and dodge the rocks. Your balance goes to your wallet.",
+      shop_title: "Shop",
+      shop_car_name: "Scrap Runner",
+      shop_active: "Active",
+      shop_soon: "Coming soon",
+      shop_note: "More cars &amp; power-ups coming soon.",
+      wallet_title: "Wallet",
+      wallet_total: "Total balance",
+      wallet_empty: "No rounds played yet – your collected coins will appear here after playing.",
+      nav_shop: "Shop",
+      nav_play: "Play",
+      nav_wallet: "Wallet",
+      game_subtitle: "Level 1 · Scrap Edition",
+      game_intro: "Your car drives automatically. Dodge, collect coins and build up combos.",
+      legend_magnet: "Magnet",
+      legend_shield: "Shield",
+      legend_crash: "Crash",
+      start_btn: "Start game",
+      back_to_menu: "Back to menu",
+      combo: "COMBO x",
+      wallet_history_label: "Round finished ({m}m)",
+      reason_crash: "💥 Hit a rock!",
+      reason_lives: "❤️ Out of lives",
+      score_label: "Coins · {m}m driven",
+      best_line: "🏆 Session best: {n}",
+      retry_btn: "Play again",
+      send_btn: "Send result to bot",
+      send_only_telegram: "Only available in Telegram",
+      menu_btn: "Back to menu"
+    },
+    fa: {
+      subtitle: "نسخه اسقاطی",
+      home_hint: "رانندگی کن، سکه‌ها را جمع کن و از سنگ‌ها فرار کن. موجودی‌ات به کیف پولت می‌رود.",
+      shop_title: "فروشگاه",
+      shop_car_name: "اسکرپ رانر",
+      shop_active: "فعال",
+      shop_soon: "به‌زودی",
+      shop_note: "ماشین‌ها و پاور‌آپ‌های بیشتر به‌زودی می‌آیند.",
+      wallet_title: "کیف پول",
+      wallet_total: "موجودی کل",
+      wallet_empty: "هنوز دوری بازی نشده – سکه‌های جمع‌شده‌ات بعد از بازی اینجا نمایش داده می‌شوند.",
+      nav_shop: "فروشگاه",
+      nav_play: "بازی",
+      nav_wallet: "کیف پول",
+      game_subtitle: "مرحله ۱ · نسخه اسقاطی",
+      game_intro: "ماشین تو خودش حرکت می‌کند. جا خالی بده، سکه جمع کن و کمبو بساز.",
+      legend_magnet: "آهنربا",
+      legend_shield: "سپر",
+      legend_crash: "برخورد",
+      start_btn: "شروع بازی",
+      back_to_menu: "بازگشت به منو",
+      combo: "کمبو x",
+      wallet_history_label: "دور تمام شد ({m} متر)",
+      reason_crash: "💥 به یک سنگ برخورد کردی!",
+      reason_lives: "❤️ جان‌هایت تمام شد",
+      score_label: "سکه · {m} متر رانده شد",
+      best_line: "🏆 بهترین این نشست: {n}",
+      retry_btn: "دوباره بازی کن",
+      send_btn: "ارسال نتیجه به ربات",
+      send_only_telegram: "فقط در تلگرام در دسترس است",
+      menu_btn: "بازگشت به منو"
+    }
+  };
+
+  function getUrlLang() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var l = params.get('lang');
+      if (l === 'fa' || l === 'en') return l;
+    } catch (e) {}
+    return 'en';
+  }
+
+  var currentLang = getUrlLang();
+
+  function t(key) {
+    return (LANG[currentLang] && LANG[currentLang][key]) || (LANG.en[key] || key);
+  }
+
+  function applyStaticTranslations() {
+    document.documentElement.setAttribute('lang', currentLang);
+    document.documentElement.setAttribute('dir', currentLang === 'fa' ? 'rtl' : 'ltr');
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var key = nodes[i].getAttribute('data-i18n');
+      nodes[i].innerHTML = t(key);
+    }
+    var langBtns = document.querySelectorAll('.lang-btn');
+    for (var j = 0; j < langBtns.length; j++) {
+      langBtns[j].classList.toggle('active', langBtns[j].getAttribute('data-lang') === currentLang);
+    }
+  }
+
+  function setLang(lang) {
+    currentLang = (lang === 'fa') ? 'fa' : 'en';
+    applyStaticTranslations();
+    renderWallet();
+    updateHud();
+  }
+
   // ---------- Telegram WebApp ----------
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) {
@@ -573,15 +712,16 @@
     } else {
       emptyEl.style.display = 'none';
       histEl.innerHTML = wallet.history.slice().reverse().map(function (h) {
-        return '<div class="history-item"><span class="label">' + h.label + '</span><span class="value">+' + h.amount + '</span></div>';
+        var label = t('wallet_history_label').replace('{m}', h.meters);
+        return '<div class="history-item"><span class="label">' + label + '</span><span class="value">+' + h.amount + '</span></div>';
       }).join('');
     }
   }
 
-  function addToWallet(amount, label) {
+  function addToWallet(amount, meters) {
     if (amount <= 0) return;
     wallet.balance += amount;
-    wallet.history.push({ amount: amount, label: label });
+    wallet.history.push({ amount: amount, meters: meters });
     renderWallet();
   }
 
@@ -622,6 +762,14 @@
     bottomNav.style.display = 'flex';
   });
 
+  var langButtons = document.querySelectorAll('.lang-btn');
+  for (var li = 0; li < langButtons.length; li++) {
+    langButtons[li].addEventListener('click', function () {
+      setLang(this.getAttribute('data-lang'));
+    });
+  }
+
+  applyStaticTranslations();
   renderWallet();
   showScreen('home');
 
@@ -731,7 +879,7 @@
     document.getElementById('dist').textContent = Math.floor(distance);
     var cp = document.getElementById('combo-pill');
     if (combo >= 3) {
-      cp.textContent = 'COMBO x' + comboMultiplier;
+      cp.textContent = t('combo') + comboMultiplier;
       cp.classList.add('show');
     } else {
       cp.classList.remove('show');
@@ -1124,17 +1272,17 @@
   function endGame(isCrash) {
     running = false;
     if (score > best) best = score;
-    addToWallet(score, 'Runde beendet (' + Math.floor(distance) + 'm)');
+    addToWallet(score, Math.floor(distance));
     overlay.classList.remove('hidden');
-    var reason = isCrash ? '💥 Gegen einen Stein gefahren!' : '❤️ Keine Leben mehr übrig';
+    var reason = isCrash ? t('reason_crash') : t('reason_lives');
     overlay.innerHTML =
       '<div style="color:#ff5d6c;font-size:13px;font-weight:700;margin-bottom:10px;">' + reason + '</div>' +
       '<div class="score-line">' + score + '</div>' +
-      '<div class="score-label">Münzen · ' + Math.floor(distance) + 'm gefahren</div>' +
-      '<div class="best-line">🏆 Bestwert dieser Sitzung: ' + best + '</div>' +
-      '<button class="main-btn" id="retry-btn">Nochmal spielen</button>' +
-      '<button class="secondary-btn" id="send-btn">Ergebnis an Bot senden</button>' +
-      '<button class="secondary-btn" id="menu-btn-2">Zurück zum Menü</button>';
+      '<div class="score-label">' + t('score_label').replace('{m}', Math.floor(distance)) + '</div>' +
+      '<div class="best-line">' + t('best_line').replace('{n}', best) + '</div>' +
+      '<button class="main-btn" id="retry-btn">' + t('retry_btn') + '</button>' +
+      '<button class="secondary-btn" id="send-btn">' + t('send_btn') + '</button>' +
+      '<button class="secondary-btn" id="menu-btn-2">' + t('menu_btn') + '</button>';
     document.getElementById('retry-btn').addEventListener('click', startGame);
     document.getElementById('menu-btn-2').addEventListener('click', function () {
       showScreen('home');
@@ -1142,7 +1290,7 @@
     var sendBtn = document.getElementById('send-btn');
     sendBtn.addEventListener('click', function () {
       if (tg) { tg.sendData(JSON.stringify({ score: score, distance: Math.floor(distance) })); }
-      else { sendBtn.textContent = 'Nur in Telegram verfügbar'; }
+      else { sendBtn.textContent = t('send_only_telegram'); }
     });
   }
 
