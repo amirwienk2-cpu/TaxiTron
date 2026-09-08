@@ -662,6 +662,15 @@
     return 'en';
   }
 
+  function getUrlBalance() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var b = parseInt(params.get('balance'), 10);
+      if (!isNaN(b) && b >= 0) return b;
+    } catch (e) {}
+    return 0;
+  }
+
   var currentLang = getUrlLang();
 
   function t(key) {
@@ -698,7 +707,7 @@
   }
 
   // ---------- Wallet (in dieser Sitzung gespeichert) ----------
-  var wallet = { balance: 0, history: [] };
+  var wallet = { balance: getUrlBalance(), history: [] };
 
   function renderWallet() {
     document.getElementById('home-balance').textContent = wallet.balance;
