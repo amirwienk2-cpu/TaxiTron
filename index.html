@@ -401,8 +401,64 @@
     return g;
   }
 
-  const playerCar = buildCar(0x3fa9f5, 1);
+  /* ---- Taxi-Schild-Textur (Canvas) ---- */
+  function makeTaxiSignTexture(){
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 96;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#f6c94b';
+    ctx.fillRect(0,0,c.width,c.height);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4,4,c.width-8,c.height-8);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = 'bold 56px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TAXI', c.width/2, c.height/2+4);
+    return new THREE.CanvasTexture(c);
+  }
+
+  /* ---- Schachbrett-Streifen-Textur (Canvas) ---- */
+  function makeCheckerTexture(){
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 32;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,32,32);
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0,0,16,16);
+    ctx.fillRect(16,16,16,16);
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1, 6);
+    return tex;
+  }
+
+  /* ---- Taxi (Spieler-Auto): gelb, Schachbrett-Streifen, TAXI-Schild aufs Dach ---- */
+  function buildTaxiCar(scale){
+    const g = buildCar(0xf6c94b, 1);
+
+    const checkerTex = makeCheckerTexture();
+    const checkerMat = new THREE.MeshStandardMaterial({ map: checkerTex, roughness:0.6 });
+    [-0.72, 0.72].forEach(x=>{
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 3.3), checkerMat);
+      stripe.position.set(x, 0.79, 0);
+      g.add(stripe);
+    });
+
+    const signTex = makeTaxiSignTexture();
+    const signMat = new THREE.MeshBasicMaterial({ map: signTex });
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.22, 0.3), signMat);
+    sign.position.set(0, 1.32, -0.1);
+    g.add(sign);
+
+    if (scale) g.scale.set(scale, scale, scale);
+    return g;
+  }
+
+  const playerCar = buildTaxiCar(0.72);
   scene.add(playerCar);
+
 
   /* ---- Zombie/person figure builder ---- */
   function buildZombie(){
