@@ -107,6 +107,13 @@
   .exchange-box .exchange-info b{ color:#ffd93d; font-size:1.15rem; }
   .exchange-box .menu-btn:disabled{ opacity:0.4; cursor:not-allowed; box-shadow:none; }
 
+  .lang-section{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .lang-section-label{ font-size:0.78rem; color:var(--text-muted); font-weight:500; margin-bottom:10px; }
+  .lang-options{ display:flex; gap:10px; }
+  .lang-option{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; padding:12px 10px; font-family:var(--font-body); font-weight:600; font-size:0.85rem; color:var(--text); cursor:pointer; }
+  .lang-option .flag{ font-size:1.2rem; line-height:1; }
+  .lang-option.active{ border-color:var(--gold); background:rgba(255,217,61,0.1); color:var(--gold); }
+
   .bottomnav{ display:flex; flex-shrink:0; border-top:1px solid var(--border-soft); background:#0e0e16; }
   .bottomnav button{ flex:1; background:none; border:none; color:var(--text-muted); padding:10px 4px 12px 4px; font-size:0.68rem; font-weight:500; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; font-family:var(--font-body); }
   .bottomnav button .ic{ width:20px; height:20px; display:flex; align-items:center; justify-content:center; }
@@ -131,10 +138,6 @@
       <div class="brand-name">Coin Runner<small data-i18n="brand_tag">3D · ENDLOS-FAHRT</small></div>
     </div>
     <div class="topbar-right">
-      <button class="lang-pill" id="langToggle" type="button">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke-width="1.6"/><path d="M3 12h18M12 3a14 14 0 010 18 14 14 0 010-18z" stroke-width="1.6"/></svg>
-        <span id="langToggleLabel">EN</span>
-      </button>
       <div class="coin-pill">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#ffd93d" stroke-width="2"/><path d="M12 8.2v7.6M9.6 10.2c0-1.1 1-1.7 2.4-1.7s2.4.6 2.4 1.5c0 2.1-4.8 1-4.8 3.1 0 .9 1 1.5 2.4 1.5s2.4-.6 2.4-1.7" stroke="#ffd93d" stroke-width="1.6" stroke-linecap="round"/></svg>
         <span id="topCoinDisplay">0</span>
@@ -198,6 +201,13 @@
       <button class="menu-btn" id="exchangeBtn" data-i18n="btn_exchange">Eintauschen (2 🪙 pro Zombie)</button>
     </div>
     <div class="note-box" data-i18n="wallet_note">Münzen sind eine virtuelle Spielwährung nur für den Shop. Kein echtes Geld, keine Kryptowährung.</div>
+    <div class="lang-section">
+      <div class="lang-section-label" data-i18n="wallet_language_label">Language</div>
+      <div class="lang-options">
+        <button class="lang-option" id="langOptionEn" data-lang="en"><span class="flag">🇬🇧</span><span>English</span></button>
+        <button class="lang-option" id="langOptionFa" data-lang="fa"><span class="flag">🇮🇷</span><span>فارسی</span></button>
+      </div>
+    </div>
     <button class="menu-btn secondary" id="toHomeBtn" data-i18n="btn_to_home">Zur Startseite</button>
   </main>
 
@@ -300,6 +310,7 @@
       wallet_collected_suffix: 'zombies collected — not yet exchanged',
       btn_exchange: 'Exchange (2 🪙 per zombie)',
       wallet_note: 'Coins are a virtual in-game currency for the shop only. No real money, no cryptocurrency.',
+      wallet_language_label: 'Language',
       btn_to_home: 'Back to Home',
       tournament_soon: 'Coming soon',
       tournament_title: 'Tournament',
@@ -336,6 +347,7 @@
       wallet_collected_suffix: 'زامبی جمع‌آوری‌شده — هنوز معاوضه نشده',
       btn_exchange: 'معاوضه (۲ 🪙 برای هر زامبی)',
       wallet_note: 'سکه‌ها فقط یک ارز مجازی درون‌بازی برای فروشگاه هستند؛ نه پول واقعی، نه ارز دیجیتال.',
+      wallet_language_label: 'زبان',
       btn_to_home: 'بازگشت به صفحه اصلی',
       tournament_soon: 'به‌زودی',
       tournament_title: 'مسابقه',
@@ -368,7 +380,8 @@
       const key = el.getAttribute('data-i18n');
       if (typeof I18N[lang][key] === 'string') el.textContent = I18N[lang][key];
     });
-    document.getElementById('langToggleLabel').textContent = lang.toUpperCase();
+    document.getElementById('langOptionEn').classList.toggle('active', lang === 'en');
+    document.getElementById('langOptionFa').classList.toggle('active', lang === 'fa');
     refreshTopUI();
     updateWeaponHud();
     document.getElementById('noAttemptsText').textContent = I18N[lang].no_attempts_text(MAX_ATTEMPTS);
@@ -1242,9 +1255,8 @@
   loop();
   refreshTopUI();
 
-  document.getElementById('langToggle').addEventListener('click', () => {
-    applyLanguage(currentLang === 'en' ? 'fa' : 'en');
-  });
+  document.getElementById('langOptionEn').addEventListener('click', () => applyLanguage('en'));
+  document.getElementById('langOptionFa').addEventListener('click', () => applyLanguage('fa'));
   applyLanguage(currentLang);
 
   if (window.Telegram && window.Telegram.WebApp){
