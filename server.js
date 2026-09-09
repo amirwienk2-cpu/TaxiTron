@@ -45,7 +45,10 @@ const { URL } = require('url');
 const PORT = process.env.PORT || 8787;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'CHANGE_ME_BEFORE_PRODUCTION';
-const DATA_DIR = path.join(__dirname, 'data');
+// IMPORTANT: point this at a mounted Railway Volume (e.g. DATA_DIR=/data),
+// otherwise all player balances and the deposit dedup bookmark are wiped on
+// every redeploy, since a plain container filesystem is not persistent.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 
 /* ---- TON deposit watcher config ---- */
@@ -397,6 +400,10 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Coin Runner economy server listening on :${PORT}`);
+  console.log(`Data directory: ${DATA_DIR}`);
+  if (!process.env.DATA_DIR) {
+    console.warn('WARNING: DATA_DIR is not set — using a local folder inside the container. On Railway this is WIPED on every redeploy (all player balances lost). Attach a Volume and set DATA_DIR to its mount path.');
+  }
   if (!BOT_TOKEN) {
     console.warn('WARNING: BOT_TOKEN is not set — /api/auth will reject all requests.');
   }
