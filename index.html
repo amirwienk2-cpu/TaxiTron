@@ -595,6 +595,7 @@
       tournamentTitle: '🏆 Zombie Tournament',
       tournamentDesc: 'Weekly leaderboard — collect more zombies than the competition.',
       prizePoolTitle: '🏆 Weekly Prize Pool', place1: '1st Place', place2: '2nd Place', place3: '3rd Place',
+      dayUnit: 'd', hourUnit: 'h', minuteUnit: 'm',
       nextReset: 'Next reset in',
       youTag: 'YOU', youName: 'You',
       walletSub: 'Coin balance',
@@ -669,6 +670,7 @@
       tournamentTitle: '🏆 مسابقه زامبی',
       tournamentDesc: 'جدول امتیازات هفتگی — زامبی‌های بیشتری نسبت به رقبا جمع کن.',
       prizePoolTitle: '🏆 جایزه هفتگی', place1: 'مقام اول', place2: 'مقام دوم', place3: 'مقام سوم',
+      dayUnit: 'ر', hourUnit: 'س', minuteUnit: 'د',
       nextReset: 'بازنشانی بعدی در',
       youTag: 'شما', youName: 'شما',
       walletSub: 'موجودی سکه',
@@ -1060,11 +1062,12 @@
     const now = new Date();
     const nextReset = getNextBerlinSundayMidnight(now);
     let diff = Math.max(0, nextReset - now);
-    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
+    const totalMinutes = Math.floor(diff / 60000);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = String(Math.floor((totalMinutes % 1440) / 60)).padStart(2, '0');
+    const minutes = String(totalMinutes % 60).padStart(2, '0');
     const el = document.getElementById('tournamentCountdown');
-    if (el) el.textContent = h + ':' + m + ':' + s;
+    if (el) el.textContent = days + t('dayUnit') + ' ' + hours + t('hourUnit') + ' ' + minutes + t('minuteUnit');
   }
   setInterval(updateTournamentCountdown, 1000);
 
