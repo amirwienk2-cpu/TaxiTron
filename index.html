@@ -308,6 +308,15 @@
   .tournament-timer{ text-align:center; background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2a3d22; border-radius:14px; padding:14px; font-size:0.85rem; color:#a8a3b8; }
   .tournament-timer .label{ font-size:0.7rem; letter-spacing:.4px; color:#7cff6b; text-transform:uppercase; }
   .tournament-timer .clock{ font-size:1.3rem; font-weight:900; color:#ffd93d; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .prize-pool{ background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #3a3524; border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+  .prize-pool-title{ font-size:0.76rem; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:#a8a3b8; text-align:center; }
+  .prize-row{ display:flex; align-items:center; gap:10px; background:#15151f; border:1px solid #262436; border-radius:10px; padding:10px 12px; }
+  .prize-row.gold{ border-color:rgba(255,217,61,.4); box-shadow:0 0 0 1px rgba(255,217,61,.15) inset; }
+  .prize-row.silver{ border-color:rgba(200,200,210,.3); }
+  .prize-row.bronze{ border-color:rgba(205,127,50,.35); }
+  .prize-medal{ font-size:1.3rem; width:26px; text-align:center; flex-shrink:0; }
+  .prize-place{ flex:1; font-size:0.85rem; font-weight:700; color:#fff; }
+  .prize-amount{ font-size:0.95rem; font-weight:900; color:#7fc4ff; white-space:nowrap; }
   .leaderboard{ display:flex; flex-direction:column; gap:8px; }
   .lb-row{ display:flex; align-items:center; gap:10px; background:#15151f; border:1px solid #262436; border-radius:12px; padding:10px 12px; }
   .lb-row.me{ border-color:#7cff6b; background:#10200f; }
@@ -385,6 +394,24 @@
     <div class="tournament-timer">
       <div class="label" data-i18n="nextReset">Next reset in</div>
       <div class="clock" id="tournamentCountdown">--:--:--</div>
+    </div>
+    <div class="prize-pool">
+      <div class="prize-pool-title" data-i18n="prizePoolTitle">🏆 Weekly Prize Pool</div>
+      <div class="prize-row gold">
+        <div class="prize-medal">🥇</div>
+        <div class="prize-place" data-i18n="place1">1st Place</div>
+        <div class="prize-amount">3 💎 TON</div>
+      </div>
+      <div class="prize-row silver">
+        <div class="prize-medal">🥈</div>
+        <div class="prize-place" data-i18n="place2">2nd Place</div>
+        <div class="prize-amount">2 💎 TON</div>
+      </div>
+      <div class="prize-row bronze">
+        <div class="prize-medal">🥉</div>
+        <div class="prize-place" data-i18n="place3">3rd Place</div>
+        <div class="prize-amount">1 💎 TON</div>
+      </div>
     </div>
     <div class="leaderboard" id="leaderboardList"></div>
   </main>
@@ -567,6 +594,7 @@
       buyOwned: 'Active ✓',
       tournamentTitle: '🏆 Zombie Tournament',
       tournamentDesc: 'Weekly leaderboard — collect more zombies than the competition.',
+      prizePoolTitle: '🏆 Weekly Prize Pool', place1: '1st Place', place2: '2nd Place', place3: '3rd Place',
       nextReset: 'Next reset in',
       youTag: 'YOU', youName: 'You',
       walletSub: 'Coin balance',
@@ -640,6 +668,7 @@
       buyOwned: 'فعال ✓',
       tournamentTitle: '🏆 مسابقه زامبی',
       tournamentDesc: 'جدول امتیازات هفتگی — زامبی‌های بیشتری نسبت به رقبا جمع کن.',
+      prizePoolTitle: '🏆 جایزه هفتگی', place1: 'مقام اول', place2: 'مقام دوم', place3: 'مقام سوم',
       nextReset: 'بازنشانی بعدی در',
       youTag: 'شما', youName: 'شما',
       walletSub: 'موجودی سکه',
@@ -1007,14 +1036,29 @@
       list.appendChild(row);
     });
   }
+  function berlinOffsetMinutes(date){
+    // Difference between Europe/Berlin wall-clock time and UTC wall-clock
+    // time for the same instant (handles CET/CEST automatically).
+    const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' });
+    const berlinStr = date.toLocaleString('en-US', { timeZone: 'Europe/Berlin' });
+    return (new Date(berlinStr) - new Date(utcStr)) / 60000;
+  }
+  function getNextBerlinSundayMidnight(now){
+    const offsetMin = berlinOffsetMinutes(now);
+    const berlinNow = new Date(now.getTime() + offsetMin * 60000);
+    const dow = berlinNow.getUTCDay(); // 0 = Sunday, using UTC getters on the shifted date = Berlin wall clock
+    const daysUntilSunday = (7 - dow) % 7;
+    let target = new Date(Date.UTC(
+      berlinNow.getUTCFullYear(), berlinNow.getUTCMonth(), berlinNow.getUTCDate() + daysUntilSunday, 0, 0, 0, 0
+    ));
+    if (target <= berlinNow) target = new Date(target.getTime() + 7 * 86400000);
+    // Convert the Berlin wall-clock target back to a real UTC instant.
+    const targetOffsetMin = berlinOffsetMinutes(new Date(target.getTime() - offsetMin * 60000));
+    return new Date(target.getTime() - targetOffsetMin * 60000);
+  }
   function updateTournamentCountdown(){
     const now = new Date();
-    const day = now.getDay(); // 0 = Sunday
-    const daysUntilSunday = (7 - day) % 7;
-    const nextReset = new Date(now);
-    nextReset.setDate(now.getDate() + daysUntilSunday);
-    nextReset.setHours(0,0,0,0);
-    if (nextReset <= now) nextReset.setDate(nextReset.getDate() + 7);
+    const nextReset = getNextBerlinSundayMidnight(now);
     let diff = Math.max(0, nextReset - now);
     const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
     const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
