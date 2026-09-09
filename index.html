@@ -111,6 +111,15 @@
     color:#ffd93d; font-size:0.78rem; font-family:monospace; word-break:break-all; margin-bottom:12px;
     letter-spacing:.2px;
   }
+  .deposit-memo-box{
+    background:rgba(124,196,255,.08); border:1px solid rgba(127,196,255,.35); border-radius:12px;
+    padding:12px 14px; margin-bottom:12px;
+  }
+  .deposit-memo-label{ font-size:0.74rem; color:#a8a3b8; margin-bottom:6px; line-height:1.4; }
+  .deposit-memo-value{
+    font-size:1.05rem; font-weight:900; color:#7fc4ff; font-family:monospace;
+    letter-spacing:.5px; margin-bottom:10px; word-break:break-all;
+  }
 
   .stat-row{ display:flex; gap:10px; }
   .stat-card{ flex:1; background:#15151f; border:1px solid #262436; border-radius:12px; padding:12px 12px; }
@@ -413,9 +422,14 @@
         <div class="withdraw-balance" data-i18n="depositDesc">Send TON to this address to top up your in-game balance.</div>
         <div class="deposit-address" id="depositAddress">UQD2uyyNj1ZqCz59zlM7ej5aPr6raYoiTgbUP9bVeWlsbpPt</div>
         <button class="menu-btn secondary" id="depositCopyBtn" data-i18n="depositCopyBtn">📋 Copy Address</button>
+        <div class="deposit-memo-box">
+          <div class="deposit-memo-label" data-i18n="depositMemoLabel">Important: include this code as the transfer comment/memo, or your deposit can't be matched to your account automatically.</div>
+          <div class="deposit-memo-value" id="depositMemo">—</div>
+          <button class="menu-btn secondary" id="depositMemoCopyBtn" data-i18n="depositMemoCopyBtn">📋 Copy Code</button>
+        </div>
         <div class="withdraw-status" id="depositStatus"></div>
       </div>
-      <div class="note-box" data-i18n="depositNote">Only send TON on the TON network. Deposits are reviewed and credited to your balance after confirmation.</div>
+      <div class="note-box" data-i18n="depositNote">Only send TON on the TON network. Deposits are detected automatically within a couple of minutes once the memo/comment matches your code above.</div>
     </div>
 
     <div class="wallet-tab-panel" id="walletPanelWithdraw">
@@ -530,7 +544,10 @@
       withdrawPendingStatus: 'Pending', withdrawCompletedStatus: 'Completed',
       depositTitle: 'Deposit TON', depositDesc: 'Send TON to this address to top up your in-game balance.',
       depositCopyBtn: '📋 Copy Address', depositCopied: '✅ Address copied to clipboard',
-      depositNote: 'Only send TON on the TON network. Deposits are reviewed and credited to your balance after confirmation.',
+      depositMemoLabel: 'Important: include this code as the transfer comment/memo, or your deposit can\'t be matched to your account automatically.',
+      depositMemoCopyBtn: '📋 Copy Code', depositMemoCopied: '✅ Code copied to clipboard',
+      depositMemoUnavailable: 'Open this app inside Telegram to get your personal deposit code.',
+      depositNote: 'Only send TON on the TON network. Deposits are detected automatically within a couple of minutes once the memo/comment matches your code above.',
       buyOwned: 'Active ✓',
       tournamentTitle: '🏆 Zombie Tournament',
       tournamentDesc: 'Weekly leaderboard — collect more zombies than the competition.',
@@ -600,7 +617,10 @@
       withdrawPendingStatus: 'در انتظار', withdrawCompletedStatus: 'انجام شد',
       depositTitle: 'واریز تون', depositDesc: 'برای افزایش موجودی درون‌بازی، تون را به این آدرس ارسال کنید.',
       depositCopyBtn: '📋 کپی آدرس', depositCopied: '✅ آدرس کپی شد',
-      depositNote: 'فقط از شبکه TON استفاده کنید. واریزها پس از بررسی و تأیید به موجودی شما اضافه می‌شوند.',
+      depositMemoLabel: 'مهم: این کد را به‌عنوان توضیح/یادداشت (memo) انتقال وارد کنید، در غیر این صورت واریز شما به‌طور خودکار به حساب شما تطبیق داده نمی‌شود.',
+      depositMemoCopyBtn: '📋 کپی کد', depositMemoCopied: '✅ کد کپی شد',
+      depositMemoUnavailable: 'برای دریافت کد شخصی واریز، این اپ را داخل تلگرام باز کنید.',
+      depositNote: 'فقط از شبکه TON استفاده کنید. واریزها ظرف چند دقیقه پس از تطبیق یادداشت/توضیح با کد بالا به‌طور خودکار شناسایی می‌شوند.',
       buyOwned: 'فعال ✓',
       tournamentTitle: '🏆 مسابقه زامبی',
       tournamentDesc: 'جدول امتیازات هفتگی — زامبی‌های بیشتری نسبت به رقبا جمع کن.',
@@ -1021,8 +1041,31 @@
       serverSession.token = data.token;
       serverSession.online = true;
       applyServerState(data.state);
+      loadDepositMemo();
     } catch (e) {
       serverSession.online = false; // fall back to local economy silently
+    }
+  }
+
+  /* ================= DEPOSIT MEMO CODE ================= */
+  async function loadDepositMemo(){
+    const memoEl = document.getElementById('depositMemo');
+    if (!memoEl) return;
+    if (!serverSession.online || !serverSession.token){
+      memoEl.textContent = t('depositMemoUnavailable');
+      return;
+    }
+    try {
+      const res = await fetch(SERVER_URL + '/api/deposit-info?token=' + encodeURIComponent(serverSession.token));
+      if (!res.ok) throw new Error('deposit-info failed');
+      const data = await res.json();
+      memoEl.textContent = data.memo;
+      if (data.address){
+        const addrEl = document.getElementById('depositAddress');
+        if (addrEl) addrEl.textContent = data.address;
+      }
+    } catch (e) {
+      memoEl.textContent = t('depositMemoUnavailable');
     }
   }
 
@@ -1179,6 +1222,31 @@
       statusEl.className = 'withdraw-status success';
     } catch (e) {
       statusEl.textContent = address;
+      statusEl.className = 'withdraw-status';
+    }
+  });
+
+  document.getElementById('depositMemoCopyBtn').addEventListener('click', async () => {
+    const memo = document.getElementById('depositMemo').textContent.trim();
+    const statusEl = document.getElementById('depositStatus');
+    if (!memo || memo === '—') return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(memo);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = memo;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      statusEl.textContent = t('depositMemoCopied');
+      statusEl.className = 'withdraw-status success';
+    } catch (e) {
+      statusEl.textContent = memo;
       statusEl.className = 'withdraw-status';
     }
   });
