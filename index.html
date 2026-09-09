@@ -1026,24 +1026,33 @@
   const serverSession = { token: null, online: false };
 
   async function initServerSession(){
-    if (!SERVER_URL) return; // no server configured yet -> stays in local/offline mode
+    if (!SERVER_URL) { window.__depositDebug = 'no-server-url'; loadDepositMemo(); return; }
     try {
       const tg = window.Telegram && window.Telegram.WebApp;
       const initData = tg && tg.initData;
-      if (!initData) return; // not running inside Telegram -> stays offline
+      if (!tg) { window.__depositDebug = 'no-telegram-object'; return; }
+      if (!initData) { window.__depositDebug = 'empty-initdata'; return; }
       const res = await fetch(SERVER_URL + '/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData })
       });
-      if (!res.ok) throw new Error('auth failed');
+      if (!res.ok) {
+        let msg = 'auth-http-' + res.status;
+        try { const errData = await res.json(); if (errData && errData.error) msg = errData.error; } catch(e2){}
+        window.__depositDebug = msg;
+        throw new Error(msg);
+      }
       const data = await res.json();
       serverSession.token = data.token;
       serverSession.online = true;
+      window.__depositDebug = 'ok';
       applyServerState(data.state);
-      loadDepositMemo();
     } catch (e) {
+      if (!window.__depositDebug) window.__depositDebug = 'fetch-error: ' + (e && e.message);
       serverSession.online = false; // fall back to local economy silently
+    } finally {
+      loadDepositMemo();
     }
   }
 
@@ -1052,12 +1061,12 @@
     const memoEl = document.getElementById('depositMemo');
     if (!memoEl) return;
     if (!serverSession.online || !serverSession.token){
-      memoEl.textContent = t('depositMemoUnavailable');
+      memoEl.textContent = 'Debug: ' + (window.__depositDebug || 'unknown') + ' — ' + t('depositMemoUnavailable');
       return;
     }
     try {
       const res = await fetch(SERVER_URL + '/api/deposit-info?token=' + encodeURIComponent(serverSession.token));
-      if (!res.ok) throw new Error('deposit-info failed');
+      if (!res.ok) throw new Error('deposit-info-http-' + res.status);
       const data = await res.json();
       memoEl.textContent = data.memo;
       if (data.address){
@@ -1065,7 +1074,7 @@
         if (addrEl) addrEl.textContent = data.address;
       }
     } catch (e) {
-      memoEl.textContent = t('depositMemoUnavailable');
+      memoEl.textContent = 'Debug: ' + (e && e.message) + ' — ' + t('depositMemoUnavailable');
     }
   }
 
