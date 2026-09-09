@@ -43,6 +43,7 @@ const path = require('path');
 const { URL } = require('url');
 
 const PORT = process.env.PORT || 8787;
+const processStartTime = Date.now();
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'CHANGE_ME_BEFORE_PRODUCTION';
 // Secret for the /api/admin/* endpoints (viewing and completing withdrawal
@@ -327,7 +328,15 @@ const server = http.createServer(async (req, res) => {
         SESSION_SECRET: { set: SESSION_SECRET !== 'CHANGE_ME_BEFORE_PRODUCTION', length: SESSION_SECRET.length },
         DATA_DIR: { value: DATA_DIR },
         ADMIN_SECRET: { set: !!ADMIN_SECRET, length: ADMIN_SECRET.length },
-        TONCENTER_API_KEY: { set: !!TONCENTER_API_KEY }
+        TONCENTER_API_KEY: { set: !!TONCENTER_API_KEY },
+        // Railway auto-provides these — use them to cross-check that the
+        // container answering THIS request is really the one shown as
+        // "Active" in the dashboard.
+        RAILWAY_DEPLOYMENT_ID: process.env.RAILWAY_DEPLOYMENT_ID || null,
+        RAILWAY_SERVICE_ID: process.env.RAILWAY_SERVICE_ID || null,
+        RAILWAY_ENVIRONMENT_NAME: process.env.RAILWAY_ENVIRONMENT_NAME || null,
+        RAILWAY_REPLICA_ID: process.env.RAILWAY_REPLICA_ID || null,
+        processStartedAt: new Date(processStartTime).toISOString()
       });
     }
 
