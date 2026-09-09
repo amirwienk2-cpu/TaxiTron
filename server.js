@@ -321,7 +321,7 @@ const server = http.createServer(async (req, res) => {
      * its length, never the actual value. Purely for diagnosing "why does
      * the server say X is not set" without digging through logs.
      */
-    if (req.method === 'GET' && url.pathname === '/api/debug/env-status') {
+    if (req.method === 'GET' && (url.pathname === '/api/debug/env-status' || url.pathname === '/api/debug/env-status-check2')) {
       return sendJson(res, 200, {
         BOT_TOKEN: { set: !!BOT_TOKEN, length: BOT_TOKEN.length },
         SESSION_SECRET: { set: SESSION_SECRET !== 'CHANGE_ME_BEFORE_PRODUCTION', length: SESSION_SECRET.length },
@@ -428,7 +428,7 @@ const server = http.createServer(async (req, res) => {
      * (the in-app history only shows a truncated one), so you can pay them out
      * manually from your own wallet. Requires ADMIN_SECRET to be set.
      */
-    if (req.method === 'GET' && url.pathname === '/api/admin/pending-withdrawals') {
+    if (req.method === 'GET' && (url.pathname === '/api/admin/pending-withdrawals' || url.pathname === '/api/admin/withdrawals-list2')) {
       if (!ADMIN_SECRET) throw new Error('Admin endpoints are disabled: ADMIN_SECRET is not set.');
       if (url.searchParams.get('secret') !== ADMIN_SECRET) throw new Error('Invalid admin secret.');
       const pending = [];
