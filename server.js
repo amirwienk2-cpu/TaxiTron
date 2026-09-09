@@ -35,6 +35,8 @@
  *      (listens on PORT env var, default 8787)
  */
 
+console.log('Coin Runner economy server module loaded.'); // marker: forces a genuinely new build, not a stale redeploy
+
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
