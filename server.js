@@ -268,6 +268,7 @@ function sendJson(res, status, obj) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
