@@ -395,6 +395,18 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { state: publicState(u), coinsGained, tonGained: Number(tonGain.toFixed(6)) });
     }
 
+    /* ---- GET /api/withdrawals?token=... -> { withdrawals } ----
+     * Lets the client poll the status of its own withdrawal requests (e.g.
+     * to notice when an admin flips one from 'pending' to 'completed' via
+     * /api/admin/complete-withdrawal), without needing the admin secret.
+     */
+    if (req.method === 'GET' && url.pathname === '/api/withdrawals') {
+      const token = url.searchParams.get('token');
+      const uid = verifyToken(token);
+      const u = getUser(uid);
+      return sendJson(res, 200, { withdrawals: u.withdrawals || [] });
+    }
+
     /* ---- POST /api/withdraw  { token, address, amount } -> { state, withdrawal } ----
      * This validates and deducts from the server-authoritative TON balance and
      * files the request as "pending" in the user's record. It does NOT send
