@@ -959,20 +959,40 @@
   }
 
   /* ================= TOURNAMENT ================= */
-  const lbBots = [
-    { name: 'Rotting_Rex', avatar: '🧟', score: 342 },
-    { name: 'GraveyardGina', avatar: '🧟‍♀️', score: 289 },
-    { name: 'ToxicTaxiTom', avatar: '💀', score: 231 },
-    { name: 'BiteMeBrenda', avatar: '🧟‍♀️', score: 178 },
-    { name: 'CrimsonCrash', avatar: '🩸', score: 122 },
-    { name: 'ShamblerSam', avatar: '🧟', score: 74 },
-    { name: 'RookieRiot', avatar: '💀', score: 21 }
-  ];
-  function renderLeaderboard(){
+  async function fetchLeaderboard(){
+    if (!SERVER_URL) return null;
+    try {
+      let url = SERVER_URL + '/api/leaderboard';
+      if (serverSession.online && serverSession.token) url += '?token=' + encodeURIComponent(serverSession.token);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('leaderboard-http-' + res.status);
+      return await res.json();
+    } catch (e) {
+      return null; // offline / server unreachable -> caller falls back to local-only view
+    }
+  }
+  async function renderLeaderboard(){
     const list = document.getElementById('leaderboardList');
-    const entries = lbBots.map(b => ({ name:b.name, avatar:b.avatar, score:b.score, me:false }));
-    entries.push({ name:t('youName'), avatar:'🚕', score: best, me:true });
-    entries.sort((a,b) => b.score - a.score);
+    const data = await fetchLeaderboard();
+    let entries;
+    if (data && Array.isArray(data.top)) {
+      entries = data.top.map(e => ({ name: e.name, avatar: '🧟', score: e.best, me: false }));
+      if (data.you) {
+        if (data.you.rank >= 1 && data.you.rank <= entries.length) {
+          entries[data.you.rank - 1].name = t('youName');
+          entries[data.you.rank - 1].avatar = '🚕';
+          entries[data.you.rank - 1].me = true;
+        } else {
+          entries.push({ name: t('youName'), avatar: '🚕', score: data.you.best, me: true });
+        }
+      } else if (entries.length === 0) {
+        entries.push({ name: t('youName'), avatar: '🚕', score: best, me: true });
+      }
+    } else {
+      // no real data available (offline / not authenticated yet) -> local-only fallback
+      entries = [{ name: t('youName'), avatar: '🚕', score: best, me: true }];
+    }
+    entries.sort((a, b) => b.score - a.score);
     list.innerHTML = '';
     entries.forEach((e, i) => {
       const rank = i+1;
@@ -1078,7 +1098,7 @@
     const memoEl = document.getElementById('depositMemo');
     if (!memoEl) return;
     if (!serverSession.online || !serverSession.token){
-      memoEl.textContent = 'Debug: ' + (window.__depositDebug || 'unknown') + ' — ' + t('depositMemoUnavailable');
+      memoEl.textContent = t('depositMemoUnavailable');
       return;
     }
     try {
@@ -1091,7 +1111,7 @@
         if (addrEl) addrEl.textContent = data.address;
       }
     } catch (e) {
-      memoEl.textContent = 'Debug: ' + (e && e.message) + ' — ' + t('depositMemoUnavailable');
+      memoEl.textContent = t('depositMemoUnavailable');
     }
   }
 
@@ -1340,6 +1360,7 @@
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
     refreshTopUI();
+    if (name === 'tournament') renderLeaderboard();
   }
   navButtons.forEach(b => b.addEventListener('click', () => {
     if (b.dataset.screen === 'game'){ enterGame(); }
