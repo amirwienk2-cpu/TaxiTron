@@ -94,8 +94,9 @@ if (fs.existsSync(DATA_FILE)) {
   try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) { db = {}; }
 }
 if (!db.__meta) {
-  db.__meta = { lastDepositLt: '0', processedDepositHashes: [] };
+  db.__meta = { lastDepositLt: '0', processedDepositHashes: [], lastTournamentPayout: null };
 }
+if (db.__meta.lastTournamentPayout === undefined) db.__meta.lastTournamentPayout = null; // upgrade older data files
 function saveDb() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
 }
@@ -155,6 +156,67 @@ function tonCenterGet(pathAndQuery) {
       });
     }).on('error', reject);
   });
+}
+
+/* ================= Weekly tournament payout ================= */
+// Every Sunday at 00:00 Europe/Berlin time: pay TON prizes to the top 3
+// players by their best single-run zombie count, then reset everyone's
+// `best` to 0 so the next week starts fresh. Runs on a 60s check loop;
+// db.__meta.lastTournamentPayout (a Berlin-local date string) guards
+// against paying out twice for the same Sunday, even across restarts.
+const TOURNAMENT_PRIZES_TON = [3, 2, 1]; // index 0 = 1st place, 1 = 2nd, 2 = 3rd
+
+function getBerlinTimeParts() {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Berlin',
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23'
+  });
+  const parts = {};
+  fmt.formatToParts(new Date()).forEach((p) => { parts[p.type] = p.value; });
+  return {
+    weekday: parts.weekday, // e.g. 'Sun'
+    dateKey: `${parts.year}-${parts.month}-${parts.day}`,
+    hour: Number(parts.hour)
+  };
+}
+
+function payOutWeeklyTournament() {
+  const entries = Object.keys(db)
+    .filter((k) => k !== '__meta')
+    .map((uid) => ({ uid, best: db[uid].best || 0 }))
+    .sort((a, b) => b.best - a.best);
+
+  TOURNAMENT_PRIZES_TON.forEach((prize, i) => {
+    const winner = entries[i];
+    if (!winner || winner.best <= 0) return; // don't pay out an empty/tied-at-zero slot
+    const u = db[winner.uid];
+    u.ton += prize;
+    console.log(`Tournament prize: ${prize} TON -> user ${winner.uid} (rank ${i + 1}, best ${winner.best})`);
+  });
+
+  // Fair weekly restart: everyone's best run count goes back to 0.
+  Object.keys(db).forEach((uid) => {
+    if (uid === '__meta') return;
+    db[uid].best = 0;
+  });
+}
+
+function checkTournamentPayout() {
+  try {
+    const { weekday, dateKey, hour } = getBerlinTimeParts();
+    if (weekday !== 'Sun' || hour !== 0) return;
+    if (db.__meta.lastTournamentPayout === dateKey) return; // already paid out this Sunday
+    payOutWeeklyTournament();
+    db.__meta.lastTournamentPayout = dateKey;
+    saveDb();
+  } catch (err) {
+    console.error('Tournament payout check failed:', err.message);
+  }
 }
 
 async function pollDeposits() {
@@ -541,4 +603,6 @@ server.listen(PORT, () => {
   }
   pollDeposits(); // run once immediately, then on the interval below
   setInterval(pollDeposits, DEPOSIT_POLL_INTERVAL_MS);
+  checkTournamentPayout(); // catch a due payout immediately if the server restarted around Sunday 00:00
+  setInterval(checkTournamentPayout, 60 * 1000);
 });
