@@ -45,10 +45,13 @@ const { URL } = require('url');
 const PORT = process.env.PORT || 8787;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'CHANGE_ME_BEFORE_PRODUCTION';
-// IMPORTANT: point this at a mounted Railway Volume (e.g. DATA_DIR=/data),
-// otherwise all player balances and the deposit dedup bookmark are wiped on
-// every redeploy, since a plain container filesystem is not persistent.
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+// IMPORTANT: point this at a mounted Railway Volume, otherwise all player
+// balances and the deposit dedup bookmark are wiped on every redeploy, since
+// a plain container filesystem is not persistent. Railway automatically sets
+// RAILWAY_VOLUME_MOUNT_PATH once a Volume is attached to this service, so
+// that's picked up automatically — DATA_DIR only needs to be set by hand if
+// you want to override that path for some reason.
+const DATA_DIR = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 
 /* ---- TON deposit watcher config ---- */
@@ -281,7 +284,16 @@ function readBody(req) {
 
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
-    return sendJson(res, 204, {});
+    // A 204 response must not carry a body — some strict WebView fetch
+    // implementations (notably Telegram's in-app iOS browser) treat a 204
+    // with a Content-Length/body mismatch as a network failure ("Load
+    // failed"), which silently breaks every POST/GET call from the app.
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+    });
+    return res.end();
   }
 
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -401,8 +413,8 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Coin Runner economy server listening on :${PORT}`);
   console.log(`Data directory: ${DATA_DIR}`);
-  if (!process.env.DATA_DIR) {
-    console.warn('WARNING: DATA_DIR is not set — using a local folder inside the container. On Railway this is WIPED on every redeploy (all player balances lost). Attach a Volume and set DATA_DIR to its mount path.');
+  if (!process.env.DATA_DIR && !process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+    console.warn('WARNING: No Volume detected (DATA_DIR/RAILWAY_VOLUME_MOUNT_PATH not set) — using a local folder inside the container. On Railway this is WIPED on every redeploy (all player balances lost). Attach a Volume to this service.');
   }
   if (!BOT_TOKEN) {
     console.warn('WARNING: BOT_TOKEN is not set — /api/auth will reject all requests.');
