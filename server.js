@@ -44,6 +44,334 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 
+const ADMIN_PANEL_HTML = `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxitron — Withdrawals</title>
+<style>
+  :root{
+    --bg: #10131a;
+    --panel: #171b24;
+    --panel-border: #262c3a;
+    --text: #e7e9ee;
+    --text-dim: #8b93a3;
+    --accent: #ffb84d;
+    --good: #52d17c;
+    --danger: #ff5c5c;
+    --mono: 'SF Mono', 'Consolas', 'Menlo', monospace;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height:100vh;
+    padding: 32px 16px 80px;
+  }
+  .wrap{ max-width: 640px; margin: 0 auto; }
+  header{ margin-bottom: 24px; }
+  h1{
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .sub{ color: var(--text-dim); font-size: 13px; }
+
+  .secret-row{
+    display:flex;
+    gap:8px;
+    margin-bottom: 24px;
+  }
+  input[type="password"], input[type="text"]{
+    flex:1;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--mono);
+    min-width: 0;
+  }
+  input:focus{ outline: 1.5px solid var(--accent); border-color: var(--accent); }
+  button{
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  button:active{ transform: scale(0.97); }
+  button:disabled{ opacity: 0.45; cursor: default; }
+  .btn-primary{ background: var(--accent); color: #1a1206; }
+  .btn-primary:hover:not(:disabled){ opacity: .9; }
+  .btn-ghost{ background: transparent; color: var(--text-dim); border: 1px solid var(--panel-border); }
+  .btn-ghost:hover:not(:disabled){ color: var(--text); border-color: var(--text-dim); }
+  .btn-complete{ background: var(--good); color: #06210f; }
+  .btn-complete:hover:not(:disabled){ opacity: .88; }
+
+  .toolbar{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin-bottom: 14px;
+  }
+  .count{ font-size: 13px; color: var(--text-dim); }
+  .count b{ color: var(--text); }
+
+  .list{ display:flex; flex-direction:column; gap:10px; }
+  .row{
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .row-info{ min-width:0; flex:1; }
+  .row-amount{ font-size: 16px; font-weight: 700; color: var(--accent); }
+  .row-uid{ font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .row-address{
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text);
+    margin-top: 6px;
+    word-break: break-all;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .copy-btn{
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 2px 4px;
+    font-size: 12px;
+    flex: 0 0 auto;
+  }
+  .copy-btn:hover{ color: var(--text); }
+  .row-time{ font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  .row-action{ flex: 0 0 auto; }
+
+  .empty{
+    text-align:center;
+    color: var(--text-dim);
+    padding: 48px 20px;
+    font-size: 14px;
+  }
+  .status-msg{
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display:none;
+  }
+  .status-msg.show{ display:block; }
+  .status-msg.error{ background: rgba(255,92,92,.12); color: var(--danger); }
+  .status-msg.ok{ background: rgba(82,209,124,.12); color: var(--good); }
+
+  .spinner{
+    width:14px; height:14px;
+    border: 2px solid rgba(255,255,255,.25);
+    border-top-color: #1a1206;
+    border-radius:50%;
+    display:inline-block;
+    animation: spin .7s linear infinite;
+    vertical-align: -2px;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .toast{
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Ausstehende Auszahlungen</h1>
+    <div class="sub">Taxitron Admin</div>
+  </header>
+
+  <div class="secret-row">
+    <input type="password" id="secretInput" placeholder="Admin-Secret" autocomplete="off">
+    <button class="btn-primary" id="loadBtn">Laden</button>
+  </div>
+
+  <div class="status-msg" id="statusMsg"></div>
+
+  <div id="content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const SERVER_URL = 'https://taxitron-production.up.railway.app';
+  const SECRET_STORAGE_KEY = 'taxitron_admin_secret';
+
+  const secretInput = document.getElementById('secretInput');
+  const loadBtn = document.getElementById('loadBtn');
+  const content = document.getElementById('content');
+  const statusMsg = document.getElementById('statusMsg');
+  const toast = document.getElementById('toast');
+
+  let autoRefreshTimer = null;
+
+  // Convenience only — this stays in this browser's localStorage, never sent anywhere but your own server.
+  const savedSecret = localStorage.getItem(SECRET_STORAGE_KEY);
+  if (savedSecret) secretInput.value = savedSecret;
+
+  function showStatus(msg, kind){
+    statusMsg.textContent = msg;
+    statusMsg.className = 'status-msg show' + (kind ? ' ' + kind : '');
+  }
+  function hideStatus(){
+    statusMsg.className = 'status-msg';
+  }
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+  function fmtTime(ts){
+    const d = new Date(ts);
+    return d.toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+  function fmtAmount(a){
+    return Number(a).toFixed(2) + ' TON';
+  }
+
+  function renderRows(withdrawals){
+    if (!withdrawals.length){
+      content.innerHTML = '<div class="empty">Keine ausstehenden Auszahlungen.</div>';
+      return;
+    }
+    content.innerHTML = '<div class="toolbar"><span class="count">' +
+      '<b>' + withdrawals.length + '</b> ausstehend</span>' +
+      '<button class="btn-ghost" id="refreshBtn">Aktualisieren</button></div>' +
+      '<div class="list" id="rowList"></div>';
+
+    document.getElementById('refreshBtn').addEventListener('click', () => loadPending());
+
+    const list = document.getElementById('rowList');
+    withdrawals.forEach(w => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML =
+        '<div class="row-info">' +
+          '<div class="row-amount">' + fmtAmount(w.amount) + '</div>' +
+          '<div class="row-uid">User ' + w.uid + '</div>' +
+          '<div class="row-address">' +
+            '<span class="addr-text">' + w.address + '</span>' +
+            '<button class="copy-btn" title="Adresse kopieren">⧉</button>' +
+          '</div>' +
+          '<div class="row-time">' + fmtTime(w.ts) + '</div>' +
+        '</div>' +
+        '<div class="row-action">' +
+          '<button class="btn-complete">Completed</button>' +
+        '</div>';
+
+      row.querySelector('.copy-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText(w.address).then(() => showToast('Adresse kopiert'));
+      });
+
+      row.querySelector('.btn-complete').addEventListener('click', (e) => {
+        completeWithdrawal(w, e.target, row);
+      });
+
+      list.appendChild(row);
+    });
+  }
+
+  async function loadPending(){
+    const secret = secretInput.value.trim();
+    if (!secret){
+      showStatus('Bitte Admin-Secret eingeben.', 'error');
+      return;
+    }
+    localStorage.setItem(SECRET_STORAGE_KEY, secret);
+    loadBtn.disabled = true;
+    loadBtn.innerHTML = '<span class="spinner"></span>';
+    hideStatus();
+    try {
+      const res = await fetch(SERVER_URL + '/api/admin/pending-withdrawals?secret=' + encodeURIComponent(secret));
+      const data = await res.json();
+      if (!res.ok){
+        showStatus(data.error || ('Fehler ' + res.status), 'error');
+        content.innerHTML = '';
+        return;
+      }
+      renderRows(data.withdrawals || []);
+      if (!autoRefreshTimer){
+        autoRefreshTimer = setInterval(() => loadPending(), 30000);
+      }
+    } catch (e) {
+      showStatus('Netzwerkfehler: ' + e.message, 'error');
+    } finally {
+      loadBtn.disabled = false;
+      loadBtn.textContent = 'Laden';
+    }
+  }
+
+  async function completeWithdrawal(w, btn, row){
+    const secret = secretInput.value.trim();
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+    try {
+      const res = await fetch(SERVER_URL + '/api/admin/complete-withdrawal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret, uid: w.uid, ts: w.ts })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok){
+        row.style.opacity = '0.4';
+        showToast('Als completed markiert — User ' + w.uid + ', ' + fmtAmount(w.amount));
+        setTimeout(() => loadPending(), 400);
+      } else {
+        showStatus(data.error || 'Konnte nicht als completed markiert werden.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Completed';
+      }
+    } catch (e) {
+      showStatus('Netzwerkfehler: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Completed';
+    }
+  }
+
+  loadBtn.addEventListener('click', loadPending);
+  secretInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadPending(); });
+
+  if (savedSecret) loadPending();
+})();
+</script>
+</body>
+</html>
+`;
+
 const PORT = process.env.PORT || 8787;
 const processStartTime = Date.now();
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
@@ -305,6 +633,19 @@ const server = http.createServer(async (req, res) => {
   }
 
   const url = new URL(req.url, `http://${req.headers.host}`);
+
+  // Serve the withdrawal admin panel on the same origin as the API, so its
+  // fetch() calls are same-origin and never hit a CORS/file:// wall in the
+  // browser. Not linked from anywhere in the game itself.
+  if (req.method === 'GET' && url.pathname === '/admin') {
+    const body = ADMIN_PANEL_HTML;
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': Buffer.byteLength(body),
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    });
+    return res.end(body);
+  }
 
   try {
     /* ---- POST /api/auth  { initData } -> { token, state } ---- */
