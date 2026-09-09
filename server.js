@@ -463,6 +463,18 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { state: publicState(u), withdrawal });
     }
 
+    /* ---- GET /api/withdrawals?token=... -> { withdrawals } ----
+     * Returns the requesting player's OWN withdrawal history with current
+     * status (pending/completed), so the client can detect when an admin
+     * has marked one as paid out via /api/admin/complete-withdrawal.
+     */
+    if (req.method === 'GET' && url.pathname === '/api/withdrawals') {
+      const token = url.searchParams.get('token');
+      const uid = verifyToken(token);
+      const u = getUser(uid);
+      return sendJson(res, 200, { withdrawals: u.withdrawals || [] });
+    }
+
     /* ---- GET /api/admin/pending-withdrawals?secret=... -> { withdrawals } ----
      * Lists every pending withdrawal across all players with the FULL address
      * (the in-app history only shows a truncated one), so you can pay them out
