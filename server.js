@@ -45,6 +45,10 @@ const { URL } = require('url');
 const PORT = process.env.PORT || 8787;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'CHANGE_ME_BEFORE_PRODUCTION';
+// Secret for the /api/admin/* endpoints (viewing and completing withdrawal
+// requests). Set this to a long random string on Railway. Without it, the
+// admin endpoints are disabled entirely rather than left open.
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 // IMPORTANT: point this at a mounted Railway Volume, otherwise all player
 // balances and the deposit dedup bookmark are wiped on every redeploy, since
 // a plain container filesystem is not persistent. Railway automatically sets
@@ -403,6 +407,45 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { state: publicState(u), withdrawal });
     }
 
+    /* ---- GET /api/admin/pending-withdrawals?secret=... -> { withdrawals } ----
+     * Lists every pending withdrawal across all players with the FULL address
+     * (the in-app history only shows a truncated one), so you can pay them out
+     * manually from your own wallet. Requires ADMIN_SECRET to be set.
+     */
+    if (req.method === 'GET' && url.pathname === '/api/admin/pending-withdrawals') {
+      if (!ADMIN_SECRET) throw new Error('Admin endpoints are disabled: ADMIN_SECRET is not set.');
+      if (url.searchParams.get('secret') !== ADMIN_SECRET) throw new Error('Invalid admin secret.');
+      const pending = [];
+      for (const uid of Object.keys(db)) {
+        if (uid === '__meta') continue;
+        const u = db[uid];
+        (u.withdrawals || []).forEach((w) => {
+          if (w.status === 'pending') pending.push({ uid, address: w.address, amount: w.amount, ts: w.ts });
+        });
+      }
+      pending.sort((a, b) => a.ts - b.ts);
+      return sendJson(res, 200, { withdrawals: pending });
+    }
+
+    /* ---- POST /api/admin/complete-withdrawal { secret, uid, ts } -> { ok } ----
+     * Marks one withdrawal as completed once you've sent the TON yourself from
+     * your own wallet. This only updates the status shown in-app — it does not
+     * send anything.
+     */
+    if (req.method === 'POST' && url.pathname === '/api/admin/complete-withdrawal') {
+      if (!ADMIN_SECRET) throw new Error('Admin endpoints are disabled: ADMIN_SECRET is not set.');
+      const raw = await readBody(req);
+      const { secret, uid, ts } = JSON.parse(raw || '{}');
+      if (secret !== ADMIN_SECRET) throw new Error('Invalid admin secret.');
+      const u = db[uid];
+      if (!u || !u.withdrawals) throw new Error('User or withdrawal not found.');
+      const w = u.withdrawals.find((x) => x.ts === Number(ts));
+      if (!w) throw new Error('Withdrawal not found.');
+      w.status = 'completed';
+      saveDb();
+      return sendJson(res, 200, { ok: true });
+    }
+
     return sendJson(res, 404, { error: 'Not found' });
   } catch (err) {
     console.error(`Request failed: ${req.method} ${url.pathname} -> ${err.message}`);
@@ -424,6 +467,9 @@ server.listen(PORT, () => {
   }
   if (!TONCENTER_API_KEY) {
     console.warn('NOTE: TONCENTER_API_KEY is not set — deposit polling uses the public rate limit (~1 req/s).');
+  }
+  if (!ADMIN_SECRET) {
+    console.warn('NOTE: ADMIN_SECRET is not set — /api/admin/* endpoints are disabled. Set it to review and complete withdrawal requests.');
   }
   pollDeposits(); // run once immediately, then on the interval below
   setInterval(pollDeposits, DEPOSIT_POLL_INTERVAL_MS);
