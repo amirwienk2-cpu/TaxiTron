@@ -315,6 +315,21 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { token, state: publicState(u) });
     }
 
+    /* ---- GET /api/debug/env-status -> booleans only, no secret values ----
+     * Safe to leave public: reveals only whether each variable is set and
+     * its length, never the actual value. Purely for diagnosing "why does
+     * the server say X is not set" without digging through logs.
+     */
+    if (req.method === 'GET' && url.pathname === '/api/debug/env-status') {
+      return sendJson(res, 200, {
+        BOT_TOKEN: { set: !!BOT_TOKEN, length: BOT_TOKEN.length },
+        SESSION_SECRET: { set: SESSION_SECRET !== 'CHANGE_ME_BEFORE_PRODUCTION', length: SESSION_SECRET.length },
+        DATA_DIR: { value: DATA_DIR },
+        ADMIN_SECRET: { set: !!ADMIN_SECRET, length: ADMIN_SECRET.length },
+        TONCENTER_API_KEY: { set: !!TONCENTER_API_KEY }
+      });
+    }
+
     /* ---- GET /api/state?token=... -> { state } ---- */
     if (req.method === 'GET' && url.pathname === '/api/state') {
       const token = url.searchParams.get('token');
