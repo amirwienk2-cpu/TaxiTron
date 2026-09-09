@@ -36,6 +36,7 @@
  */
 
 const http = require('http');
+const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -47,12 +48,26 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'CHANGE_ME_BEFORE_PRODUCTIO
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 
+/* ---- TON deposit watcher config ---- */
+// The address shown to players in the Wallet > Deposit tab. Must match the
+// address configured in the frontend's #depositAddress element.
+const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || 'UQD2uyyNj1ZqCz59zlM7ej5aPr6raYoiTgbUP9bVeWlsbpPt';
+// Optional — free to get at https://toncenter.com/. Without it you're limited
+// to ~1 request/second on the public TonCenter API, which is fine for low
+// volume but you'll want a key once deposits pick up.
+const TONCENTER_API_KEY = process.env.TONCENTER_API_KEY || '';
+const TONCENTER_BASE = 'https://toncenter.com/api/v2';
+const DEPOSIT_POLL_INTERVAL_MS = Number(process.env.DEPOSIT_POLL_INTERVAL_MS || 20000);
+
 /* ---- Level 1 economy rules (mirrors the client's display logic) ---- */
 const COINS_PER_ZOMBIE = 2;
 const COINS_PER_BLOCK = 10000;
 const TON_PER_BLOCK = 0.01;
 const LEVEL_MULTIPLIER = 1; // Level 1 base
 const DAILY_TON_CAP = 1;
+
+/* ---- Withdrawal rules (mirrors the client's MIN_WITHDRAW) ---- */
+const MIN_WITHDRAW_TON = 1;
 
 /* ---- Basic anti-cheat plausibility limits ---- */
 const MAX_METERS_PER_RUN = 20000;        // generous ceiling for one ride
@@ -64,6 +79,9 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 let db = {};
 if (fs.existsSync(DATA_FILE)) {
   try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) { db = {}; }
+}
+if (!db.__meta) {
+  db.__meta = { lastDepositLt: '0', processedDepositHashes: [] };
 }
 function saveDb() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
@@ -101,6 +119,81 @@ function publicState(u) {
     level: 1,
     multiplier: LEVEL_MULTIPLIER
   };
+}
+
+/* ================= TON deposit watcher ================= */
+// How it works: every player gets a personal "memo code" (their Telegram
+// user id, see /api/deposit-info). They're instructed to include that code
+// as the transfer comment when sending TON to DEPOSIT_ADDRESS. We poll
+// TonCenter for new incoming transactions on that address, read the memo
+// back out of each one, and credit the matching user's TON balance.
+// Transactions are deduplicated by hash so nothing is credited twice, and
+// db.__meta.lastDepositLt is a bookmark so we don't re-scan old history
+// every time.
+function tonCenterGet(pathAndQuery) {
+  return new Promise((resolve, reject) => {
+    const headers = TONCENTER_API_KEY ? { 'X-API-Key': TONCENTER_API_KEY } : {};
+    https.get(TONCENTER_BASE + pathAndQuery, { headers }, (r) => {
+      let data = '';
+      r.on('data', (c) => { data += c; });
+      r.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+}
+
+async function pollDeposits() {
+  try {
+    const q = `/getTransactions?address=${encodeURIComponent(DEPOSIT_ADDRESS)}&limit=30&archival=true`;
+    const result = await tonCenterGet(q);
+    if (!result || result.ok === false || !Array.isArray(result.result)) return;
+
+    // Process oldest -> newest so the lt bookmark advances in order.
+    const txs = result.result.slice().reverse();
+    let dirty = false;
+
+    for (const tx of txs) {
+      const inMsg = tx.in_msg;
+      if (!inMsg || !inMsg.value || inMsg.value === '0') continue; // ignore outgoing / zero-value tx
+
+      const lt = tx.transaction_id && tx.transaction_id.lt;
+      const hash = tx.transaction_id && tx.transaction_id.hash;
+      if (!lt || !hash) continue;
+      if (BigInt(lt) <= BigInt(db.__meta.lastDepositLt || '0')) continue;
+      if (db.__meta.processedDepositHashes.includes(hash)) continue;
+
+      const amountTon = Number(BigInt(inMsg.value)) / 1e9;
+      const memo = (inMsg.message || '').trim();
+
+      if (memo && db[memo] && amountTon > 0) {
+        const u = getUser(memo);
+        u.ton += amountTon;
+        u.pendingDeposits = u.pendingDeposits || [];
+        u.pendingDeposits.push({ amount: Number(amountTon.toFixed(6)), hash, ts: Date.now() });
+        console.log(`Deposit credited: ${amountTon} TON -> user ${memo} (tx ${hash})`);
+      } else {
+        // No matching user for this memo — e.g. sender forgot the code, or
+        // sent before ever opening the app. Logged so you can refund/match
+        // manually if needed; nothing is credited automatically.
+        console.warn(`Unmatched deposit: ${amountTon} TON, memo="${memo}", tx ${hash}`);
+      }
+
+      db.__meta.processedDepositHashes.push(hash);
+      if (db.__meta.processedDepositHashes.length > 500) {
+        db.__meta.processedDepositHashes = db.__meta.processedDepositHashes.slice(-500);
+      }
+      if (BigInt(lt) > BigInt(db.__meta.lastDepositLt || '0')) {
+        db.__meta.lastDepositLt = lt;
+      }
+      dirty = true;
+    }
+
+    if (dirty) saveDb();
+  } catch (err) {
+    console.error('Deposit poll failed:', err.message);
+  }
 }
 
 /* ================= Telegram initData verification ================= */
@@ -199,6 +292,7 @@ const server = http.createServer(async (req, res) => {
       const token = issueToken(uid);
       const u = getUser(uid);
       saveDb();
+      console.log(`Auth OK: user ${uid}`);
       return sendJson(res, 200, { token, state: publicState(u) });
     }
 
@@ -208,6 +302,15 @@ const server = http.createServer(async (req, res) => {
       const uid = verifyToken(token);
       const u = getUser(uid);
       return sendJson(res, 200, { state: publicState(u) });
+    }
+
+    /* ---- GET /api/deposit-info?token=... -> { address, memo } ---- */
+    if (req.method === 'GET' && url.pathname === '/api/deposit-info') {
+      const token = url.searchParams.get('token');
+      const uid = verifyToken(token);
+      getUser(uid); // ensure the user record exists so deposits can match it
+      saveDb();
+      return sendJson(res, 200, { address: DEPOSIT_ADDRESS, memo: uid });
     }
 
     /* ---- POST /api/run  { token, distance, zombies } -> { state } ---- */
@@ -246,8 +349,48 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { state: publicState(u), coinsGained, tonGained: Number(tonGain.toFixed(6)) });
     }
 
+    /* ---- POST /api/withdraw  { token, address, amount } -> { state, withdrawal } ----
+     * This validates and deducts from the server-authoritative TON balance and
+     * files the request as "pending" in the user's record. It does NOT send
+     * TON on-chain — that would require the server to hold your wallet's
+     * private key and sign transactions itself, which is a separate, much
+     * more sensitive piece of infrastructure. Review data/users.json (each
+     * user's `withdrawals` array) and pay out pending requests manually from
+     * your own wallet, then flip their status to 'completed' if you want that
+     * reflected back to players.
+     */
+    if (req.method === 'POST' && url.pathname === '/api/withdraw') {
+      const raw = await readBody(req);
+      const { token, address, amount } = JSON.parse(raw || '{}');
+      const uid = verifyToken(token);
+      const u = getUser(uid);
+
+      const addr = typeof address === 'string' ? address.trim() : '';
+      const amt = Number(amount);
+
+      if (!addr || addr.length < 10 || /\s/.test(addr)) {
+        throw new Error('Invalid TON withdrawal address.');
+      }
+      if (!amt || amt < MIN_WITHDRAW_TON) {
+        throw new Error(`Minimum withdrawal is ${MIN_WITHDRAW_TON} TON.`);
+      }
+      if (amt > u.ton) {
+        throw new Error('Not enough TON balance.');
+      }
+
+      u.ton -= amt;
+      u.withdrawals = u.withdrawals || [];
+      const withdrawal = { address: addr, amount: Number(amt.toFixed(6)), status: 'pending', ts: Date.now() };
+      u.withdrawals.push(withdrawal);
+      if (u.withdrawals.length > 50) u.withdrawals = u.withdrawals.slice(-50); // cap history size
+      saveDb();
+
+      return sendJson(res, 200, { state: publicState(u), withdrawal });
+    }
+
     return sendJson(res, 404, { error: 'Not found' });
   } catch (err) {
+    console.error(`Request failed: ${req.method} ${url.pathname} -> ${err.message}`);
     return sendJson(res, 400, { error: err.message });
   }
 });
@@ -260,4 +403,9 @@ server.listen(PORT, () => {
   if (SESSION_SECRET === 'CHANGE_ME_BEFORE_PRODUCTION') {
     console.warn('WARNING: SESSION_SECRET is using the default value — set your own before going live.');
   }
+  if (!TONCENTER_API_KEY) {
+    console.warn('NOTE: TONCENTER_API_KEY is not set — deposit polling uses the public rate limit (~1 req/s).');
+  }
+  pollDeposits(); // run once immediately, then on the interval below
+  setInterval(pollDeposits, DEPOSIT_POLL_INTERVAL_MS);
 });
