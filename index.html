@@ -11,12 +11,21 @@
   #gameContainer { position:relative; width:100%; height:100%; touch-action:none; overscroll-behavior:none; background:#0a0a12; }
   #game3d { display:block; width:100%; height:100%; }
 
-  #hud { position:absolute; top:0; left:0; right:0; padding:48px 18px 14px 18px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; font-size:20px; text-shadow:0 2px 4px rgba(0,0,0,.6); pointer-events:none; z-index:5;}
-  #coinCount, #distCount, #statPill, #levelPill { background:rgba(0,0,0,0.45); padding:6px 12px; border-radius:999px; }
-  #levelPill { font-size:16px; }
-  #levelPill small { font-size:11px; opacity:0.75; margin-left:2px; }
+  #hud { position:absolute; top:0; left:0; right:0; padding:70px 16px 14px 16px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; font-size:20px; z-index:5; pointer-events:none; }
+  #statPill, #levelPill {
+    background:linear-gradient(180deg, rgba(28,28,42,.92), rgba(14,14,22,.92));
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
+    padding:9px 16px;
+    border-radius:999px;
+    backdrop-filter:blur(6px);
+    letter-spacing:.2px;
+  }
+  #statPill { font-size:17px; }
+  #levelPill { font-size:15px; color:#ffd93d; }
+  #levelPill small { font-size:11px; opacity:0.75; margin-left:2px; color:#a8a3b8; }
   #weaponHud {
-    position:absolute; top:96px; left:50%; transform:translateX(-50%);
+    position:absolute; top:120px; left:50%; transform:translateX(-50%);
     background:rgba(60,0,0,0.6); color:#ff5c5c; font-weight:800; font-size:16px;
     padding:5px 14px; border-radius:999px; border:1px solid rgba(255,60,60,.6);
     text-shadow:0 0 8px rgba(255,40,40,.9); z-index:6; animation:weaponPulse 0.6s infinite alternate;
@@ -247,7 +256,7 @@
   </main>
 
   <!-- GAME (3D) -->
-  <main class="screen" id="screen-game">
+  <main class="screen" id="screen-game" dir="ltr">
     <div id="gameContainer">
       <canvas id="game3d"></canvas>
 
