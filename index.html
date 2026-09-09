@@ -82,6 +82,36 @@
   .attempts-info.empty .dot{ background:#ff6b6b; }
   .menu-btn:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none; }
 
+  /* ---------- WITHDRAW ---------- */
+  .withdraw-box{ background:#15151f; border:1px solid #262436; border-radius:16px; padding:18px; margin:14px 0; }
+  .withdraw-title{ font-weight:800; font-size:1rem; color:#fff; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .withdraw-balance{ font-size:0.82rem; color:#a8a3b8; margin-bottom:14px; }
+  .withdraw-balance .unit{ color:#ffd93d; font-weight:700; }
+  .withdraw-input{
+    width:100%; box-sizing:border-box; background:#1c1c2a; border:1px solid #2c2a3a; border-radius:12px;
+    padding:12px 14px; color:#fff; font-size:0.85rem; margin-bottom:10px; font-family:inherit;
+  }
+  .withdraw-input:focus{ outline:none; border-color:#ffd93d; }
+  .withdraw-input::placeholder{ color:#6b6680; }
+  .withdraw-status{ margin-top:10px; font-size:0.78rem; font-weight:700; min-height:16px; }
+  .withdraw-status.error{ color:#ff8f8f; }
+  .withdraw-status.success{ color:#7cff6b; }
+  .withdraw-status.pending{ color:#ffd93d; }
+  .withdraw-history{ margin-top:12px; display:flex; flex-direction:column; gap:7px; }
+  .withdraw-hist-item{
+    display:flex; justify-content:space-between; align-items:center; font-size:0.74rem; color:#c9c5da;
+    background:#1c1c2a; border:1px solid #262436; border-radius:10px; padding:8px 12px;
+  }
+  .withdraw-hist-item .hist-amount{ font-weight:800; color:#fff; }
+  .withdraw-hist-item .hist-status{ font-weight:800; padding:2px 8px; border-radius:999px; font-size:0.66rem; }
+  .withdraw-hist-item .hist-status.pending{ background:rgba(255,217,61,.12); color:#ffd93d; }
+  .withdraw-hist-item .hist-status.completed{ background:rgba(124,255,107,.12); color:#7cff6b; }
+  .deposit-address{
+    background:#1c1c2a; border:1px solid #2c2a3a; border-radius:12px; padding:12px 14px;
+    color:#ffd93d; font-size:0.78rem; font-family:monospace; word-break:break-all; margin-bottom:12px;
+    letter-spacing:.2px;
+  }
+
   .stat-row{ display:flex; gap:10px; }
   .stat-card{ flex:1; background:#15151f; border:1px solid #262436; border-radius:12px; padding:12px 12px; }
   .stat-card .label{ font-size:0.68rem; color:#8b86a0; letter-spacing:0.4px; }
@@ -118,6 +148,56 @@
   .exchange-box .exchange-info{ font-size:0.95rem; color:#fff; }
   .exchange-box .exchange-info b{ color:#ffd93d; font-size:1.15rem; }
   .exchange-box .menu-btn:disabled{ opacity:0.4; cursor:not-allowed; box-shadow:none; }
+
+  /* ---------- WALLET REDESIGN (PRO) ---------- */
+  .wallet-balance-card{
+    background:linear-gradient(160deg,#1c1c2a,#100f18);
+    border:1px solid #2c2a3a; border-radius:18px; padding:20px 16px;
+    display:flex; align-items:center;
+    box-shadow:0 10px 26px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .wb-item{ flex:1; display:flex; align-items:center; gap:12px; min-width:0; }
+  .wb-icon{
+    width:44px; height:44px; border-radius:12px; flex-shrink:0; font-size:1.3rem;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,217,61,.1); border:1px solid rgba(255,217,61,.25);
+  }
+  .wb-icon.ton{ background:rgba(102,178,255,.1); border-color:rgba(102,178,255,.28); }
+  .wb-info{ min-width:0; }
+  .wb-label{ font-size:0.64rem; color:#8b86a0; letter-spacing:.4px; text-transform:uppercase; font-weight:800; }
+  .wb-value{ font-size:1.2rem; font-weight:900; color:#ffd93d; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .wb-value.ton{ color:#7fc4ff; }
+  .wb-divider{ width:1px; align-self:stretch; background:#2c2a3a; margin:0 14px; }
+
+  .exchange-card{ background:#15151f; border:1px solid #262436; border-radius:18px; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  .exchange-card-title{ font-size:0.74rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#8b86a0; text-align:center; }
+  .exchange-flow{ display:flex; align-items:center; justify-content:center; gap:16px; }
+  .exchange-token{ display:flex; flex-direction:column; align-items:center; gap:4px; min-width:78px; }
+  .exchange-token-icon{
+    width:52px; height:52px; border-radius:50%; font-size:1.5rem;
+    display:flex; align-items:center; justify-content:center;
+    background:#1c1c2a; border:1px solid #2c2a3a;
+  }
+  .exchange-token-icon.gold{ background:rgba(255,217,61,.08); border-color:rgba(255,217,61,.3); }
+  .exchange-token-value{ font-size:1.1rem; font-weight:900; color:#fff; }
+  .exchange-token-value.gold{ color:#ffd93d; }
+  .exchange-token-label{ font-size:0.64rem; color:#8b86a0; text-align:center; line-height:1.3; max-width:90px; }
+  .exchange-arrow{ font-size:1.4rem; color:#4a4660; font-weight:900; }
+
+  .wallet-tabs{ display:flex; gap:6px; background:#15151f; border:1px solid #262436; border-radius:14px; padding:5px; }
+  .wallet-tab{
+    flex:1; background:none; border:none; color:#8b86a0; font-family:inherit; font-weight:800; font-size:0.8rem;
+    padding:10px 6px; border-radius:10px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .wallet-tab.active{ background:linear-gradient(180deg,#ffd93d,#ffb703); color:#3a2a00; box-shadow:0 3px 10px rgba(255,183,3,.3); }
+  .wallet-tab-panel{ display:none; flex-direction:column; gap:14px; }
+  .wallet-tab-panel.active{ display:flex; }
+  .withdraw-title .box-icon{
+    width:28px; height:28px; border-radius:9px; flex-shrink:0; font-size:0.9rem;
+    display:flex; align-items:center; justify-content:center;
+    background:#1c1c2a; border:1px solid #2c2a3a;
+  }
 
   .bottomnav{ display:flex; flex-shrink:0; border-top:1px solid #2a3d22; background:#0e0e16; position:relative; box-shadow:0 -6px 18px rgba(0,0,0,.4); }
   .bottomnav button{ flex:1; background:none; border:none; color:#8b86a0; padding:9px 4px 11px 4px; font-size:0.66rem; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; font-family:inherit; letter-spacing:.2px; }
@@ -286,15 +366,71 @@
 
   <!-- WALLET -->
   <main class="screen" id="screen-wallet">
-    <div class="wallet-hero">
-      <div class="big-coin"><span id="walletCoinsDisplay">0</span> 🪙</div>
-      <div class="sub" data-i18n="walletSub">Coin balance</div>
+    <div class="wallet-balance-card">
+      <div class="wb-item">
+        <div class="wb-icon">🪙</div>
+        <div class="wb-info">
+          <div class="wb-label" data-i18n="walletSub">Coin balance</div>
+          <div class="wb-value" id="walletCoinsDisplay">0</div>
+        </div>
+      </div>
+      <div class="wb-divider"></div>
+      <div class="wb-item">
+        <div class="wb-icon ton">💎</div>
+        <div class="wb-info">
+          <div class="wb-label" data-i18n="tonBalanceLabel">TON balance</div>
+          <div class="wb-value ton" id="walletTonDisplay">0.000000</div>
+        </div>
+      </div>
     </div>
-    <div class="exchange-box">
-      <div class="exchange-info"><b id="walletPersonsDisplay">0</b> 🧟 <span data-i18n="walletCollected">collected — not yet exchanged</span></div>
+
+    <div class="exchange-card">
+      <div class="exchange-card-title" data-i18n="exchangeTitle">Exchange</div>
+      <div class="exchange-flow">
+        <div class="exchange-token">
+          <div class="exchange-token-icon">🧟</div>
+          <div class="exchange-token-value" id="walletPersonsDisplay">0</div>
+          <div class="exchange-token-label" data-i18n="walletCollected">collected — not yet exchanged</div>
+        </div>
+        <div class="exchange-arrow">→</div>
+        <div class="exchange-token">
+          <div class="exchange-token-icon gold">🪙</div>
+          <div class="exchange-token-value gold" id="exchangePreview">0</div>
+          <div class="exchange-token-label" data-i18n="exchangeRateLabel">2 coins per zombie</div>
+        </div>
+      </div>
       <button class="menu-btn" id="exchangeBtn" data-i18n="exchangeBtn">Exchange (2 🪙 per zombie)</button>
     </div>
-    <div class="note-box" data-i18n="walletNote">Coins are a virtual in-game currency for the shop only. No real money, no cryptocurrency.</div>
+
+    <div class="wallet-tabs">
+      <button class="wallet-tab active" id="walletTabDeposit" type="button" data-i18n="depositTab">📥 Deposit</button>
+      <button class="wallet-tab" id="walletTabWithdraw" type="button" data-i18n="withdrawTab">💎 Withdraw</button>
+    </div>
+
+    <div class="wallet-tab-panel active" id="walletPanelDeposit">
+      <div class="withdraw-box">
+        <div class="withdraw-title"><span class="box-icon">📥</span> <span data-i18n="depositTitle">Deposit TON</span></div>
+        <div class="withdraw-balance" data-i18n="depositDesc">Send TON to this address to top up your in-game balance.</div>
+        <div class="deposit-address" id="depositAddress">UQD2uyyNj1ZqCz59zlM7ej5aPr6raYoiTgbUP9bVeWlsbpPt</div>
+        <button class="menu-btn secondary" id="depositCopyBtn" data-i18n="depositCopyBtn">📋 Copy Address</button>
+        <div class="withdraw-status" id="depositStatus"></div>
+      </div>
+      <div class="note-box" data-i18n="depositNote">Only send TON on the TON network. Deposits are reviewed and credited to your balance after confirmation.</div>
+    </div>
+
+    <div class="wallet-tab-panel" id="walletPanelWithdraw">
+      <div class="withdraw-box">
+        <div class="withdraw-title"><span class="box-icon">💎</span> <span data-i18n="withdrawTitle">Withdraw TON</span></div>
+        <div class="withdraw-balance"><span id="withdrawBalance">0.000000</span> <span class="unit">TON</span> <span data-i18n="withdrawAvailable">available</span></div>
+        <input type="text" id="withdrawAddress" class="withdraw-input" placeholder="UQ… TON wallet address" data-i18n-placeholder="withdrawAddressPlaceholder" autocomplete="off">
+        <input type="number" id="withdrawAmount" class="withdraw-input" placeholder="Amount (min 1 TON)" data-i18n-placeholder="withdrawAmountPlaceholder" step="0.000001" min="0">
+        <button class="menu-btn" id="withdrawBtn" data-i18n="withdrawBtn">Request Withdrawal</button>
+        <div class="withdraw-status" id="withdrawStatus"></div>
+        <div class="withdraw-history" id="withdrawHistory"></div>
+      </div>
+      <div class="note-box" data-i18n="withdrawNote">Minimum withdrawal is 1 TON. Requests are reviewed and sent to your wallet address.</div>
+    </div>
+
     <button class="menu-btn secondary" id="toHomeBtn" data-i18n="toHome">Back to Home</button>
   </main>
 
@@ -382,12 +518,30 @@
       skinDaysLeft: 'days left', skinRewardActive: 'Daily reward active',
       skinRewardOffer: 'Earn a daily TON reward',
       attemptsLeft: 'tries left', attemptsNextIn: 'Next try in',
+      withdrawTitle: 'Withdraw TON', withdrawAvailable: 'available',
+      withdrawAddressPlaceholder: 'UQ… TON wallet address',
+      withdrawAmountPlaceholder: 'Amount (min 1 TON)',
+      withdrawBtn: 'Request Withdrawal',
+      withdrawNote: 'Minimum withdrawal is 1 TON. Requests are reviewed and sent to your wallet address.',
+      withdrawErrAddress: 'Enter a valid TON wallet address.',
+      withdrawErrMin: 'Minimum withdrawal is 1 TON.',
+      withdrawErrFunds: 'Not enough TON balance.',
+      withdrawSuccess: 'Withdrawal requested — funds will arrive at your wallet soon.',
+      withdrawPendingStatus: 'Pending', withdrawCompletedStatus: 'Completed',
+      depositTitle: 'Deposit TON', depositDesc: 'Send TON to this address to top up your in-game balance.',
+      depositCopyBtn: '📋 Copy Address', depositCopied: '✅ Address copied to clipboard',
+      depositNote: 'Only send TON on the TON network. Deposits are reviewed and credited to your balance after confirmation.',
       buyOwned: 'Active ✓',
       tournamentTitle: '🏆 Zombie Tournament',
       tournamentDesc: 'Weekly leaderboard — collect more zombies than the competition.',
       nextReset: 'Next reset in',
       youTag: 'YOU', youName: 'You',
       walletSub: 'Coin balance',
+      tonBalanceLabel: 'TON balance',
+      exchangeTitle: 'Exchange',
+      exchangeRateLabel: '2 coins per zombie',
+      depositTab: '📥 Deposit',
+      withdrawTab: '💎 Withdraw',
       walletCollected: 'collected — not yet exchanged',
       exchangeBtn: 'Exchange (2 🪙 per zombie)',
       walletNote: 'Coins are a virtual in-game currency for the shop only. No real money, no cryptocurrency.',
@@ -434,12 +588,30 @@
       skinDaysLeft: 'روز باقی‌مانده', skinRewardActive: 'پاداش روزانه فعال است',
       skinRewardOffer: 'پاداش روزانه تون دریافت کنید',
       attemptsLeft: 'تلاش باقی‌مانده', attemptsNextIn: 'تلاش بعدی تا',
+      withdrawTitle: 'برداشت تون', withdrawAvailable: 'موجود',
+      withdrawAddressPlaceholder: 'آدرس کیف پول تون (UQ…)',
+      withdrawAmountPlaceholder: 'مبلغ (حداقل ۱ تون)',
+      withdrawBtn: 'درخواست برداشت',
+      withdrawNote: 'حداقل مبلغ برداشت ۱ تون است. درخواست‌ها بررسی و به کیف پول شما ارسال می‌شوند.',
+      withdrawErrAddress: 'یک آدرس معتبر کیف پول تون وارد کنید.',
+      withdrawErrMin: 'حداقل مبلغ برداشت ۱ تون است.',
+      withdrawErrFunds: 'موجودی تون کافی نیست.',
+      withdrawSuccess: 'درخواست برداشت ثبت شد — به‌زودی به کیف پول شما واریز می‌شود.',
+      withdrawPendingStatus: 'در انتظار', withdrawCompletedStatus: 'انجام شد',
+      depositTitle: 'واریز تون', depositDesc: 'برای افزایش موجودی درون‌بازی، تون را به این آدرس ارسال کنید.',
+      depositCopyBtn: '📋 کپی آدرس', depositCopied: '✅ آدرس کپی شد',
+      depositNote: 'فقط از شبکه TON استفاده کنید. واریزها پس از بررسی و تأیید به موجودی شما اضافه می‌شوند.',
       buyOwned: 'فعال ✓',
       tournamentTitle: '🏆 مسابقه زامبی',
       tournamentDesc: 'جدول امتیازات هفتگی — زامبی‌های بیشتری نسبت به رقبا جمع کن.',
       nextReset: 'بازنشانی بعدی در',
       youTag: 'شما', youName: 'شما',
       walletSub: 'موجودی سکه',
+      tonBalanceLabel: 'موجودی تون',
+      exchangeTitle: 'معاوضه',
+      exchangeRateLabel: '۲ سکه به ازای هر زامبی',
+      depositTab: '📥 واریز',
+      withdrawTab: '💎 برداشت',
       walletCollected: 'جمع‌آوری‌شده — هنوز معاوضه نشده',
       exchangeBtn: 'معاوضه (۲ 🪙 به ازای هر زامبی)',
       walletNote: 'سکه‌ها یک ارز مجازی درون‌بازی فقط برای فروشگاه هستند. بدون پول واقعی، بدون ارز دیجیتال.',
@@ -464,11 +636,16 @@
       const key = el.dataset.i18n;
       if (translations[lang][key] !== undefined) el.textContent = translations[lang][key];
     });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.dataset.i18nPlaceholder;
+      if (translations[lang][key] !== undefined) el.placeholder = translations[lang][key];
+    });
     document.querySelectorAll('.lang-flag').forEach(f => f.classList.toggle('active', f.dataset.lang === lang));
     refreshShopUI();
     renderSkinShop();
     renderLeaderboard();
     updateCoinCountUI();
+    renderWithdrawUI();
   }
   document.querySelectorAll('.lang-flag').forEach(f => {
     f.addEventListener('click', () => applyLanguage(f.dataset.lang));
@@ -488,7 +665,8 @@
     ownedSkins: JSON.parse(localStorage.getItem('cr3d_ownedSkins') || '["yellow"]'),
     skinRewards: JSON.parse(localStorage.getItem('cr3d_skinRewards') || '{}'),
     attemptsLeft: localStorage.getItem('cr3d_attemptsLeft') !== null ? parseInt(localStorage.getItem('cr3d_attemptsLeft'), 10) : 10,
-    attemptsResetAt: localStorage.getItem('cr3d_attemptsResetAt') ? parseInt(localStorage.getItem('cr3d_attemptsResetAt'), 10) : null
+    attemptsResetAt: localStorage.getItem('cr3d_attemptsResetAt') ? parseInt(localStorage.getItem('cr3d_attemptsResetAt'), 10) : null,
+    withdrawals: JSON.parse(localStorage.getItem('cr3d_withdrawals') || '[]')
   };
   function saveStore(){
     localStorage.setItem('cr3d_coins', store.coins);
@@ -505,6 +683,7 @@
     localStorage.setItem('cr3d_attemptsLeft', store.attemptsLeft);
     if (store.attemptsResetAt) localStorage.setItem('cr3d_attemptsResetAt', store.attemptsResetAt);
     else localStorage.removeItem('cr3d_attemptsResetAt');
+    localStorage.setItem('cr3d_withdrawals', JSON.stringify(store.withdrawals));
   }
 
   /* ---- Level 1 conversion: 10,000 coins = 0.01 PTS, x1 multiplier, capped at 1 PTS/day ---- */
@@ -797,7 +976,9 @@
     document.getElementById('homeRuns').textContent = store.runs;
     document.getElementById('homeLevel').innerHTML = store.level + '<small>·' + LEVEL_MULTIPLIER + '</small>';
     document.getElementById('walletCoinsDisplay').textContent = store.coins;
+    document.getElementById('walletTonDisplay').textContent = store.points.toFixed(6);
     document.getElementById('walletPersonsDisplay').textContent = lastPersonScore;
+    document.getElementById('exchangePreview').textContent = lastPersonScore * 2;
     document.getElementById('exchangeBtn').disabled = lastPersonScore <= 0;
 
     document.getElementById('balanceValue').textContent = store.points.toFixed(6);
@@ -812,6 +993,7 @@
     renderSkinShop();
     renderLeaderboard();
     renderAttemptsUI();
+    renderWithdrawUI();
   }
 
   let lastPersonScore = 0;
@@ -896,6 +1078,127 @@
     refreshTopUI();
   }
   document.getElementById('exchangeBtn').addEventListener('click', exchangePersons);
+
+  /* ================= WITHDRAW (TON) ================= */
+  const MIN_WITHDRAW = 1;
+  function renderWithdrawUI(){
+    const balEl = document.getElementById('withdrawBalance');
+    if (balEl) balEl.textContent = store.points.toFixed(6);
+    const histEl = document.getElementById('withdrawHistory');
+    if (!histEl) return;
+    histEl.innerHTML = '';
+    store.withdrawals.slice().reverse().slice(0, 5).forEach(w => {
+      const row = document.createElement('div');
+      row.className = 'withdraw-hist-item';
+      const statusKey = w.status === 'completed' ? 'withdrawCompletedStatus' : 'withdrawPendingStatus';
+      row.innerHTML =
+        '<span class="hist-amount">' + w.amount.toFixed(2) + ' TON</span>' +
+        '<span>' + w.address.slice(0, 4) + '…' + w.address.slice(-4) + '</span>' +
+        '<span class="hist-status ' + w.status + '">' + t(statusKey) + '</span>';
+      histEl.appendChild(row);
+    });
+  }
+  function setWithdrawStatus(msg, cls){
+    const el = document.getElementById('withdrawStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'withdraw-status' + (cls ? ' ' + cls : '');
+  }
+  function isPlausibleTonAddress(addr){
+    return typeof addr === 'string' && addr.trim().length >= 10 && !/\s/.test(addr.trim());
+  }
+  async function requestWithdraw(){
+    const addressInput = document.getElementById('withdrawAddress');
+    const amountInput = document.getElementById('withdrawAmount');
+    const address = addressInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const btn = document.getElementById('withdrawBtn');
+
+    if (!isPlausibleTonAddress(address)){
+      setWithdrawStatus(t('withdrawErrAddress'), 'error');
+      return;
+    }
+    if (!amount || amount < MIN_WITHDRAW){
+      setWithdrawStatus(t('withdrawErrMin'), 'error');
+      return;
+    }
+    if (amount > store.points){
+      setWithdrawStatus(t('withdrawErrFunds'), 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    let handledByServer = false;
+    if (serverSession.online && serverSession.token){
+      try {
+        const res = await fetch(SERVER_URL + '/api/withdraw', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: serverSession.token, address, amount })
+        });
+        if (res.ok){
+          const data = await res.json();
+          if (data.state) applyServerState(data.state);
+          else store.points -= amount;
+          handledByServer = true;
+        }
+      } catch (e) {
+        // fall through to local pending-request handling below
+      }
+    }
+    if (!handledByServer){
+      store.points -= amount;
+    }
+    store.withdrawals.push({ address, amount, status: 'pending', ts: Date.now() });
+    saveStore();
+    setWithdrawStatus(t('withdrawSuccess'), 'success');
+    amountInput.value = '';
+    refreshTopUI();
+    btn.disabled = false;
+  }
+  document.getElementById('withdrawBtn').addEventListener('click', requestWithdraw);
+
+  /* ================= DEPOSIT (TON) ================= */
+  document.getElementById('depositCopyBtn').addEventListener('click', async () => {
+    const address = document.getElementById('depositAddress').textContent.trim();
+    const statusEl = document.getElementById('depositStatus');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(address);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = address;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      statusEl.textContent = t('depositCopied');
+      statusEl.className = 'withdraw-status success';
+    } catch (e) {
+      statusEl.textContent = address;
+      statusEl.className = 'withdraw-status';
+    }
+  });
+
+  /* ================= WALLET TABS (Deposit / Withdraw) ================= */
+  (function(){
+    const tabDeposit = document.getElementById('walletTabDeposit');
+    const tabWithdraw = document.getElementById('walletTabWithdraw');
+    const panelDeposit = document.getElementById('walletPanelDeposit');
+    const panelWithdraw = document.getElementById('walletPanelWithdraw');
+    function setWalletTab(tab){
+      const isDeposit = tab === 'deposit';
+      tabDeposit.classList.toggle('active', isDeposit);
+      tabWithdraw.classList.toggle('active', !isDeposit);
+      panelDeposit.classList.toggle('active', isDeposit);
+      panelWithdraw.classList.toggle('active', !isDeposit);
+    }
+    tabDeposit.addEventListener('click', () => setWalletTab('deposit'));
+    tabWithdraw.addEventListener('click', () => setWalletTab('withdraw'));
+  })();
 
   /* ================= NAVIGATION ================= */
   const screens = document.querySelectorAll('.screen');
