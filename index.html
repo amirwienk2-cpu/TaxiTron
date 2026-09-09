@@ -12,7 +12,9 @@
   #game3d { display:block; width:100%; height:100%; }
 
   #hud { position:absolute; top:0; left:0; right:0; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; font-size:20px; text-shadow:0 2px 4px rgba(0,0,0,.6); pointer-events:none; z-index:5;}
-  #coinCount, #distCount { background:rgba(0,0,0,0.45); padding:6px 12px; border-radius:999px; }
+  #coinCount, #distCount, #statPill, #levelPill { background:rgba(0,0,0,0.45); padding:6px 12px; border-radius:999px; }
+  #levelPill { font-size:16px; }
+  #levelPill small { font-size:11px; opacity:0.75; margin-left:2px; }
   #weaponHud {
     position:absolute; top:56px; left:50%; transform:translateX(-50%);
     background:rgba(60,0,0,0.6); color:#ff5c5c; font-weight:800; font-size:16px;
@@ -64,6 +66,16 @@
   .stat-card .value{ font-size:1.2rem; font-weight:800; margin-top:2px; }
   .stat-card.gold .value{ color:#ffd93d; }
   .stat-card.coral .value{ color:#ff6b6b; }
+  .stat-card .value small{ font-size:0.6rem; color:#8b86a0; margin-left:2px; }
+
+  .balance-card{ background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; border-radius:16px; padding:18px 20px; }
+  .balance-label{ font-size:0.7rem; letter-spacing:0.5px; color:#ffb74d; font-weight:800; }
+  .balance-value{ font-size:1.9rem; font-weight:900; color:#ffd93d; margin:2px 0 12px 0; }
+  .balance-value .unit{ font-size:0.85rem; color:#8b86a0; font-weight:700; }
+  .cap-row{ display:flex; justify-content:space-between; font-size:0.72rem; color:#ffb74d; font-weight:800; letter-spacing:0.3px; margin-bottom:6px; }
+  .cap-track{ background:#26243a; border-radius:999px; height:6px; overflow:hidden; }
+  .cap-fill{ height:100%; width:0%; background:linear-gradient(90deg,#ffd93d,#ff6b6b); border-radius:999px; transition:width .3s; }
+  .cap-sub{ font-size:0.72rem; color:#8b86a0; margin-top:6px; }
 
   /* ---------- HOME REDESIGN ---------- */
   .hero-badge{ width:64px; height:64px; border-radius:18px; margin:0 auto 14px auto; display:flex; align-items:center; justify-content:center; font-size:2rem; background:radial-gradient(circle at 32% 28%, #7cff6b, #1f7a2e 70%, #0c3d14); box-shadow:0 6px 18px rgba(124,255,107,.35); border:1px solid #2fae4a; }
@@ -142,6 +154,16 @@
 
   <!-- HOME -->
   <main class="screen active" id="screen-home">
+    <div class="balance-card">
+      <div class="balance-label" data-i18n="balanceLabel">BALANCE</div>
+      <div class="balance-value"><span id="balanceValue">0.000000</span> <span class="unit">TON</span></div>
+      <div class="cap-row">
+        <span data-i18n="dailyCapLabel">DAILY EARN CAP</span>
+        <span id="capPercent">0%</span>
+      </div>
+      <div class="cap-track"><div class="cap-fill" id="capFill"></div></div>
+      <div class="cap-sub" id="capSub">0.000000 / 1.000000 TON <span data-i18n="today">today</span> · <span data-i18n="statLevel">Lvl</span> 1</div>
+    </div>
     <div class="hero home-hero">
       <div class="hero-badge">🧟</div>
       <p data-i18n="heroDesc">Steer your car through the lanes in 3D and collect zombies. Trade them in for coins in your Wallet.</p>
@@ -151,6 +173,7 @@
       <div class="stat-card gold"><div class="label" data-i18n="statWallet">Wallet</div><div class="value" id="homeCoins">0</div></div>
       <div class="stat-card"><div class="label" data-i18n="statBest">Best</div><div class="value" id="homeBest">0</div></div>
       <div class="stat-card coral"><div class="label" data-i18n="statRuns">Runs</div><div class="value" id="homeRuns">0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="statLevel">Lvl</div><div class="value" id="homeLevel">1<small>·1</small></div></div>
     </div>
     <div class="howto">
       <h3 class="howto-title" data-i18n="howtoTitle">How it works</h3>
@@ -231,8 +254,8 @@
       <div class="exit-run-btn" id="exitRunBtn">✕</div>
 
       <div id="hud">
-        <div id="coinCount">🧟 0</div>
-        <div id="distCount">0 m</div>
+        <div id="statPill">🧟 0 · 0 m</div>
+        <div id="levelPill">Lvl 1<small>·1</small></div>
       </div>
       <div id="weaponHud" style="display:none;">🔫 <span id="weaponTimerVal">10</span>s</div>
 
@@ -270,7 +293,8 @@
     en: {
       heroDesc: 'Steer your car through the lanes in 3D and collect zombies. Trade them in for coins in your Wallet.',
       playBtn: '▶ Start Ride',
-      statWallet: 'Wallet', statBest: 'Best', statRuns: 'Runs',
+      statWallet: 'Wallet', statBest: 'Best', statRuns: 'Runs', statLevel: 'Lvl',
+      balanceLabel: 'BALANCE', dailyCapLabel: 'DAILY EARN CAP', today: 'today',
       howtoTitle: 'How it works',
       howto1: 'Arrow keys, A/D or swipe to change lanes',
       howto2: 'Collect zombies — the more on board, the faster your car goes',
@@ -306,7 +330,8 @@
     fa: {
       heroDesc: 'ماشینت را در مسیر سه‌بعدی هدایت کن و زامبی‌ها را جمع‌آوری کن. در کیف پول می‌توانی آن‌ها را با سکه معاوضه کنی.',
       playBtn: '▶ شروع مسیر',
-      statWallet: 'کیف پول', statBest: 'بهترین امتیاز', statRuns: 'تعداد مسیرها',
+      statWallet: 'کیف پول', statBest: 'بهترین امتیاز', statRuns: 'تعداد مسیرها', statLevel: 'سطح',
+      balanceLabel: 'موجودی', dailyCapLabel: 'سقف روزانه', today: 'امروز',
       howtoTitle: 'روش بازی',
       howto1: 'کلیدهای جهت‌نما، A/D یا کشیدن انگشت برای تغییر مسیر',
       howto2: 'زامبی‌ها را جمع کن — هرچه بیشتر سوار باشند، ماشینت سریع‌تر می‌شود',
@@ -366,13 +391,47 @@
     coins: parseInt(localStorage.getItem('cr3d_coins') || '0', 10),
     best: parseInt(localStorage.getItem('cr3d_best') || '0', 10),
     runs: parseInt(localStorage.getItem('cr3d_runs') || '0', 10),
-    upgrades: JSON.parse(localStorage.getItem('cr3d_upgrades') || '{}')
+    upgrades: JSON.parse(localStorage.getItem('cr3d_upgrades') || '{}'),
+    level: parseInt(localStorage.getItem('cr3d_level') || '1', 10),
+    points: parseFloat(localStorage.getItem('cr3d_points') || '0'),
+    pointsToday: parseFloat(localStorage.getItem('cr3d_pointsToday') || '0'),
+    pointsDate: localStorage.getItem('cr3d_pointsDate') || ''
   };
   function saveStore(){
     localStorage.setItem('cr3d_coins', store.coins);
     localStorage.setItem('cr3d_best', store.best);
     localStorage.setItem('cr3d_runs', store.runs);
     localStorage.setItem('cr3d_upgrades', JSON.stringify(store.upgrades));
+    localStorage.setItem('cr3d_level', store.level);
+    localStorage.setItem('cr3d_points', store.points);
+    localStorage.setItem('cr3d_pointsToday', store.pointsToday);
+    localStorage.setItem('cr3d_pointsDate', store.pointsDate);
+  }
+
+  /* ---- Level 1 conversion: 10,000 coins = 0.01 PTS, x1 multiplier, capped at 1 PTS/day ---- */
+  const COINS_PER_BLOCK = 10000;
+  const PTS_PER_BLOCK = 0.01;
+  const LEVEL_MULTIPLIER = 1; // Level 1 base
+  const DAILY_PTS_CAP = 1;
+
+  function todayStr(){
+    return new Date().toISOString().slice(0,10);
+  }
+  function ensureDailyReset(){
+    const t = todayStr();
+    if (store.pointsDate !== t){
+      store.pointsDate = t;
+      store.pointsToday = 0;
+    }
+  }
+  function addPointsFromCoins(coinsAdded){
+    ensureDailyReset();
+    const rawGain = (coinsAdded / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
+    const allowed = Math.max(0, DAILY_PTS_CAP - store.pointsToday);
+    const gain = Math.min(rawGain, allowed);
+    store.points += gain;
+    store.pointsToday += gain;
+    saveStore();
   }
 
   /* ================= SHOP ================= */
@@ -452,23 +511,106 @@
   setInterval(updateTournamentCountdown, 1000);
 
   function refreshTopUI(){
+    ensureDailyReset();
     document.getElementById('topCoinDisplay').textContent = store.coins;
     document.getElementById('homeCoins').textContent = store.coins;
     document.getElementById('homeBest').textContent = store.best;
     document.getElementById('homeRuns').textContent = store.runs;
+    document.getElementById('homeLevel').innerHTML = store.level + '<small>·' + LEVEL_MULTIPLIER + '</small>';
     document.getElementById('walletCoinsDisplay').textContent = store.coins;
     document.getElementById('walletPersonsDisplay').textContent = lastPersonScore;
     document.getElementById('exchangeBtn').disabled = lastPersonScore <= 0;
+
+    document.getElementById('balanceValue').textContent = store.points.toFixed(6);
+    const pct = Math.min(100, Math.round((store.pointsToday / DAILY_PTS_CAP) * 100));
+    document.getElementById('capPercent').textContent = pct + '%';
+    document.getElementById('capFill').style.width = pct + '%';
+    document.getElementById('capSub').innerHTML =
+      store.pointsToday.toFixed(6) + ' / ' + DAILY_PTS_CAP.toFixed(6) + ' TON ' +
+      t('today') + ' · ' + t('statLevel') + ' ' + store.level;
+
     refreshShopUI();
     renderLeaderboard();
   }
 
   let lastPersonScore = 0;
+  let lastDistance = 0;
 
-  function exchangePersons(){
+  /* ================= Server-authoritative economy sync ================= */
+  // Fill in your deployed server's URL here once it's online, e.g.
+  // const SERVER_URL = "https://your-server.example.com";
+  const SERVER_URL = "https://taxitron-production.up.railway.app";
+  const serverSession = { token: null, online: false };
+
+  async function initServerSession(){
+    if (!SERVER_URL) return; // no server configured yet -> stays in local/offline mode
+    try {
+      const tg = window.Telegram && window.Telegram.WebApp;
+      const initData = tg && tg.initData;
+      if (!initData) return; // not running inside Telegram -> stays offline
+      const res = await fetch(SERVER_URL + '/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      });
+      if (!res.ok) throw new Error('auth failed');
+      const data = await res.json();
+      serverSession.token = data.token;
+      serverSession.online = true;
+      applyServerState(data.state);
+    } catch (e) {
+      serverSession.online = false; // fall back to local economy silently
+    }
+  }
+
+  function applyServerState(state){
+    store.coins = state.coins;
+    store.points = state.ton;
+    store.pointsToday = state.tonToday;
+    store.pointsDate = todayStr();
+    store.best = Math.max(store.best, state.best);
+    store.runs = Math.max(store.runs, state.runs);
+    saveStore();
+    refreshTopUI();
+  }
+
+  async function exchangePersons(){
     if (lastPersonScore <= 0) return;
-    store.coins += lastPersonScore * 2;
+
+    if (serverSession.online && serverSession.token){
+      const exchangeBtn = document.getElementById('exchangeBtn');
+      exchangeBtn.disabled = true;
+      try {
+        const res = await fetch(SERVER_URL + '/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: serverSession.token,
+            distance: lastDistance,
+            zombies: lastPersonScore
+          })
+        });
+        const data = await res.json();
+        if (res.ok){
+          applyServerState(data.state);
+          lastPersonScore = 0;
+          lastDistance = 0;
+        }
+        // on error (e.g. rate-limited), keep lastPersonScore so the user can retry
+      } catch (e) {
+        // network hiccup -> keep the pending score, user can retry the exchange
+      }
+      exchangeBtn.disabled = lastPersonScore <= 0;
+      refreshTopUI();
+      return;
+    }
+
+    // offline / no server configured: fall back to the local-only economy
+    const coinsGained = lastPersonScore * 2;
+    store.coins += coinsGained;
+    addPointsFromCoins(coinsGained);
     lastPersonScore = 0;
+    lastDistance = 0;
     saveStore();
     refreshTopUI();
   }
@@ -821,8 +963,10 @@
   const END_Z = 8;                  // behind camera -> remove
 
   function updateCoinCountUI(){
-    const el = document.getElementById('coinCount');
-    if (el) el.textContent = t('zombiesLabel') + ' ' + personScore;
+    const el = document.getElementById('statPill');
+    if (el) el.textContent = '🧟 ' + personScore + ' · ' + Math.floor(distance) + ' m';
+    const lvl = document.getElementById('levelPill');
+    if (lvl) lvl.innerHTML = t('statLevel') + ' ' + store.level + '<small>·' + LEVEL_MULTIPLIER + '</small>';
   }
 
   function updateWeaponHud(){
@@ -867,7 +1011,6 @@
     reviveUsed = false;
     prefillRoad();
     updateCoinCountUI();
-    document.getElementById('distCount').textContent = '0 m';
   }
   obstacles = []; people = []; particles = []; weapons = [];
   reset();
@@ -987,6 +1130,7 @@
     store.runs += 1;
     if (personScore > best){ best = personScore; store.best = best; }
     lastPersonScore += personScore;
+    lastDistance += distance;
     saveStore();
     refreshTopUI();
   }
@@ -1165,7 +1309,7 @@
       }
     }
 
-    document.getElementById('distCount').textContent = Math.floor(distance) + ' m';
+    updateCoinCountUI();
 
     // camera chase behind car
     const camTargetX = player.x * 0.85;
@@ -1198,6 +1342,7 @@
     if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
     if (typeof tg.disableSwipeToClose === 'function') tg.disableSwipeToClose();
   }
+  initServerSession();
 })();
 </script>
 </body>
