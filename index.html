@@ -11,21 +11,25 @@
   #gameContainer { position:relative; width:100%; height:100%; touch-action:none; overscroll-behavior:none; background:#0a0a12; }
   #game3d { display:block; width:100%; height:100%; }
 
-  #hud { position:absolute; top:0; left:0; right:0; padding:70px 16px 14px 16px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; font-size:20px; z-index:5; pointer-events:none; }
-  #statPill, #levelPill {
-    background:linear-gradient(180deg, rgba(28,28,42,.92), rgba(14,14,22,.92));
-    border:1px solid rgba(255,255,255,.12);
-    box-shadow:0 4px 14px rgba(0,0,0,.4);
-    padding:9px 16px;
+  #hud { position:absolute; top:16vh; left:0; right:0; padding:0 16px; display:flex; justify-content:center; align-items:center; color:#fff; font-weight:700; font-size:20px; z-index:5; pointer-events:none; }
+  #hudPill {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:linear-gradient(180deg, rgba(30,30,46,.94), rgba(12,12,20,.94));
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 6px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+    padding:12px 22px;
     border-radius:999px;
-    backdrop-filter:blur(6px);
-    letter-spacing:.2px;
+    backdrop-filter:blur(8px);
   }
-  #statPill { font-size:17px; }
-  #levelPill { font-size:15px; color:#ffd93d; }
-  #levelPill small { font-size:11px; opacity:0.75; margin-left:2px; color:#a8a3b8; }
+  .hud-seg { font-size:17px; letter-spacing:.2px; white-space:nowrap; }
+  .hud-seg b { font-weight:800; }
+  .hud-sep { opacity:.28; font-weight:400; }
+  .hud-level { color:#ffd93d; }
+  .hud-level small { font-size:11px; opacity:0.75; margin-left:2px; color:#a8a3b8; }
   #weaponHud {
-    position:absolute; top:120px; left:50%; transform:translateX(-50%);
+    position:absolute; top:24vh; left:50%; transform:translateX(-50%);
     background:rgba(60,0,0,0.6); color:#ff5c5c; font-weight:800; font-size:16px;
     padding:5px 14px; border-radius:999px; border:1px solid rgba(255,60,60,.6);
     text-shadow:0 0 8px rgba(255,40,40,.9); z-index:6; animation:weaponPulse 0.6s infinite alternate;
@@ -150,7 +154,7 @@
   #screen-game{ display:none; }
   #screen-game.active{ display:flex; position:fixed; inset:0; z-index:30; padding:0; touch-action:none; overscroll-behavior:none; background:#0a0a12; }
 
-  .exit-run-btn{ position:absolute; top:14px; left:14px; width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.95rem; line-height:30px; text-align:center; cursor:pointer; z-index:6; }
+  .exit-run-btn{ position:absolute; top:16vh; left:14px; width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.95rem; line-height:30px; text-align:center; cursor:pointer; z-index:6; }
 </style>
 </head>
 <body>
@@ -263,8 +267,13 @@
       <div class="exit-run-btn" id="exitRunBtn">✕</div>
 
       <div id="hud">
-        <div id="statPill">🧟 0 · 0 m</div>
-        <div id="levelPill">Lvl 1<small>·1</small></div>
+        <div id="hudPill">
+          <span class="hud-seg">🧟 <b id="hudZombies">0</b></span>
+          <span class="hud-sep">|</span>
+          <span class="hud-seg" id="hudDistance">0 m</span>
+          <span class="hud-sep">|</span>
+          <span class="hud-seg hud-level"><span id="hudLevelLabel">Lvl</span> <b id="hudLevel">1</b><small id="hudMult">·1</small></span>
+        </div>
       </div>
       <div id="weaponHud" style="display:none;">🔫 <span id="weaponTimerVal">10</span>s</div>
 
@@ -972,10 +981,16 @@
   const END_Z = 8;                  // behind camera -> remove
 
   function updateCoinCountUI(){
-    const el = document.getElementById('statPill');
-    if (el) el.textContent = '🧟 ' + personScore + ' · ' + Math.floor(distance) + ' m';
-    const lvl = document.getElementById('levelPill');
-    if (lvl) lvl.innerHTML = t('statLevel') + ' ' + store.level + '<small>·' + LEVEL_MULTIPLIER + '</small>';
+    const zEl = document.getElementById('hudZombies');
+    if (zEl) zEl.textContent = personScore;
+    const dEl = document.getElementById('hudDistance');
+    if (dEl) dEl.textContent = Math.floor(distance) + ' m';
+    const lblEl = document.getElementById('hudLevelLabel');
+    if (lblEl) lblEl.textContent = t('statLevel');
+    const lvlEl = document.getElementById('hudLevel');
+    if (lvlEl) lvlEl.textContent = store.level;
+    const multEl = document.getElementById('hudMult');
+    if (multEl) multEl.textContent = '·' + LEVEL_MULTIPLIER;
   }
 
   function updateWeaponHud(){
