@@ -1048,6 +1048,7 @@
       serverSession.online = true;
       window.__depositDebug = 'ok';
       applyServerState(data.state);
+      syncWithdrawalStatuses();
     } catch (e) {
       if (!window.__depositDebug) window.__depositDebug = 'fetch-error: ' + (e && e.message);
       serverSession.online = false; // fall back to local economy silently
@@ -1181,6 +1182,7 @@
 
     btn.disabled = true;
     let handledByServer = false;
+    let serverWithdrawal = null;
     if (serverSession.online && serverSession.token){
       try {
         const res = await fetch(SERVER_URL + '/api/withdraw', {
@@ -1192,6 +1194,7 @@
           const data = await res.json();
           if (data.state) applyServerState(data.state);
           else store.points -= amount;
+          if (data.withdrawal) serverWithdrawal = data.withdrawal;
           handledByServer = true;
         }
       } catch (e) {
@@ -1201,7 +1204,9 @@
     if (!handledByServer){
       store.points -= amount;
     }
-    store.withdrawals.push({ address, amount, status: 'pending', ts: Date.now() });
+    // Use the server's own withdrawal record (same ts the admin panel uses)
+    // whenever we have one, so later status syncs can match it up.
+    store.withdrawals.push(serverWithdrawal || { address, amount, status: 'pending', ts: Date.now() });
     saveStore();
     setWithdrawStatus(t('withdrawSuccess'), 'success');
     amountInput.value = '';
@@ -1209,6 +1214,41 @@
     btn.disabled = false;
   }
   document.getElementById('withdrawBtn').addEventListener('click', requestWithdraw);
+
+  // Poll the server for updated withdrawal statuses (picks up when an admin
+  // marks a withdrawal 'completed' after paying it out manually) and merge
+  // them into the local history by matching on ts.
+  let withdrawSyncInFlight = false;
+  async function syncWithdrawalStatuses(){
+    if (withdrawSyncInFlight) return;
+    if (!serverSession.online || !serverSession.token) return;
+    if (!store.withdrawals || !store.withdrawals.length) return;
+    withdrawSyncInFlight = true;
+    try {
+      const res = await fetch(SERVER_URL + '/api/withdrawals?token=' + encodeURIComponent(serverSession.token));
+      if (res.ok){
+        const data = await res.json();
+        const serverList = (data && data.withdrawals) || [];
+        let changed = false;
+        store.withdrawals.forEach(local => {
+          const match = serverList.find(sw => sw.ts === local.ts);
+          if (match && match.status !== local.status){
+            local.status = match.status;
+            changed = true;
+          }
+        });
+        if (changed){
+          saveStore();
+          renderWithdrawUI();
+        }
+      }
+    } catch (e) {
+      // network hiccup - just retry on the next interval
+    } finally {
+      withdrawSyncInFlight = false;
+    }
+  }
+  setInterval(syncWithdrawalStatuses, 20000);
 
   /* ================= DEPOSIT (TON) ================= */
   document.getElementById('depositCopyBtn').addEventListener('click', async () => {
@@ -1274,7 +1314,7 @@
       panelWithdraw.classList.toggle('active', !isDeposit);
     }
     tabDeposit.addEventListener('click', () => setWalletTab('deposit'));
-    tabWithdraw.addEventListener('click', () => setWalletTab('withdraw'));
+    tabWithdraw.addEventListener('click', () => { setWalletTab('withdraw'); syncWithdrawalStatuses(); });
   })();
 
   /* ================= NAVIGATION ================= */
