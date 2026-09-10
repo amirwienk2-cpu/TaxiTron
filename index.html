@@ -595,7 +595,7 @@
       tournamentTitle: '🏆 Zombie Tournament',
       tournamentDesc: 'Weekly leaderboard — collect more zombies than the competition.',
       prizePoolTitle: '🏆 Weekly Prize Pool', place1: '1st Place', place2: '2nd Place', place3: '3rd Place',
-      dayUnit: 'd', hourUnit: 'h', minuteUnit: 'm',
+      dayUnit: 'D', hourUnit: 'H', minuteUnit: 'M',
       nextReset: 'Next reset in',
       youTag: 'YOU', youName: 'You',
       walletSub: 'Coin balance',
@@ -2011,6 +2011,27 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAA
     lastDistance += distance;
     saveStore();
     refreshTopUI();
+    submitScoreForTournament(personScore, distance);
+  }
+
+  // Reports this run's zombie count to the server for the TOURNAMENT ranking
+  // only — completely separate from the coin economy, which still only
+  // changes when the player taps "Exchange" in the wallet. This runs
+  // automatically after every round, so the leaderboard reflects real
+  // performance even if the player never exchanges their coins.
+  async function submitScoreForTournament(zombies, dist){
+    if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
+    if (zombies <= 0) return;
+    try {
+      await fetch(SERVER_URL + '/api/submit-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, distance: dist, zombies })
+      });
+    } catch (e) {
+      // best-effort only - a missed submission just means this one run
+      // won't count toward the tournament, nothing else is affected
+    }
   }
 
   function gameOver(){
