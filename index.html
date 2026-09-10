@@ -1442,12 +1442,20 @@
   scene.background = new THREE.Color(0x0a0a12);
   scene.fog = new THREE.Fog(0x0a0a12, 30, 140);
 
-  const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 500);
+  const camera = new THREE.PerspectiveCamera(100, 1, 0.1, 500);
+  const CAMERA_DIST = 6.5; // distance from camera to player car
+  const HALF_VISIBLE_X = 5.6; // half-width (lane offset + car width + margin) that must stay on-screen
 
   function resize(){
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h);
-    camera.aspect = w / h;
+    const aspect = w / h;
+    camera.aspect = aspect;
+    const desiredHalfH = Math.atan(HALF_VISIBLE_X / CAMERA_DIST);
+    let vHalf = Math.atan(Math.tan(desiredHalfH) / aspect);
+    let fovDeg = THREE.MathUtils.radToDeg(vHalf) * 2;
+    fovDeg = Math.max(55, Math.min(fovDeg, 130));
+    camera.fov = fovDeg;
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
@@ -2123,8 +2131,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
     // camera chase behind car
     camera.position.x = 0;
-    camera.position.y = 4.2;
-    camera.position.z = 14;
+    camera.position.y = 3.0;
+    camera.position.z = CAMERA_DIST;
     camera.lookAt(0, 1.2, -14);
   }
 
@@ -2138,7 +2146,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     requestAnimationFrame(loop);
   }
 
-  camera.position.set(0, 4.2, 14);
+  camera.position.set(0, 3.0, CAMERA_DIST);
   camera.lookAt(0, 1.2, -14);
   loop();
   refreshTopUI();
