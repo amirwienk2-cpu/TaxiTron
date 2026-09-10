@@ -1,0 +1,180 @@
+  /* ================= I18N ================= */
+  const translations = {
+    en: {
+      heroDesc: 'Steer your car through the lanes in 3D and collect zombies. Trade them in for coins in your Wallet.',
+      playBtn: '▶ Start Ride',
+      statWallet: 'Wallet', statBest: 'Best', statRuns: 'Runs', statLevel: 'Lvl',
+      balanceLabel: 'BALANCE', dailyCapLabel: 'DAILY EARN CAP', today: 'today',
+      howtoTitle: 'How it works',
+      howto1: 'Arrow keys, A/D or swipe to change lanes',
+      howto2: 'Collect zombies — the more on board, the faster your car goes',
+      howto3: 'Avoid other cars — one hit ends the ride',
+      howto4: 'Trade collected zombies for coins in your Wallet (2 coins per zombie)',
+      navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
+      shopTitle: '🧟 Zombie Gear',
+      shopDesc: 'Invest your coins in permanent upgrades for every ride.',
+      upgradeNitroTitle: 'Nitro Start',
+      upgradeNitroDesc: 'Your car starts every ride with higher base speed.',
+      upgradeMagnetTitle: 'Zombie Magnet',
+      upgradeMagnetDesc: 'Bigger pickup radius — hard-to-miss zombies.',
+      upgradeReviveTitle: 'Undead Clause',
+      upgradeReviveDesc: 'The first crash per ride is survived — once per ride.',
+      shopNote: 'Upgrades are permanent and apply to all future rides.',
+      skinShopTitle: '🚕 Taxi Skins',
+      skinShopDesc: 'Unlock premium taxi looks. Some levels also pay a daily TON reward.',
+      skinShopNote: 'Skins are permanent once purchased. Daily rewards are credited automatically once every 24 hours.',
+      skinLevelLabel: 'Level',
+      skinFree: 'Free',
+      skinComingSoon: 'Coming soon',
+      skinOwned: 'Owned',
+      skinSelected: 'Selected ✓',
+      skinSelectBtn: 'Select',
+      skinNameYellow: 'Classic Yellow', skinNameRed: 'Crimson Red', skinNameWhite: 'Arctic White',
+      skinNameGreen: 'Jungle Camo', skinNameBlack: 'Midnight Gold',
+      skinPerDay: 'day', skinPerDayFor: 'per day for', skinDays: 'days',
+      skinDaysLeft: 'days left', skinRewardActive: 'Daily reward active',
+      skinRewardOffer: 'Earn a daily TON reward',
+      attemptsLeft: 'tries left', attemptsNextIn: 'Next try in',
+      withdrawTitle: 'Withdraw TON', withdrawAvailable: 'available',
+      withdrawAddressPlaceholder: 'UQ… TON wallet address',
+      withdrawAmountPlaceholder: 'Amount (min 1 TON)',
+      withdrawBtn: 'Request Withdrawal',
+      withdrawNote: 'Minimum withdrawal is 1 TON. Requests are reviewed and sent to your wallet address.',
+      withdrawErrAddress: 'Enter a valid TON wallet address.',
+      withdrawErrMin: 'Minimum withdrawal is 1 TON.',
+      withdrawErrFunds: 'Not enough TON balance.',
+      withdrawSuccess: 'Withdrawal requested — funds will arrive at your wallet soon.',
+      withdrawPendingStatus: 'Pending', withdrawCompletedStatus: 'Completed',
+      depositTitle: 'Deposit TON', depositDesc: 'Send TON to this address to top up your in-game balance.',
+      depositCopyBtn: '📋 Copy Address', depositCopied: '✅ Address copied to clipboard',
+      depositMemoLabel: 'Important: include this code as the transfer comment/memo, or your deposit can\'t be matched to your account automatically.',
+      depositMemoCopyBtn: '📋 Copy Code', depositMemoCopied: '✅ Code copied to clipboard',
+      depositMemoUnavailable: 'Open this app inside Telegram to get your personal deposit code.',
+      depositNote: 'Only send TON on the TON network. Deposits are detected automatically within a couple of minutes once the memo/comment matches your code above.',
+      buyOwned: 'Active ✓',
+      tournamentTitle: '🏆 Zombie Tournament',
+      tournamentDesc: 'Weekly leaderboard — collect more zombies than the competition.',
+      prizePoolTitle: '🏆 Weekly Prize Pool', place1: '1st Place', place2: '2nd Place', place3: '3rd Place',
+      dayUnit: 'D', hourUnit: 'H', minuteUnit: 'M',
+      nextReset: 'Next reset in',
+      youTag: 'YOU', youName: 'You',
+      walletSub: 'Coin balance',
+      tonBalanceLabel: 'TON balance',
+      exchangeTitle: 'Exchange',
+      exchangeRateLabel: '2 coins per zombie',
+      depositTab: '📥 Deposit',
+      withdrawTab: '💎 Withdraw',
+      walletCollected: 'collected — not yet exchanged',
+      exchangeBtn: 'Exchange (2 🪙 per zombie)',
+      walletNote: 'Coins are a virtual in-game currency for the shop only. No real money, no cryptocurrency.',
+      toHome: 'Back to Home',
+      hint: '◀ ▶ Arrow keys, A/D or swipe',
+      crash: 'CRASH!',
+      walletExchangeInfo: 'Exchangeable in your Wallet (2 🪙 per zombie)',
+      bestScoreText: 'Best: {best} zombies',
+      retry: 'Retry', goHome: 'Back to Home',
+      zombiesLabel: '🧟'
+    },
+    fa: {
+      heroDesc: 'ماشینت را در مسیر سه‌بعدی هدایت کن و زامبی‌ها را جمع‌آوری کن. در کیف پول می‌توانی آن‌ها را با سکه معاوضه کنی.',
+      playBtn: '▶ شروع مسیر',
+      statWallet: 'کیف پول', statBest: 'بهترین امتیاز', statRuns: 'تعداد مسیرها', statLevel: 'سطح',
+      balanceLabel: 'موجودی', dailyCapLabel: 'سقف روزانه', today: 'امروز',
+      howtoTitle: 'روش بازی',
+      howto1: 'کلیدهای جهت‌نما، A/D یا کشیدن انگشت برای تغییر مسیر',
+      howto2: 'زامبی‌ها را جمع کن — هرچه بیشتر سوار باشند، ماشینت سریع‌تر می‌شود',
+      howto3: 'از برخورد با ماشین‌های دیگر خودداری کن — یک برخورد به مسیر پایان می‌دهد',
+      howto4: 'زامبی‌های جمع‌شده را در کیف پول با سکه معاوضه کن (۲ سکه به ازای هر زامبی)',
+      navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
+      shopTitle: '🧟 تجهیزات زامبی',
+      shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
+      upgradeNitroTitle: 'شروع نیترو',
+      upgradeNitroDesc: 'ماشین تو هر مسیر را با سرعت پایه بالاتر شروع می‌کند.',
+      upgradeMagnetTitle: 'آهنربای زامبی',
+      upgradeMagnetDesc: 'شعاع جمع‌آوری بزرگ‌تر — زامبی‌ها به‌سختی از دست می‌روند.',
+      upgradeReviveTitle: 'بند نامیرا',
+      upgradeReviveDesc: 'اولین برخورد در هر مسیر زنده می‌ماند — یک‌بار در هر مسیر.',
+      shopNote: 'ارتقاءها دائمی هستند و برای همه مسیرهای آینده اعمال می‌شوند.',
+      skinShopTitle: '🚕 اسکین‌های تاکسی',
+      skinShopDesc: 'ظاهرهای ویژه تاکسی را باز کنید. برخی سطوح پاداش روزانه تون هم دارند.',
+      skinShopNote: 'اسکین‌ها پس از خرید دائمی هستند. پاداش‌های روزانه هر ۲۴ ساعت به‌طور خودکار واریز می‌شوند.',
+      skinLevelLabel: 'سطح',
+      skinFree: 'رایگان',
+      skinComingSoon: 'به‌زودی',
+      skinOwned: 'مالک',
+      skinSelected: 'انتخاب شد ✓',
+      skinSelectBtn: 'انتخاب',
+      skinNameYellow: 'زرد کلاسیک', skinNameRed: 'قرمز زرشکی', skinNameWhite: 'سفید یخی',
+      skinNameGreen: 'کاموفلاژ سبز', skinNameBlack: 'طلایی نیمه‌شب',
+      skinPerDay: 'روز', skinPerDayFor: 'در روز به مدت', skinDays: 'روز',
+      skinDaysLeft: 'روز باقی‌مانده', skinRewardActive: 'پاداش روزانه فعال است',
+      skinRewardOffer: 'پاداش روزانه تون دریافت کنید',
+      attemptsLeft: 'تلاش باقی‌مانده', attemptsNextIn: 'تلاش بعدی تا',
+      withdrawTitle: 'برداشت تون', withdrawAvailable: 'موجود',
+      withdrawAddressPlaceholder: 'آدرس کیف پول تون (UQ…)',
+      withdrawAmountPlaceholder: 'مبلغ (حداقل ۱ تون)',
+      withdrawBtn: 'درخواست برداشت',
+      withdrawNote: 'حداقل مبلغ برداشت ۱ تون است. درخواست‌ها بررسی و به کیف پول شما ارسال می‌شوند.',
+      withdrawErrAddress: 'یک آدرس معتبر کیف پول تون وارد کنید.',
+      withdrawErrMin: 'حداقل مبلغ برداشت ۱ تون است.',
+      withdrawErrFunds: 'موجودی تون کافی نیست.',
+      withdrawSuccess: 'درخواست برداشت ثبت شد — به‌زودی به کیف پول شما واریز می‌شود.',
+      withdrawPendingStatus: 'در انتظار', withdrawCompletedStatus: 'انجام شد',
+      depositTitle: 'واریز تون', depositDesc: 'برای افزایش موجودی درون‌بازی، تون را به این آدرس ارسال کنید.',
+      depositCopyBtn: '📋 کپی آدرس', depositCopied: '✅ آدرس کپی شد',
+      depositMemoLabel: 'مهم: این کد را به‌عنوان توضیح/یادداشت (memo) انتقال وارد کنید، در غیر این صورت واریز شما به‌طور خودکار به حساب شما تطبیق داده نمی‌شود.',
+      depositMemoCopyBtn: '📋 کپی کد', depositMemoCopied: '✅ کد کپی شد',
+      depositMemoUnavailable: 'برای دریافت کد شخصی واریز، این اپ را داخل تلگرام باز کنید.',
+      depositNote: 'فقط از شبکه TON استفاده کنید. واریزها ظرف چند دقیقه پس از تطبیق یادداشت/توضیح با کد بالا به‌طور خودکار شناسایی می‌شوند.',
+      buyOwned: 'فعال ✓',
+      tournamentTitle: '🏆 مسابقه زامبی',
+      tournamentDesc: 'جدول امتیازات هفتگی — زامبی‌های بیشتری نسبت به رقبا جمع کن.',
+      prizePoolTitle: '🏆 جایزه هفتگی', place1: 'مقام اول', place2: 'مقام دوم', place3: 'مقام سوم',
+      dayUnit: 'ر', hourUnit: 'س', minuteUnit: 'د',
+      nextReset: 'بازنشانی بعدی در',
+      youTag: 'شما', youName: 'شما',
+      walletSub: 'موجودی سکه',
+      tonBalanceLabel: 'موجودی تون',
+      exchangeTitle: 'معاوضه',
+      exchangeRateLabel: '۲ سکه به ازای هر زامبی',
+      depositTab: '📥 واریز',
+      withdrawTab: '💎 برداشت',
+      walletCollected: 'جمع‌آوری‌شده — هنوز معاوضه نشده',
+      exchangeBtn: 'معاوضه (۲ 🪙 به ازای هر زامبی)',
+      walletNote: 'سکه‌ها یک ارز مجازی درون‌بازی فقط برای فروشگاه هستند. بدون پول واقعی، بدون ارز دیجیتال.',
+      toHome: 'بازگشت به خانه',
+      hint: '◀ ▶ کلیدهای جهت‌نما، A/D یا کشیدن انگشت',
+      crash: 'تصادف!',
+      walletExchangeInfo: 'در کیف پول قابل معاوضه است (۲ 🪙 به ازای هر زامبی)',
+      bestScoreText: 'بهترین امتیاز: {best} زامبی',
+      retry: 'دوباره', goHome: 'بازگشت به خانه',
+      zombiesLabel: '🧟'
+    }
+  };
+  let currentLang = localStorage.getItem('cr3d_lang') || 'en';
+  function t(key){ return (translations[currentLang] && translations[currentLang][key]) || key; }
+  function applyLanguage(lang){
+    if (!translations[lang]) lang = 'en';
+    currentLang = lang;
+    localStorage.setItem('cr3d_lang', lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = (lang === 'fa') ? 'rtl' : 'ltr';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (translations[lang][key] !== undefined) el.textContent = translations[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.dataset.i18nPlaceholder;
+      if (translations[lang][key] !== undefined) el.placeholder = translations[lang][key];
+    });
+    document.querySelectorAll('.lang-flag').forEach(f => f.classList.toggle('active', f.dataset.lang === lang));
+    refreshShopUI();
+    renderSkinShop();
+    renderLeaderboard();
+    updateCoinCountUI();
+    renderWithdrawUI();
+  }
+  document.querySelectorAll('.lang-flag').forEach(f => {
+    f.addEventListener('click', () => applyLanguage(f.dataset.lang));
+  });
+
