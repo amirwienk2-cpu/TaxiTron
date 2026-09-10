@@ -1,64 +1,103 @@
-# Coin Runner 3D — Economy Server
+# Coin Runner 3D — Client
 
-Verwaltet Coins & TON-Guthaben serverseitig. Keine externen Pakete nötig —
-läuft mit nacktem Node.js.
+Neu aufgebautes Frontend für dein bestehendes `server.js` (Telegram-Mini-App,
+server-authoritative Economy). Der Client rechnet **nie** selbst Coins/TON
+hoch — er zeigt nur, was der Server zurückgibt, und meldet nach jedem Lauf
+`distance` + `zombies` an `/api/run` bzw. `/api/submit-score`.
 
-## 1. Server starten
+## Struktur
 
-```bash
-export BOT_TOKEN="123456:dein-echter-telegram-bot-token"
-export SESSION_SECRET="ein-langer-zufälliger-string"
-export PORT=8787   # optional, Standard ist 8787
-node server.js
+```
+coin-runner-client/
+├── index.html
+├── css/style.css
+├── js/
+│   ├── main.js          Einstiegspunkt: Telegram-Auth, Bootstrapping
+│   ├── api.js            Wrapper um alle server.js-Endpunkte
+│   ├── telegram.js       Telegram WebApp SDK (initData, Haptics, BackButton)
+│   ├── state.js           kleiner Store für Coins/TON/Best etc.
+│   ├── ui.js              Screens: Menü, HUD, Summary, Wallet, Rangliste
+│   └── game/
+│       ├── Game.js        Loop, Szene, Kamera, Laufsteuerung
+│       ├── Road.js         Straße als eine Plane mit scrollender Textur
+│       ├── Scenery.js      Straßenrand-Deko als InstancedMesh (1 Draw-Call)
+│       ├── Car.js          Spieler-Fahrzeug, Spurwechsel
+│       ├── ZombiePool.js  Objektpool für Zombies (keine Allokationen im Loop)
+│       └── Input.js        Swipe-Steuerung (+ Pfeiltasten als Desktop-Bonus)
+└── README.md
 ```
 
-Die Daten liegen danach in `data/users.json` (wird automatisch angelegt).
+Kein Build-Schritt nötig: reine ES-Module, Three.js kommt per `importmap`
+von unpkg. Einfach als statische Dateien hosten.
 
-## 2. Server irgendwo hosten
+## Warum es nicht laggt
 
-Jeder Ort, an dem `node server.js` laufen kann, reicht: z. B. ein kleiner
-VPS (Hetzner, DigitalOcean, Contabo …), Railway, Render, Fly.io. Wichtig:
-die Umgebungsvariablen `BOT_TOKEN` und `SESSION_SECRET` dort setzen, nicht
-im Code hart hinterlegen.
+- **Straße:** eine einzige Plane, "Bewegung" ist nur ein Textur-Offset —
+  keine Geometrie wird pro Frame neu gebaut oder verschoben.
+- **Deko am Straßenrand:** ein `InstancedMesh` mit 26 Instanzen = 1 Draw-Call
+  statt 26 einzelner Meshes.
+- **Zombies:** fester Objektpool (24 Stück), die recycelt statt neu erzeugt
+  werden. Kein `new`/GC-Druck während des Laufs.
+- **Kein Echtzeit-Schattenwurf:** stattdessen ein billiger "Blob-Schatten"
+  unter dem Auto (eine transparente Textur).
+- **Delta-Zeit gekappt** (max. 1/20 s) und die Render-Loop pausiert komplett,
+  wenn der Tab/die App im Hintergrund ist (`visibilitychange`).
+- `devicePixelRatio` ist auf max. 2 gedeckelt, damit hochauflösende Handys
+  nicht unnötig viele Pixel rendern müssen.
 
-Für HTTPS brauchst du davor einen Reverse Proxy (z. B. Nginx + Let's
-Encrypt) oder eine Plattform, die HTTPS automatisch bereitstellt — Telegram
-Mini Apps verlangen HTTPS.
+## Setup
 
-## 3. Spiel mit dem Server verbinden
+1. **API-Basis-URL setzen** — in `index.html`:
+   ```html
+   <script>
+     window.__COIN_RUNNER_API_BASE__ = "https://DEIN-SERVER.up.railway.app";
+   </script>
+   ```
+   Läuft der Client auf exakt derselben Domain wie `server.js` (z.B. weil
+   `server.js` die statischen Dateien selbst ausliefert), kann das auch ein
+   leerer String `""` bleiben.
 
-In `coin_runner_3d.html` gibt es die Zeile:
+2. **Statisch hosten**, z.B.:
+   - Als eigener Vercel/Netlify/Cloudflare-Pages-Deploy (empfohlen — Backend
+     bleibt separat auf Railway), oder
+   - Von `server.js` selbst mitausgeliefert (dazu müsstest du in `server.js`
+     einen kleinen Static-File-Handler ergänzen, der `index.html`/`css`/`js`
+     ausliefert; aktuell tut `server.js` das nicht, es beantwortet nur
+     `/api/*`).
 
-```js
-const SERVER_URL = "";
-```
+3. **Telegram-Bot konfigurieren** (BotFather):
+   - `/newapp` bzw. `/setmenubutton` → Web-App-URL = die Domain, unter der du
+     den Client in Schritt 2 hostest.
 
-Trage dort deine Server-Adresse ein, z. B.:
+4. **Lokal testen:** Die App braucht ein echtes, von Telegram signiertes
+   `initData` (siehe `verifyTelegramInitData` in `server.js`) — außerhalb von
+   Telegram öffnen zeigt bewusst nur einen Hinweis statt einen Fake-Login
+   zuzulassen, damit die Auth so streng bleibt wie im Server vorgesehen.
+   Zum Testen also entweder direkt über den Telegram-Bot öffnen (z.B. via
+   ngrok-Tunnel auf deinen lokalen Client), oder Telegram Desktop mit einer
+   Test-Bot-Web-App verwenden.
 
-```js
-const SERVER_URL = "https://dein-server.example.com";
-```
+## Spielablauf
 
-Sobald das gesetzt ist:
-- Beim Start der Mini App authentifiziert sich das Spiel automatisch über
-  Telegrams `initData` beim Server.
-- Beim Umtausch im Wallet (`exchangePersons`) wird nicht mehr lokal
-  gerechnet, sondern der Server gefragt — er ist die einzige Quelle für
-  Coins/TON-Stand und das Tages-Limit.
-- Ohne gesetzte `SERVER_URL` (oder außerhalb von Telegram getestet) läuft
-  das Spiel weiterhin im bisherigen rein lokalen Modus, damit du es auch
-  im normalen Browser testen kannst.
+1. **Fahren** → 42 Sekunden Lauf, Tempo steigt über die Zeit. Wischen
+   links/rechts wechselt die Spur, Zombies in der eigenen Spur werden
+   automatisch eingesammelt.
+2. Nach Laufende wird die erreichte **Distanz + Zombie-Zahl** sofort per
+   `/api/submit-score` fürs Wochenturnier gemeldet — unabhängig davon, ob du
+   einlöst.
+3. Auf dem Summary-Screen löst **„Einlösen“** den Lauf über `/api/run` ein
+   und schreibt die vom Server berechneten Coins/TON gut.
+4. **Wallet** zeigt Ein-/Auszahlung (`/api/deposit-info`, `/api/withdraw`,
+   `/api/withdrawals`), **Rangliste** zeigt `/api/leaderboard`.
 
-## Was das bringt — und was nicht
+## Tuning
 
-**Verhindert:** beliebiges Hochsetzen des Guthabens über die
-Browser-Konsole/localStorage, da der Browser den Kontostand nie selbst
-besitzt, sondern nur anzeigt, was der Server zurückgibt.
+Die wichtigsten Stellschrauben für das Spielgefühl:
 
-**Verhindert nicht:** dass jemand die Netzwerk-Anfrage an `/api/run`
-abfängt und dort die gemeldete Distanz/Zombie-Zahl manipuliert, bevor sie
-beim Server ankommt. Der Server prüft nur auf Plausibilität (max. Zombies
-pro Meter, Mindestabstand zwischen Einreichungen, Obergrenze pro Fahrt) —
-das fängt naive Cheats ab, ist aber kein kryptographischer Beweis. Ein
-wirklich manipulationssicheres System müsste die komplette Fahrt
-serverseitig simulieren; das ist ein deutlich größeres Projekt.
+- `RUN_DURATION_S`, `BASE_SPEED`, `MAX_SPEED` in `js/game/Game.js`
+- `METERS_PER_SPAWN_BASE` in `js/game/ZombiePool.js` (Sammelrate — bewusst
+  so gewählt, dass sie deutlich unter dem serverseitigen Plausibilitäts-Cap
+  `MAX_ZOMBIES_PER_METER = 0.3` aus `server.js` bleibt, damit gute Spieler
+  nicht durch das Anti-Cheat-Clamping ausgebremst werden)
+- Farben/Look in `css/style.css` (`:root`-Variablen) und den `Material`-Farben
+  in `Car.js` / `ZombiePool.js` / `Scenery.js`

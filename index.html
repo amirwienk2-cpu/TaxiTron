@@ -1,223 +1,180 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Coin Runner 3D</title>
-<link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#0b0d0a" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+
+<!-- Telegram Mini Apps SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-<div id="appShell">
 
-  <div class="topbar">
-    <div class="brand">Earn TON</div>
-    <div class="coin-pill" id="topCoinDisplay">0</div>
+  <div id="app">
+
+    <!-- ===== 3D canvas ===== -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- ===== In-run HUD ===== -->
+    <div id="hud" class="screen hidden">
+      <div class="hud-top">
+        <div class="hud-stat">
+          <span class="hud-icon coin-icon"></span>
+          <span id="hud-coins">0</span>
+        </div>
+        <div class="hud-timer">
+          <div id="hud-timer-bar"></div>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-icon zombie-icon"></span>
+          <span id="hud-zombies">0</span>
+        </div>
+      </div>
+      <div class="hud-distance"><span id="hud-distance">0</span> m</div>
+    </div>
+
+    <!-- ===== Start / Menu screen ===== -->
+    <div id="screen-menu" class="screen">
+      <div class="menu-inner">
+        <h1 class="logo">COIN<span>RUNNER</span><em>3D</em></h1>
+        <p class="tagline">Überleb die Straße. Sammel die Toten ein.</p>
+
+        <div class="balance-row">
+          <div class="balance-chip">
+            <span class="hud-icon coin-icon"></span>
+            <span id="menu-coins">0</span>
+          </div>
+          <div class="balance-chip">
+            <span class="hud-icon ton-icon"></span>
+            <span id="menu-ton">0.000000</span>
+          </div>
+        </div>
+
+        <button id="btn-play" class="btn btn-primary">Fahren</button>
+        <div class="menu-secondary">
+          <button id="btn-wallet" class="btn btn-ghost">Wallet</button>
+          <button id="btn-leaderboard" class="btn btn-ghost">Rangliste</button>
+        </div>
+
+        <p id="menu-status" class="menu-status"></p>
+      </div>
+    </div>
+
+    <!-- ===== Run summary / redeem screen ===== -->
+    <div id="screen-summary" class="screen hidden">
+      <div class="panel">
+        <h2>Lauf beendet</h2>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span class="summary-label">Strecke</span>
+            <span id="sum-distance" class="summary-value">0 m</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Zombies</span>
+            <span id="sum-zombies" class="summary-value">0</span>
+          </div>
+        </div>
+        <button id="btn-redeem" class="btn btn-primary">Einlösen</button>
+        <div id="redeem-result" class="redeem-result hidden">
+          <p><span id="redeem-coins">0</span> Coins &middot; <span id="redeem-ton">0.000000</span> TON</p>
+        </div>
+        <button id="btn-summary-continue" class="btn btn-ghost hidden">Weiter</button>
+      </div>
+    </div>
+
+    <!-- ===== Wallet screen ===== -->
+    <div id="screen-wallet" class="screen hidden">
+      <div class="panel panel-tall">
+        <div class="panel-header">
+          <button class="btn-back" data-back>&larr;</button>
+          <h2>Wallet</h2>
+        </div>
+
+        <div class="wallet-balances">
+          <div class="balance-block">
+            <span class="summary-label">Coins</span>
+            <span id="wallet-coins" class="summary-value">0</span>
+          </div>
+          <div class="balance-block">
+            <span class="summary-label">TON</span>
+            <span id="wallet-ton" class="summary-value">0.000000</span>
+          </div>
+        </div>
+        <p class="wallet-cap">Heute: <span id="wallet-today">0</span> / <span id="wallet-cap">1</span> TON Tageslimit</p>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="deposit">Einzahlen</button>
+          <button class="tab-btn" data-tab="withdraw">Auszahlen</button>
+        </div>
+
+        <div id="tab-deposit" class="tab-panel">
+          <p class="hint">Sende TON an diese Adresse und gib <strong>unbedingt</strong> den Memo-Code als Kommentar an — sonst kann die Einzahlung nicht zugeordnet werden.</p>
+          <div class="copy-field">
+            <span id="deposit-address">—</span>
+            <button class="btn-copy" data-copy="deposit-address">Kopieren</button>
+          </div>
+          <label class="field-label">Memo-Code</label>
+          <div class="copy-field">
+            <span id="deposit-memo">—</span>
+            <button class="btn-copy" data-copy="deposit-memo">Kopieren</button>
+          </div>
+        </div>
+
+        <div id="tab-withdraw" class="tab-panel hidden">
+          <label class="field-label">TON-Adresse</label>
+          <input id="withdraw-address" class="text-input" type="text" placeholder="UQ..." />
+          <label class="field-label">Betrag (TON)</label>
+          <input id="withdraw-amount" class="text-input" type="number" step="0.000001" placeholder="min. 1" />
+          <button id="btn-withdraw-submit" class="btn btn-primary">Auszahlung anfordern</button>
+          <p id="withdraw-status" class="menu-status"></p>
+
+          <h3 class="history-title">Verlauf</h3>
+          <div id="withdraw-history" class="history-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Leaderboard screen ===== -->
+    <div id="screen-leaderboard" class="screen hidden">
+      <div class="panel panel-tall">
+        <div class="panel-header">
+          <button class="btn-back" data-back>&larr;</button>
+          <h2>Rangliste</h2>
+        </div>
+        <p class="hint">Beste Zombie-Anzahl in einem Lauf diese Woche.</p>
+        <div id="leaderboard-you" class="leaderboard-you hidden"></div>
+        <div id="leaderboard-list" class="leaderboard-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== Blocking loader / error overlay ===== -->
+    <div id="screen-loader" class="screen">
+      <div class="loader-inner">
+        <div class="spinner"></div>
+        <p id="loader-text">Verbinde…</p>
+      </div>
+    </div>
+
   </div>
 
-  <!-- HOME -->
-  <main class="screen active" id="screen-home">
-    <div class="balance-card">
-      <div class="balance-label" data-i18n="balanceLabel">BALANCE</div>
-      <div class="balance-value"><span id="balanceValue">0.000000</span> <span class="unit">TON</span></div>
-      <div class="cap-row">
-        <span data-i18n="dailyCapLabel">DAILY EARN CAP</span>
-        <span id="capPercent">0%</span>
-      </div>
-      <div class="cap-track"><div class="cap-fill" id="capFill"></div></div>
-      <div class="cap-sub" id="capSub">0.000000 / 1.000000 TON <span data-i18n="today">today</span> · <span data-i18n="statLevel">Lvl</span> 1</div>
-    </div>
-    <div class="hero home-hero">
-      <div class="hero-badge">🧟</div>
-      <p data-i18n="heroDesc">Steer your car through the lanes in 3D and collect zombies. Trade them in for coins in your Wallet.</p>
-      <button class="menu-btn" id="homePlayBtn" data-i18n="playBtn">▶ Start Ride</button>
-      <div class="attempts-info" id="attemptsInfo"></div>
-    </div>
-    <div class="stat-row">
-      <div class="stat-card gold"><div class="label" data-i18n="statWallet">Wallet</div><div class="value" id="homeCoins">0</div></div>
-      <div class="stat-card"><div class="label" data-i18n="statBest">Best</div><div class="value" id="homeBest">0</div></div>
-      <div class="stat-card coral"><div class="label" data-i18n="statRuns">Runs</div><div class="value" id="homeRuns">0</div></div>
-      <div class="stat-card"><div class="label" data-i18n="statLevel">Lvl</div><div class="value" id="homeLevel">1<small>·1</small></div></div>
-    </div>
-    <div class="howto">
-      <h3 class="howto-title" data-i18n="howtoTitle">How it works</h3>
-      <div class="howto-grid">
-        <div class="howto-row"><div class="howto-ic">🕹️</div><div class="howto-text" data-i18n="howto1">Arrow keys, A/D or swipe to change lanes</div></div>
-        <div class="howto-row"><div class="howto-ic">🧟</div><div class="howto-text" data-i18n="howto2">Collect zombies — the more on board, the faster your car goes</div></div>
-        <div class="howto-row"><div class="howto-ic">🚫</div><div class="howto-text" data-i18n="howto3">Avoid other cars — one hit ends the ride</div></div>
-        <div class="howto-row"><div class="howto-ic">🪙</div><div class="howto-text" data-i18n="howto4">Trade collected zombies for coins in your Wallet (2 coins per zombie)</div></div>
-      </div>
-    </div>
-  </main>
+  <!-- Zeigt auf die Domain, unter der server.js läuft (z.B. Railway-URL).
+       Leer lassen ("") nur, wenn Client und Server unter derselben Domain laufen. -->
+  <script>
+    window.__COIN_RUNNER_API_BASE__ = "https://DEIN-SERVER.up.railway.app";
+  </script>
 
-  <!-- SHOP -->
-  <main class="screen" id="screen-shop">
-    <div class="hero" style="padding:22px 20px;">
-      <h1 style="font-size:1.3rem;" data-i18n="skinShopTitle">🚕 Taxi Skins</h1>
-      <p data-i18n="skinShopDesc">Unlock new taxi looks. Higher levels cost TON.</p>
-    </div>
-    <div class="skin-grid" id="skinGrid"></div>
-  </main>
-
-  <!-- TOURNAMENT -->
-  <main class="screen" id="screen-tournament">
-    <div class="hero" style="padding:22px 20px;">
-      <h1 style="font-size:1.3rem;" data-i18n="tournamentTitle">🏆 Zombie Tournament</h1>
-      <p data-i18n="tournamentDesc">Weekly leaderboard — collect more zombies than the competition.</p>
-    </div>
-    <div class="tournament-timer">
-      <div class="label" data-i18n="nextReset">Next reset in</div>
-      <div class="clock" id="tournamentCountdown">--:--:--</div>
-    </div>
-    <div class="prize-pool">
-      <div class="prize-pool-title" data-i18n="prizePoolTitle">🏆 Weekly Prize Pool</div>
-      <div class="prize-row gold">
-        <div class="prize-medal">🥇</div>
-        <div class="prize-place" data-i18n="place1">1st Place</div>
-        <div class="prize-amount">3 💎 TON</div>
-      </div>
-      <div class="prize-row silver">
-        <div class="prize-medal">🥈</div>
-        <div class="prize-place" data-i18n="place2">2nd Place</div>
-        <div class="prize-amount">2 💎 TON</div>
-      </div>
-      <div class="prize-row bronze">
-        <div class="prize-medal">🥉</div>
-        <div class="prize-place" data-i18n="place3">3rd Place</div>
-        <div class="prize-amount">1 💎 TON</div>
-      </div>
-    </div>
-    <div class="leaderboard" id="leaderboardList"></div>
-  </main>
-
-  <!-- WALLET -->
-  <main class="screen" id="screen-wallet">
-    <div class="wallet-balance-card">
-      <div class="wb-item">
-        <div class="wb-icon">🪙</div>
-        <div class="wb-info">
-          <div class="wb-label" data-i18n="walletSub">Coin balance</div>
-          <div class="wb-value" id="walletCoinsDisplay">0</div>
-        </div>
-      </div>
-      <div class="wb-divider"></div>
-      <div class="wb-item">
-        <div class="wb-icon ton">💎</div>
-        <div class="wb-info">
-          <div class="wb-label" data-i18n="tonBalanceLabel">TON balance</div>
-          <div class="wb-value ton" id="walletTonDisplay">0.000000</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="exchange-card">
-      <div class="exchange-card-title" data-i18n="exchangeTitle">Exchange</div>
-      <div class="exchange-flow">
-        <div class="exchange-token">
-          <div class="exchange-token-icon">🧟</div>
-          <div class="exchange-token-value" id="walletPersonsDisplay">0</div>
-          <div class="exchange-token-label" data-i18n="walletCollected">collected — not yet exchanged</div>
-        </div>
-        <div class="exchange-arrow">→</div>
-        <div class="exchange-token">
-          <div class="exchange-token-icon gold">🪙</div>
-          <div class="exchange-token-value gold" id="exchangePreview">0</div>
-          <div class="exchange-token-label" data-i18n="exchangeRateLabel">2 coins per zombie</div>
-        </div>
-      </div>
-      <button class="menu-btn" id="exchangeBtn" data-i18n="exchangeBtn">Exchange (2 🪙 per zombie)</button>
-    </div>
-
-    <div class="wallet-tabs">
-      <button class="wallet-tab active" id="walletTabDeposit" type="button" data-i18n="depositTab">📥 Deposit</button>
-      <button class="wallet-tab" id="walletTabWithdraw" type="button" data-i18n="withdrawTab">💎 Withdraw</button>
-    </div>
-
-    <div class="wallet-tab-panel active" id="walletPanelDeposit">
-      <div class="withdraw-box">
-        <div class="withdraw-title"><span class="box-icon">📥</span> <span data-i18n="depositTitle">Deposit TON</span></div>
-        <div class="withdraw-balance" data-i18n="depositDesc">Send TON to this address to top up your in-game balance.</div>
-        <div class="deposit-address" id="depositAddress">UQD2uyyNj1ZqCz59zlM7ej5aPr6raYoiTgbUP9bVeWlsbpPt</div>
-        <button class="menu-btn secondary" id="depositCopyBtn" data-i18n="depositCopyBtn">📋 Copy Address</button>
-        <div class="deposit-memo-box">
-          <div class="deposit-memo-label" data-i18n="depositMemoLabel">Important: include this code as the transfer comment/memo, or your deposit can't be matched to your account automatically.</div>
-          <div class="deposit-memo-value" id="depositMemo">—</div>
-          <button class="menu-btn secondary" id="depositMemoCopyBtn" data-i18n="depositMemoCopyBtn">📋 Copy Code</button>
-        </div>
-        <div class="withdraw-status" id="depositStatus"></div>
-      </div>
-      <div class="note-box" data-i18n="depositNote">Only send TON on the TON network. Deposits are detected automatically within a couple of minutes once the memo/comment matches your code above.</div>
-    </div>
-
-    <div class="wallet-tab-panel" id="walletPanelWithdraw">
-      <div class="withdraw-box">
-        <div class="withdraw-title"><span class="box-icon">💎</span> <span data-i18n="withdrawTitle">Withdraw TON</span></div>
-        <div class="withdraw-balance"><span id="withdrawBalance">0.000000</span> <span class="unit">TON</span> <span data-i18n="withdrawAvailable">available</span></div>
-        <input type="text" id="withdrawAddress" class="withdraw-input" placeholder="UQ… TON wallet address" data-i18n-placeholder="withdrawAddressPlaceholder" autocomplete="off">
-        <input type="number" id="withdrawAmount" class="withdraw-input" placeholder="Amount (min 1 TON)" data-i18n-placeholder="withdrawAmountPlaceholder" step="0.000001" min="0">
-        <button class="menu-btn" id="withdrawBtn" data-i18n="withdrawBtn">Request Withdrawal</button>
-        <div class="withdraw-status" id="withdrawStatus"></div>
-        <div class="withdraw-history" id="withdrawHistory"></div>
-      </div>
-      <div class="note-box" data-i18n="withdrawNote">Minimum withdrawal is 1 TON. Requests are reviewed and sent to your wallet address.</div>
-    </div>
-
-    <button class="menu-btn secondary" id="toHomeBtn" data-i18n="toHome">Back to Home</button>
-  </main>
-
-  <!-- GAME (3D) -->
-  <main class="screen" id="screen-game" dir="ltr">
-    <div id="gameContainer">
-      <canvas id="game3d"></canvas>
-
-      <div class="exit-run-btn" id="exitRunBtn">✕</div>
-
-      <div id="hud">
-        <div id="hudPill">
-          <span class="hud-seg">🧟 <b id="hudZombies">0</b></span>
-          <span class="hud-sep">|</span>
-          <span class="hud-seg" id="hudDistance">0 m</span>
-          <span class="hud-sep">|</span>
-          <span class="hud-seg hud-level"><span id="hudLevelLabel">Lvl</span> <b id="hudLevel">1</b><small id="hudMult">·1</small></span>
-        </div>
-      </div>
-      <div id="weaponHud" style="display:none;">🔫 <span id="weaponTimerVal">10</span>s</div>
-
-      <div id="gameOverScreen">
-        <h1 data-i18n="crash">CRASH!</h1>
-        <div class="finalScore" id="finalScore">0</div>
-        <div class="bestScore" id="bestScoreText"></div>
-        <div style="color:rgba(255,255,255,.5);font-size:12px;margin-bottom:10px;" data-i18n="walletExchangeInfo">Exchangeable in your Wallet (2 🪙 per zombie)</div>
-        <button class="btn" id="retryBtn" data-i18n="retry">Retry</button>
-        <button class="btn" id="goHomeBtn" style="margin-top:12px;background:linear-gradient(180deg,#3a3750,#26243a);color:#fff;box-shadow:0 6px 0 #17162280;" data-i18n="goHome">Back to Home</button>
-      </div>
-
-      <div class="hint" id="hint" data-i18n="hint">◀ ▶ Arrow keys, A/D or swipe</div>
-    </div>
-  </main>
-
-  <div class="lang-switch">
-    <button class="lang-flag" data-lang="fa" title="فارسی">🇮🇷</button>
-    <button class="lang-flag" data-lang="en" title="English">🇬🇧</button>
-  </div>
-  <nav class="bottomnav" id="bottomnav">
-    <button data-screen="home" class="active"><span class="ic home-ic"></span><span data-i18n="navHome">Home</span></button>
-    <button data-screen="shop"><span class="ic shop-ic"></span><span data-i18n="navShop">Shop</span></button>
-    <button data-screen="game" class="play-btn"><span class="ic"></span><span data-i18n="navPlay">Play</span></button>
-    <button data-screen="tournament"><span class="ic trophy-ic"></span><span data-i18n="navTournament">Tournament</span></button>
-    <button data-screen="wallet"><span class="ic wallet-ic"></span><span data-i18n="navWallet">Wallet</span></button>
-  </nav>
-</div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/store.js"></script>
-<script src="js/shop.js"></script>
-<script src="js/tournament.js"></script>
-<script src="js/wallet.js"></script>
-<script src="js/navigation.js"></script>
-<script src="js/game.js"></script>
-<script src="js/main.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
