@@ -2122,11 +2122,10 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     updateCoinCountUI();
 
     // camera chase behind car
-    const camTargetX = player.x * 0.85;
-    camera.position.x += (camTargetX - camera.position.x) * 0.12;
+    camera.position.x = 0;
     camera.position.y = 3.6;
     camera.position.z = 8.5;
-    camera.lookAt(player.x*0.4, 1.2, -14);
+    camera.lookAt(0, 1.2, -14);
   }
 
   let lastTime = performance.now();
