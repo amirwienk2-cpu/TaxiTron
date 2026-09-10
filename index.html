@@ -63,7 +63,11 @@
   .lang-flag{ width:34px; height:34px; border-radius:50%; border:2px solid transparent; background:#1c1c2a; display:flex; align-items:center; justify-content:center; font-size:1.05rem; cursor:pointer; padding:0; overflow:hidden; }
   .lang-flag.active{ border-color:#7cff6b; box-shadow:0 0 8px rgba(124,255,107,.5); }
 
-  .screen{ display:none; flex:1; min-height:0; padding:6px 18px 18px 18px; overflow-y:auto; color:#fff; }
+  .screen{ display:none; flex:1; min-height:0; padding:6px 18px 18px 18px; overflow-y:auto; color:#fff;
+    /* keep content below Telegram's fullscreen header buttons (no top bar anymore) */
+    padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) + 16px); }
+  /* home page: push everything a bit further down */
+  #screen-home{ padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) + 40px); }
   .screen.active{ display:flex; flex-direction:column; gap:16px; }
 
   .hero{ position:relative; border-radius:16px; padding:24px 20px; background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; }
@@ -336,10 +340,6 @@
 <body>
 <div id="appShell">
 
-  <div class="topbar">
-    <div class="brand">Earn TON</div>
-    <div class="coin-pill" id="topCoinDisplay">0</div>
-  </div>
 
   <!-- HOME -->
   <main class="screen active" id="screen-home">
@@ -1042,7 +1042,6 @@
 
   function refreshTopUI(){
     ensureDailyReset();
-    document.getElementById('topCoinDisplay').textContent = store.coins;
     document.getElementById('homeCoins').textContent = store.coins;
     document.getElementById('homeBest').textContent = store.best;
     document.getElementById('homeRuns').textContent = store.runs;
