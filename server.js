@@ -18,10 +18,20 @@
  *   GET  /admin/withdrawals?status=pending
  *   POST /admin/withdrawals/complete   { uid, ts }
  *
- * Storage: a single JSON file on disk (DATA_DIR/users.json). That's
- * enough for this game's scale and plays nicely with a Railway
- * Volume mounted at /data. Writes are serialised through a tiny
+ * Storage: a single JSON file on disk (DATA_DIR/users.json), meant to
+ * live on a Railway Volume. Writes are serialised through a tiny
  * in-process queue so concurrent requests can't corrupt the file.
+ *
+ * Persistence safeguards (added to stop data loss on restarts):
+ *  - Uses DATA_DIR, or automatically the Railway volume mount path
+ *    (RAILWAY_VOLUME_MOUNT_PATH) if DATA_DIR isn't set.
+ *  - Loudly reports when running on Railway WITHOUT a volume, both in
+ *    the logs and on GET / ("storage" field), since that wipes all data
+ *    on every restart / redeploy.
+ *  - Never silently starts fresh over a broken data file: a corrupt
+ *    users.json is kept aside and the last good backup is loaded.
+ *  - Write errors are logged instead of being swallowed.
+ *  - On shutdown (SIGTERM from Railway) pending data is flushed to disk.
  * ------------------------------------------------------------------
  */
 
@@ -38,10 +48,20 @@ const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 
+const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
+const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
+const DATA_DIR = process.env.DATA_DIR || RAILWAY_VOLUME_PATH || path.join(__dirname, 'data');
+
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
+const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
+
+// On Railway, data only survives restarts if it is written inside the attached volume.
+const STORAGE_PERSISTENT = !ON_RAILWAY || (
+  !!RAILWAY_VOLUME_PATH &&
+  path.resolve(DATA_DIR + path.sep).startsWith(path.resolve(RAILWAY_VOLUME_PATH + path.sep))
+);
 
 // Must mirror the client's economy constants (index.html) exactly.
 const COINS_PER_ZOMBIE = 2;
@@ -60,27 +80,89 @@ const MAX_DISTANCE_PER_CALL = 1000000;
 // ---------------------------------------------------------------
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+function readJsonFile(file) {
+  const raw = fs.readFileSync(file, 'utf8');
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('unexpected data format');
+  }
+  return parsed;
+}
+
 function loadUsers() {
+  if (!fs.existsSync(DATA_FILE)) {
+    // Main file missing: try the backup before starting fresh
+    if (fs.existsSync(BACKUP_FILE)) {
+      try {
+        const fromBackup = readJsonFile(BACKUP_FILE);
+        console.warn('[storage] users.json missing, restored ' + Object.keys(fromBackup).length + ' users from backup.');
+        return fromBackup;
+      } catch (e) {
+        console.error('[storage] backup unreadable: ' + e.message);
+      }
+    }
+    console.log('[storage] no data file yet, starting with an empty user list.');
+    return {};
+  }
+
   try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    return JSON.parse(raw);
+    return readJsonFile(DATA_FILE);
   } catch (e) {
-    return {}; // first run / file missing / corrupt -> start fresh
+    // Don't overwrite a broken file with an empty user list: keep it aside for recovery
+    const corruptName = path.join(DATA_DIR, 'users.corrupt-' + Date.now() + '.json');
+    try { fs.renameSync(DATA_FILE, corruptName); } catch (e2) { /* ignore */ }
+    console.error('[storage] users.json is unreadable (' + e.message + '), moved to ' + corruptName);
+    try {
+      const fromBackup = readJsonFile(BACKUP_FILE);
+      console.warn('[storage] restored ' + Object.keys(fromBackup).length + ' users from backup.');
+      return fromBackup;
+    } catch (e3) {
+      console.error('[storage] no usable backup, starting with an empty user list.');
+      return {};
+    }
   }
 }
 
 let users = loadUsers(); // keyed by Telegram user id (string)
 
+// Keep a copy of the last good state from startup as a safety net
+try {
+  if (Object.keys(users).length > 0) fs.writeFileSync(BACKUP_FILE, JSON.stringify(users));
+} catch (e) {
+  console.error('[storage] could not write backup: ' + e.message);
+}
+
 let writeQueue = Promise.resolve();
+let shuttingDown = false;
+
 function persist() {
+  if (shuttingDown) return writeQueue;
   writeQueue = writeQueue.then(() => new Promise((resolve) => {
     const tmp = DATA_FILE + '.tmp';
     fs.writeFile(tmp, JSON.stringify(users), (err) => {
-      if (err) { resolve(); return; }
-      fs.rename(tmp, DATA_FILE, () => resolve());
+      if (err) {
+        console.error('[storage] write failed: ' + err.message);
+        resolve();
+        return;
+      }
+      fs.rename(tmp, DATA_FILE, (err2) => {
+        if (err2) console.error('[storage] rename failed: ' + err2.message);
+        resolve();
+      });
     });
   }));
   return writeQueue;
+}
+
+function flushSync() {
+  try {
+    const tmp = DATA_FILE + '.shutdown.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(users));
+    fs.renameSync(tmp, DATA_FILE);
+    console.log('[storage] data flushed to disk (' + Object.keys(users).length + ' users).');
+  } catch (e) {
+    console.error('[storage] final flush failed: ' + e.message);
+  }
 }
 
 function newUser(id, name) {
@@ -123,9 +205,8 @@ function berlinDayKey(date) {
   return b.getFullYear() + '-' + String(b.getMonth() + 1).padStart(2, '0') + '-' + String(b.getDate()).padStart(2, '0');
 }
 function berlinWeekKey(date) {
-  // ISO-ish key: the Monday that starts the current Berlin week,
-  // but since the tournament resets Sunday midnight Berlin time,
-  // we key on "the most recent Sunday 00:00 Berlin" timestamp.
+  // The tournament resets Sunday midnight Berlin time,
+  // so we key on "the most recent Sunday 00:00 Berlin".
   const b = berlinNow(date);
   const dow = b.getDay(); // 0 = Sunday
   const start = new Date(b.getFullYear(), b.getMonth(), b.getDate() - dow);
@@ -250,7 +331,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => res.json({ ok: true, service: 'taxitron-server' }));
+// Health check. Open this URL in a browser to see if data is stored safely.
+app.get('/', (req, res) => res.json({
+  ok: true,
+  service: 'taxitron-server',
+  storage: STORAGE_PERSISTENT ? 'persistent' : 'NOT PERSISTENT - data is lost on every restart (no Railway volume)',
+}));
 
 // ---- Auth ----
 app.post('/api/auth', (req, res) => {
@@ -297,7 +383,9 @@ app.post('/api/run', requireUserFromBody, (req, res) => {
   user.best = Math.max(user.best, zombies);
 
   persist();
-  res.json({ state: publicState(user) });
+  // acceptedZombies tells the client how many were actually credited, so anything
+  // above the per-call ceiling stays pending on the client instead of being lost
+  res.json({ state: publicState(user), acceptedZombies: zombies });
 });
 
 // ---- Withdraw ----
@@ -382,6 +470,7 @@ app.get('/admin/stats', requireAdmin, (req, res) => {
     if (w.status === 'pending') pendingWithdrawals.push({ uid: u.id, name: u.name, ...w });
   }));
   res.json({
+    storage: { dataDir: DATA_DIR, persistent: STORAGE_PERSISTENT, volumeMountPath: RAILWAY_VOLUME_PATH || null },
     totalUsers: all.length,
     totalCoins: all.reduce((s, u) => s + u.coins, 0),
     totalTon: all.reduce((s, u) => s + u.ton, 0),
@@ -411,8 +500,33 @@ app.post('/admin/withdrawals/complete', requireAdmin, (req, res) => {
   res.json({ ok: true, withdrawal: w });
 });
 
+// ---------------------------------------------------------------
+// Graceful shutdown: Railway sends SIGTERM before restarts/redeploys
+// ---------------------------------------------------------------
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log('[server] ' + signal + ' received, saving data before exit...');
+  const force = setTimeout(() => { flushSync(); process.exit(0); }, 3000);
+  writeQueue.then(() => {
+    clearTimeout(force);
+    flushSync();
+    process.exit(0);
+  });
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
 app.listen(PORT, () => {
   console.log('TaxiTron server listening on port ' + PORT);
+  console.log('[storage] data file: ' + DATA_FILE + ' (' + Object.keys(users).length + ' users loaded)');
+  if (!STORAGE_PERSISTENT) {
+    console.error('==================================================================');
+    console.error('[storage] WARNING: running on Railway WITHOUT a volume for ' + DATA_DIR);
+    console.error('[storage] All coins, TON and tournament data will be LOST on restart.');
+    console.error('[storage] Attach a volume to THIS service (mount path /data).');
+    console.error('==================================================================');
+  }
   if (!BOT_TOKEN) console.warn('WARNING: BOT_TOKEN not set — /api/auth will always fail.');
   if (SESSION_SECRET === 'dev-insecure-secret-change-me') console.warn('WARNING: using the default SESSION_SECRET — set a real one in production.');
 });
