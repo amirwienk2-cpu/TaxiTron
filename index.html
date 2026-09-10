@@ -797,30 +797,10 @@
     saveStore();
   }
 
-  /* ---- Ride attempts: Level 1 gets 10 tries, then a 2-hour cooldown before refilling ---- */
-  const MAX_ATTEMPTS = 10;
-  const ATTEMPT_COOLDOWN_MS = 2 * 60 * 60 * 1000;
-  function ensureAttempts(){
-    if (store.attemptsResetAt && Date.now() >= store.attemptsResetAt){
-      store.attemptsLeft = MAX_ATTEMPTS;
-      store.attemptsResetAt = null;
-      saveStore();
-    }
-  }
-  function hasAttemptsLeft(){
-    ensureAttempts();
-    return store.attemptsLeft > 0;
-  }
-  function consumeAttempt(){
-    ensureAttempts();
-    if (store.attemptsLeft <= 0) return false;
-    store.attemptsLeft -= 1;
-    if (store.attemptsLeft <= 0 && !store.attemptsResetAt){
-      store.attemptsResetAt = Date.now() + ATTEMPT_COOLDOWN_MS;
-    }
-    saveStore();
-    return true;
-  }
+  /* ---- Ride attempts: limit removed, unlimited plays for all levels ---- */
+  function ensureAttempts(){ /* no-op: attempts limit disabled */ }
+  function hasAttemptsLeft(){ return true; }
+  function consumeAttempt(){ return true; }
   function formatCountdown(ms){
     const total = Math.max(0, Math.ceil(ms / 1000));
     const h = String(Math.floor(total / 3600)).padStart(2,'0');
@@ -829,22 +809,12 @@
     return h + ':' + m + ':' + s;
   }
   function renderAttemptsUI(){
-    ensureAttempts();
     const el = document.getElementById('attemptsInfo');
     const btn = document.getElementById('homePlayBtn');
-    if (!el) return;
-    if (store.attemptsLeft > 0){
-      el.classList.remove('empty');
-      el.innerHTML = '<span class="dot"></span>' + store.attemptsLeft + '/' + MAX_ATTEMPTS + ' ' + t('attemptsLeft');
-      if (btn) btn.disabled = false;
-    } else {
-      el.classList.add('empty');
-      const remaining = store.attemptsResetAt ? (store.attemptsResetAt - Date.now()) : 0;
-      el.innerHTML = '<span class="dot"></span>' + t('attemptsNextIn') + ' ' + formatCountdown(remaining);
-      if (btn) btn.disabled = true;
-    }
+    if (el) el.style.display = 'none';
+    if (btn) btn.disabled = false;
   }
-  setInterval(renderAttemptsUI, 1000);
+  renderAttemptsUI();
 
   /* ================= SHOP ================= */
   function refreshShopUI(){
@@ -1861,30 +1831,18 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAA
   });
 
   function spawnObstacle(zOverride){
-    const lane = Math.floor(Math.random()*LANES);
-    const color = obstacleColors[Math.floor(Math.random()*obstacleColors.length)];
-    const mesh = buildCar(color, 1.15);
-    mesh.rotation.y = 0; // faces player (+Z direction of travel)
-    mesh.position.set(laneX(lane), 0, zOverride !== undefined ? zOverride : START_Z);
-    scene.add(mesh);
-    obstacles.push({ lane, mesh });
+    // Disabled: no obstacle cars are spawned, only the player's car remains on the road.
+    return;
   }
 
   function spawnPerson(zOverride){
-    const lane = Math.floor(Math.random()*LANES);
-    const mesh = buildZombie();
-    mesh.position.set(laneX(lane), 0, zOverride !== undefined ? zOverride : START_Z);
-    mesh.userData.spin = Math.random()*Math.PI*2;
-    scene.add(mesh);
-    people.push({ lane, mesh });
+    // Disabled: no zombies/pedestrians are spawned, only the player's car remains on the road.
+    return;
   }
 
   function spawnWeapon(){
-    const lane = Math.floor(Math.random()*LANES);
-    const mesh = buildWeaponPickup();
-    mesh.position.set(laneX(lane), 0, START_Z);
-    scene.add(mesh);
-    weapons.push({ lane, mesh });
+    // Disabled: no weapon pickups are spawned, only the player's car remains on the road.
+    return;
   }
 
   function prefillRoad(){
