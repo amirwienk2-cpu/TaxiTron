@@ -797,28 +797,12 @@
     saveStore();
   }
 
-  /* ---- Ride attempts: Level 1 gets 10 tries, then a 2-hour cooldown before refilling ---- */
-  const MAX_ATTEMPTS = 10;
-  const ATTEMPT_COOLDOWN_MS = 2 * 60 * 60 * 1000;
-  function ensureAttempts(){
-    if (store.attemptsResetAt && Date.now() >= store.attemptsResetAt){
-      store.attemptsLeft = MAX_ATTEMPTS;
-      store.attemptsResetAt = null;
-      saveStore();
-    }
-  }
+  /* ---- Ride attempts: limit removed, unlimited plays ---- */
+  function ensureAttempts(){}
   function hasAttemptsLeft(){
-    ensureAttempts();
-    return store.attemptsLeft > 0;
+    return true;
   }
   function consumeAttempt(){
-    ensureAttempts();
-    if (store.attemptsLeft <= 0) return false;
-    store.attemptsLeft -= 1;
-    if (store.attemptsLeft <= 0 && !store.attemptsResetAt){
-      store.attemptsResetAt = Date.now() + ATTEMPT_COOLDOWN_MS;
-    }
-    saveStore();
     return true;
   }
   function formatCountdown(ms){
@@ -829,22 +813,11 @@
     return h + ':' + m + ':' + s;
   }
   function renderAttemptsUI(){
-    ensureAttempts();
     const el = document.getElementById('attemptsInfo');
     const btn = document.getElementById('homePlayBtn');
-    if (!el) return;
-    if (store.attemptsLeft > 0){
-      el.classList.remove('empty');
-      el.innerHTML = '<span class="dot"></span>' + store.attemptsLeft + '/' + MAX_ATTEMPTS + ' ' + t('attemptsLeft');
-      if (btn) btn.disabled = false;
-    } else {
-      el.classList.add('empty');
-      const remaining = store.attemptsResetAt ? (store.attemptsResetAt - Date.now()) : 0;
-      el.innerHTML = '<span class="dot"></span>' + t('attemptsNextIn') + ' ' + formatCountdown(remaining);
-      if (btn) btn.disabled = true;
-    }
+    if (el) el.style.display = 'none';
+    if (btn) btn.disabled = false;
   }
-  setInterval(renderAttemptsUI, 1000);
 
   /* ================= SHOP ================= */
   function refreshShopUI(){
