@@ -69,7 +69,7 @@ let zombieBank = +(localStorage.getItem('ztZombieBank') || 0);
 let claimed = JSON.parse(localStorage.getItem('ztClaimed') || '{}');
 let state = 'menu', last = 0, roadScroll = 0, score = 0, runCoins = 0, distance = 0, lives = 1, elapsed = 0;
 let spawnTimer = .8, invuln = 0, shake = 0, combo = 0, comboTimer = 0;
-let pointerActive = false;
+let laneIndex = 1;
 const taxi = {x:0, targetX:0, z:6, group:null, tilt:0};
 const objects = [];
 const particles = [];
@@ -114,6 +114,50 @@ function fallbackTaxi(){
   for (const x of [-1.05,1.05]) for (const z of [-1.45,1.45]) {const wheel=box(.28,.48,.7,0x121212,.45);wheel.position.x=x;wheel.position.z=z;g.add(wheel)}
   const headMat=colorMaterial(0xfff1ad,0xffa000); for(const x of [-.72,.72]){const head=new THREE.Mesh(new THREE.BoxGeometry(.38,.18,.12),headMat);head.position.set(x,.68,-2.08);g.add(head)} return g;
 }
+function makeTaxiCanvasTexture(draw){
+  const canvas=document.createElement('canvas'); canvas.width=256; canvas.height=256;
+  draw(canvas.getContext('2d'),canvas.width,canvas.height);
+  const texture=new THREE.CanvasTexture(canvas); texture.colorSpace=THREE.SRGBColorSpace; texture.needsUpdate=true; return texture;
+}
+const taxiBloodTexture=makeTaxiCanvasTexture((ctx,w,h)=>{
+  ctx.clearRect(0,0,w,h); ctx.fillStyle='#9d1016';
+  const splats=[[46,55,22],[116,88,30],[196,48,18],[74,166,17],[164,187,27],[220,142,14],[31,220,13]];
+  for(const [x,y,r] of splats){
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    for(let i=0;i<7;i++){const a=i*.88+.25, d=r*(1.35+(i%3)*.42), dot=Math.max(3,r*(.09+(i%2)*.05));ctx.beginPath();ctx.arc(x+Math.cos(a)*d,y+Math.sin(a)*d,dot,0,Math.PI*2);ctx.fill();}
+  }
+  ctx.fillStyle='#5f070d'; ctx.fillRect(111,112,8,60); ctx.fillRect(178,74,6,82);
+});
+const taxiSkullTexture=makeTaxiCanvasTexture((ctx,w,h)=>{
+  ctx.clearRect(0,0,w,h); ctx.strokeStyle='#fff'; ctx.fillStyle='#fff'; ctx.lineWidth=10; ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(54,197);ctx.lineTo(202,55);ctx.moveTo(54,55);ctx.lineTo(202,197);ctx.stroke();
+  ctx.beginPath();ctx.arc(128,106,55,Math.PI,0);ctx.lineTo(183,145);ctx.lineTo(164,190);ctx.lineTo(92,190);ctx.lineTo(73,145);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#17101d'; ctx.beginPath();ctx.ellipse(106,116,13,19,0,0,Math.PI*2);ctx.ellipse(150,116,13,19,0,0,Math.PI*2);ctx.fill();
+  ctx.fillRect(120,138,16,18); for(let x=103;x<=153;x+=17)ctx.fillRect(x,165,9,18);
+});
+const taxiHandTexture=makeTaxiCanvasTexture((ctx,w,h)=>{
+  ctx.clearRect(0,0,w,h); ctx.fillStyle='#49b83d'; ctx.strokeStyle='#2b7c2b'; ctx.lineWidth=5; ctx.lineCap='round';
+  ctx.beginPath();ctx.ellipse(128,176,48,57,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  const fingers=[[88,116,18,62,-.2],[111,83,18,86,-.06],[137,75,18,94,.03],[164,91,17,77,.15],[193,122,16,54,.43]];
+  for(const [x,y,rx,ry,rot] of fingers){ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();}
+  ctx.beginPath();ctx.moveTo(91,174);ctx.quadraticCurveTo(52,145,64,125);ctx.quadraticCurveTo(75,111,105,151);ctx.stroke();
+});
+function addTaxiDecal(g,texture,width,height,position,rotation){
+  const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,alphaTest:.04,depthWrite:false,side:THREE.DoubleSide});
+  const decal=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material); decal.position.set(position.x,position.y,position.z); decal.rotation.set(rotation.x,rotation.y,rotation.z); g.add(decal);
+}
+function addHorrorTaxiSkin(g,scale){
+  const s=scale;
+  // Blood splashes cover the horizontal panels and both sides of the body.
+  addTaxiDecal(g,taxiBloodTexture,.78,.56,{x:0,y:.465/s,z:0},{x:-Math.PI/2,y:0,z:0});
+  addTaxiDecal(g,taxiBloodTexture,.68,.38,{x:0,y:.39/s,z:-.39},{x:-Math.PI/2,y:0,z:0});
+  addTaxiDecal(g,taxiBloodTexture,.68,.38,{x:0,y:.39/s,z:.39},{x:-Math.PI/2,y:0,z:0});
+  addTaxiDecal(g,taxiBloodTexture,.82,.5,{x:-.27/s,y:.34/s,z:0},{x:0,y:-Math.PI/2,z:0});
+  addTaxiDecal(g,taxiBloodTexture,.82,.5,{x:.27/s,y:.34/s,z:0},{x:0,y:Math.PI/2,z:0});
+  // Rear-facing decals: the taxi is rotated 180 degrees, so local -Z is its rear.
+  addTaxiDecal(g,taxiSkullTexture,.28,.23,{x:-.06/s,y:.22/s,z:-.515},{x:0,y:Math.PI,z:0});
+  addTaxiDecal(g,taxiHandTexture,.18,.23,{x:.19/s,y:.22/s,z:-.52},{x:0,y:Math.PI,z:0});
+}
 function fallbackZombie(brute=false){
   const g=new THREE.Group(); const skin=brute?0x819451:0x718a72, shirt=brute?0xe8751e:0x1e3b29; const scale=brute?1.22:1;
   g.add(box(.72*scale,1.1*scale,.44*scale,skin,.58*scale)); const head=new THREE.Mesh(new THREE.SphereGeometry(.35*scale,10,8),colorMaterial(0xa4b479));head.position.y=1.35*scale;head.castShadow=true;g.add(head);
@@ -137,6 +181,8 @@ function makeActor(type){
   const g = modelTemplates[type] ? modelTemplates[type].clone(true) : fallbackTaxi();
   const scale = modelTemplates[type] ? 2.15 : .68;
   g.scale.setScalar(scale);
+  // The taxi asset is authored facing the opposite direction from the runner lane.
+  // Turn the whole vehicle around so its front points down the road toward -Z.
   g.rotation.y = Math.PI;
   g.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(g);
@@ -144,11 +190,13 @@ function makeActor(type){
   g.position.x -= center.x;
   g.position.y -= bounds.min.y;
   g.position.z -= center.z;
+  addHorrorTaxiSkin(g,scale);
   g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}}); return g;
 }
 function createStreetSegment(i){
   const g=new THREE.Group(); g.position.z=-i*18;
   const sidewalkMat=colorMaterial(0x252724); const left=box(3.2,.18,18,0x252724,.03);left.position.x=-7.1;g.add(left);const right=left.clone();right.position.x=7.1;g.add(right);
+  // Two dashed dividers make the road read as three clear driving lanes.
   for (const x of [-1.6, 1.6]) { const divider=box(.1,.025,6.5,0xffc13b,.035); divider.position.x=x; g.add(divider); }
   for(const side of [-1,1]){
     const building=box(2.2+Math.random()*1.4,3+Math.random()*7,4.2,side<0?0x100d17:0x1d1118,1.5+Math.random()*3.5);building.position.x=side*(10+Math.random()*2.2);building.position.z=(Math.random()-.5)*5;g.add(building);
@@ -217,11 +265,19 @@ function wallet(){const reward=zombieBank*2;showPanel(`<div class="eyebrow">TELE
 function exchangeZombies(){if(zombieBank<=0)return;const reward=zombieBank*2;bank+=reward;zombieBank=0;save();synth(980,.18);wallet();updateHud();}
 function showPanel(html){state='menu';container.classList.remove('playing');panel.classList.remove('hidden');card.innerHTML=html;}
 function setNav(name){document.querySelectorAll('.nav-btn').forEach(button=>button.classList.toggle('active',button.dataset.page===name));}
-function startGame(){unlockAudio();state='playing';panel.classList.add('hidden');container.classList.add('playing');setNav('play');score=0;runCoins=0;distance=0;elapsed=0;lives=1;objects.splice(0).forEach(o=>scene.remove(o.group));particles.splice(0).forEach(p=>scene.remove(p.mesh));stains.splice(0).forEach(s=>scene.remove(s.mesh));spawnTimer=.45;invuln=0;shake=0;combo=0;comboTimer=0;taxi.x=0;taxi.targetX=0;taxi.group.position.y=0;totals.runs++;save();updateHud();window.ProgressLogger?.logProgress('run_started',{runs:totals.runs});}
+function startGame(){unlockAudio();state='playing';panel.classList.add('hidden');container.classList.add('playing');setNav('play');score=0;runCoins=0;distance=0;elapsed=0;lives=1;laneIndex=1;objects.splice(0).forEach(o=>scene.remove(o.group));particles.splice(0).forEach(p=>scene.remove(p.mesh));stains.splice(0).forEach(s=>scene.remove(s.mesh));spawnTimer=.45;invuln=0;shake=0;combo=0;comboTimer=0;taxi.x=0;taxi.targetX=laneX[laneIndex];taxi.group.position.y=0;totals.runs++;save();updateHud();window.ProgressLogger?.logProgress('run_started',{runs:totals.runs});}
 function gameOver(){state='over';container.classList.remove('playing');bank+=runCoins;best=Math.max(best,Math.floor(score));save();window.ProgressLogger?.logProgress('run_finished',{score:Math.floor(score),distance:Math.floor(distance),kills:totals.kills});showPanel(`<div class="eyebrow">KEIN ZWEITER VERSUCH</div><h2 class="title">CRASHED</h2><p class="subtitle">Du hast kein Leben. Die Fahrt ist vorbei — starte wieder ganz von vorne.</p><div class="mini-row"><div class="mini"><b>${Math.floor(score)}</b><small>SCORE</small></div><div class="mini"><b>${Math.floor(distance)}m</b><small>DISTANZ</small></div><div class="mini"><b class="coin">+${runCoins}</b><small>COINS</small></div></div><button class="btn red" id="again">↻  VON VORNE STARTEN</button>`);setNav('play');document.querySelector('#again').onclick=startGame;}
 
-function steer(event){if(state!=='playing')return;const rect=canvas.getBoundingClientRect();const normalized=(event.clientX-rect.left)/rect.width;taxi.targetX=(normalized-.5)*6.4;unlockAudio();event.preventDefault();}
-canvas.addEventListener('pointerdown',event=>{pointerActive=true;canvas.setPointerCapture(event.pointerId);steer(event);});canvas.addEventListener('pointermove',event=>{if(pointerActive)steer(event);});canvas.addEventListener('pointerup',()=>{pointerActive=false;});canvas.addEventListener('pointercancel',()=>{pointerActive=false;});
+function tapSteer(event){
+  if(state!=='playing')return;
+  const rect=canvas.getBoundingClientRect();
+  const tappedLeft=event.clientX-rect.left < rect.width/2;
+  laneIndex=THREE.MathUtils.clamp(laneIndex+(tappedLeft?-1:1),0,laneX.length-1);
+  taxi.targetX=laneX[laneIndex];
+  unlockAudio();
+  event.preventDefault();
+}
+canvas.addEventListener('pointerdown',tapSteer);
 document.querySelectorAll('.nav-btn').forEach(button=>button.onclick=()=>{unlockAudio();const page=button.dataset.page;setNav(page);if(page==='play')startGame();else({home,shop,tasks,wallet}[page]||home)();});
 muteBtn.onclick=()=>{muted=!muted;localStorage.setItem('ztMuted',muted?'1':'0');muteBtn.textContent=muted?'🔇':'🔊';if(muted)audio.music.pause();else unlockAudio();};muteBtn.textContent=muted?'🔇':'🔊';
 
