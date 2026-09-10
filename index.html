@@ -1867,6 +1867,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAA
   }
 
   function spawnSmoke(){
+    return; // Disabled: exhaust smoke effect removed.
     const puffColor = 0xcfcfd6;
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.11 + Math.random()*0.05, 7, 7),
