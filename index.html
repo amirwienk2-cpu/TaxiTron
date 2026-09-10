@@ -1442,20 +1442,26 @@
   scene.background = new THREE.Color(0x0a0a12);
   scene.fog = new THREE.Fog(0x0a0a12, 30, 140);
 
-  const camera = new THREE.PerspectiveCamera(100, 1, 0.1, 500);
-  const CAMERA_DIST = 8; // distance from camera to player car
+  const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 500);
+  const VFOV = 62; // fixed, natural field of view (no fisheye distortion)
   const HALF_VISIBLE_X = 5.6; // half-width (lane offset + car width + margin) that must stay on-screen
+  const DOWN_ANGLE = 6.1 * Math.PI / 180; // camera's downward tilt toward the car
+  let CAMERA_DIST = 8;   // recalculated in resize() based on screen aspect
+  let CAMERA_Y = 3.55;   // recalculated in resize() to match CAMERA_DIST
 
   function resize(){
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h);
     const aspect = w / h;
     camera.aspect = aspect;
-    const desiredHalfH = Math.atan(HALF_VISIBLE_X / CAMERA_DIST);
-    let vHalf = Math.atan(Math.tan(desiredHalfH) / aspect);
-    let fovDeg = THREE.MathUtils.radToDeg(vHalf) * 2;
-    fovDeg = Math.max(55, Math.min(fovDeg, 130));
-    camera.fov = fovDeg;
+    camera.fov = VFOV;
+    const vHalf = THREE.MathUtils.degToRad(VFOV / 2);
+    const hHalf = Math.atan(Math.tan(vHalf) * aspect);
+    let dist = HALF_VISIBLE_X / Math.tan(hHalf);
+    // On wide (desktop) screens keep the car close; on narrow (mobile) screens pull back further
+    dist = Math.max(6, Math.min(dist, 18));
+    CAMERA_DIST = dist;
+    CAMERA_Y = 1.2 + (CAMERA_DIST + 14) * Math.tan(DOWN_ANGLE);
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
@@ -2131,7 +2137,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
     // camera chase behind car
     camera.position.x = 0;
-    camera.position.y = 3.55;
+    camera.position.y = CAMERA_Y;
     camera.position.z = CAMERA_DIST;
     camera.lookAt(0, 1.2, -14);
   }
@@ -2146,7 +2152,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     requestAnimationFrame(loop);
   }
 
-  camera.position.set(0, 3.55, CAMERA_DIST);
+  camera.position.set(0, CAMERA_Y, CAMERA_DIST);
   camera.lookAt(0, 1.2, -14);
   loop();
   refreshTopUI();
