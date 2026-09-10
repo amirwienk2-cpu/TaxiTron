@@ -1067,8 +1067,13 @@
     renderWithdrawUI();
   }
 
-  let lastPersonScore = 0;
-  let lastDistance = 0;
+  // zombies collected but not yet exchanged -> saved so they survive closing the app
+  let lastPersonScore = parseInt(localStorage.getItem('cr3d_pendingZombies') || '0', 10);
+  let lastDistance = parseFloat(localStorage.getItem('cr3d_pendingDistance') || '0');
+  function savePending(){
+    localStorage.setItem('cr3d_pendingZombies', lastPersonScore);
+    localStorage.setItem('cr3d_pendingDistance', lastDistance);
+  }
 
   /* ================= Server-authoritative economy sync ================= */
   // Fill in your deployed server's URL here once it's online, e.g.
@@ -1141,43 +1146,66 @@
     refreshTopUI();
   }
 
+  let exchangeInProgress = false;
   async function exchangePersons(){
-    if (lastPersonScore <= 0) return;
+    if (lastPersonScore <= 0 || exchangeInProgress) return;
 
-    if (serverSession.online && serverSession.token){
+    if (SERVER_URL){
+      // Server economy: coins/TON only ever change on the server, so nothing gets
+      // credited locally that the server would overwrite (and wipe) on the next start.
+      exchangeInProgress = true;
       const exchangeBtn = document.getElementById('exchangeBtn');
       exchangeBtn.disabled = true;
       try {
-        const res = await fetch(SERVER_URL + '/api/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: serverSession.token,
-            distance: lastDistance,
-            zombies: lastPersonScore
-          })
-        });
-        const data = await res.json();
-        if (res.ok){
-          applyServerState(data.state);
-          lastPersonScore = 0;
-          lastDistance = 0;
+        for (let attempt = 0; attempt < 2 && lastPersonScore > 0; attempt++){
+          if (!serverSession.online || !serverSession.token){
+            await initServerSession(); // e.g. server was waking up when the app opened
+            if (!serverSession.online || !serverSession.token) break;
+          }
+          const sentZombies = lastPersonScore;
+          const res = await fetch(SERVER_URL + '/api/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token: serverSession.token,
+              distance: lastDistance,
+              zombies: sentZombies
+            })
+          });
+          if (res.status === 401){
+            // session expired -> log in again and retry once
+            serverSession.online = false;
+            serverSession.token = null;
+            continue;
+          }
+          const data = await res.json();
+          if (res.ok){
+            applyServerState(data.state);
+            // only remove what the server actually credited; the rest stays pending
+            const accepted = (typeof data.acceptedZombies === 'number') ? data.acceptedZombies : sentZombies;
+            const remaining = Math.max(0, lastPersonScore - accepted);
+            lastDistance = remaining > 0 ? lastDistance * (remaining / lastPersonScore) : 0;
+            lastPersonScore = remaining;
+            savePending();
+          }
+          break; // other errors (e.g. rate-limited): keep pending, user can retry
         }
-        // on error (e.g. rate-limited), keep lastPersonScore so the user can retry
       } catch (e) {
         // network hiccup -> keep the pending score, user can retry the exchange
       }
+      exchangeInProgress = false;
       exchangeBtn.disabled = lastPersonScore <= 0;
       refreshTopUI();
       return;
     }
 
-    // offline / no server configured: fall back to the local-only economy
+    // no server configured at all: local-only economy
     const coinsGained = lastPersonScore * 2;
     store.coins += coinsGained;
     addPointsFromCoins(coinsGained);
     lastPersonScore = 0;
     lastDistance = 0;
+    savePending();
     saveStore();
     refreshTopUI();
   }
@@ -1909,6 +1937,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     if (personScore > best){ best = personScore; store.best = best; }
     lastPersonScore += personScore;
     lastDistance += distance;
+    savePending();
     saveStore();
     refreshTopUI();
     submitScoreForTournament(personScore, distance);
