@@ -2,52 +2,72 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-    <title>Zombie Taxi: Dead Ride</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Taxi Rush 3D</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!--
+      Rosebud defaults disable accidental selection, context menus, tap highlights,
+      and native dragging during gameplay while preserving text editing. Most games
+      need no customization.
+    -->
     <link rel="stylesheet" href="./rosebud-game-defaults.css" />
     <script src="./rosebud-game-defaults.js" defer></script>
     <script type="importmap">
       {
         "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
+          "three": "https://esm.sh/three@0.184.0",
+          "three/": "https://esm.sh/three@0.184.0/"
         }
       }
     </script>
     <style>
-      :root{--yellow:#ff9d2e;--red:#a92cff;--ink:#08060d;--panel:#15101d;--green:#84d52e}
-      *{box-sizing:border-box} html,body,#game-container{width:100%;height:100%;margin:0;overflow:hidden;background:#050605;color:#fff}
-      body{touch-action:none;font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at 50% 10%,#39210d,#050605 62%)}
-      #game-container{position:relative;max-width:560px;margin:auto;box-shadow:0 0 50px #000}
-      canvas{display:block;width:100%;height:100%;background:#090b0e;touch-action:none}
-      #hud{position:absolute;left:4%;right:4%;top:max(5%,env(safe-area-inset-top));height:64px;display:flex;justify-content:space-between;pointer-events:none;filter:drop-shadow(0 2px 2px #000)}
-      .stat{display:flex;flex-direction:column}.label{font-size:9px;letter-spacing:1.5px;color:#ddd;font-weight:900}.value{font:900 21px Orbitron;color:#fff}.coin{color:var(--yellow)}
-      #hearts{font-size:20px;text-align:right;color:#f43;letter-spacing:2px}.distance{font:800 12px Orbitron;color:#aaa;text-align:right}
-      #mute{position:absolute;right:4%;top:calc(max(5%,env(safe-area-inset-top)) + 66px);width:46px;height:46px;border:1px solid #ffffff30;border-radius:50%;background:#0a0c0bdd;color:white;font-size:19px;z-index:8}
-      #combo{position:absolute;top:19%;width:100%;text-align:center;font:900 26px Orbitron;color:#ffdd24;text-shadow:0 3px #9d130d;opacity:0;transform:scale(.7);transition:.15s;pointer-events:none}.show{opacity:1!important;transform:scale(1)!important}
-      #panel{position:absolute;inset:0 0 86px 0;display:flex;align-items:center;justify-content:center;padding:8% 6%;background:linear-gradient(#0008,#090b09e8);z-index:5}
-      #panel.hidden{display:none}.card{width:100%;max-height:90%;overflow:auto;background:linear-gradient(145deg,#20251f,#0b0d0c);border:2px solid #ffffff20;border-top-color:#ffcc28;border-radius:22px;padding:22px;box-shadow:0 18px 50px #000,0 0 28px #ffad0015}
-      .eyebrow{font:900 11px Orbitron;color:#e63b26;letter-spacing:3px}.title{margin:5px 0 8px;font:900 clamp(30px,10vw,48px)/.9 Orbitron;color:#ffad3d;text-shadow:3px 4px #53126f}.subtitle{color:#bfc3bd;font-size:13px;line-height:1.45;margin:8px 0 18px}
-      .btn{width:100%;min-height:56px;border:0;border-radius:14px;background:linear-gradient(#ffe348,#f1a700);color:#171300;font:900 17px Orbitron;box-shadow:0 5px 0 #8d4d00,0 9px 18px #0008;margin:8px 0}.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #8d4d00}.btn.red{background:linear-gradient(#c43cff,#68119e);color:#fff;box-shadow:0 5px 0 #32064d}.mini-row{display:flex;gap:10px}.mini{flex:1;background:#090b0a;border:1px solid #ffffff1c;border-radius:13px;padding:12px}.mini b{font:800 18px Orbitron;color:#ffd52a}.mini small{display:block;color:#92978f;margin-top:4px}
-      .list{display:grid;gap:10px;margin-top:15px}.item{display:flex;align-items:center;gap:12px;background:#090b0a;border:1px solid #ffffff18;border-radius:14px;padding:12px}.item-icon{font-size:27px;width:40px;text-align:center}.item-text{flex:1}.item-text b{display:block;font:800 13px Orbitron}.item-text small{color:#999}.pill{border:0;border-radius:10px;padding:10px;background:#ff9d2e;color:#190d00;font-weight:900;min-width:72px}.pill:disabled{filter:grayscale(1);opacity:.55}
-      #nav{position:absolute;z-index:10;left:0;right:0;bottom:0;height:calc(82px + env(safe-area-inset-bottom));padding:7px 3% max(7px,env(safe-area-inset-bottom));display:flex;align-items:flex-start;justify-content:space-around;background:linear-gradient(#171a18,#080908);border-top:1px solid #ffffff1f}
-      .nav-btn{width:19%;height:66px;border:0;background:transparent;color:#777;font:800 9px Inter;display:flex;flex-direction:column;align-items:center;gap:4px}.nav-btn span{font-size:23px}.nav-btn.active{color:#ffd326}.nav-btn[data-page="play"]{transform:translateY(-19px)}.nav-btn[data-page="play"] span{display:grid;place-items:center;width:57px;height:57px;border-radius:50%;background:#ffc61a;color:#171300;border:5px solid #2b2e2a;box-shadow:0 4px 13px #000;font-size:25px}.nav-btn[data-page="play"] em{font-style:normal;margin-top:-3px}
-      #steerHint{position:absolute;left:0;right:0;bottom:100px;text-align:center;font:800 11px Orbitron;color:#fff9;pointer-events:none;opacity:0;transition:.3s}.playing #steerHint{opacity:1}
-      @media (min-width:600px){#game-container{border-left:1px solid #333;border-right:1px solid #333}}
+      :root { --yellow:#ffd21c; --ink:#10151f; --cyan:#43e6ef; }
+      * { box-sizing:border-box; }
+      html, body, #game-container { width:100%; height:100%; margin:0; padding:0; background:#87d9ed; overflow:hidden; }
+      body { touch-action:none; font-family:Inter,system-ui,sans-serif; color:white; }
+      canvas { display:block; }
+      #ui-container { position:fixed; inset:0; z-index:10; pointer-events:none; padding:max(5vh,env(safe-area-inset-top)) max(3vw,env(safe-area-inset-right)) max(4vh,env(safe-area-inset-bottom)) max(3vw,env(safe-area-inset-left)); }
+      .hud { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+      .stat { min-width:92px; padding:9px 14px; border:1px solid rgba(255,255,255,.26); border-radius:14px; background:rgba(11,18,29,.78); box-shadow:0 7px 20px rgba(0,0,0,.2); backdrop-filter:blur(8px); }
+      .label { color:#9ec5d2; font-size:10px; font-weight:800; letter-spacing:1.5px; }
+      .value { margin-top:2px; font:700 clamp(17px,4vw,25px)/1 Orbitron,sans-serif; }
+      #coin-stat .value { color:var(--yellow); }
+      .hud-actions { display:flex; gap:8px; pointer-events:auto; }
+      .icon-btn { width:48px; height:48px; border:1px solid rgba(255,255,255,.3); border-radius:14px; color:white; background:rgba(11,18,29,.78); font-size:21px; box-shadow:0 7px 20px rgba(0,0,0,.2); }
+      .icon-btn:active { transform:scale(.93); background:#263144; }
+      #speed { position:absolute; right:max(3vw,env(safe-area-inset-right)); top:calc(max(5vh,env(safe-area-inset-top)) + 64px); font:700 11px Orbitron; color:#d9faff; text-shadow:0 2px 5px #000; }
+      #toast { position:absolute; left:50%; top:26%; transform:translate(-50%,-15px) scale(.9); font:800 clamp(24px,7vw,50px) Orbitron; color:var(--yellow); text-shadow:0 4px 0 #131923,0 0 20px rgba(255,210,28,.6); opacity:0; transition:.18s; white-space:nowrap; }
+      #toast.show { opacity:1; transform:translate(-50%,0) scale(1); }
+      #swipe-hint { position:absolute; left:50%; bottom:8%; transform:translateX(-50%); padding:9px 15px; border-radius:99px; background:rgba(11,18,29,.64); font-size:12px; font-weight:700; letter-spacing:.4px; transition:.4s; }
+      .screen { pointer-events:auto; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:8vh 6vw; background:linear-gradient(180deg,rgba(4,13,24,.12),rgba(4,13,24,.74)); transition:.25s; }
+      .screen.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+      .panel { width:min(92vw,430px); padding:24px; text-align:center; border-radius:28px; background:rgba(12,19,30,.9); border:1px solid rgba(255,255,255,.2); box-shadow:0 24px 70px rgba(0,0,0,.38); backdrop-filter:blur(14px); }
+      .logo { width:min(74vw,310px); max-height:150px; object-fit:contain; filter:drop-shadow(0 9px 12px rgba(0,0,0,.3)); }
+      .tag { margin:0 0 18px; color:#b8d3dd; font-size:14px; }
+      .primary { min-width:210px; min-height:56px; border:0; border-radius:17px; padding:0 24px; background:linear-gradient(135deg,#ffe22f,#ffae13); color:#15130a; font:800 17px Orbitron; box-shadow:0 7px 0 #b46a00,0 12px 24px rgba(255,183,0,.25); }
+      .primary:active { transform:translateY(4px); box-shadow:0 3px 0 #b46a00; }
+      .garage-label { margin:18px 0 9px; font-size:11px; letter-spacing:1.5px; font-weight:800; color:#8fb3c0; }
+      .swatches { display:flex; justify-content:center; gap:13px; }
+      .swatch { width:48px; height:48px; border-radius:50%; border:4px solid rgba(255,255,255,.2); background:var(--c); }
+      .swatch.selected { border-color:white; box-shadow:0 0 0 3px var(--cyan); }
+      #gameover h2 { margin:0 0 4px; font:800 30px Orbitron; }
+      #final-score { margin:12px 0 4px; font:700 46px Orbitron; color:var(--yellow); }
+      #record { min-height:22px; margin:0 0 20px; color:var(--cyan); font-weight:800; }
+      @media (min-width:760px) { #swipe-hint::after { content:'  •  Pfeiltasten'; } }
     </style>
   </head>
   <body>
-    <div id="game-container">
-      <canvas id="game"></canvas>
-      <div id="hud"><div class="stat"><span class="label">SCORE</span><span class="value" id="score">00000</span><span class="label coin" id="coins">◉ 0</span></div><div><div id="hearts">⚠ 1 HIT</div><div class="distance" id="distance">0 M</div></div></div>
-      <button id="mute" aria-label="Ton aus">🔊</button><div id="combo">COMBO ×2</div><div id="steerHint">TIPPE LINKS ODER RECHTS ZUM WECHSELN</div>
-      <section id="panel"><div class="card" id="card"></div></section>
-      <nav id="nav" aria-label="Hauptnavigation">
-        <button class="nav-btn active" data-page="home"><span>⌂</span>HOME</button><button class="nav-btn" data-page="shop"><span>🛒</span>SHOP</button><button class="nav-btn" data-page="play"><span>▶</span><em>PLAY</em></button><button class="nav-btn" data-page="tasks"><span>✓</span>TASKS</button><button class="nav-btn" data-page="wallet"><span>◈</span>EARN</button>
-      </nav>
+    <div id="game-container"></div>
+    <div id="ui-container">
+      <div class="hud">
+        <div style="display:flex;gap:8px"><div class="stat"><div class="label">SCORE</div><div class="value" id="score">00000</div></div><div class="stat" id="coin-stat"><div class="label">FAHRGELD</div><div class="value">⚡ <span id="coins">0</span></div></div></div>
+        <div class="hud-actions"><button class="icon-btn" id="mute" aria-label="Ton">♫</button><button class="icon-btn" id="pause" aria-label="Pause">Ⅱ</button></div>
+      </div>
+      <div id="speed">60 KM/H</div><div id="toast">+100</div><div id="swipe-hint">↔ WISCHEN ZUM SPURWECHSEL</div>
+      <div class="screen" id="menu"><div class="panel"><img class="logo" src="assets/taxi-runner-logo.webp" alt="Taxi Rush"><p class="tag">Coins schnappen. Verkehr meistern. Rekord knacken.</p><button class="primary" id="start">LOSFAHREN</button><div class="garage-label">DEIN TAXI</div><div class="swatches"><button class="swatch selected" data-color="#ffd21c" style="--c:#ffd21c" aria-label="Gelb"></button><button class="swatch" data-color="#30d6df" style="--c:#30d6df" aria-label="Cyan"></button><button class="swatch" data-color="#ff5777" style="--c:#ff5777" aria-label="Pink"></button></div></div></div>
+      <div class="screen hidden" id="gameover"><div class="panel"><h2>FAHRT BEENDET</h2><div class="label">DEIN SCORE</div><div id="final-score">0</div><div id="record"></div><button class="primary" id="restart">NOCHMAL</button></div></div>
     </div>
     <script type="module" src="./main.js"></script>
     <script src="https://storage.googleapis.com/rosebud_staticfiles/ChatManager.js"></script>
