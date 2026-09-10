@@ -353,12 +353,6 @@
       <div class="cap-track"><div class="cap-fill" id="capFill"></div></div>
       <div class="cap-sub" id="capSub">0.000000 / 1.000000 TON <span data-i18n="today">today</span> · <span data-i18n="statLevel">Lvl</span> 1</div>
     </div>
-    <div class="hero home-hero">
-      <div class="hero-badge">🧟</div>
-      <p data-i18n="heroDesc">Steer your car through the lanes in 3D and collect zombies. Trade them in for coins in your Wallet.</p>
-      <button class="menu-btn" id="homePlayBtn" data-i18n="playBtn">▶ Start Ride</button>
-      <div class="attempts-info" id="attemptsInfo"></div>
-    </div>
     <div class="stat-row">
       <div class="stat-card gold"><div class="label" data-i18n="statWallet">Wallet</div><div class="value" id="homeCoins">0</div></div>
       <div class="stat-card"><div class="label" data-i18n="statBest">Best</div><div class="value" id="homeBest">0</div></div>
@@ -1406,7 +1400,6 @@
   function leaveGameToHome(){
     showScreen('home');
   }
-  document.getElementById('homePlayBtn').addEventListener('click', enterGame);
   document.getElementById('exitRunBtn').addEventListener('click', () => {
     if (running){ running = false; commitRun(); }
     leaveGameToHome();
