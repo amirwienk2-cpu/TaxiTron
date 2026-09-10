@@ -112,7 +112,8 @@ function getUser(uid) {
       tonDate: todayStr(),
       best: 0,
       runs: 0,
-      lastRunAt: 0
+      lastRunAt: 0,
+      lastScoreSubmitAt: 0
     };
   }
   const u = db[uid];
@@ -484,6 +485,35 @@ const server = http.createServer(async (req, res) => {
       saveDb();
 
       return sendJson(res, 200, { state: publicState(u), coinsGained, tonGained: Number(tonGain.toFixed(6)) });
+    }
+
+    /* ---- POST /api/submit-score  { token, distance, zombies } -> { best } ----
+     * Records this single run's zombie count toward the TOURNAMENT ranking
+     * ONLY — never touches coins or TON. Called automatically after every
+     * run finishes, independent of whether the player exchanges their coins,
+     * so the leaderboard reflects real performance right away.
+     */
+    if (req.method === 'POST' && url.pathname === '/api/submit-score') {
+      const raw = await readBody(req);
+      const { token, distance, zombies } = JSON.parse(raw || '{}');
+      const uid = verifyToken(token);
+      const u = getUser(uid);
+
+      const now = Date.now();
+      if (now - (u.lastScoreSubmitAt || 0) < MIN_SECONDS_BETWEEN_RUNS * 1000) {
+        return sendJson(res, 429, { error: 'Too many score submissions, slow down.' });
+      }
+
+      const dist = Math.max(0, Math.min(Number(distance) || 0, MAX_METERS_PER_RUN));
+      let zom = Math.max(0, Math.floor(Number(zombies) || 0));
+      const maxPlausibleZombies = Math.ceil(dist * MAX_ZOMBIES_PER_METER) + 5;
+      if (zom > maxPlausibleZombies) zom = maxPlausibleZombies;
+
+      u.best = Math.max(u.best, zom);
+      u.lastScoreSubmitAt = now;
+      saveDb();
+
+      return sendJson(res, 200, { best: u.best });
     }
 
     /* ---- POST /api/withdraw  { token, address, amount } -> { state, withdrawal } ----
