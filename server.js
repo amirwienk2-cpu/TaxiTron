@@ -482,6 +482,10 @@ app.post('/api/run', requireUserFromBody, (req, res) => {
 
   const coinsPerZombie = Number(level) >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
   const dailyCap = Number(level) >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
+  if (Number(level) >= 2 && user.tonToday >= dailyCap - 1e-9) {
+    persist();
+    return res.json({ state: publicState(user), acceptedZombies: 0, error: 'daily-earn-cap-reached' });
+  }
   const coinsGained = zombies * coinsPerZombie;
   user.coins += coinsGained;
 

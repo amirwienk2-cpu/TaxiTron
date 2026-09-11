@@ -230,6 +230,13 @@
   const DAILY_PTS_CAP_LEVEL_ONE = 1;
   const DAILY_PTS_CAP_LEVEL_TWO = 0.067;
   function getDailyPtsCap(){ return hasLevelTwo() ? DAILY_PTS_CAP_LEVEL_TWO : DAILY_PTS_CAP_LEVEL_ONE; }
+  function dailyEarningsComplete(){ return hasLevelTwo() && store.pointsToday >= getDailyPtsCap() - 1e-9; }
+  function lockLevelTwoAttemptsAtDailyCap(){
+    if (!dailyEarningsComplete() || store.attemptsResetAt) return;
+    store.attemptsLeft = 0;
+    store.attemptsResetAt = Date.now() + ATTEMPT_COOLDOWN_LEVEL_TWO_MS;
+    saveStore();
+  }
 
   function todayStr(){
     return new Date().toISOString().slice(0,10);
@@ -626,6 +633,7 @@
 
   function refreshTopUI(){
     ensureDailyReset();
+    lockLevelTwoAttemptsAtDailyCap();
     document.getElementById('homeCoins').textContent = store.coins;
     document.getElementById('homeBest').textContent = store.best;
     document.getElementById('homeRuns').textContent = store.runs;
@@ -635,7 +643,7 @@
     document.getElementById('walletTonDisplay').textContent = store.points.toFixed(6);
     document.getElementById('walletPersonsDisplay').textContent = lastPersonScore;
     document.getElementById('exchangePreview').textContent = lastPersonScore * getCoinsPerZombie();
-    document.getElementById('exchangeBtn').disabled = lastPersonScore <= 0;
+    document.getElementById('exchangeBtn').disabled = lastPersonScore <= 0 || dailyEarningsComplete();
 
     document.getElementById('balanceValue').textContent = store.points.toFixed(6);
     const dailyCap = getDailyPtsCap();
@@ -758,7 +766,7 @@
 
   let exchangeInProgress = false;
   async function exchangePersons(){
-    if (lastPersonScore <= 0 || exchangeInProgress) return;
+    if (lastPersonScore <= 0 || exchangeInProgress || dailyEarningsComplete()) return;
 
     if (SERVER_URL){
       // Server economy: coins/TON only ever change on the server, so nothing gets
@@ -805,7 +813,7 @@
         // network hiccup -> keep the pending score, user can retry the exchange
       }
       exchangeInProgress = false;
-      exchangeBtn.disabled = lastPersonScore <= 0;
+      exchangeBtn.disabled = lastPersonScore <= 0 || dailyEarningsComplete();
       refreshTopUI();
       return;
     }
@@ -1739,7 +1747,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       }
       const laneOk = weaponActive || (p.lane === player.lane);
       const radius = weaponActive ? rampageRadius : pickupRadius;
-      if (laneOk && overlapZ(p.mesh.position.z, playerCar.position.z, radius)){
+      if (!dailyEarningsComplete() && laneOk && overlapZ(p.mesh.position.z, playerCar.position.z, radius)){
         scene.remove(p.mesh);
         people.splice(i,1);
         personScore++;
