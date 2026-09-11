@@ -182,6 +182,7 @@ function newUser(id, name) {
     best: 0,
     runs: 0,
     level: 1,
+    ownedSkins: ['yellow'],
     tournamentBest: 0,
     tournamentDistance: 0,
     tournamentWeekKey: '',
@@ -238,6 +239,10 @@ function ensureTournamentReset(user) {
 }
 
 function publicState(user) {
+  const ownedSkins = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
+  if ((user.level || 1) >= 2 && ownedSkins.indexOf('red') === -1) ownedSkins.push('red');
+  if ((user.level || 1) >= 3 && ownedSkins.indexOf('white') === -1) ownedSkins.push('white');
+  user.ownedSkins = ownedSkins;
   return {
     coins: user.coins,
     ton: user.ton,
@@ -245,6 +250,7 @@ function publicState(user) {
     best: user.best,
     runs: user.runs,
     level: user.level || 1,
+    ownedSkins,
   };
 }
 
@@ -399,6 +405,8 @@ app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
   if (user.ton < price) return res.status(400).json({ error: 'insufficient-funds' });
   user.ton -= price;
   user.level = levels[key];
+  if (!Array.isArray(user.ownedSkins)) user.ownedSkins = ['yellow'];
+  if (user.ownedSkins.indexOf(key) === -1) user.ownedSkins.push(key);
   persist();
   res.json({ state: publicState(user) });
 });
