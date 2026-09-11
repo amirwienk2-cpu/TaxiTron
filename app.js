@@ -690,6 +690,7 @@
       loadDepositMemo();
     }
   }
+  setInterval(initServerSession, 30000);
 
   /* ================= DEPOSIT MEMO CODE ================= */
   async function loadDepositMemo(){

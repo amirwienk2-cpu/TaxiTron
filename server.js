@@ -50,6 +50,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
+const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
 
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
@@ -374,6 +375,40 @@ async function tonApiJson(pathname) {
   return response.json();
 }
 
+let depositScanInProgress = false;
+async function scanDeposits() {
+  if (!DEPOSIT_ADDRESS || depositScanInProgress) return;
+  depositScanInProgress = true;
+  try {
+    const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
+    const data = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS) + '/events?limit=100');
+    let changed = false;
+    for (const event of data.events || []) {
+      for (const action of event.actions || []) {
+        const transfer = action.type === 'TonTransfer' && action.TonTransfer;
+        if (!transfer || action.status !== 'ok' || transfer.recipient.address !== account.address) continue;
+        const match = /^TT-(\d+)$/.exec(String(transfer.comment || '').trim());
+        if (!match || Number(transfer.amount) <= 0) continue;
+        const user = users[match[1]];
+        if (!user) continue;
+        if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
+        const txId = String(event.event_id || '').toLowerCase();
+        if (!txId || user.depositTxs.includes(txId)) continue;
+        user.ton += Number(transfer.amount) / 1e9;
+        user.depositTxs.push(txId);
+        if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
+        changed = true;
+        console.log('[deposit] credited ' + (Number(transfer.amount) / 1e9) + ' TON to user ' + user.id);
+      }
+    }
+    if (changed) persist();
+  } catch (e) {
+    console.error('[deposit] scan failed: ' + e.message);
+  } finally {
+    depositScanInProgress = false;
+  }
+}
+
 function getNativeTransfer(event, uid) {
   return (event.actions || []).find((action) => {
     const transfer = action.type === 'TonTransfer' && action.TonTransfer;
@@ -578,5 +613,11 @@ app.listen(PORT, () => {
     console.error('==================================================================');
   }
   if (!BOT_TOKEN) console.warn('WARNING: BOT_TOKEN not set — /api/auth will always fail.');
+  if (!DEPOSIT_ADDRESS) console.warn('WARNING: DEPOSIT_ADDRESS not set — automatic deposits are disabled.');
+  else {
+    console.log('[deposit] automatic scanner enabled every ' + Math.round(DEPOSIT_POLL_MS / 1000) + 's.');
+    setTimeout(scanDeposits, 1000);
+    setInterval(scanDeposits, DEPOSIT_POLL_MS);
+  }
   if (SESSION_SECRET === 'dev-insecure-secret-change-me') console.warn('WARNING: using the default SESSION_SECRET — set a real one in production.');
 });
