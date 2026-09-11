@@ -302,6 +302,10 @@
   .skin-buy-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b8860b; }
   .skin-buy-btn.owned{ background:linear-gradient(180deg,#2c2a3d,#1c1c2a); color:#ffd93d; box-shadow:0 4px 0 #0e0e16; border:1px solid #3a3750; }
   .skin-buy-btn.selected-btn{ background:linear-gradient(180deg,#8aff5c,#4fae2c); color:#0c2405; box-shadow:0 4px 0 #2f7a1e; }
+  .skin-item[data-skin="white"] .skin-buy-btn{ background:linear-gradient(180deg,#ffffff,#d9d9d9); color:#090909; border:1px solid #ffffff; box-shadow:0 4px 0 #050505; }
+  .skin-item[data-skin="white"] .skin-buy-btn.selected-btn,
+  .skin-item[data-skin="white"] .skin-buy-btn.owned{ background:linear-gradient(180deg,#ffffff,#cfcfcf); color:#000000; border-color:#ffffff; box-shadow:0 4px 0 #000000; }
+  .skin-item[data-skin="white"] .skin-buy-btn:disabled{ opacity:1; }
   .skin-buy-btn.soon-btn{ background:#1c1c2a; color:#8b86a0; box-shadow:none; cursor:not-allowed; border:1px dashed #3a3750; }
   .skin-buy-btn:disabled{ opacity:.5; cursor:not-allowed; }
 
