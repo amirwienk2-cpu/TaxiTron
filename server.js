@@ -240,16 +240,16 @@ function ensureTournamentReset(user) {
 
 function publicState(user) {
   const ownedSkins = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
-  if ((user.level || 1) >= 2 && ownedSkins.indexOf('red') === -1) ownedSkins.push('red');
-  if ((user.level || 1) >= 3 && ownedSkins.indexOf('white') === -1) ownedSkins.push('white');
+  if (ownedSkins.indexOf('yellow') === -1) ownedSkins.unshift('yellow');
   user.ownedSkins = ownedSkins;
+  user.level = ownedSkins.indexOf('white') !== -1 ? 3 : ownedSkins.indexOf('red') !== -1 ? 2 : 1;
   return {
     coins: user.coins,
     ton: user.ton,
     tonToday: user.tonToday,
     best: user.best,
     runs: user.runs,
-    level: user.level || 1,
+    level: user.level,
     ownedSkins,
   };
 }
