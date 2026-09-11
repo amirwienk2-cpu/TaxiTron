@@ -765,15 +765,28 @@
   });
 
   function applyServerState(state){
+    const accountChanged = state.uid && localStorage.getItem('cr3d_serverUid') !== String(state.uid);
+    if (accountChanged){
+      localStorage.setItem('cr3d_serverUid', String(state.uid));
+      store.skinRewards = {};
+      store.skin = 'yellow';
+    }
     store.coins = state.coins;
     store.points = state.ton;
     store.pointsToday = state.tonToday;
     store.pointsDate = todayStr();
-    store.best = Math.max(store.best, state.best);
-    store.runs = Math.max(store.runs, state.runs);
+    store.best = state.best;
+    store.runs = state.runs;
     if (typeof state.level === 'number') store.level = state.level;
-    if (Array.isArray(state.ownedSkins)) store.ownedSkins = state.ownedSkins.slice();
+    if (Array.isArray(state.ownedSkins)){
+      store.ownedSkins = state.ownedSkins.slice();
+      if (store.ownedSkins.indexOf(store.skin) === -1){
+        store.skin = store.ownedSkins.indexOf('white') !== -1 ? 'white' : store.ownedSkins.indexOf('red') !== -1 ? 'red' : 'yellow';
+      }
+    }
     saveStore();
+    if (typeof setPlayerSkin === 'function') setPlayerSkin(store.skin);
+    if (typeof renderSkinShop === 'function') renderSkinShop();
     refreshTopUI();
   }
 

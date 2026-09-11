@@ -248,6 +248,7 @@ function publicState(user) {
   user.ownedSkins = ownedSkins;
   user.level = ownedSkins.indexOf('white') !== -1 ? 3 : ownedSkins.indexOf('red') !== -1 ? 2 : 1;
   return {
+    uid: String(user.id),
     coins: user.coins,
     ton: user.ton,
     tonToday: user.tonToday,
