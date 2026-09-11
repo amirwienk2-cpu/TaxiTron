@@ -1608,8 +1608,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   }
 
   function calcSpeed(dist){
-    const extraHalfKilometers = Math.floor(Math.max(0, dist - 5000) / 500);
-    const distanceMultiplier = Math.pow(1.02, extraHalfKilometers);
+    const distanceSteps = Math.floor(Math.max(0, dist) / 50);
+    const distanceMultiplier = Math.pow(1.005, distanceSteps);
     const zombieSpeedSteps = Math.floor(personScore / 15);
     const zombieMultiplier = Math.pow(1.02, zombieSpeedSteps);
     const s = baseSpeed * distanceMultiplier * zombieMultiplier;
