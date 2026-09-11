@@ -49,6 +49,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
+const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
@@ -180,6 +181,7 @@ function newUser(id, name) {
     tournamentBest: 0,
     tournamentDistance: 0,
     tournamentWeekKey: '',
+    depositTxs: [],
     withdrawals: [],
   };
 }
@@ -364,6 +366,47 @@ app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
     memo: 'TT-' + req.uid,
     address: DEPOSIT_ADDRESS || undefined,
   });
+});
+
+async function tonApiJson(pathname) {
+  const response = await fetch(TONAPI_URL + pathname);
+  if (!response.ok) throw new Error('tonapi-http-' + response.status);
+  return response.json();
+}
+
+function getNativeTransfer(event, uid) {
+  return (event.actions || []).find((action) => {
+    const transfer = action.type === 'TonTransfer' && action.TonTransfer;
+    return transfer && action.status === 'ok' &&
+      transfer.comment === 'TT-' + uid && Number(transfer.amount) > 0;
+  });
+}
+
+app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
+  const txHash = String(req.body && req.body.txHash || '').trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(txHash)) return res.status(400).json({ error: 'invalid-transaction-id' });
+  if (!DEPOSIT_ADDRESS) return res.status(503).json({ error: 'deposit-address-not-configured' });
+  const user = req.user;
+  if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
+  if (user.depositTxs.includes(txHash)) return res.status(409).json({ error: 'deposit-already-claimed' });
+
+  try {
+    const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
+    const event = await tonApiJson('/events/' + txHash);
+    const transferAction = getNativeTransfer(event, user.id);
+    const recipient = transferAction && transferAction.TonTransfer.recipient;
+    if (!transferAction || !recipient || recipient.address !== account.address) {
+      return res.status(400).json({ error: 'deposit-does-not-match-account' });
+    }
+    const amount = transferAction.TonTransfer.amount / 1e9;
+    user.ton += amount;
+    user.depositTxs.push(txHash);
+    if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
+    persist();
+    res.json({ state: publicState(user), amount });
+  } catch (e) {
+    res.status(502).json({ error: 'deposit-verification-failed' });
+  }
 });
 
 // ---- Exchange a run's zombies for coins + (capped) TON ----
