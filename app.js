@@ -550,6 +550,7 @@
           }
         } else if (action === 'select'){
           store.skin = key;
+          store.level = Math.max(store.level, def.level);
         }
         saveStore();
         creditSkinRewards();
