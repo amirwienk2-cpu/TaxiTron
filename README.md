@@ -27,6 +27,7 @@ npm start
    `ADMIN_SECRET`, `DATA_DIR=/data`, optionally `DEPOSIT_ADDRESS`.
 4. Deploy. Railway provides `PORT` automatically.
 5. In `index.html`, make sure `SERVER_URL` points at the Railway domain.
+6. Set `ADMIN_SECRET` and open `/admin` to review and complete manual payouts.
 
 ## API
 
