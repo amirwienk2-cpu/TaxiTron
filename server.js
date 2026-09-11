@@ -330,6 +330,7 @@ function requireAdmin(req, res, next) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname, { index: false }));
 
 // Health check. Open this URL in a browser to see if data is stored safely.
 app.get('/', (req, res) => res.json({
