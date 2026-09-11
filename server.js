@@ -56,6 +56,10 @@ const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENV
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
 const DATA_DIR = process.env.DATA_DIR || RAILWAY_VOLUME_PATH || path.join(__dirname, 'data');
 
+if (ON_RAILWAY && SESSION_SECRET === 'dev-insecure-secret-change-me') {
+  throw new Error('SESSION_SECRET must be configured in production');
+}
+
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
 
@@ -275,7 +279,11 @@ function verifyInitData(initData) {
   const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
   const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
-  if (computedHash !== hash) return { ok: false, error: 'invalid-hash' };
+  const expectedHash = Buffer.from(computedHash, 'utf8');
+  const receivedHash = Buffer.from(hash, 'utf8');
+  if (expectedHash.length !== receivedHash.length || !crypto.timingSafeEqual(expectedHash, receivedHash)) {
+    return { ok: false, error: 'invalid-hash' };
+  }
 
   const authDate = parseInt(params.get('auth_date') || '0', 10) * 1000;
   if (!authDate || Date.now() - authDate > INIT_DATA_MAX_AGE_MS) {
@@ -401,12 +409,12 @@ app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
   const price = prices[key];
   if (!price) return res.status(400).json({ error: 'invalid-skin' });
   const user = req.user;
-  if ((user.level || 1) >= levels[key]) return res.status(409).json({ error: 'skin-already-owned' });
+  if (!Array.isArray(user.ownedSkins)) user.ownedSkins = ['yellow'];
+  if (user.ownedSkins.indexOf(key) !== -1) return res.status(409).json({ error: 'skin-already-owned' });
   if (user.ton < price) return res.status(400).json({ error: 'insufficient-funds' });
   user.ton -= price;
-  user.level = levels[key];
-  if (!Array.isArray(user.ownedSkins)) user.ownedSkins = ['yellow'];
-  if (user.ownedSkins.indexOf(key) === -1) user.ownedSkins.push(key);
+  user.ownedSkins.push(key);
+  user.level = Math.max(user.level || 1, levels[key]);
   persist();
   res.json({ state: publicState(user) });
 });
