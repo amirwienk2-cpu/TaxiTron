@@ -1443,25 +1443,11 @@
   scene.fog = new THREE.Fog(0x0a0a12, 30, 140);
 
   const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 500);
-  const VFOV = 62; // fixed, natural field of view (no fisheye distortion)
-  const HALF_VISIBLE_X = 5.6; // half-width (lane offset + car width + margin) that must stay on-screen
-  const DOWN_ANGLE = 9 * Math.PI / 180; // camera's downward tilt toward the car
-  let CAMERA_DIST = 8;   // recalculated in resize() based on screen aspect
-  let CAMERA_Y = 3.55;   // recalculated in resize() to match CAMERA_DIST
 
   function resize(){
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h);
-    const aspect = w / h;
-    camera.aspect = aspect;
-    camera.fov = VFOV;
-    const vHalf = THREE.MathUtils.degToRad(VFOV / 2);
-    const hHalf = Math.atan(Math.tan(vHalf) * aspect);
-    let dist = HALF_VISIBLE_X / Math.tan(hHalf);
-    // On wide (desktop) screens keep the car close; on narrow (mobile) screens pull back further
-    dist = Math.max(6, Math.min(dist, 20));
-    CAMERA_DIST = dist;
-    CAMERA_Y = 1.2 + (CAMERA_DIST + 14) * Math.tan(DOWN_ANGLE);
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
@@ -2136,10 +2122,11 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     updateCoinCountUI();
 
     // camera chase behind car
-    camera.position.x = 0;
-    camera.position.y = CAMERA_Y;
-    camera.position.z = CAMERA_DIST;
-    camera.lookAt(0, 1.2, -14);
+    const camTargetX = player.x * 0.85;
+    camera.position.x += (camTargetX - camera.position.x) * 0.12;
+    camera.position.y = 3.6;
+    camera.position.z = 8.5;
+    camera.lookAt(player.x*0.4, 1.2, -14);
   }
 
   let lastTime = performance.now();
@@ -2152,7 +2139,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     requestAnimationFrame(loop);
   }
 
-  camera.position.set(0, CAMERA_Y, CAMERA_DIST);
+  camera.position.set(0, 3.6, 8.5);
   camera.lookAt(0, 1.2, -14);
   loop();
   refreshTopUI();
@@ -2164,13 +2151,6 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     if (typeof tg.requestFullscreen === 'function') { tg.requestFullscreen(); } else { tg.expand(); }
     if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
     if (typeof tg.disableSwipeToClose === 'function') tg.disableSwipeToClose();
-    // The webview's real (expanded) size is often not final yet at this point,
-    // so re-run resize() once Telegram reports the viewport has changed, and
-    // again after short delays as a fallback for devices that don't fire the event.
-    if (typeof tg.onEvent === 'function') tg.onEvent('viewportChanged', resize);
-    setTimeout(resize, 150);
-    setTimeout(resize, 500);
-    setTimeout(resize, 1200);
   }
   initServerSession();
 })();
