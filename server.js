@@ -187,6 +187,9 @@ function newUser(id, name) {
     runs: 0,
     level: 1,
     ownedSkins: ['yellow'],
+    attemptsLeft: 10,
+    attemptsResetAt: null,
+    attemptResetVersion: 0,
     tournamentBest: 0,
     tournamentDistance: 0,
     tournamentWeekKey: '',
@@ -256,6 +259,7 @@ function publicState(user) {
     runs: user.runs,
     level: user.level,
     ownedSkins,
+    attemptResetVersion: user.attemptResetVersion || 0,
   };
 }
 
@@ -675,6 +679,9 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.runs = 0;
     user.level = 1;
     user.ownedSkins = ['yellow'];
+    user.attemptsLeft = 10;
+    user.attemptsResetAt = null;
+    user.attemptResetVersion = Date.now();
     user.skinRewards = {};
     user.tournamentBest = 0;
     user.tournamentDistance = 0;

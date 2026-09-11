@@ -771,6 +771,12 @@
       store.skinRewards = {};
       store.skin = 'yellow';
     }
+    const resetKey = state.uid ? 'cr3d_attemptResetVersion_' + String(state.uid) : '';
+    if (resetKey && String(state.attemptResetVersion || 0) !== localStorage.getItem(resetKey)){
+      store.attemptsLeft = (typeof state.level === 'number' && state.level >= 2) ? MAX_ATTEMPTS_LEVEL_TWO : MAX_ATTEMPTS_LEVEL_ONE;
+      store.attemptsResetAt = null;
+      localStorage.setItem(resetKey, String(state.attemptResetVersion || 0));
+    }
     store.coins = state.coins;
     store.points = state.ton;
     store.pointsToday = state.tonToday;
