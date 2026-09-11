@@ -42,6 +42,11 @@ npm start
 
 `state` is always `{ coins, ton, tonToday, best, runs }`.
 
+Deposits are scanned automatically every 30 seconds through TonAPI. Set
+`DEPOSIT_ADDRESS`, `TONAPI_URL`, and optionally `DEPOSIT_POLL_MS` in the
+deployment environment. Deposits must include the personal `TT-<Telegram ID>`
+comment; each transaction is credited only once.
+
 ## Admin (manual payouts)
 
 Send these with header `x-admin-secret: <ADMIN_SECRET>`:
