@@ -384,6 +384,18 @@ app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
   });
 });
 
+app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
+  const key = String(req.body && req.body.key || '');
+  const prices = { red: 1, white: 15 };
+  const price = prices[key];
+  if (!price) return res.status(400).json({ error: 'invalid-skin' });
+  const user = req.user;
+  if (user.ton < price) return res.status(400).json({ error: 'insufficient-funds' });
+  user.ton -= price;
+  persist();
+  res.json({ state: publicState(user) });
+});
+
 async function tonApiJson(pathname) {
   const response = await fetch(TONAPI_URL + pathname);
   if (!response.ok) throw new Error('tonapi-http-' + response.status);

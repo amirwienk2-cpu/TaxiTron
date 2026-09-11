@@ -497,7 +497,7 @@
       grid.appendChild(item);
     });
     grid.querySelectorAll('.skin-buy-btn[data-action]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const key = btn.dataset.skin;
         const action = btn.dataset.action;
         const def = SKIN_LEVELS.find(d => d.key === key);
@@ -506,7 +506,18 @@
         if (action === 'buy'){
           if (store.ownedSkins.indexOf(key) === -1){
             if (def.price > 0 && store.points < def.price) return;
-            store.points -= def.price;
+            if (SERVER_URL && serverSession.online && serverSession.token && def.price > 0){
+              const response = await fetch(SERVER_URL + '/api/buy-skin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: serverSession.token, key })
+              });
+              const data = await response.json();
+              if (!response.ok) return;
+              applyServerState(data.state);
+            } else {
+              store.points -= def.price;
+            }
             store.ownedSkins.push(key);
             if (def.dailyReward > 0){
               store.skinRewards[key] = { remainingDays: def.rewardDays, lastCreditDate: '' };
@@ -1040,8 +1051,8 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a12);
-  scene.fog = new THREE.Fog(0x0a0a12, 30, 140);
+  scene.background = new THREE.Color(0x120b18);
+  scene.fog = new THREE.Fog(0x120b18, 24, 125);
 
   const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 500);
 
@@ -1055,11 +1066,11 @@
   resize();
 
   // Lighting
-  scene.add(new THREE.AmbientLight(0x8899cc, 0.55));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  scene.add(new THREE.AmbientLight(0x675477, 0.5));
+  const dirLight = new THREE.DirectionalLight(0xffd2b0, 0.75);
   dirLight.position.set(-8, 20, -10);
   scene.add(dirLight);
-  const backLight = new THREE.PointLight(0xff6b6b, 0.6, 60);
+  const backLight = new THREE.PointLight(0xff6b35, 0.8, 60);
   backLight.position.set(0, 6, 12);
   scene.add(backLight);
 
@@ -1070,7 +1081,7 @@
   const ROAD_LEN = 260;
   const laneX = i => (i - (LANES-1)/2) * LANE_W;
 
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x2b2b38, roughness: 0.95 });
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0x211c2b, roughness: 0.95 });
   const roadGeo = new THREE.PlaneGeometry(ROAD_W, ROAD_LEN);
   const road = new THREE.Mesh(roadGeo, roadMat);
   road.rotation.x = -Math.PI/2;
@@ -1078,7 +1089,7 @@
   scene.add(road);
 
   // Curbs
-  const curbMat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.6 });
+  const curbMat = new THREE.MeshStandardMaterial({ color:0xff6a24, roughness:0.6, emissive:0x3a1005, emissiveIntensity:0.35 });
   [-1,1].forEach(side=>{
     const curb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, ROAD_LEN), curbMat);
     curb.position.set(side*(ROAD_W/2+0.15), 0.1, -ROAD_LEN/2 + 20);
@@ -1086,7 +1097,7 @@
   });
 
   // Ground either side of road (dark)
-  const groundMat = new THREE.MeshStandardMaterial({ color:0x0d0d16, roughness:1 });
+  const groundMat = new THREE.MeshStandardMaterial({ color:0x130d1c, roughness:1 });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, ROAD_LEN+40), groundMat);
   ground.rotation.x = -Math.PI/2;
   ground.position.set(0, -0.05, -ROAD_LEN/2 + 20);
@@ -1115,6 +1126,23 @@
   const sceneryTrackLength = ROAD_LEN + 80;
   const lanternPoleMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.7, metalness: 0.3 });
   const lanternHeadMat = new THREE.MeshStandardMaterial({ color: 0x3a2410, emissive: 0xff8a2a, emissiveIntensity: 1.4, roughness: 0.5 });
+  const pumpkinMat = new THREE.MeshStandardMaterial({ color: 0xd94b20, emissive: 0x7a1d08, emissiveIntensity: 0.8, roughness: 0.8 });
+  const pumpkinStemMat = new THREE.MeshStandardMaterial({ color: 0x263d20, roughness: 0.9 });
+  function addPumpkin(side, z){
+    const pumpkin = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), pumpkinMat);
+    body.scale.set(1.15, 0.82, 0.95);
+    body.position.y = 0.42;
+    pumpkin.add(body);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.2, 6), pumpkinStemMat);
+    stem.position.y = 0.82;
+    pumpkin.add(stem);
+    pumpkin.position.set(side * (ROAD_W/2 + 1.7), 0, z);
+    scene.add(pumpkin);
+    const glow = new THREE.PointLight(0xff5a24, 0.3, 5);
+    glow.position.set(pumpkin.position.x, 0.7, z);
+    scene.add(glow);
+  }
 
   [-1, 1].forEach(side => {
     let z = sceneryZStart;
@@ -1141,6 +1169,8 @@
         const lanternLight = new THREE.PointLight(0xffaa44, 0.7, 12);
         lanternLight.position.set(lanternX, poleH + 0.15, z);
         scene.add(lanternLight);
+      } else {
+        addPumpkin(side, z);
       }
 
       z += 12 + Math.random()*9;
