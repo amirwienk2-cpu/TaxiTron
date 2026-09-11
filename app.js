@@ -404,7 +404,7 @@
     }
   }
   initializeLevelTwoAttempts();
-  function getCoinsPerZombie(){ return hasLevelTwo() ? 7 : 2; }
+  function getCoinsPerZombie(){ return hasLevelTwo() ? 7 : 1; }
   function updateExchangeRateUI(){
     const rate = getCoinsPerZombie();
     document.querySelectorAll('[data-i18n="howto4"], [data-i18n="exchangeRateLabel"], [data-i18n="exchangeBtn"], [data-i18n="walletExchangeInfo"]').forEach(el => {
