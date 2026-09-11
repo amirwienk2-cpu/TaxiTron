@@ -363,13 +363,14 @@ app.get('/admin', (req, res) => {
   res.type('html').send(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TaxiTron Admin</title><style>
-body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:900px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.toolbar{display:flex;gap:8px;margin:18px 0}.status{color:#aaa3b8;margin:12px 0}.row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.muted{color:#aaa3b8;font-size:12px}@media(max-width:650px){.row{grid-template-columns:1fr 1fr}.row button{grid-column:1/-1}}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load withdrawals</button></div><div id="status" class="status"></div><div id="list"></div>
+body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:900px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.danger{background:#ff5c6c;color:#260b10}.toolbar{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.status{color:#aaa3b8;margin:12px 0}.row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.muted{color:#aaa3b8;font-size:12px}@media(max-width:650px){.row{grid-template-columns:1fr 1fr}.row button{grid-column:1/-1}}
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load withdrawals</button><button id="reset" class="danger">Alle Spieler zurücksetzen</button></div><div id="status" class="status"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
 async function load(){const s=secret();if(!s){status('Enter the admin secret.');return}status('Loading...');const r=await fetch('/admin/withdrawals?status=pending',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'No pending withdrawals.';d.withdrawals.forEach(w=>{const row=document.createElement('div');row.className='row';row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span>'+w.amount+' TON</span><span>'+w.address+'</span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><button>Mark completed</button>';row.querySelector('button').onclick=async()=>{const rr=await fetch('/admin/withdrawals/complete',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts})});if(rr.ok)load();else status((await rr.json()).error||'Request failed')};list.appendChild(row)})}
 document.getElementById('load').onclick=load;
+document.getElementById('reset').onclick=async()=>{const s=secret();if(!s){status('Enter the admin secret.');return}if(!confirm('WARNING: This resets all players\' coins, TON, level, skins, stats, and withdrawals. Deposits remain protected. Continue?'))return;status('Resetting all players...');const r=await fetch('/admin/reset-users',{method:'POST',headers:{'x-admin-secret':s}});const d=await r.json();status(r.ok?'Reset complete for '+d.count+' players.':(d.error||'Reset failed'));if(r.ok)load()};
 </script></body></html>`);
 });
 
@@ -639,6 +640,37 @@ app.post('/admin/withdrawals/complete', requireAdmin, (req, res) => {
   w.status = 'completed';
   persist();
   res.json({ ok: true, withdrawal: w });
+});
+
+app.post('/admin/reset-users', requireAdmin, async (req, res) => {
+  const resetUsers = Object.values(users);
+  resetUsers.forEach((user) => {
+    const depositTxs = Array.isArray(user.depositTxs) ? user.depositTxs.slice() : [];
+    user.coins = 0;
+    user.ton = 0;
+    user.tonToday = 0;
+    user.tonDate = '';
+    user.best = 0;
+    user.runs = 0;
+    user.level = 1;
+    user.ownedSkins = ['yellow'];
+    user.skinRewards = {};
+    user.tournamentBest = 0;
+    user.tournamentDistance = 0;
+    user.tournamentWeekKey = '';
+    user.withdrawals = [];
+    user.depositTxs = depositTxs;
+  });
+
+  await persist();
+  try {
+    const temp = BACKUP_FILE + '.reset.tmp';
+    fs.writeFileSync(temp, JSON.stringify(users));
+    fs.renameSync(temp, BACKUP_FILE);
+  } catch (e) {
+    return res.status(500).json({ error: 'backup-write-failed' });
+  }
+  res.json({ ok: true, count: resetUsers.length });
 });
 
 // ---------------------------------------------------------------
