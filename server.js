@@ -363,13 +363,15 @@ app.get('/admin', (req, res) => {
   res.type('html').send(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TaxiTron Admin</title><style>
-body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:900px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.danger{background:#ff5c6c;color:#260b10}.toolbar{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.status{color:#aaa3b8;margin:12px 0}.row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.muted{color:#aaa3b8;font-size:12px}@media(max-width:650px){.row{grid-template-columns:1fr 1fr}.row button{grid-column:1/-1}}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load withdrawals</button><button id="reset" class="danger">Alle Spieler zurücksetzen</button></div><div id="status" class="status"></div><div id="list"></div>
+body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:1000px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.danger{background:#ff5c6c;color:#260b10}.toolbar{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.status{color:#aaa3b8;margin:12px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat{padding:14px;border:1px solid #3b3850;border-radius:8px;background:#181824}.stat b{display:block;font-size:24px;color:#ffd93d}.row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.muted{color:#aaa3b8;font-size:12px}@media(max-width:650px){.stats{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Spieler laden</button><button id="loadWithdrawals">Auszahlungen laden</button><button id="reset" class="danger">Alle Spieler zurücksetzen</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
-async function load(){const s=secret();if(!s){status('Enter the admin secret.');return}status('Loading...');const r=await fetch('/admin/withdrawals?status=pending',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'No pending withdrawals.';d.withdrawals.forEach(w=>{const row=document.createElement('div');row.className='row';row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span>'+w.amount+' TON</span><span>'+w.address+'</span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><button>Mark completed</button>';row.querySelector('button').onclick=async()=>{const rr=await fetch('/admin/withdrawals/complete',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts})});if(rr.ok)load();else status((await rr.json()).error||'Request failed')};list.appendChild(row)})}
+async function load(){const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Spieler werden geladen...');const r=await fetch('/admin/players',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}document.getElementById('stats').innerHTML='<div class="stat"><span>Registrierte Spieler</span><b>'+d.totalUsers+'</b></div><div class="stat"><span>Spieler mit Einzahlung</span><b>'+d.depositUsers+'</b></div><div class="stat"><span>TON gesamt</span><b>'+Number(d.totalTon).toFixed(6)+'</b></div>';const list=document.getElementById('list');list.innerHTML='<div class="row"><b>Spieler</b><b>TON-Guthaben</b><b>Coins</b><b>Level</b><b>Einzahlungen</b><b>Runs</b></div>';d.players.forEach(p=>{const row=document.createElement('div');row.className='row';row.innerHTML='<span>'+p.name+'<br><span class="muted">UID '+p.uid+'</span></span><span>'+Number(p.ton).toFixed(6)+' TON</span><span>'+p.coins+'</span><span>'+p.level+'</span><span>'+p.depositCount+'</span><span>'+p.runs+'</span>';list.appendChild(row)});status(d.totalUsers+' Spieler geladen.')}
+async function loadWithdrawals(){const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Auszahlungen werden geladen...');const r=await fetch('/admin/withdrawals?status=pending',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'Keine offenen Auszahlungen.';d.withdrawals.forEach(w=>{const row=document.createElement('div');row.className='row';row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span>'+w.amount+' TON</span><span>'+w.address+'</span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><button>Erledigt</button>';row.querySelector('button').onclick=async()=>{const rr=await fetch('/admin/withdrawals/complete',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts})});if(rr.ok)loadWithdrawals();else status((await rr.json()).error||'Request failed')};list.appendChild(row)})}
 document.getElementById('load').onclick=load;
+document.getElementById('loadWithdrawals').onclick=loadWithdrawals;
 document.getElementById('reset').onclick=async()=>{const s=secret();if(!s){status('Enter the admin secret.');return}if(!confirm('WARNING: This resets all players\' coins, TON, level, skins, stats, and withdrawals. Deposits remain protected. Continue?'))return;status('Resetting all players...');const r=await fetch('/admin/reset-users',{method:'POST',headers:{'x-admin-secret':s}});const d=await r.json();status(r.ok?'Reset complete for '+d.count+' players.':(d.error||'Reset failed'));if(r.ok)load()};
 </script></body></html>`);
 });
@@ -618,6 +620,25 @@ app.get('/admin/stats', requireAdmin, (req, res) => {
     totalTon: all.reduce((s, u) => s + u.ton, 0),
     totalRuns: all.reduce((s, u) => s + u.runs, 0),
     pendingWithdrawals,
+  });
+});
+
+app.get('/admin/players', requireAdmin, (req, res) => {
+  const all = Object.values(users);
+  const players = all.map((user) => ({
+    uid: String(user.id),
+    name: user.name || ('Player ' + user.id),
+    ton: Number(user.ton) || 0,
+    coins: Number(user.coins) || 0,
+    level: Number(user.level) || 1,
+    runs: Number(user.runs) || 0,
+    depositCount: Array.isArray(user.depositTxs) ? user.depositTxs.length : 0,
+  })).sort((a, b) => b.ton - a.ton);
+  res.json({
+    totalUsers: players.length,
+    depositUsers: players.filter((player) => player.depositCount > 0).length,
+    totalTon: players.reduce((sum, player) => sum + player.ton, 0),
+    players,
   });
 });
 
