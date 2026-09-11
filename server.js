@@ -65,10 +65,12 @@ const STORAGE_PERSISTENT = !ON_RAILWAY || (
 
 // Must mirror the client's economy constants (index.html) exactly.
 const COINS_PER_ZOMBIE = 2;
+const LEVEL_TWO_COINS_PER_ZOMBIE = 7;
 const COINS_PER_BLOCK = 10000;
 const PTS_PER_BLOCK = 0.01;
 const LEVEL_MULTIPLIER = 1; // server only ever applies the Level 1 base rate
-const DAILY_PTS_CAP = 1; // TON per day
+const DAILY_PTS_CAP = 1; // TON per day at level 1
+const LEVEL_TWO_DAILY_PTS_CAP = 0.067;
 const MIN_WITHDRAW = 1; // TON
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const INIT_DATA_MAX_AGE_MS = 24 * 60 * 60 * 1000; // reject stale Telegram auth payloads
@@ -332,8 +334,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname, { index: false }));
 
-// Health check. Open this URL in a browser to see if data is stored safely.
-app.get('/', (req, res) => res.json({
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// Health check for monitoring and deployment checks.
+app.get('/api/health', (req, res) => res.json({
   ok: true,
   service: 'taxitron-server',
   storage: STORAGE_PERSISTENT ? 'persistent' : 'NOT PERSISTENT - data is lost on every restart (no Railway volume)',
@@ -365,17 +369,19 @@ app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
 // ---- Exchange a run's zombies for coins + (capped) TON ----
 app.post('/api/run', requireUserFromBody, (req, res) => {
   const user = req.user;
-  let { distance, zombies } = req.body || {};
+  let { distance, zombies, level } = req.body || {};
   zombies = Math.max(0, Math.min(MAX_ZOMBIES_PER_CALL, Math.floor(Number(zombies) || 0)));
   distance = Math.max(0, Math.min(MAX_DISTANCE_PER_CALL, Math.floor(Number(distance) || 0)));
 
   ensureDailyReset(user);
 
-  const coinsGained = zombies * COINS_PER_ZOMBIE;
+  const coinsPerZombie = Number(level) >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
+  const dailyCap = Number(level) >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
+  const coinsGained = zombies * coinsPerZombie;
   user.coins += coinsGained;
 
   const rawGain = (coinsGained / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
-  const allowed = Math.max(0, DAILY_PTS_CAP - user.tonToday);
+  const allowed = Math.max(0, dailyCap - user.tonToday);
   const gain = Math.min(rawGain, allowed);
   user.ton += gain;
   user.tonToday += gain;
