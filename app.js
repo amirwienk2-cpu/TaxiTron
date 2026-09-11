@@ -265,12 +265,18 @@
   function ensureAttempts(){
     if (!isLevelOne()) return;
     const now = Date.now();
-    if (store.attemptsResetAt && now >= store.attemptsResetAt){
+    const hasValidResetAt = Number.isFinite(store.attemptsResetAt) && store.attemptsResetAt > 0;
+    if (!Number.isFinite(store.attemptsLeft) || (store.attemptsLeft === 0 && !hasValidResetAt)){
+      store.attemptsLeft = MAX_ATTEMPTS;
+      store.attemptsResetAt = null;
+      saveStore();
+    } else if (hasValidResetAt && now >= store.attemptsResetAt){
       store.attemptsLeft = MAX_ATTEMPTS;
       store.attemptsResetAt = null;
       saveStore();
     } else if (store.attemptsLeft < 0 || store.attemptsLeft > MAX_ATTEMPTS){
       store.attemptsLeft = MAX_ATTEMPTS;
+      store.attemptsResetAt = null;
       saveStore();
     }
   }
@@ -297,10 +303,10 @@
   }
   function renderAttemptsUI(){
     const el = document.getElementById('attemptsInfo');
-    const btn = document.getElementById('homePlayBtn');
+    const playButtons = document.querySelectorAll('.bottomnav button[data-screen="game"]');
     if (!isLevelOne()){
       if (el) el.style.display = 'none';
-      if (btn) btn.disabled = false;
+      playButtons.forEach(btn => { btn.disabled = false; });
       return;
     }
     ensureAttempts();
@@ -311,7 +317,7 @@
         ? store.attemptsLeft + ' / ' + MAX_ATTEMPTS + ' tries left'
         : 'Next try in ' + formatCountdown(store.attemptsResetAt - Date.now());
     }
-    if (btn) btn.disabled = !available;
+      playButtons.forEach(btn => { btn.disabled = !available; });
   }
   setInterval(renderAttemptsUI, 1000);
 
