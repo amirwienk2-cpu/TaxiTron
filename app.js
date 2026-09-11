@@ -258,16 +258,36 @@
     saveStore();
   }
 
-  /* ---- Ride attempts: no limit anymore (Level 1 try limit + 2-hour cooldown removed) ---- */
-  const MAX_ATTEMPTS = Infinity;
-  // clear any leftover cooldown saved from the old limit
-  store.attemptsLeft = 0;
-  store.attemptsResetAt = null;
-  localStorage.removeItem('cr3d_attemptsLeft');
-  localStorage.removeItem('cr3d_attemptsResetAt');
-  function ensureAttempts(){}
-  function hasAttemptsLeft(){ return true; }
-  function consumeAttempt(){ return true; }
+  /* ---- Level 1 ride attempts: 10 runs, then a 2-hour cooldown ---- */
+  const MAX_ATTEMPTS = 10;
+  const ATTEMPT_COOLDOWN_MS = 2 * 60 * 60 * 1000;
+  function isLevelOne(){ return store.level === 1; }
+  function ensureAttempts(){
+    if (!isLevelOne()) return;
+    const now = Date.now();
+    if (store.attemptsResetAt && now >= store.attemptsResetAt){
+      store.attemptsLeft = MAX_ATTEMPTS;
+      store.attemptsResetAt = null;
+      saveStore();
+    } else if (store.attemptsLeft < 0 || store.attemptsLeft > MAX_ATTEMPTS){
+      store.attemptsLeft = MAX_ATTEMPTS;
+      saveStore();
+    }
+  }
+  function hasAttemptsLeft(){
+    if (!isLevelOne()) return true;
+    ensureAttempts();
+    return store.attemptsLeft > 0;
+  }
+  function consumeAttempt(){
+    if (!isLevelOne()) return true;
+    ensureAttempts();
+    if (store.attemptsLeft <= 0) return false;
+    store.attemptsLeft -= 1;
+    if (store.attemptsLeft === 0) store.attemptsResetAt = Date.now() + ATTEMPT_COOLDOWN_MS;
+    saveStore();
+    return true;
+  }
   function formatCountdown(ms){
     const total = Math.max(0, Math.ceil(ms / 1000));
     const h = String(Math.floor(total / 3600)).padStart(2,'0');
@@ -278,9 +298,22 @@
   function renderAttemptsUI(){
     const el = document.getElementById('attemptsInfo');
     const btn = document.getElementById('homePlayBtn');
-    if (el) el.style.display = 'none';
-    if (btn) btn.disabled = false;
+    if (!isLevelOne()){
+      if (el) el.style.display = 'none';
+      if (btn) btn.disabled = false;
+      return;
+    }
+    ensureAttempts();
+    const available = store.attemptsLeft > 0;
+    if (el){
+      el.style.display = 'block';
+      el.textContent = available
+        ? store.attemptsLeft + ' / ' + MAX_ATTEMPTS + ' tries left'
+        : 'Next try in ' + formatCountdown(store.attemptsResetAt - Date.now());
+    }
+    if (btn) btn.disabled = !available;
   }
+  setInterval(renderAttemptsUI, 1000);
 
   /* ================= SHOP ================= */
   function refreshShopUI(){
@@ -1014,45 +1047,6 @@
     }
   });
 
-  // Houses use one shared local texture and are recycled as they pass the camera.
-  const houseTexture = new THREE.TextureLoader().load('sprites/HauntedHouse.jpg');
-  const houseMaterial = new THREE.ShaderMaterial({
-    uniforms: { map: { value: houseTexture } },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform sampler2D map;
-      varying vec2 vUv;
-      void main() {
-        vec4 color = texture2D(map, vUv);
-        float brightness = max(max(color.r, color.g), color.b);
-        float alpha = smoothstep(0.025, 0.12, brightness);
-        if (alpha < 0.01) discard;
-        gl_FragColor = vec4(color.rgb, alpha);
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide
-  });
-  const houseGeometry = new THREE.PlaneGeometry(5.8, 5.8);
-  const houses = [];
-  const houseCountPerSide = 5;
-  for (const side of [-1, 1]) {
-    for (let index = 0; index < houseCountPerSide; index++) {
-      const mesh = new THREE.Mesh(houseGeometry, houseMaterial);
-      const scale = 0.8 + Math.random() * 0.35;
-      mesh.scale.set(scale, scale, scale);
-      mesh.position.set(side * (ROAD_W / 2 + 4.3 + Math.random() * 1.8), 2.7 * scale, sceneryZStart - index * 48 - Math.random() * 18);
-      scene.add(mesh);
-      houses.push(mesh);
-    }
-  }
   // Recycling dashed lane lines
   const dashGroup = new THREE.Group();
   scene.add(dashGroup);
@@ -1518,11 +1512,6 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     dashes.forEach(d => {
       d.position.z += speed * dt * 60;
       if (d.position.z > END_Z + 4) d.position.z -= dashCountPerLine * (DASH_LEN+DASH_GAP);
-    });
-
-    houses.forEach(house => {
-      house.position.z += speed * dt * 60;
-      if (house.position.z > END_Z + 12) house.position.z -= sceneryTrackLength;
     });
 
     // spawn obstacles
