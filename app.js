@@ -659,7 +659,12 @@
     document.getElementById('homeBest').textContent = store.best;
     document.getElementById('homeRuns').textContent = store.runs;
     document.getElementById('homeLevel').innerHTML = store.level + '<small>·' + LEVEL_MULTIPLIER + '</small>';
-    document.querySelector('.balance-card').classList.toggle('level-2', hasLevelTwo());
+    const balanceCard = document.querySelector('.balance-card');
+    if (balanceCard){
+      balanceCard.classList.toggle('level-2', store.level === 2);
+      balanceCard.classList.toggle('level-3', store.level === 3);
+      balanceCard.classList.toggle('level-4', store.level >= 4);
+    }
     document.getElementById('walletCoinsDisplay').textContent = store.coins;
     document.getElementById('walletTonDisplay').textContent = store.points.toFixed(6);
     document.getElementById('walletPersonsDisplay').textContent = lastPersonScore;

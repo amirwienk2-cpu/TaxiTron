@@ -129,6 +129,8 @@
 
   .balance-card{ background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; border-radius:16px; padding:18px 20px; }
   .balance-card.level-2{ background:linear-gradient(160deg,#571f2b,#1f1018); border-color:#ff5c6c; box-shadow:0 0 18px rgba(255,92,108,.24); }
+  .balance-card.level-3{ background:linear-gradient(160deg,#f4f1e8,#b8aa83); border-color:#fff1a8; color:#302b1d; box-shadow:0 0 20px rgba(255,215,90,.38); }
+  .balance-card.level-4{ background:linear-gradient(160deg,#262626,#050505); border-color:#d7ad45; color:#fff1b0; box-shadow:0 0 22px rgba(215,173,69,.42); }
   .balance-label{ font-size:0.7rem; letter-spacing:0.5px; color:#ffb74d; font-weight:800; }
   .balance-value{ font-size:1.9rem; font-weight:900; color:#ffd93d; margin:2px 0 12px 0; }
   .balance-value .unit{ font-size:0.85rem; color:#8b86a0; font-weight:700; }
