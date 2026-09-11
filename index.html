@@ -135,6 +135,8 @@
           <div class="deposit-memo-value" id="depositMemo">—</div>
           <button class="menu-btn secondary" id="depositMemoCopyBtn" data-i18n="depositMemoCopyBtn">📋 Copy Code</button>
         </div>
+        <input id="depositTxHash" class="withdraw-input" data-i18n-placeholder="depositTxPlaceholder" placeholder="TON transaction ID" autocomplete="off">
+        <button class="menu-btn secondary" id="depositVerifyBtn" data-i18n="depositVerifyBtn">Verify deposit</button>
         <div class="withdraw-status" id="depositStatus"></div>
       </div>
       <div class="note-box" data-i18n="depositNote">Only send TON on the TON network. Deposits are detected automatically within a couple of minutes once the memo/comment matches your code above.</div>
@@ -201,6 +203,6 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="app.js?v=level2-24h"></script>
+<script src="app.js?v=deposit-claim"></script>
 </body>
 </html>

@@ -54,6 +54,7 @@
       depositMemoLabel: 'Important: include this code as the transfer comment/memo, or your deposit can\'t be matched to your account automatically.',
       depositMemoCopyBtn: '📋 Copy Code', depositMemoCopied: '✅ Code copied to clipboard',
       depositMemoUnavailable: 'Open this app inside Telegram to get your personal deposit code.',
+      depositVerifyBtn: 'Verify deposit', depositTxPlaceholder: 'TON transaction ID',
       depositNote: 'Only send TON on the TON network. Deposits are detected automatically within a couple of minutes once the memo/comment matches your code above.',
       buyOwned: 'Active ✓',
       tournamentTitle: '🏆 Zombie Tournament',
@@ -132,6 +133,7 @@
       depositMemoLabel: 'مهم: این کد را به‌عنوان توضیح/یادداشت (memo) انتقال وارد کنید، در غیر این صورت واریز شما به‌طور خودکار به حساب شما تطبیق داده نمی‌شود.',
       depositMemoCopyBtn: '📋 کپی کد', depositMemoCopied: '✅ کد کپی شد',
       depositMemoUnavailable: 'برای دریافت کد شخصی واریز، این اپ را داخل تلگرام باز کنید.',
+      depositVerifyBtn: 'بررسی واریز', depositTxPlaceholder: 'شناسه تراکنش TON',
       depositNote: 'فقط از شبکه TON استفاده کنید. واریزها ظرف چند دقیقه پس از تطبیق یادداشت/توضیح با کد بالا به‌طور خودکار شناسایی می‌شوند.',
       buyOwned: 'فعال ✓',
       tournamentTitle: '🏆 مسابقه زامبی',
@@ -710,6 +712,26 @@
       memoEl.textContent = t('depositMemoUnavailable');
     }
   }
+  document.getElementById('depositVerifyBtn').addEventListener('click', async () => {
+    const txInput = document.getElementById('depositTxHash');
+    const statusEl = document.getElementById('depositStatus');
+    const txHash = txInput.value.trim();
+    if (!SERVER_URL || !serverSession.token || !txHash) return;
+    statusEl.textContent = 'Checking transaction...';
+    try {
+      const res = await fetch(SERVER_URL + '/api/deposit/claim', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, txHash })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'deposit-check-failed');
+      applyServerState(data.state);
+      statusEl.textContent = 'Deposit credited: ' + Number(data.amount).toFixed(6) + ' TON';
+      txInput.value = '';
+    } catch (e) {
+      statusEl.textContent = 'Deposit could not be verified.';
+    }
+  });
 
   function applyServerState(state){
     store.coins = state.coins;
