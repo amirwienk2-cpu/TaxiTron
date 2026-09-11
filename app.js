@@ -260,7 +260,7 @@
 
   /* ---- Level 1 ride attempts: 10 runs, then a 2-hour cooldown ---- */
   const MAX_ATTEMPTS = 10;
-  const ATTEMPT_COOLDOWN_MS = 2 * 60 * 60 * 1000;
+  const ATTEMPT_COOLDOWN_MS = 60 * 1000;
   function isLevelOne(){ return store.level === 1; }
   function ensureAttempts(){
     if (!isLevelOne()) return;
