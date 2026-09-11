@@ -68,11 +68,13 @@ const STORAGE_PERSISTENT = !ON_RAILWAY || (
 // Must mirror the client's economy constants (index.html) exactly.
 const COINS_PER_ZOMBIE = 1;
 const LEVEL_TWO_COINS_PER_ZOMBIE = 7;
+const LEVEL_THREE_COINS_PER_ZOMBIE = 30;
 const COINS_PER_BLOCK = 10000;
 const PTS_PER_BLOCK = 0.01;
 const LEVEL_MULTIPLIER = 1; // server only ever applies the Level 1 base rate
 const DAILY_PTS_CAP = 1; // TON per day at level 1
 const LEVEL_TWO_DAILY_PTS_CAP = 0.067;
+const LEVEL_THREE_DAILY_PTS_CAP = 0.2;
 const MIN_WITHDRAW = 1; // TON
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const INIT_DATA_MAX_AGE_MS = 24 * 60 * 60 * 1000; // reject stale Telegram auth payloads
@@ -179,6 +181,7 @@ function newUser(id, name) {
     tonDate: '',
     best: 0,
     runs: 0,
+    level: 1,
     tournamentBest: 0,
     tournamentDistance: 0,
     tournamentWeekKey: '',
@@ -241,6 +244,7 @@ function publicState(user) {
     tonToday: user.tonToday,
     best: user.best,
     runs: user.runs,
+    level: user.level || 1,
   };
 }
 
@@ -386,12 +390,15 @@ app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
 
 app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
   const key = String(req.body && req.body.key || '');
-  const prices = { red: 1, white: 15 };
+  const prices = { red: 1, white: 3 };
+  const levels = { red: 2, white: 3 };
   const price = prices[key];
   if (!price) return res.status(400).json({ error: 'invalid-skin' });
   const user = req.user;
+  if ((user.level || 1) >= levels[key]) return res.status(409).json({ error: 'skin-already-owned' });
   if (user.ton < price) return res.status(400).json({ error: 'insufficient-funds' });
   user.ton -= price;
+  user.level = levels[key];
   persist();
   res.json({ state: publicState(user) });
 });
@@ -474,15 +481,16 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
 // ---- Exchange a run's zombies for coins + (capped) TON ----
 app.post('/api/run', requireUserFromBody, (req, res) => {
   const user = req.user;
-  let { distance, zombies, level } = req.body || {};
+  let { distance, zombies } = req.body || {};
   zombies = Math.max(0, Math.min(MAX_ZOMBIES_PER_CALL, Math.floor(Number(zombies) || 0)));
   distance = Math.max(0, Math.min(MAX_DISTANCE_PER_CALL, Math.floor(Number(distance) || 0)));
 
   ensureDailyReset(user);
 
-  const coinsPerZombie = Number(level) >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
-  const dailyCap = Number(level) >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
-  if (Number(level) >= 2 && user.tonToday >= dailyCap - 1e-9) {
+  const level = user.level || 1;
+  const coinsPerZombie = level >= 3 ? LEVEL_THREE_COINS_PER_ZOMBIE : level >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
+  const dailyCap = level >= 3 ? LEVEL_THREE_DAILY_PTS_CAP : level >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
+  if (level >= 2 && user.tonToday >= dailyCap - 1e-9) {
     persist();
     return res.json({ state: publicState(user), acceptedZombies: 0, error: 'daily-earn-cap-reached' });
   }
