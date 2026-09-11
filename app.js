@@ -443,6 +443,7 @@
 
       const item = document.createElement('div');
       item.className = 'skin-item' + (selected ? ' selected' : '') + (def.status==='soon' ? ' soon' : '');
+      item.dataset.skin = def.key;
 
       const img = (typeof SKIN_IMAGES !== 'undefined' && SKIN_IMAGES[def.key]) ? SKIN_IMAGES[def.key] : '';
 
