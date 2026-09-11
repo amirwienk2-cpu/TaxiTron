@@ -771,6 +771,7 @@
     store.best = Math.max(store.best, state.best);
     store.runs = Math.max(store.runs, state.runs);
     if (typeof state.level === 'number') store.level = Math.max(store.level, state.level);
+    if (Array.isArray(state.ownedSkins)) store.ownedSkins = state.ownedSkins.slice();
     saveStore();
     refreshTopUI();
   }
