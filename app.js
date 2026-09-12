@@ -1168,16 +1168,17 @@
     if (!card || !target) return;
     card.hidden = !game;
     if (!game) return;
-    if (game.status === 'open') target.innerHTML = '<p class="muted">Waiting for another player at ' + Number(game.stake).toFixed(3) + ' TON.</p>';
-    else if (game.status === 'playing' && !game.myChoice) target.innerHTML = '<p class="muted">Choose one hand. You have one rock, one paper and one scissors.</p><div class="rps-hand-row"><button class="rps-hand" data-rps-choice="rock">✊</button><button class="rps-hand" data-rps-choice="paper">✋</button><button class="rps-hand" data-rps-choice="scissors">✌️</button></div>';
-    else if (game.status === 'playing') target.innerHTML = '<p class="muted">Your hand is locked. Waiting for the other player.</p>';
+    const roomInfo = '<div class="rps-room-info"><span>Players: ' + (game.creatorName || 'Player') + ' vs ' + (game.opponentName || 'Waiting...') + '</span><span>Stake: ' + Number(game.stake).toFixed(3) + ' TON each</span><span>Pot: ' + Number(game.pot).toFixed(3) + ' TON</span><span>Winner gets: ' + Number(game.winnerPayout).toFixed(3) + ' TON</span><span>Platform fee: ' + Number(game.platformFee).toFixed(3) + ' TON</span></div>';
+    if (game.status === 'open') target.innerHTML = roomInfo + '<p class="muted">Waiting for another player.</p>';
+    else if (game.status === 'playing' && !game.myChoice) target.innerHTML = roomInfo + '<p class="muted">Choose one hand. You have one rock, one paper and one scissors.</p><div class="rps-hand-row"><button class="rps-hand" data-rps-choice="rock">✊</button><button class="rps-hand" data-rps-choice="paper">✋</button><button class="rps-hand" data-rps-choice="scissors">✌️</button></div>';
+    else if (game.status === 'playing') target.innerHTML = roomInfo + '<p class="muted">Your hand is locked. Waiting for the other player.</p>';
     else if (game.status === 'finished') target.innerHTML = '<div class="rps-result">' + (game.result.winner === 'tie' ? 'Tie. Your stake was returned.' : game.result.winner === (game.isCreator ? 'creator' : 'opponent') ? 'You won ' + Number(game.result.payout).toFixed(3) + ' TON.' : 'You lost this round.') + '</div>';
     target.querySelectorAll('[data-rps-choice]').forEach((button) => button.addEventListener('click', () => playRps(game.id, button.dataset.rpsChoice)));
   }
   function renderRpsGames(data){
     const list = document.getElementById('rpsGamesList');
     if (!list) return;
-    list.innerHTML = data.games.length ? data.games.map((game) => '<div class="rps-game-row"><div class="rps-game-meta"><strong>' + game.creatorName + '</strong><small>' + Number(game.stake).toFixed(3) + ' TON</small></div><button class="menu-btn" data-rps-join="' + game.id + '">Join</button></div>').join('') : '<div class="muted">No open games right now.</div>';
+    list.innerHTML = data.games.length ? data.games.map((game) => '<div class="rps-game-row"><div class="rps-game-meta"><strong>' + game.creatorName + '</strong><small>Stake: ' + Number(game.stake).toFixed(3) + ' TON | Winner: ' + Number(game.winnerPayout).toFixed(3) + ' TON</small></div><button class="menu-btn" data-rps-join="' + game.id + '">Join room</button></div>').join('') : '<div class="muted">No open games right now.</div>';
     list.querySelectorAll('[data-rps-join]').forEach((button) => button.addEventListener('click', () => joinRps(button.dataset.rpsJoin)));
     renderRpsGame(data.mine[0] || null, true);
   }

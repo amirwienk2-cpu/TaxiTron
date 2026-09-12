@@ -24,7 +24,7 @@ npm start
    at it).
 2. Add a Volume, mount it at `/data`.
 3. Set environment variables: `BOT_TOKEN`, `SESSION_SECRET`,
-   `ADMIN_SECRET`, `DATA_DIR=/data`, optionally `DEPOSIT_ADDRESS`.
+   `ADMIN_SECRET`, `PLATFORM_USER_ID`, `DATA_DIR=/data`, optionally `DEPOSIT_ADDRESS`.
 4. Deploy. Railway provides `PORT` automatically.
 5. In `index.html`, make sure `SERVER_URL` points at the Railway domain.
 6. Set `ADMIN_SECRET` and open `/admin` to review and complete manual payouts.
@@ -47,6 +47,10 @@ Deposits are scanned automatically every 30 seconds through TonAPI. Set
 `DEPOSIT_ADDRESS`, `TONAPI_URL`, and optionally `DEPOSIT_POLL_MS` in the
 deployment environment. Deposits must include the personal `TT-<Telegram ID>`
 comment; each transaction is credited only once.
+
+RPS games use `PLATFORM_USER_ID` as the Telegram user ID that receives the
+10% fee from completed non-tie games. The winner receives the remaining 90%
+of the two-player pot; ties return both original stakes.
 
 ## Admin (manual payouts)
 
