@@ -62,6 +62,7 @@ if (ON_RAILWAY && SESSION_SECRET === 'dev-insecure-secret-change-me') {
 
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
+const RPS_FILE = path.join(DATA_DIR, 'rps-games.json');
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
 const STORAGE_PERSISTENT = !ON_RAILWAY || (
@@ -136,6 +137,12 @@ function loadUsers() {
 }
 
 let users = loadUsers(); // keyed by Telegram user id (string)
+let rpsGames = {};
+try {
+  if (fs.existsSync(RPS_FILE)) rpsGames = readJsonFile(RPS_FILE);
+} catch (e) {
+  console.error('[rps] games file unreadable: ' + e.message);
+}
 
 // Keep a copy of the last good state from startup as a safety net
 try {
@@ -166,6 +173,17 @@ function persist() {
   return writeQueue;
 }
 
+function persistRpsGames() {
+  const tmp = RPS_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(rpsGames));
+    fs.renameSync(tmp, RPS_FILE);
+  } catch (e) {
+    console.error('[rps] write failed: ' + e.message);
+  }
+}
+setInterval(expireRpsGames, 30000);
+
 function flushSync() {
   try {
     const tmp = DATA_FILE + '.shutdown.tmp';
@@ -174,6 +192,12 @@ function flushSync() {
     console.log('[storage] data flushed to disk (' + Object.keys(users).length + ' users).');
   } catch (e) {
     console.error('[storage] final flush failed: ' + e.message);
+  }
+  try {
+    fs.writeFileSync(RPS_FILE + '.shutdown.tmp', JSON.stringify(rpsGames));
+    fs.renameSync(RPS_FILE + '.shutdown.tmp', RPS_FILE);
+  } catch (e) {
+    console.error('[rps] final flush failed: ' + e.message);
   }
 }
 
@@ -265,6 +289,42 @@ function publicState(user) {
     attemptResetVersion: user.attemptResetVersion || 0,
     taskChannelRewardClaimed: user.taskChannelRewardClaimed === true,
   };
+}
+
+const RPS_CHOICES = new Set(['rock', 'paper', 'scissors']);
+const RPS_MIN_STAKE = 0.001;
+const RPS_GAME_TTL_MS = 30 * 60 * 1000;
+function rpsPublicGame(game, uid) {
+  return {
+    id: game.id,
+    stake: game.stake,
+    creatorName: game.creatorName,
+    opponentName: game.opponentName || null,
+    status: game.status,
+    isCreator: String(game.creatorId) === String(uid),
+    isOpponent: String(game.opponentId || '') === String(uid),
+    myChoice: String(game.creatorId) === String(uid) ? game.creatorChoice || null : String(game.opponentId || '') === String(uid) ? game.opponentChoice || null : null,
+    result: game.status === 'finished' ? game.result : null,
+    expiresAt: game.expiresAt,
+  };
+}
+function rpsWinner(first, second) {
+  if (first === second) return 'tie';
+  if ((first === 'rock' && second === 'scissors') || (first === 'paper' && second === 'rock') || (first === 'scissors' && second === 'paper')) return 'creator';
+  return 'opponent';
+}
+function expireRpsGames() {
+  let changed = false;
+  Object.keys(rpsGames).forEach((id) => {
+    const game = rpsGames[id];
+    if (game.status !== 'open' || Date.now() < game.expiresAt) return;
+    const user = users[String(game.creatorId)];
+    if (user) user.ton += game.stake;
+    game.status = 'cancelled';
+    game.result = 'expired-refund';
+    changed = true;
+  });
+  if (changed) { persist(); persistRpsGames(); }
 }
 
 // ---------------------------------------------------------------
@@ -568,6 +628,80 @@ app.post('/api/run', requireUserFromBody, (req, res) => {
   res.json({ state: publicState(user), acceptedZombies: zombies });
 });
 
+// ---- Player-versus-player rock-paper-scissors ----
+app.get('/api/rps/games', requireUserFromQuery, (req, res) => {
+  expireRpsGames();
+  const uid = String(req.uid);
+  const games = Object.values(rpsGames)
+    .filter((game) => game.status === 'open' && String(game.creatorId) !== uid)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 50)
+    .map((game) => rpsPublicGame(game, uid));
+  const mine = Object.values(rpsGames)
+    .filter((game) => (String(game.creatorId) === uid || String(game.opponentId || '') === uid) && ['open', 'playing'].includes(game.status))
+    .map((game) => rpsPublicGame(game, uid));
+  res.json({ games, mine });
+});
+
+app.post('/api/rps/create', requireUserFromBody, (req, res) => {
+  expireRpsGames();
+  const stake = Number(req.body && req.body.stake);
+  if (!Number.isFinite(stake) || stake < RPS_MIN_STAKE || stake > 1000) return res.status(400).json({ error: 'invalid-stake' });
+  const user = req.user;
+  if (user.ton < stake) return res.status(400).json({ error: 'insufficient-funds' });
+  const id = crypto.randomUUID();
+  user.ton -= stake;
+  rpsGames[id] = { id, stake, creatorId: user.id, creatorName: user.name, creatorChoice: null, opponentId: null, opponentName: null, opponentChoice: null, status: 'open', result: null, createdAt: Date.now(), expiresAt: Date.now() + RPS_GAME_TTL_MS };
+  persist();
+  persistRpsGames();
+  res.json({ state: publicState(user), game: rpsPublicGame(rpsGames[id], user.id) });
+});
+
+app.post('/api/rps/join', requireUserFromBody, (req, res) => {
+  expireRpsGames();
+  const game = rpsGames[String(req.body && req.body.gameId)];
+  if (!game || game.status !== 'open') return res.status(404).json({ error: 'game-not-open' });
+  const user = req.user;
+  if (String(game.creatorId) === String(user.id)) return res.status(400).json({ error: 'cannot-join-own-game' });
+  if (user.ton < game.stake) return res.status(400).json({ error: 'insufficient-funds' });
+  user.ton -= game.stake;
+  game.opponentId = user.id;
+  game.opponentName = user.name;
+  game.status = 'playing';
+  persist();
+  persistRpsGames();
+  res.json({ state: publicState(user), game: rpsPublicGame(game, user.id) });
+});
+
+app.post('/api/rps/play', requireUserFromBody, (req, res) => {
+  const game = rpsGames[String(req.body && req.body.gameId)];
+  const choice = String(req.body && req.body.choice || '');
+  if (!game || game.status !== 'playing') return res.status(404).json({ error: 'game-not-playing' });
+  if (!RPS_CHOICES.has(choice)) return res.status(400).json({ error: 'invalid-choice' });
+  const user = req.user;
+  const isCreator = String(game.creatorId) === String(user.id);
+  const isOpponent = String(game.opponentId) === String(user.id);
+  if (!isCreator && !isOpponent) return res.status(403).json({ error: 'not-a-player' });
+  if (isCreator ? game.creatorChoice : game.opponentChoice) return res.status(409).json({ error: 'choice-already-made' });
+  if (isCreator) game.creatorChoice = choice;
+  else game.opponentChoice = choice;
+  if (game.creatorChoice && game.opponentChoice){
+    const winner = rpsWinner(game.creatorChoice, game.opponentChoice);
+    game.result = { winner, creatorChoice: game.creatorChoice, opponentChoice: game.opponentChoice, payout: winner === 'tie' ? game.stake : game.stake * 2 };
+    game.status = 'finished';
+    if (winner === 'tie'){
+      users[String(game.creatorId)].ton += game.stake;
+      users[String(game.opponentId)].ton += game.stake;
+    } else {
+      const winnerId = winner === 'creator' ? game.creatorId : game.opponentId;
+      users[String(winnerId)].ton += game.stake * 2;
+    }
+    persist();
+  }
+  persistRpsGames();
+  res.json({ state: publicState(user), game: rpsPublicGame(game, user.id) });
+});
+
 // ---- Withdraw ----
 function isPlausibleTonAddress(addr) {
   return typeof addr === 'string' && addr.trim().length >= 10 && !/\s/.test(addr.trim());
@@ -701,6 +835,7 @@ app.post('/admin/withdrawals/complete', requireAdmin, (req, res) => {
 
 app.post('/admin/reset-users', requireAdmin, async (req, res) => {
   const resetUsers = Object.values(users);
+  rpsGames = {};
   resetUsers.forEach((user) => {
     const depositTxs = Array.isArray(user.depositTxs) ? user.depositTxs.slice() : [];
     user.coins = 0;
@@ -724,6 +859,7 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
   });
 
   await persist();
+  persistRpsGames();
   try {
     const temp = BACKUP_FILE + '.reset.tmp';
     fs.writeFileSync(temp, JSON.stringify(users));
