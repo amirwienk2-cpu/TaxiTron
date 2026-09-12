@@ -1108,9 +1108,9 @@
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
   const safeDevice = isTelegramWebView || isMobileDevice;
   const qualityProfiles = safeDevice
-    ? [{ pixelRatio:0.9, renderFps:24 }, { pixelRatio:1.25, renderFps:30 }, { pixelRatio:1.5, renderFps:40 }]
-    : [{ pixelRatio:1, renderFps:45 }, { pixelRatio:1.25, renderFps:60 }, { pixelRatio:Math.min(window.devicePixelRatio, 1.5), renderFps:60 }];
-  let qualityIndex = safeDevice ? 1 : 2;
+    ? [{ pixelRatio:1, renderFps:24 }, { pixelRatio:1.5, renderFps:30 }, { pixelRatio:Math.min(window.devicePixelRatio, 2), renderFps:40 }]
+    : [{ pixelRatio:1.25, renderFps:45 }, { pixelRatio:1.5, renderFps:60 }, { pixelRatio:Math.min(window.devicePixelRatio, 2), renderFps:60 }];
+  let qualityIndex = qualityProfiles.length - 1;
   let qualityStableTime = 0;
   let qualitySampleTime = 0;
   let qualityRenderedFrames = 0;
@@ -1122,7 +1122,7 @@
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a12);
-  scene.fog = new THREE.Fog(0x0a0a12, 55, 220);
+  scene.fog = new THREE.Fog(0x0a0a12, 120, 420);
 
   const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 500);
 
@@ -1255,6 +1255,7 @@
     texture.minFilter = THREE.LinearMipmapLinearFilter;
     texture.generateMipmaps = true;
     texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+    texture.needsUpdate = true;
     return texture;
   }
 
@@ -1419,7 +1420,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   const glowGrad = gctx.createRadialGradient(32,32,0,32,32,32);
   glowGrad.addColorStop(0, 'rgba(255,255,255,0)');
   glowGrad.addColorStop(0.5, 'rgba(255,255,255,0)');
-  glowGrad.addColorStop(1, 'rgba(255,0,0,0)');
+  glowGrad.addColorStop(1, 'rgba(255,255,255,0)');
   gctx.fillStyle = glowGrad;
   gctx.fillRect(0,0,64,64);
   const glowTexture = new THREE.CanvasTexture(glowCanvas);
@@ -1441,7 +1442,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
     // the gun sprite itself
     const gunAspect = 300/198;
-    const gunHeight = 1.35;
+    const gunHeight = 1.65;
     const gunWidth = gunHeight * gunAspect;
     const gunMat = new THREE.MeshBasicMaterial({
       map: gunTexture,
