@@ -1193,11 +1193,20 @@
   }
   async function createRps(){
     if (!rpsAuthReady()) return rpsMessage('Open the game in Telegram to play.');
+    const button = document.getElementById('rpsCreateBtn');
     const stake = Number(document.getElementById('rpsStake').value);
-    const response = await fetch(SERVER_URL + '/api/rps/create', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, stake }) });
-    const data = await response.json();
-    if (!response.ok) return rpsMessage(data.error || 'Could not create game.');
-    applyServerState(data.state); rpsMessage('Game opened. Waiting for an opponent.'); loadRpsGames();
+    button.disabled = true;
+    rpsMessage('Creating game...');
+    try {
+      const response = await fetch(SERVER_URL + '/api/rps/create', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, stake }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not create game.');
+      applyServerState(data.state); rpsMessage('Game opened. Waiting for an opponent.'); loadRpsGames();
+    } catch (e) {
+      rpsMessage('Game could not be created: ' + (e.message || 'server unavailable'));
+    } finally {
+      button.disabled = false;
+    }
   }
   async function joinRps(gameId){
     const response = await fetch(SERVER_URL + '/api/rps/join', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId }) });
