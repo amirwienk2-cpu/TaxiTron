@@ -1448,7 +1448,7 @@
     if (!screen || !target) return;
     currentGameRoomId = room.id;
     showScreen('rps-game');
-    target.innerHTML = '<div class="room-game-card"><div class="room-game-top"><span>RUNDE ' + room.round + '</span><b>' + Number(room.stake).toFixed(3) + ' TON</b></div><div class="room-game-players">' + room.players.map((player) => '<div class="room-game-player ' + (!player.alive ? 'out' : '') + '"><img src="sprites/' + (player.id === room.players[0].id ? 'frau.png' : 'mann.png') + '" alt=""><strong>' + player.name + '</strong><small>' + (player.selected ? '✓ bereit' : player.alive ? 'wartet...' : 'OUT') + '</small></div>').join('') + '</div><div class="room-game-status">' + (room.result ? room.result.winnerName + ' gewinnt ' + Number(room.result.winnerPayout).toFixed(3) + ' TON' : 'Der Raum ist aktiv. Der nächste Spielschritt wird vorbereitet.') + '</div></div>';
+    target.innerHTML = '<div class="room-game-card"><div class="room-game-top"><span>RUNDE ' + room.round + '</span><b>' + Number(room.stake).toFixed(3) + ' TON</b></div><div class="room-game-players">' + room.players.map((player) => '<div class="room-game-player ' + (!player.alive ? 'out' : '') + '"><img src="sprites/' + (player.id === room.players[0].id ? 'frau.png' : 'mann.png') + '" alt=""><strong>' + player.name + '</strong><small>' + (player.selected ? '✓ bereit' : player.alive ? 'wartet...' : 'OUT') + '</small></div>').join('') + '</div><div class="room-game-status">' + (room.result ? room.result.winnerName + ' gewinnt ' + Number(room.result.winnerPayout).toFixed(6) + ' TON' : 'Der Raum ist aktiv. Der nächste Spielschritt wird vorbereitet.') + '</div></div>';
   }
   let roomGame3D = null;
   function initRoomGame3D(){
