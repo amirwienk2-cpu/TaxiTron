@@ -527,6 +527,18 @@
     const orderedPlayers = (room.players || []).slice().sort((first, second) => Number(second.isMe) - Number(first.isMe));
     players = orderedPlayers.map((player, index) => ({ id:index, name:player.name, human:!!player.isMe, alive:player.alive !== false, choice:player.choice || null, selected:!!player.selected }));
     round = room.round || 1;
+    resultLine.textContent = '';
+    modalOverlay.classList.remove('show');
+    for (let index = 0; index < 4; index += 1) {
+      const nameEl = document.getElementById('name-' + index);
+      const avatarEl = document.getElementById('avatar-' + index);
+      const pedestal = document.getElementById('pedestal-' + index);
+      const face = document.getElementById('face-' + index);
+      if (nameEl) nameEl.textContent = 'Waiting...';
+      if (avatarEl) avatarEl.textContent = '?';
+      if (pedestal) pedestal.classList.remove('out', 'winner-glow', 'loser-shake');
+      if (face) { face.textContent = '?'; face.classList.remove('icon-face', 'live-reveal'); face.style.transform = 'translateZ(12px) rotateY(0deg)'; }
+    }
     players.forEach((player) => {
       const nameEl = document.getElementById('name-' + player.id);
       const avatarEl = document.getElementById('avatar-' + player.id);
