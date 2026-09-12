@@ -261,6 +261,13 @@
     border:1px solid #b8a672;
     font-size:30px;
   }
+  .move-image{
+    width:78%;
+    height:78%;
+    object-fit:contain;
+    pointer-events:none;
+  }
+  .choice-btn .move-image{ width:70%; height:70%; }
   .pedestal.out{ opacity:.32; filter:grayscale(0.9); }
   .out-tag{
     font-size:10px;
@@ -506,9 +513,9 @@
   <div class="result-line" id="resultLine"></div>
 
   <div class="controls" id="controls">
-    <button class="choice-btn" data-move="stein" aria-label="Rock">✊</button>
-    <button class="choice-btn" data-move="papier" aria-label="Paper">✋</button>
-    <button class="choice-btn" data-move="schere" aria-label="Scissors">✌️</button>
+    <button class="choice-btn" data-move="stein" aria-label="Rock"><img class="move-image" src="sprites/stone.png" alt="Stein"></button>
+    <button class="choice-btn" data-move="papier" aria-label="Paper"><img class="move-image" src="sprites/paper.png" alt="Papier"></button>
+    <button class="choice-btn" data-move="schere" aria-label="Scissors"><img class="move-image" src="sprites/scher.png" alt="Schere"></button>
   </div>
   <div class="waiting-note" id="waitingNote"></div>
 
@@ -534,6 +541,7 @@
 <script>
 (function(){
   const ICONS = { stein:'✊', papier:'✋', schere:'✌️' };
+  const MOVE_IMAGES = { stein:'sprites/stone.png', papier:'sprites/paper.png', schere:'sprites/scher.png' };
   const BEATS = { stein:'schere', papier:'stein', schere:'papier' };
   const LABEL = { stein:'Rock', papier:'Paper', schere:'Scissors' };
   const BOT_NAMES = ['Krax','Vello','Orna'];
@@ -577,6 +585,15 @@
 
   function escapeHtml(value){
     return String(value).replace(/[&<>"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[character]));
+  }
+
+  function setMoveImage(face, move){
+    face.textContent = '';
+    const image = document.createElement('img');
+    image.className = 'move-image';
+    image.src = MOVE_IMAGES[move] || '';
+    image.alt = LABEL[move] || move;
+    face.appendChild(image);
   }
 
   function addHistoryEntry(winner, playerNames, payout, id, choices){
@@ -659,7 +676,7 @@
       const face = document.getElementById('face-' + player.id);
       if (face && player.choice) {
         const move = { rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice;
-        face.textContent = ICONS[move] || '?';
+        setMoveImage(face, move);
         face.classList.add('icon-face');
         const revealKey = player.id + ':' + player.choice + ':' + room.round;
         if (revealKey !== lastLiveRevealKey) {
@@ -700,6 +717,7 @@
         document.getElementById('modalSub').textContent = finalChoices.join('\n') + '\n\nGewinner: ' + room.result.winnerName + '\nGewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON';
         document.getElementById('modalCrown').textContent = me && String(room.result.winnerId) === String(me.id) ? '🏆' : '💀';
         modalOverlay.classList.add('show');
+        controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = true; button.classList.remove('picked'); });
       }
     }
     if ((room.players || []).length < 4) {
@@ -780,7 +798,7 @@
         const face = document.getElementById('face-'+p.id);
         face.style.transform = 'rotateY(90deg)';
         setTimeout(()=>{
-          face.textContent = ICONS[p.choice];
+          setMoveImage(face, p.choice);
           face.classList.add('icon-face');
           face.style.transform = 'rotateY(0deg)';
         }, 160);
