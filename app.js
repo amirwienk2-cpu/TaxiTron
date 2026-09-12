@@ -1435,14 +1435,14 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       depthWrite: false,
       blending: THREE.AdditiveBlending
     });
-    const glow = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 2.7), glowMat);
-    glow.position.y = 2.7;
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), glowMat);
+    glow.position.y = 3.5;
     g.add(glow);
     g.userData.glow = glow;
 
     // the gun sprite itself
     const gunAspect = 300/198;
-    const gunHeight = 1.65;
+    const gunHeight = 2.1;
     const gunWidth = gunHeight * gunAspect;
     const gunMat = new THREE.MeshBasicMaterial({
       map: gunTexture,
@@ -1452,7 +1452,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       color: 0xffffff
     });
     const gunMesh = new THREE.Mesh(new THREE.PlaneGeometry(gunWidth, gunHeight), gunMat);
-    gunMesh.position.y = 2.7;
+    gunMesh.position.y = 3.5;
     g.add(gunMesh);
 
     // red glowing arrow pointing down at the weapon
@@ -1466,7 +1466,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     arrowHead.rotation.y = Math.PI/4;
     arrowHead.position.y = -0.03;
     arrowGroup.add(arrowHead);
-    arrowGroup.position.y = 3.85;
+    arrowGroup.position.y = 4.7;
     g.add(arrowGroup);
     g.userData.arrow = arrowGroup;
 
