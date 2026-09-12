@@ -607,7 +607,7 @@
   function localPayout(){
     const params = new URLSearchParams(window.location.search);
     const payout = Number(params.get('winAmount') || params.get('amount') || params.get('stake') || 0);
-    return payout.toFixed(3) + ' TON';
+    return payout.toFixed(6) + ' TON';
   }
 
   function initPlayers(){
@@ -710,11 +710,11 @@
       }
       if (room.result && room.result.winnerName) {
         const finalChoices = (room.players || []).filter((player) => player.choice).map((player) => player.name + ': ' + LABEL[{ rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice] + ' ' + ICONS[{ rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice]);
-        resultLine.textContent = finalChoices.join(' · ') + ' · Gewinner: ' + room.result.winnerName + ' · Gewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON';
+        resultLine.textContent = finalChoices.join(' · ') + ' · Gewinner: ' + room.result.winnerName + ' · Gewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(6) + ' TON';
         resultLine.classList.add('round-win');
-        addHistoryEntry(room.result.winnerName, (room.players || []).map((player) => player.name), Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON', room.id + ':' + room.result.winnerId, finalChoices);
+        addHistoryEntry(room.result.winnerName, (room.players || []).map((player) => player.name), Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(6) + ' TON', room.id + ':' + room.result.winnerId, finalChoices);
         document.getElementById('modalTitle').textContent = room.result.winnerName + ' wins!';
-        document.getElementById('modalSub').textContent = finalChoices.join('\n') + '\n\nGewinner: ' + room.result.winnerName + '\nGewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON';
+        document.getElementById('modalSub').textContent = finalChoices.join('\n') + '\n\nGewinner: ' + room.result.winnerName + '\nGewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(6) + ' TON';
         document.getElementById('modalCrown').textContent = me && String(room.result.winnerId) === String(me.id) ? '🏆' : '💀';
         modalOverlay.classList.add('show');
         controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = true; button.classList.remove('picked'); });
