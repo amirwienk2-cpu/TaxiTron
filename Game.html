@@ -124,6 +124,8 @@
     .controls{ gap:9px; margin-top:4px; }
     .choice-btn{ width:54px; height:54px; font-size:23px; }
     .rules{ margin-top:10px; }
+    #pedestal-0{ bottom:-8%; left:50%; }
+    #pedestal-2{ top:-4%; left:50%; }
   }
   .arena-rim::before{
     content:"";
@@ -204,6 +206,8 @@
   .pedestal.pos-right{ top:38%; right:-8%; transform:translateZ(80px) rotateX(-40deg); }
   .pedestal.pos-bottom{ bottom:-10%; left:50%; transform:translateX(-50%) translateZ(80px) rotateX(-40deg); }
   .pedestal.pos-left{ top:38%; left:-8%; transform:translateZ(80px) rotateX(-40deg); }
+  #pedestal-0{ top:auto; right:auto; bottom:-10%; left:50%; transform:translateX(-50%) translateZ(80px) rotateX(-40deg); }
+  #pedestal-2{ top:-6%; right:auto; bottom:auto; left:50%; transform:translateX(-50%) translateZ(80px) rotateX(-40deg); }
 
   .avatar-name{
     font-size:12px;
@@ -408,7 +412,7 @@
       <div class="arena-ring">
         <div class="center-emblem" id="centerEmblem">TaxiTon</div>
       </div>
-      <div class="pedestal pos-top" id="pedestal-2">
+      <div class="pedestal pos-top" id="pedestal-0">
         <div class="avatar-name" id="name-0"></div>
         <div class="avatar human" id="avatar-0"></div>
         <div class="card" id="card-0">
@@ -422,7 +426,7 @@
           <div class="card-face" id="face-1">?</div>
         </div>
       </div>
-      <div class="pedestal pos-bottom" id="pedestal-0">
+      <div class="pedestal pos-bottom" id="pedestal-2">
         <div class="avatar-name" id="name-2"></div>
         <div class="avatar" id="avatar-2"></div>
         <div class="card" id="card-2">
