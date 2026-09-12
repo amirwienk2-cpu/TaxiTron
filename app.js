@@ -1396,9 +1396,10 @@
         roomsEl.innerHTML = room ? '<div class="game-room-card"><div><strong>Live game · 0.001 TON</strong><span>' + room.playerCount + '/4 players · ' + (room.status === 'playing' ? 'Playing now' : 'Waiting for players') + ' · Winner 90%</span><div class="game-room-roster">' + roomPlayers + '</div></div></div>' : '';
         const joinButton = document.getElementById('gameLobbyJoinBtn');
         if (joinButton && room) {
-          joinButton.disabled = room.status !== 'open' || room.playerCount >= 4 || room.isPlayer;
-          joinButton.textContent = room.isPlayer ? 'Joined · 0.001 TON' : room.status === 'open' ? 'Join game · 0.001 TON' : 'Full · watch live';
-          joinButton.onclick = () => { if (!room.isPlayer && room.status === 'open') joinGameRoom(room.id); };
+          const roomOpen = room.playerCount < 4 && (room.status === 'open' || room.status === 'playing');
+          joinButton.disabled = !roomOpen || room.isPlayer;
+          joinButton.textContent = room.isPlayer ? 'Joined · 0.001 TON' : roomOpen ? 'Join game · 0.001 TON' : 'Full · watch live';
+          joinButton.onclick = () => { if (!room.isPlayer && roomOpen) joinGameRoom(room.id); };
         }
       }
     } catch (error) {
