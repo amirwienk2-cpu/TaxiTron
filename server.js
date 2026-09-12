@@ -391,6 +391,21 @@ function gameRoomPublic(room, uid) {
 }
 function resolveGameRoom(room) {
   const active = room.players.filter((player) => player.alive);
+  if (active.length <= 1) {
+    if (active.length === 1 && room.status !== 'finished') {
+      const winner = active[0];
+      const winnerPayout = Number((room.stake * 4 * 0.9).toFixed(9));
+      const fee = Number((room.stake * 4 * 0.1).toFixed(9));
+      if (users[String(winner.id)]) users[String(winner.id)].ton += winnerPayout;
+      if (PLATFORM_USER_ID && users[PLATFORM_USER_ID]) users[PLATFORM_USER_ID].ton += fee;
+      room.status = 'finished';
+      room.lastRoundWinners = [String(winner.id)];
+      room.result = { winnerId: String(winner.id), winnerName: winner.name, winnerPayout, fee };
+      room.resetAt = Date.now() + GAME_ROOM_RESET_DELAY_MS;
+      room.roundStartedAt = 0;
+    }
+    return;
+  }
   const choices = active.map((player) => room.choices[String(player.id)]).filter(Boolean);
   if (choices.length !== active.length) return;
   const unique = new Set(choices);

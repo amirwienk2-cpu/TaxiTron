@@ -717,6 +717,7 @@
         document.getElementById('modalSub').textContent = finalChoices.join('\n') + '\n\nGewinner: ' + room.result.winnerName + '\nGewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON';
         document.getElementById('modalCrown').textContent = me && String(room.result.winnerId) === String(me.id) ? '🏆' : '💀';
         modalOverlay.classList.add('show');
+        controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = true; button.classList.remove('picked'); });
       }
     }
     if ((room.players || []).length < 4) {
