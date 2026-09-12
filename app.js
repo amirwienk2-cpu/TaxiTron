@@ -205,6 +205,18 @@
     attemptsResetAt: localStorage.getItem('cr3d_attemptsResetAt') ? parseInt(localStorage.getItem('cr3d_attemptsResetAt'), 10) : null,
     withdrawals: JSON.parse(localStorage.getItem('cr3d_withdrawals') || '[]')
   };
+  function accountStorageKey(name){
+    const uid = localStorage.getItem('cr3d_serverUid');
+    return uid ? name + '_' + uid : name;
+  }
+  function loadAccountAttempts(){
+    const attemptsKey = accountStorageKey('cr3d_attemptsLeft');
+    const resetKey = accountStorageKey('cr3d_attemptsResetAt');
+    const savedAttempts = localStorage.getItem(attemptsKey);
+    const savedReset = localStorage.getItem(resetKey);
+    store.attemptsLeft = savedAttempts !== null ? parseInt(savedAttempts, 10) : 10;
+    store.attemptsResetAt = savedReset ? parseInt(savedReset, 10) : null;
+  }
   function saveStore(){
     localStorage.setItem('cr3d_coins', store.coins);
     localStorage.setItem('cr3d_best', store.best);
@@ -217,9 +229,10 @@
     localStorage.setItem('cr3d_skin', store.skin);
     localStorage.setItem('cr3d_ownedSkins', JSON.stringify(store.ownedSkins));
     localStorage.setItem('cr3d_skinRewards', JSON.stringify(store.skinRewards));
-    localStorage.setItem('cr3d_attemptsLeft', store.attemptsLeft);
-    if (store.attemptsResetAt) localStorage.setItem('cr3d_attemptsResetAt', store.attemptsResetAt);
-    else localStorage.removeItem('cr3d_attemptsResetAt');
+    localStorage.setItem(accountStorageKey('cr3d_attemptsLeft'), store.attemptsLeft);
+    const attemptsResetKey = accountStorageKey('cr3d_attemptsResetAt');
+    if (store.attemptsResetAt) localStorage.setItem(attemptsResetKey, store.attemptsResetAt);
+    else localStorage.removeItem(attemptsResetKey);
     localStorage.setItem('cr3d_withdrawals', JSON.stringify(store.withdrawals));
   }
 
@@ -781,9 +794,13 @@
   });
 
   function applyServerState(state){
-    const accountChanged = state.uid && localStorage.getItem('cr3d_serverUid') !== String(state.uid);
+    const previousUid = localStorage.getItem('cr3d_serverUid');
+    const accountChanged = state.uid && previousUid !== String(state.uid);
     if (accountChanged){
       localStorage.setItem('cr3d_serverUid', String(state.uid));
+      const accountAttemptsKey = 'cr3d_attemptsLeft_' + String(state.uid);
+      if (previousUid || localStorage.getItem(accountAttemptsKey) !== null) loadAccountAttempts();
+      else saveStore();
       store.skinRewards = {};
       store.skin = 'yellow';
     }
