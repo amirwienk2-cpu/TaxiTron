@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arena-Duell</title>
+<title>Arena Duel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -389,9 +389,9 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Arena-Duell</h1>
-  <div class="subtitle">Schere · Stein · Papier — vier treten an, einer bleibt übrig</div>
-  <div class="phase-banner" id="phaseBanner">Runde 1</div>
+  <h1>Arena Duel</h1>
+  <div class="subtitle">Rock · Paper · Scissors — four enter, one remains</div>
+  <div class="phase-banner" id="phaseBanner">Round 1</div>
 
   <div class="arena-stage">
     <div class="arena-floor">
@@ -408,7 +408,7 @@
       <div class="arena-ring">
         <div class="center-emblem" id="centerEmblem">TaxiTon</div>
       </div>
-      <div class="pedestal pos-top" id="pedestal-0">
+      <div class="pedestal pos-top" id="pedestal-2">
         <div class="avatar-name" id="name-0"></div>
         <div class="avatar human" id="avatar-0"></div>
         <div class="card" id="card-0">
@@ -422,7 +422,7 @@
           <div class="card-face" id="face-1">?</div>
         </div>
       </div>
-      <div class="pedestal pos-bottom" id="pedestal-2">
+      <div class="pedestal pos-bottom" id="pedestal-0">
         <div class="avatar-name" id="name-2"></div>
         <div class="avatar" id="avatar-2"></div>
         <div class="card" id="card-2">
@@ -442,23 +442,23 @@
   <div class="result-line" id="resultLine"></div>
 
   <div class="controls" id="controls">
-    <button class="choice-btn" data-move="stein">✊</button>
-    <button class="choice-btn" data-move="papier">✋</button>
-    <button class="choice-btn" data-move="schere">✌️</button>
+    <button class="choice-btn" data-move="stein" aria-label="Rock">✊</button>
+    <button class="choice-btn" data-move="papier" aria-label="Paper">✋</button>
+    <button class="choice-btn" data-move="schere" aria-label="Scissors">✌️</button>
   </div>
   <div class="waiting-note" id="waitingNote"></div>
 
   <div class="rules">
-    Du spielst gegen drei Gegner. Wählt die Mehrheit zwei verschiedene Zeichen, scheidet die unterlegene Seite komplett aus. Zeigen alle das Gleiche oder alle drei Zeichen zugleich, gilt die Runde als unentschieden und wird wiederholt. Sobald zwei übrig sind, beginnt das Finale.
+    You play against three opponents. When two different signs are chosen, the losing side is eliminated. If everyone chooses the same sign or all three signs appear, the round is a draw and is repeated. When two players remain, the final begins.
   </div>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-box">
     <div class="modal-crown" id="modalCrown">🏆</div>
-    <div class="modal-title" id="modalTitle">Sieger!</div>
+    <div class="modal-title" id="modalTitle">Winner!</div>
     <div class="modal-sub" id="modalSub"></div>
-    <button class="restart-btn" id="restartBtn">Neues Duell</button>
+    <button class="restart-btn" id="restartBtn">New Duel</button>
   </div>
 </div>
 
@@ -466,7 +466,7 @@
 (function(){
   const ICONS = { stein:'✊', papier:'✋', schere:'✌️' };
   const BEATS = { stein:'schere', schere:'papier', papier:'stein' };
-  const LABEL = { stein:'Stein', papier:'Papier', schere:'Schere' };
+  const LABEL = { stein:'Rock', papier:'Paper', schere:'Scissors' };
   const BOT_NAMES = ['Krax','Vello','Orna'];
 
   let players = [];
@@ -482,7 +482,7 @@
 
   function initPlayers(){
     players = [
-      { id:0, name:'Du', human:true, alive:true, choice:null },
+      { id:0, name:'You', human:true, alive:true, choice:null },
       { id:1, name:BOT_NAMES[0], human:false, alive:true, choice:null },
       { id:2, name:BOT_NAMES[1], human:false, alive:true, choice:null },
       { id:3, name:BOT_NAMES[2], human:false, alive:true, choice:null },
@@ -509,10 +509,10 @@
   function updatePhaseBanner(){
     const count = alivePlayers().length;
     if(count === 2){
-      phaseBanner.textContent = 'Finale';
+      phaseBanner.textContent = 'Final';
       phaseBanner.classList.add('finale');
     } else {
-      phaseBanner.textContent = 'Runde ' + round;
+      phaseBanner.textContent = 'Round ' + round;
       phaseBanner.classList.remove('finale');
     }
   }
@@ -547,7 +547,7 @@
     });
     const human = players.find(p=>p.id===0);
     human.choice = move;
-    waitingNote.textContent = 'Gegner überlegen …';
+    waitingNote.textContent = 'Opponents are choosing …';
 
     setTimeout(()=>{
       alivePlayers().filter(p=>!p.human).forEach(p=>{
@@ -579,7 +579,7 @@
     const distinct = [...new Set(moves)];
 
     if(distinct.length === 1 || distinct.length === 3){
-      resultLine.textContent = 'Unentschieden — alle noch einmal!';
+      resultLine.textContent = 'Draw — everyone plays again!';
       setTimeout(()=> startRound(), 1500);
       return;
     }
@@ -613,10 +613,10 @@
   }
 
   function showWinner(winner){
-    document.getElementById('modalTitle').textContent = winner.human ? 'Du hast gewonnen!' : winner.name + ' gewinnt!';
+    document.getElementById('modalTitle').textContent = winner.human ? 'You win!' : winner.name + ' wins!';
     document.getElementById('modalSub').textContent = winner.human
-      ? 'Du hast dich gegen alle drei Gegner in der Arena durchgesetzt.'
-      : winner.name + ' hat sich in der Arena durchgesetzt. Nächstes Mal triffst du bessere Wahl.';
+      ? 'You defeated all three opponents in the arena.'
+      : winner.name + ' conquered the arena. Choose better next time.';
     document.getElementById('modalCrown').textContent = winner.human ? '🏆' : '💀';
     modalOverlay.classList.add('show');
   }
