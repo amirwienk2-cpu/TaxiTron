@@ -1373,7 +1373,7 @@
       playersEl.innerHTML = '<div class="game-lobby-empty">Öffne das Spiel in Telegram, damit Online-Spieler angezeigt werden.</div>';
       if (statusEl) statusEl.textContent = 'Telegram-Verbindung erforderlich';
       if (countEl) countEl.textContent = '0 online';
-      if (roomsEl) roomsEl.innerHTML = '<div class="game-lobby-empty">Telegram-Verbindung erforderlich, um Räume zu betreten.</div>';
+      if (roomsEl) roomsEl.innerHTML = '';
       return;
     }
     try {
@@ -1389,8 +1389,14 @@
       const activeRoom = (roomsData.rooms || []).find((room) => room.isPlayer && room.status === 'playing');
       if (activeRoom) { showGameRoom(activeRoom); return; }
       if (roomsEl) {
-        roomsEl.innerHTML = (roomsData.rooms || []).map((room) => '<div class="game-room-card"><div><strong>' + Number(room.stake).toFixed(3) + ' TON Raum</strong><span>' + room.playerCount + '/4 Spieler · ' + (room.status === 'playing' ? 'Läuft' : 'Offen') + ' · Gewinner 90%</span></div><button data-game-room="' + room.id + '" ' + (room.status !== 'open' || room.playerCount >= 4 || room.isPlayer ? 'disabled' : '') + '>' + (room.isPlayer ? 'Dabei' : room.status === 'open' ? 'Beitreten' : 'Voll') + '</button></div>').join('');
-        roomsEl.querySelectorAll('[data-game-room]').forEach((button) => button.addEventListener('click', () => joinGameRoom(button.dataset.gameRoom)));
+        const room = roomsData.rooms && roomsData.rooms[0];
+        roomsEl.innerHTML = room ? '<div class="game-room-card"><div><strong>Open game · 0.001 TON</strong><span>' + room.playerCount + '/4 players · ' + (room.status === 'playing' ? 'Starting' : 'Waiting') + ' · Winner 90%</span></div></div>' : '';
+        const joinButton = document.getElementById('gameLobbyJoinBtn');
+        if (joinButton && room) {
+          joinButton.disabled = room.status !== 'open' || room.playerCount >= 4 || room.isPlayer;
+          joinButton.textContent = room.isPlayer ? 'Joined · 0.001 TON' : room.status === 'open' ? 'Join game · 0.001 TON' : 'Game starting...';
+          joinButton.onclick = () => { if (!room.isPlayer && room.status === 'open') joinGameRoom(room.id); };
+        }
       }
     } catch (error) {
       if (statusEl) statusEl.textContent = 'Lobby konnte nicht geladen werden';
