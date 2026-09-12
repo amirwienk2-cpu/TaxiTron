@@ -184,12 +184,13 @@
     flex-direction:column;
     align-items:center;
     transform-style:preserve-3d;
+    z-index:12;
     transition:opacity .5s ease, filter .5s ease;
   }
-  .pedestal.pos-top{ top:-6%; left:50%; transform:translateX(-50%) translateZ(10px) rotateX(-40deg); }
-  .pedestal.pos-right{ top:38%; right:-8%; transform:translateZ(10px) rotateX(-40deg); }
-  .pedestal.pos-bottom{ bottom:-10%; left:50%; transform:translateX(-50%) translateZ(10px) rotateX(-40deg); }
-  .pedestal.pos-left{ top:38%; left:-8%; transform:translateZ(10px) rotateX(-40deg); }
+  .pedestal.pos-top{ top:-6%; left:50%; transform:translateX(-50%) translateZ(80px) rotateX(-40deg); }
+  .pedestal.pos-right{ top:38%; right:-8%; transform:translateZ(80px) rotateX(-40deg); }
+  .pedestal.pos-bottom{ bottom:-10%; left:50%; transform:translateX(-50%) translateZ(80px) rotateX(-40deg); }
+  .pedestal.pos-left{ top:38%; left:-8%; transform:translateZ(80px) rotateX(-40deg); }
 
   .avatar-name{
     font-size:12px;
@@ -217,6 +218,9 @@
   .card{
     width:60px;height:60px;
     perspective:600px;
+    position:relative;
+    z-index:20;
+    transform:translateZ(55px);
   }
   .card-face{
     width:100%;height:100%;
@@ -231,6 +235,9 @@
     color:rgba(236,226,204,.45);
     transition:transform .16s ease;
     transform:rotateY(0deg);
+    position:relative;
+    z-index:21;
+    backface-visibility:hidden;
   }
   .card-face.icon-face{
     background:linear-gradient(160deg,var(--parchment),#d8c9a3);
@@ -247,6 +254,11 @@
   }
   .pedestal.winner-glow .card-face{
     box-shadow:0 0 0 3px var(--amber-bright), 0 0 18px rgba(242,172,92,.7);
+  }
+  .pedestal .card-face.icon-face{
+    transform:translateZ(12px) rotateY(0deg) !important;
+    opacity:1;
+    visibility:visible;
   }
   .pedestal.loser-shake{
     animation:shake .4s ease;
