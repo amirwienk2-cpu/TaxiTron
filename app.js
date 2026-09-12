@@ -1374,6 +1374,7 @@
       if (statusEl) statusEl.textContent = 'Telegram-Verbindung erforderlich';
       if (countEl) countEl.textContent = '0 online';
       if (roomsEl) roomsEl.innerHTML = '';
+      showGameHtml({ id:'waiting-room', stake:0.001, players:[], status:'open', round:1 });
       return;
     }
     try {
@@ -1389,11 +1390,9 @@
       const activeRoom = (roomsData.rooms || []).find((room) => room.isPlayer && Number(room.playerCount) >= 4);
       if (activeRoom) { showGameHtml(activeRoom); return; }
       const gameFrame = document.getElementById('gameExperienceFrame');
-      const lobbyPanel = document.querySelector('.game-lobby-panel');
-      if (gameFrame) { gameFrame.hidden = true; gameFrame.style.display = 'none'; gameFrame.removeAttribute('src'); }
-      if (lobbyPanel) lobbyPanel.style.display = '';
       if (roomsEl) {
         const room = roomsData.rooms && roomsData.rooms[0];
+        if (room) showGameHtml(room);
         const roomPlayers = room && room.players && room.players.length ? room.players.map((player) => '<b class="game-room-player-name"><i></i>' + player.name + '</b>').join('') : '<span class="game-room-empty">No players have joined yet.</span>';
         roomsEl.innerHTML = room ? '<div class="game-room-card"><div><strong>Live game · 0.001 TON</strong><span>' + room.playerCount + '/4 players · ' + (room.status === 'playing' ? 'Playing now' : 'Waiting for players') + ' · Winner 90%</span><div class="game-room-roster">' + roomPlayers + '</div></div></div>' : '';
         const joinButton = document.getElementById('gameLobbyJoinBtn');
@@ -1430,8 +1429,6 @@
     frame.hidden = false;
     frame.removeAttribute('hidden');
     frame.style.display = 'block';
-    const lobbyPanel = document.querySelector('.game-lobby-panel');
-    if (lobbyPanel) lobbyPanel.style.display = 'none';
     frame.onload = () => sendRoomToGameFrame(room);
   }
   function sendRoomToGameFrame(room){
