@@ -277,6 +277,12 @@
     opacity:1;
     visibility:visible;
   }
+  .card-face.live-reveal{ animation:liveCardReveal .45s ease both; }
+  @keyframes liveCardReveal{
+    0%{ opacity:.35; transform:translateZ(12px) rotateY(90deg) scale(.82); }
+    65%{ opacity:1; transform:translateZ(20px) rotateY(-8deg) scale(1.06); }
+    100%{ opacity:1; transform:translateZ(12px) rotateY(0deg) scale(1); }
+  }
   .pedestal.loser-shake{
     animation:shake .4s ease;
   }
@@ -516,7 +522,7 @@
     liveRoom = true;
     locked = false;
     const orderedPlayers = (room.players || []).slice().sort((first, second) => Number(second.isMe) - Number(first.isMe));
-    players = orderedPlayers.map((player, index) => ({ id:index, name:player.name, human:!!player.isMe, alive:player.alive !== false, choice:null }));
+    players = orderedPlayers.map((player, index) => ({ id:index, name:player.name, human:!!player.isMe, alive:player.alive !== false, choice:player.choice || null, selected:!!player.selected }));
     round = room.round || 1;
     players.forEach((player) => {
       const nameEl = document.getElementById('name-' + player.id);
@@ -524,12 +530,32 @@
       const pedestal = document.getElementById('pedestal-' + player.id);
       if (nameEl) nameEl.textContent = player.name;
       if (avatarEl) avatarEl.textContent = player.name.charAt(0).toUpperCase();
-      if (pedestal) pedestal.classList.toggle('out', player.alive === false);
+      if (pedestal) {
+        pedestal.classList.toggle('out', player.alive === false);
+        pedestal.classList.toggle('winner-glow', player.choice && player.alive !== false);
+      }
+      const face = document.getElementById('face-' + player.id);
+      if (face && player.choice) {
+        const move = { rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice;
+        face.textContent = ICONS[move] || '?';
+        face.classList.add('icon-face');
+        face.classList.remove('live-reveal');
+        void face.offsetWidth;
+        face.classList.add('live-reveal');
+        face.style.transform = 'translateZ(12px) rotateY(0deg)';
+      } else if (face) {
+        face.textContent = '?';
+        face.classList.remove('icon-face','live-reveal');
+        face.style.transform = 'translateZ(12px) rotateY(0deg)';
+      }
     });
     updatePhaseBanner();
     const localChoice = { rock:'stein', paper:'papier', scissors:'schere' }[room.myChoice] || null;
     controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = !!localChoice; button.classList.toggle('picked', button.dataset.move === localChoice); });
     waitingNote.textContent = room.myChoice ? 'Choice locked. Waiting for the other players...' : 'Choose your move.';
+    if ((room.players || []).some((player) => player.choice)) {
+      resultLine.textContent = (room.players || []).filter((player) => player.choice).map((player) => player.name + ': ' + LABEL[{ rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice]).join(' · ');
+    }
     if ((room.players || []).length < 4) {
       waitingNote.textContent = 'Waiting for ' + (4 - room.players.length) + ' more players...';
       controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = true; button.classList.remove('picked'); });

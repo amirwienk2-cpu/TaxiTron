@@ -1423,12 +1423,13 @@
     currentGameRoomId = room.id;
     const params = (room.players || []).map((player, index) => 'p' + index + '=' + encodeURIComponent(player.name)).join('&');
     if (frame.dataset.roomId !== room.id || frame.hidden) {
-      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-3';
+      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-4';
       frame.dataset.roomId = room.id;
     }
     frame.hidden = false;
     frame.removeAttribute('hidden');
     frame.style.display = 'block';
+    sendRoomToGameFrame(room);
     frame.onload = () => sendRoomToGameFrame(room);
   }
   function sendRoomToGameFrame(room){
