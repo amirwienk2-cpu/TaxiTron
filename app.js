@@ -218,6 +218,7 @@
     store.attemptsLeft = savedAttempts !== null ? parseInt(savedAttempts, 10) : 10;
     store.attemptsResetAt = savedReset ? parseInt(savedReset, 10) : null;
   }
+  if (localStorage.getItem('cr3d_serverUid')) loadAccountAttempts();
   function saveStore(){
     localStorage.setItem('cr3d_coins', store.coins);
     localStorage.setItem('cr3d_best', store.best);
@@ -808,6 +809,7 @@
       store.skinRewards = {};
       store.skin = 'yellow';
     }
+    if (state.uid && !accountChanged) loadAccountAttempts();
     const resetKey = state.uid ? 'cr3d_attemptResetVersion_' + String(state.uid) : '';
     if (resetKey && String(state.attemptResetVersion || 0) !== localStorage.getItem(resetKey)){
       store.attemptsLeft = (typeof state.level === 'number' && state.level >= 2) ? MAX_ATTEMPTS_LEVEL_TWO : MAX_ATTEMPTS_LEVEL_ONE;
