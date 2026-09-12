@@ -397,6 +397,52 @@
     line-height:1.5;
     max-width:340px;
   }
+  .history{
+    width:100%;
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px solid rgba(217,140,63,.35);
+  }
+  .history-title{
+    margin:0 0 10px;
+    font-family:'Cinzel',serif;
+    font-size:16px;
+    color:var(--amber-bright);
+    text-align:center;
+  }
+  .history-empty{
+    margin:0;
+    color:#8c7f68;
+    font-size:12px;
+    text-align:center;
+  }
+  .history-list{
+    display:grid;
+    gap:8px;
+  }
+  .history-item{
+    padding:10px 12px;
+    border:1px solid #55483a;
+    border-radius:8px;
+    background:linear-gradient(160deg,rgba(58,50,42,.9),rgba(36,31,27,.9));
+    font-size:12px;
+  }
+  .history-winner{
+    color:#a9e34b;
+    font-weight:700;
+  }
+  .history-players{
+    display:block;
+    margin-top:4px;
+    color:#c9bda2;
+    line-height:1.4;
+  }
+  .history-payout{
+    display:block;
+    margin-top:5px;
+    color:var(--amber-bright);
+    font-weight:700;
+  }
 </style>
 </head>
 <body>
@@ -463,6 +509,11 @@
   <div class="rules">
     You play against three opponents. When two different signs are chosen, the losing side is eliminated. If everyone chooses the same sign or all three signs appear, the round is a draw and is repeated. When two players remain, the final begins.
   </div>
+
+  <section class="history" aria-labelledby="historyTitle">
+    <h2 class="history-title" id="historyTitle">Spielverlauf</h2>
+    <div class="history-list" id="historyList"></div>
+  </section>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -493,9 +544,51 @@
   const waitingNote = document.getElementById('waitingNote');
   const modalOverlay = document.getElementById('modalOverlay');
   const centerEmblem = document.getElementById('centerEmblem');
+  const historyList = document.getElementById('historyList');
+  const HISTORY_KEY = 'taxitron-rps-history';
+
+  function readHistory(){
+    try {
+      const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function renderHistory(){
+    const history = readHistory();
+    if (!history.length) {
+      historyList.innerHTML = '<p class="history-empty">Noch keine beendeten Spiele.</p>';
+      return;
+    }
+    historyList.innerHTML = history.map((entry) => {
+      const playersText = entry.players.map((name) => escapeHtml(name)).join(', ');
+      return '<article class="history-item"><span class="history-winner">Gewinner: ' + escapeHtml(entry.winner) + '</span><span class="history-players">Mitgespielt: ' + playersText + '</span><span class="history-payout">Gewinn: ' + escapeHtml(entry.payout) + '</span></article>';
+    }).join('');
+  }
+
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[character]));
+  }
+
+  function addHistoryEntry(winner, playerNames, payout, id){
+    const history = readHistory();
+    if (id && history.some((entry) => entry.id === id)) return;
+    history.unshift({ id:id || 'local-' + Date.now(), winner:winner || 'Unbekannt', players:playerNames.filter(Boolean), payout:payout || '0.000 TON' });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
+    renderHistory();
+  }
+
+  function localPayout(){
+    const params = new URLSearchParams(window.location.search);
+    const payout = Number(params.get('winAmount') || params.get('amount') || params.get('stake') || 0);
+    return payout.toFixed(3) + ' TON';
+  }
 
   function initPlayers(){
     const params = new URLSearchParams(window.location.search);
+    liveRoom = params.get('live') === '1';
     const roomNames = [0,1,2,3].map((id) => params.get('p' + id)).filter(Boolean);
     const names = roomNames.length === 4 ? roomNames : ['Waiting...','Waiting...','Waiting...','Waiting...'];
     players = [
@@ -519,6 +612,10 @@
     modalOverlay.classList.remove('show');
     updatePhaseBanner();
     startRound();
+    if (liveRoom) {
+      controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = true; button.classList.remove('picked'); });
+      waitingNote.textContent = 'Waiting for the live room...';
+    }
   }
 
   function applyLiveRoom(room){
@@ -583,6 +680,9 @@
         resultLine.classList.add('round-win');
       } else {
         resultLine.classList.remove('round-win');
+      }
+      if (room.result && room.result.winnerName) {
+        addHistoryEntry(room.result.winnerName, (room.players || []).map((player) => player.name), Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON', room.id + ':' + room.result.winnerId);
       }
     }
     if ((room.players || []).length < 4) {
@@ -716,6 +816,7 @@
   }
 
   function showWinner(winner){
+    addHistoryEntry(winner.name, players.map((player) => player.name), localPayout());
     document.getElementById('modalTitle').textContent = winner.human ? 'You win!' : winner.name + ' wins!';
     document.getElementById('modalSub').textContent = winner.human
       ? 'You defeated all three opponents in the arena.'
@@ -727,6 +828,7 @@
   document.getElementById('restartBtn').addEventListener('click', initPlayers);
 
   initPlayers();
+  renderHistory();
 })();
 </script>
 </body>

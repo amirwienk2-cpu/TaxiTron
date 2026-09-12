@@ -1424,15 +1424,15 @@
     const players = room.players || [];
     const params = players.map((player, index) => 'p' + index + '=' + encodeURIComponent(player.name)).join('&');
     const roomSignature = room.id + ':' + players.map((player) => String(player.id) + '=' + player.name + '=' + player.alive).join('|');
+    frame.onload = () => sendRoomToGameFrame(room);
     if (frame.dataset.roomSignature !== roomSignature || frame.hidden) {
-      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-6';
+      frame.src = 'Game.html?live=1&room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-7';
       frame.dataset.roomSignature = roomSignature;
     }
     frame.hidden = false;
     frame.removeAttribute('hidden');
     frame.style.display = 'block';
     sendRoomToGameFrame(room);
-    frame.onload = () => sendRoomToGameFrame(room);
   }
   function sendRoomToGameFrame(room){
     const frame = document.getElementById('gameExperienceFrame');
