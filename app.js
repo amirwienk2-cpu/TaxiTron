@@ -1476,7 +1476,7 @@
       const data = await response.json();
       const room = (data.rooms || []).find((item) => item.id === currentGameRoomId);
       if (room && room.status === 'playing') { showGameHtml(room); sendRoomToGameFrame(room); }
-      else if (room && room.status === 'finished') showGameHtml(room);
+      else if (room && room.status === 'finished') { showGameHtml(room); sendRoomToGameFrame(room); }
       else if (!room || room.status === 'open') { currentGameRoomId = null; showScreen('game-menu'); loadGameLobby(); }
     } catch (error) { /* next poll retries */ }
   }
@@ -1541,7 +1541,7 @@
     if (!localRpsGame && lobby && lobby.classList.contains('active')) loadGameLobby();
     else if (!localRpsGame && match && match.classList.contains('active') && currentGameRoomId) refreshGameRoom();
     else if (!localRpsGame && match && match.classList.contains('active')) loadRpsGames();
-  }, 500);
+  }, 250);
   function showScreen(name){
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
