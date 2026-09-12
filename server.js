@@ -309,6 +309,15 @@ function ensureGameRooms() {
   if (!room || room.status === 'finished') {
     rpsGames[id] = createGameRoom(GAME_ROOM_STAKE);
     changed = true;
+  } else if (room.mode === 'room-knockout' && room.players.length < 4 && room.status === 'playing') {
+    room.status = 'open';
+    room.round = 0;
+    room.choices = {};
+    changed = true;
+  } else if (room.mode === 'room-knockout' && room.players.length >= 4 && room.status === 'open') {
+    room.status = 'playing';
+    room.round = room.round || 1;
+    changed = true;
   }
   if (changed) persistRpsGames();
 }
