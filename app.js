@@ -1257,6 +1257,7 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not create game.');
       applyServerState(data.state); rpsMessage('Game opened. Waiting for an opponent.'); loadRpsGames();
+      showScreen('rps-game');
     } catch (e) {
       rpsMessage('Game could not be created: ' + (e.message || 'server unavailable'));
     } finally {
@@ -1273,6 +1274,7 @@
       applyServerState(data.state);
       renderRpsGame(data.game, true);
       rpsMessage('Joined room. Choose your hand.');
+      showScreen('rps-game');
       loadRpsGames();
     } catch (e) {
       rpsMessage('Join failed: ' + (e.message || 'server unavailable'));
@@ -1285,17 +1287,22 @@
     applyServerState(data.state); loadRpsGames();
   }
   document.getElementById('rpsCreateBtn').addEventListener('click', createRps);
+  document.getElementById('rpsBackBtn').addEventListener('click', () => showScreen('game-menu'));
   document.getElementById('rpsStake').addEventListener('input', () => {
     const stake = Number(document.getElementById('rpsStake').value) || 0;
     document.getElementById('rpsPayoutPreview').textContent = (stake * 1.8).toFixed(6) + ' TON';
   });
-  setInterval(() => { if (document.getElementById('screen-game-menu').classList.contains('active')) loadRpsGames(); }, 5000);
+  setInterval(() => {
+    const lobby = document.getElementById('screen-game-menu');
+    const match = document.getElementById('screen-rps-game');
+    if ((lobby && lobby.classList.contains('active')) || (match && match.classList.contains('active'))) loadRpsGames();
+  }, 5000);
   function showScreen(name){
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
     refreshTopUI();
     if (name === 'tournament') renderLeaderboard();
-    if (name === 'game-menu') loadRpsGames();
+    if (name === 'game-menu' || name === 'rps-game') loadRpsGames();
   }
   navButtons.forEach(b => b.addEventListener('click', () => {
     if (b.dataset.screen === 'game' && b.classList.contains('play-btn')){ enterGame(); }
