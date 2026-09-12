@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena-Duell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-dark:#151210;
+    --stone:#241f1b;
+    --stone-light:#3a322a;
+    --parchment:#ece2cc;
+    --amber:#d98c3f;
+    --amber-bright:#f2ac5c;
+    --ember:#b8442f;
+    --moss:#5f7a52;
+    --shadow:rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:
+      radial-gradient(ellipse at 50% -10%, #2b241d 0%, #0d0b09 60%),
+      var(--stone-dark);
+    color:var(--parchment);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .wrap{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    padding:18px 14px 32px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  h1{
+    font-family:'Cinzel',serif;
+    font-weight:800;
+    font-size:clamp(22px,6vw,30px);
+    letter-spacing:0.02em;
+    margin:4px 0 2px;
+    color:var(--amber-bright);
+    text-shadow:0 2px 0 #000, 0 0 24px rgba(217,140,63,.35);
+    text-align:center;
+  }
+  .subtitle{
+    font-size:13px;
+    color:#b8ab93;
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .phase-banner{
+    font-family:'Cinzel',serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--parchment);
+    background:linear-gradient(180deg,var(--stone-light),var(--stone));
+    border:1px solid #55483a;
+    border-radius:8px;
+    padding:7px 18px;
+    margin-bottom:14px;
+    box-shadow:0 3px 0 var(--shadow);
+    min-height:20px;
+    text-align:center;
+    transition:all .25s ease;
+  }
+  .phase-banner.finale{
+    color:#1a1310;
+    background:linear-gradient(180deg,var(--amber-bright),var(--amber));
+    border-color:#8a5622;
+  }
+
+  /* ---- Arena / Tisch ---- */
+  .arena-stage{
+    width:100%;
+    max-width:420px;
+    aspect-ratio:1/0.92;
+    perspective:1100px;
+    margin-bottom:8px;
+    position:relative;
+  }
+  .arena-stage::before{
+    content:"";
+    position:absolute;
+    inset:-12%;
+    background:radial-gradient(ellipse at 50% 55%, rgba(217,140,63,.16) 0%, rgba(217,140,63,0) 65%);
+    pointer-events:none;
+  }
+  .arena-floor{
+    width:100%;
+    height:100%;
+    position:relative;
+    transform-style:preserve-3d;
+    transform:rotateX(40deg);
+  }
+
+  /* Holzrand mit Nieten */
+  .arena-rim{
+    position:absolute;
+    inset:4%;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 30% 26%, #7a5730 0%, #55391c 40%, #33220f 75%, #201409 100%);
+    box-shadow:
+      inset 0 3px 0 rgba(255,255,255,.10),
+      inset 0 -10px 18px rgba(0,0,0,.55),
+      0 3px 0 rgba(0,0,0,.5),
+      0 32px 46px rgba(0,0,0,.65);
+  }
+  .arena-rim::before{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:50%;
+    background:repeating-linear-gradient(112deg, rgba(255,255,255,.045) 0 2px, transparent 2px 8px);
+    mix-blend-mode:overlay;
+  }
+  .bolt{
+    position:absolute;
+    width:3.4%;
+    aspect-ratio:1;
+    border-radius:50%;
+    background:radial-gradient(circle at 34% 28%, #f4dca0, #b8862f 55%, #5c3e14 100%);
+    box-shadow:0 1px 2px rgba(0,0,0,.65), inset 0 0 1px rgba(255,255,255,.6);
+    transform:translate(-50%,-50%);
+  }
+
+  /* Kampfkreis in der Mitte */
+  .arena-ring{
+    position:absolute;
+    inset:11%;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 36%, #4a3c2c 0%, #2c241b 55%, #14100d 100%);
+    box-shadow:
+      inset 0 0 0 3px #0d0a08,
+      inset 0 12px 28px rgba(0,0,0,.7),
+      inset 0 -6px 12px rgba(0,0,0,.4);
+    overflow:hidden;
+  }
+  .arena-ring::before{
+    content:"";
+    position:absolute; inset:14%;
+    border-radius:50%;
+    background:repeating-conic-gradient(from 0deg, rgba(217,140,63,.15) 0deg 1.4deg, transparent 1.4deg 45deg);
+    opacity:.75;
+  }
+  .arena-ring::after{
+    content:"";
+    position:absolute; inset:24%;
+    border-radius:50%;
+    border:1px solid rgba(217,140,63,.32);
+    box-shadow:0 0 20px rgba(217,140,63,.14) inset;
+  }
+  .center-emblem{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%) translateZ(2px);
+    font-family:'Cinzel',serif;
+    font-weight:800;
+    font-size:clamp(15px,4.4vw,20px);
+    letter-spacing:.04em;
+    color:var(--amber);
+    text-shadow:0 2px 4px #000;
+    animation:emberGlow 3.4s ease-in-out infinite;
+    white-space:nowrap;
+  }
+  @keyframes emberGlow{
+    0%,100%{ opacity:.55; filter:drop-shadow(0 0 3px rgba(217,140,63,.3)); }
+    50%{ opacity:.9; filter:drop-shadow(0 0 9px rgba(217,140,63,.55)); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .center-emblem{ animation:none; opacity:.7; }
+  }
+
+  .pedestal{
+    position:absolute;
+    width:30%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    transform-style:preserve-3d;
+    transition:opacity .5s ease, filter .5s ease;
+  }
+  .pedestal.pos-top{ top:-6%; left:50%; transform:translateX(-50%) translateZ(10px) rotateX(-40deg); }
+  .pedestal.pos-right{ top:38%; right:-8%; transform:translateZ(10px) rotateX(-40deg); }
+  .pedestal.pos-bottom{ bottom:-10%; left:50%; transform:translateX(-50%) translateZ(10px) rotateX(-40deg); }
+  .pedestal.pos-left{ top:38%; left:-8%; transform:translateZ(10px) rotateX(-40deg); }
+
+  .avatar-name{
+    font-size:12px;
+    font-weight:700;
+    color:var(--parchment);
+    background:rgba(0,0,0,.4);
+    padding:2px 8px;
+    border-radius:6px;
+    margin-bottom:4px;
+    white-space:nowrap;
+  }
+  .avatar{
+    width:34px;height:34px;
+    border-radius:50%;
+    background:linear-gradient(160deg,var(--amber-bright),var(--amber) 60%,#8a5622);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cinzel',serif;font-weight:800;font-size:15px;
+    color:#241708;
+    box-shadow:0 3px 6px rgba(0,0,0,.5), inset 0 2px 2px rgba(255,255,255,.4);
+    margin-bottom:6px;
+    border:2px solid #1a1310;
+  }
+  .avatar.human{ background:linear-gradient(160deg,#e7d8b5,var(--parchment) 60%,#9c8c67); }
+
+  .card{
+    width:60px;height:60px;
+    perspective:600px;
+  }
+  .card-face{
+    width:100%;height:100%;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 8px rgba(0,0,0,.5);
+    background:linear-gradient(160deg,var(--stone-light),var(--stone));
+    border:1px solid #574a3a;
+    font-family:'Cinzel',serif;
+    font-size:22px;
+    font-weight:700;
+    color:rgba(236,226,204,.45);
+    transition:transform .16s ease;
+    transform:rotateY(0deg);
+  }
+  .card-face.icon-face{
+    background:linear-gradient(160deg,var(--parchment),#d8c9a3);
+    border:1px solid #b8a672;
+    font-size:30px;
+  }
+  .pedestal.out{ opacity:.32; filter:grayscale(0.9); }
+  .out-tag{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.04em;
+    color:var(--ember);
+    margin-top:3px;
+  }
+  .pedestal.winner-glow .card-face{
+    box-shadow:0 0 0 3px var(--amber-bright), 0 0 18px rgba(242,172,92,.7);
+  }
+  .pedestal.loser-shake{
+    animation:shake .4s ease;
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(-50%) translateZ(10px) rotateX(-40deg);}
+    25%{transform:translateX(calc(-50% - 4px)) translateZ(10px) rotateX(-40deg);}
+    75%{transform:translateX(calc(-50% + 4px)) translateZ(10px) rotateX(-40deg);}
+  }
+  .pedestal.pos-right.loser-shake, .pedestal.pos-left.loser-shake{
+    animation:shakeH .4s ease;
+  }
+  @keyframes shakeH{
+    0%,100%{transform:translateZ(10px) rotateX(-40deg);}
+    25%{transform:translateX(-4px) translateZ(10px) rotateX(-40deg);}
+    75%{transform:translateX(4px) translateZ(10px) rotateX(-40deg);}
+  }
+
+  /* ---- Result banner ---- */
+  .result-line{
+    min-height:22px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--amber-bright);
+    text-align:center;
+    margin:10px 0 4px;
+  }
+
+  /* ---- Controls ---- */
+  .controls{
+    display:flex;
+    gap:14px;
+    margin-top:10px;
+  }
+  .choice-btn{
+    width:64px;height:64px;
+    border-radius:50%;
+    border:2px solid #574a3a;
+    background:linear-gradient(160deg,var(--stone-light),var(--stone));
+    font-size:28px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    box-shadow:0 4px 0 #0d0b09, 0 6px 10px rgba(0,0,0,.4);
+    transition:transform .12s ease, box-shadow .12s ease, opacity .3s ease;
+    color:var(--parchment);
+  }
+  .choice-btn:active{
+    transform:translateY(3px);
+    box-shadow:0 1px 0 #0d0b09, 0 2px 6px rgba(0,0,0,.4);
+  }
+  .choice-btn:disabled{ opacity:.35; cursor:default; }
+  .choice-btn.picked{
+    border-color:var(--amber-bright);
+    box-shadow:0 0 0 3px rgba(242,172,92,.5), 0 4px 0 #0d0b09;
+  }
+
+  .waiting-note{
+    font-size:12px;
+    color:#a99a7f;
+    margin-top:10px;
+    height:16px;
+  }
+
+  /* ---- Modal ---- */
+  .modal-overlay{
+    position:fixed;inset:0;
+    background:rgba(8,6,4,.82);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:20;
+    padding:20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background:linear-gradient(180deg,var(--stone-light),var(--stone-dark));
+    border:1px solid var(--amber);
+    border-radius:16px;
+    padding:28px 24px;
+    text-align:center;
+    max-width:320px;
+    box-shadow:0 20px 50px rgba(0,0,0,.7);
+  }
+  .modal-crown{ font-size:44px; margin-bottom:8px; }
+  .modal-title{
+    font-family:'Cinzel',serif;
+    font-weight:800;
+    font-size:22px;
+    color:var(--amber-bright);
+    margin-bottom:6px;
+  }
+  .modal-sub{ font-size:13px; color:#c9bda2; margin-bottom:20px; }
+  .restart-btn{
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    color:#1a1310;
+    background:linear-gradient(160deg,var(--amber-bright),var(--amber));
+    border:none;
+    padding:11px 26px;
+    border-radius:8px;
+    cursor:pointer;
+    box-shadow:0 3px 0 #8a5622;
+  }
+  .restart-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 #8a5622; }
+
+  .rules{
+    font-size:11px;
+    color:#8c7f68;
+    text-align:center;
+    margin-top:18px;
+    line-height:1.5;
+    max-width:340px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Arena-Duell</h1>
+  <div class="subtitle">Schere · Stein · Papier — vier treten an, einer bleibt übrig</div>
+  <div class="phase-banner" id="phaseBanner">Runde 1</div>
+
+  <div class="arena-stage">
+    <div class="arena-floor">
+      <div class="arena-rim">
+        <div class="bolt" style="top:50%;left:94%;"></div>
+        <div class="bolt" style="top:81.1%;left:81.1%;"></div>
+        <div class="bolt" style="top:94%;left:50%;"></div>
+        <div class="bolt" style="top:81.1%;left:18.9%;"></div>
+        <div class="bolt" style="top:50%;left:6%;"></div>
+        <div class="bolt" style="top:18.9%;left:18.9%;"></div>
+        <div class="bolt" style="top:6%;left:50%;"></div>
+        <div class="bolt" style="top:18.9%;left:81.1%;"></div>
+      </div>
+      <div class="arena-ring">
+        <div class="center-emblem" id="centerEmblem">TaxiTon</div>
+      </div>
+      <div class="pedestal pos-top" id="pedestal-0">
+        <div class="avatar-name" id="name-0"></div>
+        <div class="avatar human" id="avatar-0"></div>
+        <div class="card" id="card-0">
+          <div class="card-face" id="face-0">?</div>
+        </div>
+      </div>
+      <div class="pedestal pos-right" id="pedestal-1">
+        <div class="avatar-name" id="name-1"></div>
+        <div class="avatar" id="avatar-1"></div>
+        <div class="card" id="card-1">
+          <div class="card-face" id="face-1">?</div>
+        </div>
+      </div>
+      <div class="pedestal pos-bottom" id="pedestal-2">
+        <div class="avatar-name" id="name-2"></div>
+        <div class="avatar" id="avatar-2"></div>
+        <div class="card" id="card-2">
+          <div class="card-face" id="face-2">?</div>
+        </div>
+      </div>
+      <div class="pedestal pos-left" id="pedestal-3">
+        <div class="avatar-name" id="name-3"></div>
+        <div class="avatar" id="avatar-3"></div>
+        <div class="card" id="card-3">
+          <div class="card-face" id="face-3">?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-line" id="resultLine"></div>
+
+  <div class="controls" id="controls">
+    <button class="choice-btn" data-move="stein">✊</button>
+    <button class="choice-btn" data-move="papier">✋</button>
+    <button class="choice-btn" data-move="schere">✌️</button>
+  </div>
+  <div class="waiting-note" id="waitingNote"></div>
+
+  <div class="rules">
+    Du spielst gegen drei Gegner. Wählt die Mehrheit zwei verschiedene Zeichen, scheidet die unterlegene Seite komplett aus. Zeigen alle das Gleiche oder alle drei Zeichen zugleich, gilt die Runde als unentschieden und wird wiederholt. Sobald zwei übrig sind, beginnt das Finale.
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-crown" id="modalCrown">🏆</div>
+    <div class="modal-title" id="modalTitle">Sieger!</div>
+    <div class="modal-sub" id="modalSub"></div>
+    <button class="restart-btn" id="restartBtn">Neues Duell</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const ICONS = { stein:'✊', papier:'✋', schere:'✌️' };
+  const BEATS = { stein:'schere', schere:'papier', papier:'stein' };
+  const LABEL = { stein:'Stein', papier:'Papier', schere:'Schere' };
+  const BOT_NAMES = ['Krax','Vello','Orna'];
+
+  let players = [];
+  let round = 1;
+  let locked = false;
+
+  const phaseBanner = document.getElementById('phaseBanner');
+  const resultLine = document.getElementById('resultLine');
+  const controls = document.getElementById('controls');
+  const waitingNote = document.getElementById('waitingNote');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const centerEmblem = document.getElementById('centerEmblem');
+
+  function initPlayers(){
+    players = [
+      { id:0, name:'Du', human:true, alive:true, choice:null },
+      { id:1, name:BOT_NAMES[0], human:false, alive:true, choice:null },
+      { id:2, name:BOT_NAMES[1], human:false, alive:true, choice:null },
+      { id:3, name:BOT_NAMES[2], human:false, alive:true, choice:null },
+    ];
+    round = 1;
+    players.forEach(p=>{
+      document.getElementById('name-'+p.id).textContent = p.name;
+      document.getElementById('avatar-'+p.id).textContent = p.name.charAt(0);
+      const ped = document.getElementById('pedestal-'+p.id);
+      ped.classList.remove('out','winner-glow','loser-shake');
+      const face = document.getElementById('face-'+p.id);
+      face.classList.remove('icon-face');
+      face.style.transform = 'rotateY(0deg)';
+      face.textContent = '?';
+    });
+    resultLine.textContent = '';
+    modalOverlay.classList.remove('show');
+    updatePhaseBanner();
+    startRound();
+  }
+
+  function alivePlayers(){ return players.filter(p=>p.alive); }
+
+  function updatePhaseBanner(){
+    const count = alivePlayers().length;
+    if(count === 2){
+      phaseBanner.textContent = 'Finale';
+      phaseBanner.classList.add('finale');
+    } else {
+      phaseBanner.textContent = 'Runde ' + round;
+      phaseBanner.classList.remove('finale');
+    }
+  }
+
+  function startRound(){
+    locked = false;
+    resultLine.textContent = '';
+    waitingNote.textContent = '';
+    alivePlayers().forEach(p=>{
+      p.choice = null;
+      const face = document.getElementById('face-'+p.id);
+      face.classList.remove('icon-face');
+      face.style.transform = 'rotateY(0deg)';
+      face.textContent = '?';
+      document.getElementById('pedestal-'+p.id).classList.remove('winner-glow','loser-shake');
+    });
+    updatePhaseBanner();
+    controls.querySelectorAll('.choice-btn').forEach(btn=>{
+      btn.disabled = false;
+      btn.classList.remove('picked');
+    });
+  }
+
+  controls.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.choice-btn');
+    if(!btn || locked) return;
+    locked = true;
+    const move = btn.dataset.move;
+    controls.querySelectorAll('.choice-btn').forEach(b=>{
+      b.disabled = true;
+      if(b === btn) b.classList.add('picked');
+    });
+    const human = players.find(p=>p.id===0);
+    human.choice = move;
+    waitingNote.textContent = 'Gegner überlegen …';
+
+    setTimeout(()=>{
+      alivePlayers().filter(p=>!p.human).forEach(p=>{
+        p.choice = ['stein','papier','schere'][Math.floor(Math.random()*3)];
+      });
+      revealRound();
+    }, 650 + Math.random()*400);
+  });
+
+  function revealRound(){
+    waitingNote.textContent = '';
+    const active = alivePlayers();
+    active.forEach((p, i)=>{
+      setTimeout(()=>{
+        const face = document.getElementById('face-'+p.id);
+        face.style.transform = 'rotateY(90deg)';
+        setTimeout(()=>{
+          face.textContent = ICONS[p.choice];
+          face.classList.add('icon-face');
+          face.style.transform = 'rotateY(0deg)';
+        }, 160);
+      }, i*180);
+    });
+    setTimeout(()=> resolveRound(active), active.length*180 + 700);
+  }
+
+  function resolveRound(active){
+    const moves = active.map(p=>p.choice);
+    const distinct = [...new Set(moves)];
+
+    if(distinct.length === 1 || distinct.length === 3){
+      resultLine.textContent = 'Unentschieden — alle noch einmal!';
+      setTimeout(()=> startRound(), 1500);
+      return;
+    }
+
+    const [a,b] = distinct;
+    const winningMove = (BEATS[a] === b) ? a : b;
+    const losingMove = (winningMove === a) ? b : a;
+
+    resultLine.textContent = LABEL[winningMove] + ' schlägt ' + LABEL[losingMove] + '!';
+
+    active.forEach(p=>{
+      const ped = document.getElementById('pedestal-'+p.id);
+      if(p.choice === losingMove){
+        p.alive = false;
+        ped.classList.add('loser-shake');
+        setTimeout(()=>{ ped.classList.add('out'); }, 350);
+      } else {
+        ped.classList.add('winner-glow');
+      }
+    });
+
+    setTimeout(()=>{
+      const remaining = alivePlayers();
+      if(remaining.length === 1){
+        showWinner(remaining[0]);
+      } else {
+        round++;
+        startRound();
+      }
+    }, 1900);
+  }
+
+  function showWinner(winner){
+    document.getElementById('modalTitle').textContent = winner.human ? 'Du hast gewonnen!' : winner.name + ' gewinnt!';
+    document.getElementById('modalSub').textContent = winner.human
+      ? 'Du hast dich gegen alle drei Gegner in der Arena durchgesetzt.'
+      : winner.name + ' hat sich in der Arena durchgesetzt. Nächstes Mal triffst du bessere Wahl.';
+    document.getElementById('modalCrown').textContent = winner.human ? '🏆' : '💀';
+    modalOverlay.classList.add('show');
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', initPlayers);
+
+  initPlayers();
+})();
+</script>
+</body>
+</html>
