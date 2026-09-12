@@ -647,7 +647,12 @@ app.get('/api/rps/games', requireUserFromQuery, (req, res) => {
   const mine = Object.values(rpsGames)
     .filter((game) => (String(game.creatorId) === uid || String(game.opponentId || '') === uid) && ['open', 'playing'].includes(game.status))
     .map((game) => rpsPublicGame(game, uid));
-  res.json({ games, mine });
+  const finished = Object.values(rpsGames)
+    .filter((game) => (String(game.creatorId) === uid || String(game.opponentId || '') === uid) && game.status === 'finished')
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 1)
+    .map((game) => rpsPublicGame(game, uid));
+  res.json({ games, mine: mine.length ? mine : finished });
 });
 
 app.post('/api/rps/create', requireUserFromBody, (req, res) => {

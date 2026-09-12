@@ -1168,11 +1168,14 @@
     if (!card || !target) return;
     card.hidden = !game;
     if (!game) return;
-    const roomInfo = '<div class="rps-room-info"><span>Players: ' + (game.creatorName || 'Player') + ' vs ' + (game.opponentName || 'Waiting...') + '</span><span>Stake: ' + Number(game.stake).toFixed(3) + ' TON each</span><span>Pot: ' + Number(game.pot).toFixed(3) + ' TON</span><span>Winner gets: ' + Number(game.winnerPayout).toFixed(3) + ' TON</span><span>Platform fee: ' + Number(game.platformFee).toFixed(3) + ' TON</span></div>';
+    const result = game.result;
+    const handLabel = { rock:'Rock', paper:'Paper', scissors:'Scissors' };
+    const handIcon = { rock:'✊', paper:'✋', scissors:'✌️' };
+    const roomInfo = '<div class="rps-room-head"><div><span class="rps-kicker">MATCH ROOM</span><strong>' + (game.creatorName || 'Player') + ' <i>VS</i> ' + (game.opponentName || 'Waiting...') + '</strong></div><span class="rps-status-pill">' + game.status + '</span></div><div class="rps-money-grid"><div><small>STAKE EACH</small><b>' + Number(game.stake).toFixed(3) + ' TON</b></div><div><small>TOTAL POT</small><b>' + Number(game.pot).toFixed(3) + ' TON</b></div><div><small>WINNER PAYOUT</small><b>' + Number(game.winnerPayout).toFixed(3) + ' TON</b></div><div><small>PLATFORM 10%</small><b>' + Number(game.platformFee).toFixed(3) + ' TON</b></div></div>';
     if (game.status === 'open') target.innerHTML = roomInfo + '<p class="muted">Waiting for another player.</p>';
     else if (game.status === 'playing' && !game.myChoice) target.innerHTML = roomInfo + '<p class="muted">Choose one hand. You have one rock, one paper and one scissors.</p><div class="rps-hand-row"><button class="rps-hand" data-rps-choice="rock">✊</button><button class="rps-hand" data-rps-choice="paper">✋</button><button class="rps-hand" data-rps-choice="scissors">✌️</button></div>';
     else if (game.status === 'playing') target.innerHTML = roomInfo + '<p class="muted">Your hand is locked. Waiting for the other player.</p>';
-    else if (game.status === 'finished') target.innerHTML = '<div class="rps-result">' + (game.result.winner === 'tie' ? 'Tie. Your stake was returned.' : game.result.winner === (game.isCreator ? 'creator' : 'opponent') ? 'You won ' + Number(game.result.payout).toFixed(3) + ' TON.' : 'You lost this round.') + '</div>';
+    else if (game.status === 'finished') target.innerHTML = roomInfo + '<div class="rps-hands"><div><small>' + game.creatorName + '</small><strong>' + handIcon[result.creatorChoice] + '</strong><span>' + handLabel[result.creatorChoice] + '</span></div><div class="rps-vs">VS</div><div><small>' + game.opponentName + '</small><strong>' + handIcon[result.opponentChoice] + '</strong><span>' + handLabel[result.opponentChoice] + '</span></div></div><div class="rps-result ' + (result.winner === 'tie' ? 'tie' : (result.winner === (game.isCreator ? 'creator' : 'opponent') ? 'win' : 'loss')) + '">' + (result.winner === 'tie' ? 'DRAW · Both stakes returned' : result.winner === (game.isCreator ? 'creator' : 'opponent') ? 'YOU WON · +' + Number(result.payout).toFixed(3) + ' TON' : 'YOU LOST · Winner received ' + Number(result.payout).toFixed(3) + ' TON') + '</div>';
     target.querySelectorAll('[data-rps-choice]').forEach((button) => button.addEventListener('click', () => playRps(game.id, button.dataset.rpsChoice)));
   }
   function renderRpsGames(data){
@@ -1210,10 +1213,19 @@
     }
   }
   async function joinRps(gameId){
-    const response = await fetch(SERVER_URL + '/api/rps/join', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId }) });
-    const data = await response.json();
-    if (!response.ok) return rpsMessage(data.error || 'Could not join game.');
-    applyServerState(data.state); loadRpsGames();
+    if (!rpsAuthReady()) return rpsMessage('Open the game in Telegram to join.');
+    rpsMessage('Joining room...');
+    try {
+      const response = await fetch(SERVER_URL + '/api/rps/join', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not join game.');
+      applyServerState(data.state);
+      renderRpsGame(data.game, true);
+      rpsMessage('Joined room. Choose your hand.');
+      loadRpsGames();
+    } catch (e) {
+      rpsMessage('Join failed: ' + (e.message || 'server unavailable'));
+    }
   }
   async function playRps(gameId, choice){
     const response = await fetch(SERVER_URL + '/api/rps/play', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId, choice }) });
