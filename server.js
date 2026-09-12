@@ -298,9 +298,8 @@ const RPS_MIN_STAKE = 0.001;
 const RPS_GAME_TTL_MS = 30 * 60 * 1000;
 const GAME_ROOM_STAKE = 0.001;
 const GAME_ROOM_RESET_DELAY_MS = 0;
-const GAME_ROUND_TIMEOUT_MS = 18 * 1000;
+const GAME_ROUND_TIMEOUT_MS = 60 * 1000;
 const GAME_PLAYER_OFFLINE_MS = 35 * 1000;
-const GAME_RANDOM_CHOICES = ['rock', 'paper', 'scissors'];
 function gameRoomId(stake) { return 'room-' + String(stake).replace('.', '-'); }
 function createGameRoom(stake) {
   return { id: gameRoomId(stake), mode: 'room-knockout', stake, status: 'open', round: 0, roundStartedAt: 0, players: [], choices: {}, revealedChoices: {}, lastRoundChoices: {}, lastRoundWinners: [], result: null, resetAt: 0, createdAt: Date.now() };
@@ -320,13 +319,8 @@ function enforceGameRoomTimeout(room) {
     resetGameRoom(room);
     return true;
   }
-  const active = room.players.filter((player) => player.alive);
   if (now - room.roundStartedAt < GAME_ROUND_TIMEOUT_MS) return false;
-  active.forEach((player) => {
-    const uid = String(player.id);
-    if (!room.choices[uid]) room.choices[uid] = GAME_RANDOM_CHOICES[Math.floor(Math.random() * GAME_RANDOM_CHOICES.length)];
-  });
-  resolveGameRoom(room);
+  resetGameRoom(room);
   return true;
 }
 function removeOfflineRoomPlayers(room) {
