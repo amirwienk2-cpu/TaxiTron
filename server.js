@@ -322,9 +322,11 @@ function ensureGameRooms() {
   if (changed) persistRpsGames();
 }
 function gameRoomPublic(room, uid) {
+  const playerCount = Array.isArray(room.players) ? room.players.length : 0;
+  const liveStatus = playerCount >= 4 ? 'playing' : 'open';
   return {
-    id: room.id, stake: room.stake, status: room.status, round: room.round,
-    playerCount: room.players.length, maxPlayers: 4,
+    id: room.id, stake: room.stake, status: liveStatus, round: room.round,
+    playerCount, maxPlayers: 4,
     players: room.players.map((player) => ({ id: String(player.id), name: player.name, isMe: String(player.id) === String(uid), balance: Number(users[String(player.id)]?.ton || 0), alive: player.alive, selected: room.choices[String(player.id)] ? true : false })),
     isPlayer: room.players.some((player) => String(player.id) === String(uid)),
     myChoice: room.choices[String(uid)] || null,
@@ -878,6 +880,7 @@ app.get('/api/game/rooms', requireUserFromQuery, (req, res) => {
 app.post('/api/game/rooms/join', requireUserFromBody, (req, res) => {
   ensureGameRooms();
   const room = rpsGames[String(req.body && req.body.roomId)];
+  if (room && Array.isArray(room.players) && room.players.length < 4) room.status = 'open';
   if (!room || room.mode !== 'room-knockout' || room.status !== 'open') return res.status(409).json({ error: 'room-not-open' });
   const user = req.user;
   if (room.players.some((player) => String(player.id) === String(user.id))) return res.status(409).json({ error: 'already-joined' });

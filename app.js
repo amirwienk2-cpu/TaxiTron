@@ -1386,7 +1386,7 @@
       if (countEl) countEl.textContent = players.length + ' online';
       const roomsResponse = await fetch(SERVER_URL + '/api/game/rooms?token=' + encodeURIComponent(serverSession.token));
       const roomsData = await roomsResponse.json();
-      const activeRoom = (roomsData.rooms || []).find((room) => room.isPlayer && room.status === 'playing');
+      const activeRoom = (roomsData.rooms || []).find((room) => room.isPlayer && Number(room.playerCount) >= 4);
       if (activeRoom) { showGameHtml(activeRoom); return; }
       const gameFrame = document.getElementById('gameExperienceFrame');
       if (gameFrame) { gameFrame.hidden = true; gameFrame.removeAttribute('src'); }
@@ -1396,7 +1396,7 @@
         roomsEl.innerHTML = room ? '<div class="game-room-card"><div><strong>Live game · 0.001 TON</strong><span>' + room.playerCount + '/4 players · ' + (room.status === 'playing' ? 'Playing now' : 'Waiting for players') + ' · Winner 90%</span><div class="game-room-roster">' + roomPlayers + '</div></div></div>' : '';
         const joinButton = document.getElementById('gameLobbyJoinBtn');
         if (joinButton && room) {
-          const roomOpen = room.playerCount < 4 && (room.status === 'open' || room.status === 'playing');
+          const roomOpen = Number(room.playerCount) < 4;
           joinButton.disabled = !roomOpen || room.isPlayer;
           joinButton.textContent = room.isPlayer ? 'Joined · 0.001 TON' : roomOpen ? 'Join game · 0.001 TON' : 'Full · watch live';
           joinButton.onclick = () => { if (!room.isPlayer && roomOpen) joinGameRoom(room.id); };
