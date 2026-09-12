@@ -1381,7 +1381,7 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Lobby nicht verfügbar');
       const players = data.players || [];
-      playersEl.innerHTML = players.length ? players.map((player, index) => '<div class="game-lobby-player"><div class="game-lobby-character"><img src="sprites/' + (index % 2 ? 'mann.png' : 'frau.png') + '" alt=""></div><strong>' + player.name + '<small><i></i> Online · ' + Number(player.balance || 0).toFixed(3) + ' TON</small></strong></div>').join('') : '<div class="game-lobby-empty">Noch keine Spieler online.</div>';
+      playersEl.innerHTML = players.length ? players.map((player) => '<div class="game-lobby-player"><div class="game-lobby-online-mark"><i></i></div><strong>' + player.name + '<small>Online · ' + Number(player.balance || 0).toFixed(3) + ' TON</small></strong></div>').join('') : '<div class="game-lobby-empty">Noch keine Spieler online.</div>';
       if (statusEl) statusEl.textContent = players.length + ' Spieler sind gerade online';
       if (countEl) countEl.textContent = players.length + ' online';
       const roomsResponse = await fetch(SERVER_URL + '/api/game/rooms?token=' + encodeURIComponent(serverSession.token));
