@@ -297,7 +297,7 @@ const RPS_CHOICES = new Set(['rock', 'paper', 'scissors']);
 const RPS_MIN_STAKE = 0.001;
 const RPS_GAME_TTL_MS = 30 * 60 * 1000;
 const GAME_ROOM_STAKE = 0.001;
-const GAME_ROOM_RESET_DELAY_MS = 0;
+const GAME_ROOM_RESET_DELAY_MS = 15000;
 const GAME_ROUND_TIMEOUT_MS = 60 * 1000;
 const GAME_PLAYER_OFFLINE_MS = 35 * 1000;
 function gameRoomId(stake) { return 'room-' + String(stake).replace('.', '-'); }
@@ -350,7 +350,7 @@ function ensureGameRooms() {
   const id = gameRoomId(GAME_ROOM_STAKE);
   const room = rpsGames[id];
   if (room && removeOfflineRoomPlayers(room)) changed = true;
-  if (!room || room.status === 'finished') {
+  if (!room || (room.status === 'finished' && Date.now() >= Number(room.resetAt || 0))) {
     rpsGames[id] = createGameRoom(GAME_ROOM_STAKE);
     changed = true;
   } else if (room.mode === 'room-knockout' && room.players.length < 4 && room.status === 'playing') {
@@ -375,7 +375,7 @@ function gameRoomPublic(room, uid) {
   const lastRoundChoices = room.lastRoundChoices || {};
   const hasLastRoundReveal = Object.keys(lastRoundChoices).length > 0;
   const revealChoices = allActiveSelected || hasLastRoundReveal || room.status === 'finished';
-  const choicesToReveal = allActiveSelected ? room.choices : (hasLastRoundReveal ? lastRoundChoices : room.revealedChoices || {});
+  const choicesToReveal = room.status === 'finished' ? (room.revealedChoices || {}) : allActiveSelected ? room.choices : (hasLastRoundReveal ? lastRoundChoices : room.revealedChoices || {});
   return {
     id: room.id, stake: room.stake, status: liveStatus, round: room.round,
     playerCount, maxPlayers: 4,

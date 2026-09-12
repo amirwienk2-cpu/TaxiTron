@@ -629,10 +629,13 @@
     liveRoom = true;
     locked = false;
     const orderedPlayers = (room.players || []).slice().sort((first, second) => Number(second.isMe) - Number(first.isMe));
-    players = orderedPlayers.map((player, index) => ({ id:index, name:player.name, human:!!player.isMe, alive:player.alive !== false, choice:player.choice || null, selected:!!player.selected }));
+    players = orderedPlayers.map((player, index) => ({ id:index, name:player.name, human:!!player.isMe, alive:player.alive !== false, choice:player.choice || null, lastChoice:player.choice || null, selected:!!player.selected }));
     round = room.round || 1;
-    resultLine.textContent = '';
-    modalOverlay.classList.remove('show');
+    const gameFinished = !!(room.result && room.result.winnerName);
+    if (!gameFinished) {
+      resultLine.textContent = '';
+      modalOverlay.classList.remove('show');
+    }
     for (let index = 0; index < 4; index += 1) {
       const nameEl = document.getElementById('name-' + index);
       const avatarEl = document.getElementById('avatar-' + index);
@@ -676,7 +679,7 @@
     const localChoice = { rock:'stein', paper:'papier', scissors:'schere' }[room.myChoice] || null;
     controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = !!localChoice; button.classList.toggle('picked', button.dataset.move === localChoice); });
     waitingNote.textContent = room.myChoice ? 'Choice locked. Waiting for the other players...' : 'Choose your move.';
-    if ((room.players || []).some((player) => player.choice)) {
+    if ((room.players || []).some((player) => player.choice) || gameFinished) {
       resultLine.textContent = (room.players || []).filter((player) => player.choice).map((player) => player.name + ': ' + LABEL[{ rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice]).join(' · ');
       const me = (room.players || []).find((player) => player.isMe);
       if (room.result && me && String(room.result.winnerId) === String(me.id)) {
@@ -689,10 +692,14 @@
         resultLine.classList.remove('round-win');
       }
       if (room.result && room.result.winnerName) {
-        const finalChoices = (room.players || []).filter((player) => player.choice).map((player) => player.name + ': ' + LABEL[{ rock:'stein', papier:'papier', schere:'schere' }[player.choice] || player.choice] + ' ' + ICONS[{ rock:'stein', papier:'papier', schere:'schere' }[player.choice] || player.choice]);
+        const finalChoices = (room.players || []).filter((player) => player.choice).map((player) => player.name + ': ' + LABEL[{ rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice] + ' ' + ICONS[{ rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice]);
         resultLine.textContent = finalChoices.join(' · ') + ' · Gewinner: ' + room.result.winnerName + ' · Gewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON';
         resultLine.classList.add('round-win');
         addHistoryEntry(room.result.winnerName, (room.players || []).map((player) => player.name), Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON', room.id + ':' + room.result.winnerId, finalChoices);
+        document.getElementById('modalTitle').textContent = room.result.winnerName + ' wins!';
+        document.getElementById('modalSub').textContent = finalChoices.join('\n') + '\n\nGewinner: ' + room.result.winnerName + '\nGewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON';
+        document.getElementById('modalCrown').textContent = me && String(room.result.winnerId) === String(me.id) ? '🏆' : '💀';
+        modalOverlay.classList.add('show');
       }
     }
     if ((room.players || []).length < 4) {
