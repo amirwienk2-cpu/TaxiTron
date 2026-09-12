@@ -488,7 +488,7 @@
   function initPlayers(){
     const params = new URLSearchParams(window.location.search);
     const roomNames = [0,1,2,3].map((id) => params.get('p' + id)).filter(Boolean);
-    const names = roomNames.length === 4 ? roomNames : ['You','Krax','Vello','Orna'];
+    const names = roomNames.length === 4 ? roomNames : ['Waiting...','Waiting...','Waiting...','Waiting...'];
     players = [
       { id:0, name:names[0], human:true, alive:true, choice:null },
       { id:1, name:names[1], human:false, alive:true, choice:null },
@@ -530,6 +530,10 @@
     const localChoice = { rock:'stein', paper:'papier', scissors:'schere' }[room.myChoice] || null;
     controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = !!localChoice; button.classList.toggle('picked', button.dataset.move === localChoice); });
     waitingNote.textContent = room.myChoice ? 'Choice locked. Waiting for the other players...' : 'Choose your move.';
+    if ((room.players || []).length < 4) {
+      waitingNote.textContent = 'Waiting for ' + (4 - room.players.length) + ' more players...';
+      controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = true; button.classList.remove('picked'); });
+    }
   }
   window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'taxitron-room-state') applyLiveRoom(event.data.room);
