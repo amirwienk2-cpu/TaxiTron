@@ -201,6 +201,7 @@
     skin: localStorage.getItem('cr3d_skin') || 'yellow',
     ownedSkins: JSON.parse(localStorage.getItem('cr3d_ownedSkins') || '["yellow"]'),
     skinRewards: JSON.parse(localStorage.getItem('cr3d_skinRewards') || '{}'),
+    taskChannelRewardClaimed: localStorage.getItem('cr3d_taskChannelRewardClaimed') === '1',
     attemptsLeft: localStorage.getItem('cr3d_attemptsLeft') !== null ? parseInt(localStorage.getItem('cr3d_attemptsLeft'), 10) : 10,
     attemptsResetAt: localStorage.getItem('cr3d_attemptsResetAt') ? parseInt(localStorage.getItem('cr3d_attemptsResetAt'), 10) : null,
     withdrawals: JSON.parse(localStorage.getItem('cr3d_withdrawals') || '[]')
@@ -229,6 +230,7 @@
     localStorage.setItem('cr3d_skin', store.skin);
     localStorage.setItem('cr3d_ownedSkins', JSON.stringify(store.ownedSkins));
     localStorage.setItem('cr3d_skinRewards', JSON.stringify(store.skinRewards));
+    localStorage.setItem('cr3d_taskChannelRewardClaimed', store.taskChannelRewardClaimed ? '1' : '0');
     localStorage.setItem(accountStorageKey('cr3d_attemptsLeft'), store.attemptsLeft);
     const attemptsResetKey = accountStorageKey('cr3d_attemptsResetAt');
     if (store.attemptsResetAt) localStorage.setItem(attemptsResetKey, store.attemptsResetAt);
@@ -703,11 +705,11 @@
   }
 
   // zombies collected but not yet exchanged -> saved so they survive closing the app
-  let lastPersonScore = parseInt(localStorage.getItem('cr3d_pendingZombies') || '0', 10);
-  let lastDistance = parseFloat(localStorage.getItem('cr3d_pendingDistance') || '0');
+  let lastPersonScore = parseInt(localStorage.getItem(accountStorageKey('cr3d_pendingZombies')) || '0', 10);
+  let lastDistance = parseFloat(localStorage.getItem(accountStorageKey('cr3d_pendingDistance')) || '0');
   function savePending(){
-    localStorage.setItem('cr3d_pendingZombies', lastPersonScore);
-    localStorage.setItem('cr3d_pendingDistance', lastDistance);
+    localStorage.setItem(accountStorageKey('cr3d_pendingZombies'), lastPersonScore);
+    localStorage.setItem(accountStorageKey('cr3d_pendingDistance'), lastDistance);
   }
 
   /* ================= Server-authoritative economy sync ================= */
@@ -801,6 +803,8 @@
       const accountAttemptsKey = 'cr3d_attemptsLeft_' + String(state.uid);
       if (previousUid || localStorage.getItem(accountAttemptsKey) !== null) loadAccountAttempts();
       else saveStore();
+      lastPersonScore = parseInt(localStorage.getItem(accountStorageKey('cr3d_pendingZombies')) || '0', 10);
+      lastDistance = parseFloat(localStorage.getItem(accountStorageKey('cr3d_pendingDistance')) || '0');
       store.skinRewards = {};
       store.skin = 'yellow';
     }
@@ -816,6 +820,19 @@
     store.pointsDate = todayStr();
     store.best = state.best;
     store.runs = state.runs;
+    if (typeof state.taskChannelRewardClaimed === 'boolean'){
+      store.taskChannelRewardClaimed = state.taskChannelRewardClaimed;
+      const taskButton = document.getElementById('checkChannelTaskBtn');
+      const taskStatus = document.getElementById('channelTaskStatus');
+      const taskCard = document.getElementById('channelTaskCard');
+      if (store.taskChannelRewardClaimed){
+        if (taskButton) taskButton.disabled = true;
+        if (taskStatus) taskStatus.textContent = 'Completed. Reward already claimed.';
+        if (taskCard) taskCard.classList.add('completed');
+      } else if (taskCard){
+        taskCard.classList.remove('completed');
+      }
+    }
     if (typeof state.level === 'number') store.level = state.level;
     if (Array.isArray(state.ownedSkins)){
       store.ownedSkins = state.ownedSkins.slice();
@@ -828,6 +845,49 @@
     if (typeof renderSkinShop === 'function') renderSkinShop();
     refreshTopUI();
   }
+
+  async function checkChannelTask(){
+    const statusEl = document.getElementById('channelTaskStatus');
+    const button = document.getElementById('checkChannelTaskBtn');
+    if (!statusEl || !button) return;
+    if (store.taskChannelRewardClaimed){
+      statusEl.textContent = 'Completed. Reward already claimed.';
+      button.disabled = true;
+      return;
+    }
+    if (!SERVER_URL || !serverSession.online || !serverSession.token){
+      statusEl.textContent = 'Open the game in Telegram to verify membership.';
+      return;
+    }
+    button.disabled = true;
+    statusEl.textContent = 'Checking channel membership...';
+    try {
+      const response = await fetch(SERVER_URL + '/api/tasks/channel-claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'membership-check-failed');
+      applyServerState(data.state);
+      const reward = Number(data.rewardZombies) || 0;
+      if (reward > 0){
+        lastPersonScore += reward;
+        savePending();
+        refreshTopUI();
+        statusEl.textContent = 'Completed. +500 monsters added to your wallet.';
+      } else {
+        statusEl.textContent = 'Completed. Reward already claimed.';
+      }
+      button.disabled = true;
+    } catch (e) {
+      button.disabled = false;
+      statusEl.textContent = e.message === 'channel-membership-required'
+        ? 'Please join @TaxiiTon first, then check again.'
+        : 'Membership could not be verified. Try again.';
+    }
+  }
+  document.getElementById('checkChannelTaskBtn').addEventListener('click', checkChannelTask);
 
   let exchangeInProgress = false;
   async function exchangePersons(){

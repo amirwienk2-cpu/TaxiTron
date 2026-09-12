@@ -158,6 +158,25 @@
     <button class="menu-btn secondary" id="toHomeBtn" data-i18n="toHome">Back to Home</button>
   </main>
 
+  <!-- TASKS -->
+  <main class="screen" id="screen-task">
+    <div class="hero" style="padding:22px 20px;">
+      <h1 style="font-size:1.3rem;">Tasks</h1>
+      <p>Complete tasks and collect rewards.</p>
+    </div>
+    <div class="task-card" id="channelTaskCard">
+      <div class="task-card-icon"><img src="sprites/taskbutton.png" alt="Task"></div>
+      <div class="task-card-content">
+        <h2>Join @TaxiiTon</h2>
+        <p>Follow the Telegram channel to complete this task.</p>
+        <div class="task-reward">Reward: +500 monsters</div>
+        <a class="menu-btn secondary" href="https://t.me/TaxiiTon" target="_blank" rel="noopener">Open Telegram channel</a>
+        <button class="menu-btn" id="checkChannelTaskBtn">Check membership</button>
+        <div class="task-status" id="channelTaskStatus"></div>
+      </div>
+    </div>
+  </main>
+
   <!-- GAME (3D) -->
   <main class="screen" id="screen-game" dir="ltr">
     <div id="gameContainer">
@@ -199,6 +218,7 @@
     <button data-screen="game" class="play-btn"><span class="ic"></span><span data-i18n="navPlay">Play</span></button>
     <button data-screen="tournament"><span class="ic trophy-ic"></span><span data-i18n="navTournament">Tournament</span></button>
     <button data-screen="wallet"><span class="ic wallet-ic"></span><span data-i18n="navWallet">Wallet</span></button>
+    <button data-screen="task"><span class="ic task-ic"></span><span>Tasks</span></button>
   </nav>
 </div>
 

@@ -192,6 +192,7 @@ function newUser(id, name) {
     attemptsLeft: 10,
     attemptsResetAt: null,
     attemptResetVersion: 0,
+    taskChannelRewardClaimed: false,
     tournamentBest: 0,
     tournamentDistance: 0,
     tournamentWeekKey: '',
@@ -262,6 +263,7 @@ function publicState(user) {
     level: user.level,
     ownedSkins,
     attemptResetVersion: user.attemptResetVersion || 0,
+    taskChannelRewardClaimed: user.taskChannelRewardClaimed === true,
   };
 }
 
@@ -427,6 +429,34 @@ app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
   user.level = Math.max(user.level || 1, levels[key]);
   persist();
   res.json({ state: publicState(user) });
+});
+
+app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
+  const user = req.user;
+  if (user.taskChannelRewardClaimed === true) {
+    return res.json({ claimed: true, joined: true, rewardZombies: 0, state: publicState(user) });
+  }
+  if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
+
+  try {
+    const apiUrl = 'https://api.telegram.org/bot' + BOT_TOKEN + '/getChatMember?chat_id=%40TaxiiTon&user_id=' + encodeURIComponent(user.id);
+    const telegramResponse = await fetch(apiUrl);
+    const telegramData = await telegramResponse.json();
+    const member = telegramData && telegramData.ok ? telegramData.result : null;
+    const joined = !!member && (
+      member.status === 'creator' ||
+      member.status === 'administrator' ||
+      member.status === 'member' ||
+      (member.status === 'restricted' && member.is_member === true)
+    );
+    if (!joined) return res.status(403).json({ error: 'channel-membership-required', joined: false });
+
+    user.taskChannelRewardClaimed = true;
+    persist();
+    res.json({ claimed: true, joined: true, rewardZombies: 500, state: publicState(user) });
+  } catch (e) {
+    res.status(502).json({ error: 'telegram-membership-check-failed' });
+  }
 });
 
 async function tonApiJson(pathname) {
@@ -689,6 +719,7 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.tournamentDistance = 0;
     user.tournamentWeekKey = '';
     user.withdrawals = [];
+    user.taskChannelRewardClaimed = false;
     user.depositTxs = depositTxs;
   });
 
