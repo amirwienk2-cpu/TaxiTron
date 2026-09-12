@@ -329,10 +329,33 @@ function enforceGameRoomTimeout(room) {
   resolveGameRoom(room);
   return true;
 }
+function removeOfflineRoomPlayers(room) {
+  if (!room || !Array.isArray(room.players) || room.status === 'finished') return false;
+  const now = Date.now();
+  const kept = [];
+  let changed = false;
+  room.players.forEach((player) => {
+    const user = users[String(player.id)];
+    if (now - Number(user?.lastSeenAt || 0) > GAME_PLAYER_OFFLINE_MS) {
+      if (user) user.ton += room.stake;
+      changed = true;
+    } else {
+      kept.push(player);
+    }
+  });
+  if (!changed) return false;
+  room.players = kept;
+  room.choices = {};
+  room.status = 'open';
+  room.round = 0;
+  room.roundStartedAt = 0;
+  return true;
+}
 function ensureGameRooms() {
   let changed = false;
   const id = gameRoomId(GAME_ROOM_STAKE);
   const room = rpsGames[id];
+  if (room && removeOfflineRoomPlayers(room)) changed = true;
   if (!room || room.status === 'finished') {
     rpsGames[id] = createGameRoom(GAME_ROOM_STAKE);
     changed = true;

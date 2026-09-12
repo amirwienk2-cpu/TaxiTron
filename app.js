@@ -1421,10 +1421,12 @@
     const frame = document.getElementById('gameExperienceFrame');
     if (!frame) return;
     currentGameRoomId = room.id;
-    const params = (room.players || []).map((player, index) => 'p' + index + '=' + encodeURIComponent(player.name)).join('&');
-    if (frame.dataset.roomId !== room.id || frame.hidden) {
-      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-5';
-      frame.dataset.roomId = room.id;
+    const players = room.players || [];
+    const params = players.map((player, index) => 'p' + index + '=' + encodeURIComponent(player.name)).join('&');
+    const roomSignature = room.id + ':' + players.map((player) => String(player.id) + '=' + player.name + '=' + player.alive).join('|');
+    if (frame.dataset.roomSignature !== roomSignature || frame.hidden) {
+      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-6';
+      frame.dataset.roomSignature = roomSignature;
     }
     frame.hidden = false;
     frame.removeAttribute('hidden');
