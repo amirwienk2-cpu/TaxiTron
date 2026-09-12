@@ -309,6 +309,8 @@
     text-align:center;
     margin:10px 0 4px;
   }
+  .result-line.round-win{ color:#a9e34b; font-size:16px; text-shadow:0 0 12px rgba(169,227,75,.75); animation:roundWinPulse .8s ease-in-out 2; }
+  @keyframes roundWinPulse{ 50%{ transform:scale(1.08); text-shadow:0 0 22px rgba(169,227,75,1); } }
 
   /* ---- Controls ---- */
   .controls{
@@ -483,6 +485,7 @@
   let round = 1;
   let locked = false;
   let liveRoom = false;
+  let lastLiveRevealKey = '';
 
   const phaseBanner = document.getElementById('phaseBanner');
   const resultLine = document.getElementById('resultLine');
@@ -532,16 +535,20 @@
       if (avatarEl) avatarEl.textContent = player.name.charAt(0).toUpperCase();
       if (pedestal) {
         pedestal.classList.toggle('out', player.alive === false);
-        pedestal.classList.toggle('winner-glow', player.choice && player.alive !== false);
+        pedestal.classList.toggle('winner-glow', player.roundWinner === true);
       }
       const face = document.getElementById('face-' + player.id);
       if (face && player.choice) {
         const move = { rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice;
         face.textContent = ICONS[move] || '?';
         face.classList.add('icon-face');
-        face.classList.remove('live-reveal');
-        void face.offsetWidth;
-        face.classList.add('live-reveal');
+        const revealKey = player.id + ':' + player.choice + ':' + room.round;
+        if (revealKey !== lastLiveRevealKey) {
+          face.classList.remove('live-reveal');
+          void face.offsetWidth;
+          face.classList.add('live-reveal');
+          lastLiveRevealKey = revealKey;
+        }
         face.style.transform = 'translateZ(12px) rotateY(0deg)';
       } else if (face) {
         face.textContent = '?';
@@ -555,6 +562,16 @@
     waitingNote.textContent = room.myChoice ? 'Choice locked. Waiting for the other players...' : 'Choose your move.';
     if ((room.players || []).some((player) => player.choice)) {
       resultLine.textContent = (room.players || []).filter((player) => player.choice).map((player) => player.name + ': ' + LABEL[{ rock:'stein', paper:'papier', scissors:'schere' }[player.choice] || player.choice]).join(' · ');
+      const me = (room.players || []).find((player) => player.isMe);
+      if (room.result && me && String(room.result.winnerId) === String(me.id)) {
+        resultLine.textContent += ' · YOU WIN THE GAME!';
+        resultLine.classList.add('round-win');
+      } else if (me && me.roundWinner) {
+        resultLine.textContent += ' · You win this round!';
+        resultLine.classList.add('round-win');
+      } else {
+        resultLine.classList.remove('round-win');
+      }
     }
     if ((room.players || []).length < 4) {
       waitingNote.textContent = 'Waiting for ' + (4 - room.players.length) + ' more players...';
