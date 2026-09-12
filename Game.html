@@ -475,7 +475,7 @@
 <script>
 (function(){
   const ICONS = { stein:'✊', papier:'✋', schere:'✌️' };
-  const BEATS = { stein:'schere', schere:'papier', papier:'stein' };
+  const BEATS = { stein:'schere', papier:'stein', schere:'papier' };
   const LABEL = { stein:'Rock', papier:'Paper', schere:'Scissors' };
   const BOT_NAMES = ['Krax','Vello','Orna'];
 
@@ -654,7 +654,12 @@
     }
 
     const [a,b] = distinct;
-    const winningMove = (BEATS[a] === b) ? a : b;
+    const winningMove = BEATS[a] === b ? a : BEATS[b] === a ? b : null;
+    if(!winningMove){
+      resultLine.textContent = 'Draw — everyone plays again!';
+      setTimeout(()=> startRound(), 1500);
+      return;
+    }
     const losingMove = (winningMove === a) ? b : a;
 
     resultLine.textContent = LABEL[winningMove] + ' schlägt ' + LABEL[losingMove] + '!';
