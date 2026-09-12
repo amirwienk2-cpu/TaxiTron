@@ -1389,7 +1389,9 @@
       const activeRoom = (roomsData.rooms || []).find((room) => room.isPlayer && Number(room.playerCount) >= 4);
       if (activeRoom) { showGameHtml(activeRoom); return; }
       const gameFrame = document.getElementById('gameExperienceFrame');
-      if (gameFrame) { gameFrame.hidden = true; gameFrame.removeAttribute('src'); }
+      const lobbyPanel = document.querySelector('.game-lobby-panel');
+      if (gameFrame) { gameFrame.hidden = true; gameFrame.style.display = 'none'; gameFrame.removeAttribute('src'); }
+      if (lobbyPanel) lobbyPanel.style.display = '';
       if (roomsEl) {
         const room = roomsData.rooms && roomsData.rooms[0];
         const roomPlayers = room && room.players && room.players.length ? room.players.map((player) => '<b class="game-room-player-name"><i></i>' + player.name + '</b>').join('') : '<span class="game-room-empty">No players have joined yet.</span>';
@@ -1422,10 +1424,14 @@
     currentGameRoomId = room.id;
     const params = (room.players || []).map((player, index) => 'p' + index + '=' + encodeURIComponent(player.name)).join('&');
     if (frame.dataset.roomId !== room.id || frame.hidden) {
-      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-2';
+      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-3';
       frame.dataset.roomId = room.id;
     }
     frame.hidden = false;
+    frame.removeAttribute('hidden');
+    frame.style.display = 'block';
+    const lobbyPanel = document.querySelector('.game-lobby-panel');
+    if (lobbyPanel) lobbyPanel.style.display = 'none';
     frame.onload = () => sendRoomToGameFrame(room);
   }
   function sendRoomToGameFrame(room){
