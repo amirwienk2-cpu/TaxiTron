@@ -1159,6 +1159,10 @@
   const screens = document.querySelectorAll('.screen');
   const navButtons = document.querySelectorAll('.bottomnav button');
   let rpsLoading = false;
+  let rpsSpectatorGameId = null;
+  let rpsLobbyData = null;
+  let localRpsGame = null;
+  let currentGameRoomId = null;
   const rpsLabels = { rock: '✊ Rock', paper: '✋ Paper', scissors: '✌️ Scissors' };
   let rps3d = null;
   function makeRpsLabel(text, color){
@@ -1212,21 +1216,66 @@
   }
   function rpsAuthReady(){ return SERVER_URL && serverSession.online && serverSession.token; }
   function rpsMessage(text){ const el = document.getElementById('rpsStatus'); if (el) el.textContent = text; }
+  function localRpsWinner(first, second){
+    if (first === second) return 'tie';
+    if ((first === 'rock' && second === 'scissors') || (first === 'paper' && second === 'rock') || (first === 'scissors' && second === 'paper')) return 'you';
+    return 'bot';
+  }
+  function startLocalRpsBot(){
+    localRpsGame = { id:'local-bot', mode:'four-player', status:'playing', round:1, stake:0, pot:0, winnerPayout:0, runnerUpPayout:0, platformFee:0, playerCount:4, maxPlayers:4, isPlayer:true, myChoice:null, match:{ opponentName:'Halloween-Bot' }, players:[{ name:'Du', balance:0, alive:true }, { name:'Halloween-Bot', balance:0, alive:true }, { name:'Bot 3', balance:0, alive:true }, { name:'Bot 4', balance:0, alive:true }] };
+    showScreen('rps-game');
+    renderRpsGame(localRpsGame, true);
+    const title = document.querySelector('#screen-rps-game .rps-reference-board>header strong');
+    const status = document.getElementById('rpsMyGame');
+    if (title) title.textContent = 'BOT-TEST';
+    if (status) { status.style.display = 'block'; status.textContent = 'Wähle Stein, Papier oder Schere'; }
+    document.querySelectorAll('.rps-reference-choice [data-rps-choice]').forEach((button) => button.onclick = () => playLocalRps(button.dataset.rpsChoice));
+  }
+  window.startLocalRpsBot = startLocalRpsBot;
+  function playLocalRps(choice){
+    if (!localRpsGame || localRpsGame.myChoice) return;
+    const botChoice = ['rock','paper','scissors'][Math.floor(Math.random() * 3)];
+    localRpsGame.myChoice = choice;
+    localRpsGame.result = { winner:localRpsWinner(choice, botChoice), creatorChoice:choice, opponentChoice:botChoice };
+    renderRpsGame(localRpsGame, true);
+    const status = document.getElementById('rpsMyGame');
+    if (status) { status.style.display = 'block'; status.textContent = localRpsGame.result.winner === 'you' ? 'Du gewinnst! Bot spielte ' + botChoice : localRpsGame.result.winner === 'bot' ? 'Bot gewinnt. Bot spielte ' + botChoice : 'Unentschieden. Bot spielte ' + botChoice; }
+  }
   function renderRpsGame(game, mine){
     const card = document.getElementById('rpsMyGameCard');
     const target = document.getElementById('rpsMyGame');
     if (!card || !target) return;
-    card.hidden = !game;
-    if (!game) return;
+    card.hidden = false;
+    if (!game){
+      const activePlayers = rpsLobbyData && rpsLobbyData.activeUsers || [];
+      const telegramUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      const profileName = document.getElementById('rpsProfileName');
+      if (profileName && telegramUser) profileName.textContent = telegramUser.username || [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ') || 'Spieler';
+      const players = activePlayers.length ? activePlayers.slice(0, 4) : rpsAuthReady() ? [] : [{ name:'Wede', bot:true }, { name:'Du' }, { name:'Cannik', bot:true }, { name:'Pevan', bot:true }];
+      const playerList = document.getElementById('rpsReferencePlayers');
+      const opponents = document.getElementById('rpsReferenceOpponents');
+      const colors = ['blue', 'pink', 'purple', 'red'];
+      const directCreate = document.getElementById('rpsCreateDirectBtn');
+      const isLocalBrowser = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const inTelegram = !isLocalBrowser && !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+      if (directCreate) directCreate.onclick = inTelegram ? createRps : startLocalRpsBot;
+      if (playerList) playerList.innerHTML = players.length ? players.map((player, index) => '<div class="rps-reference-player"><span class="rps-check">' + (index === 1 ? '□' : '☑') + '</span><b>#' + (index === 1 ? '2' : index + 1) + '</b><i class="rps-avatar ' + colors[index] + '">' + (index === 0 ? '👀' : index === 1 ? '☺' : '◉') + '</i><strong>' + player.name + (player.bot ? ' <small>(Bot)</small>' : '') + '<small class="rps-balance">' + (Number(player.balance || 0).toFixed(3)) + ' TON</small></strong></div>').join('') : '<div class="rps-reference-empty">Keine anderen Spieler online</div>';
+      if (opponents) opponents.innerHTML = players.slice(0, 3).map((player, index) => '<div class="rps-opponent-card"><i class="rps-avatar ' + colors[index] + '">' + (index === 0 ? '👀' : '◉') + '</i><strong>' + player.name + '<span>' + Number(player.balance || 0).toFixed(3) + ' TON</span></strong><b>✓</b></div>').join('');
+      target.innerHTML = '';
+      document.querySelectorAll('.rps-reference-choice [data-rps-choice]').forEach((button) => button.onclick = () => rpsMessage('Erstelle zuerst ein lokales Bot-Spiel.'));
+      updateRps3D({});
+      return;
+    }
     if (game.mode === 'four-player'){
       const players = game.players || [];
-      const roster = players.map((player) => '<span class="rps-player-chip ' + (player.eliminated ? 'eliminated' : '') + '">' + player.name + (player.eliminated ? ' OUT' : '') + '</span>').join('');
+      const roster = players.map((player) => '<span class="rps-player-chip ' + (player.eliminated ? 'eliminated' : '') + '">' + player.name + ' · ' + Number(player.balance || 0).toFixed(3) + ' TON' + (player.eliminated ? ' OUT' : '') + '</span>').join('');
       const result = game.result;
       const matchText = game.match ? 'Your opponent: ' + game.match.opponentName : game.status === 'open' ? 'Waiting for ' + (4 - game.playerCount) + ' more players.' : 'Your semifinal is complete. Waiting for the other match.';
       const payoutText = result ? '<div class="rps-result win">Winner receives ' + Number(result.winnerPayout).toFixed(6) + ' TON · 2nd receives ' + Number(result.runnerUpPayout).toFixed(6) + ' TON</div>' : '';
-      target.innerHTML = '<div class="rps-room-head"><div><span class="rps-kicker">4 PLAYER KNOCKOUT · ROUND ' + game.round + '</span><strong>Players ' + game.playerCount + '/4</strong></div><span class="rps-status-pill">' + game.status + '</span></div><div class="rps-player-roster">' + roster + '</div><div class="rps-money-grid"><div><small>TOTAL POT</small><b>' + Number(game.pot).toFixed(6) + ' TON</b></div><div><small>1ST PLACE · 60%</small><b>' + Number(game.winnerPayout).toFixed(6) + ' TON</b></div><div><small>2ND PLACE · 20%</small><b>' + Number(game.runnerUpPayout).toFixed(6) + ' TON</b></div><div><small>FEE · 20%</small><b>' + Number(game.platformFee).toFixed(6) + ' TON</b></div></div><p class="muted rps-round-message">' + matchText + '</p>' + (game.status === 'playing' && game.match && !game.myChoice ? '<div class="rps-hand-row"><button class="rps-hand" data-rps-choice="rock">✊</button><button class="rps-hand" data-rps-choice="paper">✋</button><button class="rps-hand" data-rps-choice="scissors">✌️</button></div>' : game.status === 'playing' ? '<p class="muted">Your hand is locked. Waiting for the other player.</p>' : '') + payoutText;
+      const localResult = game.id === 'local-bot' && result ? '<div class="rps-result ' + (result.winner === 'you' ? 'win' : result.winner === 'bot' ? 'loss' : 'tie') + '">' + (result.winner === 'you' ? 'DU GEWINNST · Bot: ' + result.opponentChoice : result.winner === 'bot' ? 'BOT GEWINNT · Bot: ' + result.opponentChoice : 'UNENTSCHIEDEN · Noch einmal testen') + '</div>' : '';
+      target.innerHTML = '<div class="rps-room-head"><div><span class="rps-kicker">4 PLAYER KNOCKOUT · ROUND ' + game.round + '</span><strong>Players ' + game.playerCount + '/4</strong></div><span class="rps-status-pill">' + game.status + '</span></div><div class="rps-player-roster">' + roster + '</div><div class="rps-money-grid"><div><small>TOTAL POT</small><b>' + Number(game.pot).toFixed(6) + ' TON</b></div><div><small>1ST PLACE · 60%</small><b>' + Number(game.winnerPayout).toFixed(6) + ' TON</b></div><div><small>2ND PLACE · 20%</small><b>' + Number(game.runnerUpPayout).toFixed(6) + ' TON</b></div><div><small>FEE · 20%</small><b>' + Number(game.platformFee).toFixed(6) + ' TON</b></div></div><p class="muted rps-round-message">' + matchText + '</p>' + (game.status === 'playing' && mine && game.match && !game.myChoice ? '<div class="rps-hand-row"><button class="rps-hand" data-rps-choice="rock">✊</button><button class="rps-hand" data-rps-choice="paper">✋</button><button class="rps-hand" data-rps-choice="scissors">✌️</button></div>' : game.status === 'playing' ? '<p class="muted">Watching this live match. Players are choosing their hands.</p>' : '') + localResult + payoutText;
       updateRps3D(game);
-      target.querySelectorAll('[data-rps-choice]').forEach((button) => button.addEventListener('click', () => playRps(game.id, button.dataset.rpsChoice)));
+      target.querySelectorAll('[data-rps-choice]').forEach((button) => button.addEventListener('click', () => game.id === 'local-bot' ? playLocalRps(button.dataset.rpsChoice) : playRps(game.id, button.dataset.rpsChoice)));
       return;
     }
     const result = game.result;
@@ -1241,26 +1290,43 @@
     target.querySelectorAll('[data-rps-choice]').forEach((button) => button.addEventListener('click', () => playRps(game.id, button.dataset.rpsChoice)));
   }
   function renderRpsGames(data){
+    rpsLobbyData = data;
     const list = document.getElementById('rpsGamesList');
     if (!list) return;
-    list.innerHTML = data.tournaments.length ? data.tournaments.map((game) => '<div class="rps-game-row"><div class="rps-game-meta"><strong>' + game.players.map((player) => player.name).join(', ') + '</strong><small>' + game.playerCount + '/4 players | Stake: ' + Number(game.stake).toFixed(6) + ' TON | Winner: ' + Number(game.winnerPayout).toFixed(6) + ' TON</small></div><button class="menu-btn" data-rps-join="' + game.id + '">Join tournament</button></div>').join('') : '<div class="muted">No open tournaments right now.</div>';
+    list.innerHTML = data.tournaments.length ? data.tournaments.map((game) => '<div class="rps-game-row"><div class="rps-game-meta"><strong>' + game.players.map((player) => player.name).join(', ') + '</strong><small>' + game.playerCount + '/4 players | ' + (game.status === 'playing' ? 'Round ' + game.round + ' · LIVE' : 'Waiting for players') + ' | Stake: ' + Number(game.stake).toFixed(6) + ' TON</small></div><button class="menu-btn ' + (game.status === 'playing' ? 'rps-room-watch' : '') + '" data-rps-' + (game.status === 'playing' ? 'watch' : 'join') + '="' + game.id + '">' + (game.status === 'playing' ? 'Watch' : 'Join tournament') + '</button></div>').join('') : '<div class="muted">No public tournaments right now.</div>';
     list.querySelectorAll('[data-rps-join]').forEach((button) => button.addEventListener('click', () => joinRps(button.dataset.rpsJoin)));
-    renderRpsGame(data.mine[0] || null, true);
+    list.querySelectorAll('[data-rps-watch]').forEach((button) => button.addEventListener('click', () => { rpsSpectatorGameId = button.dataset.rpsWatch; const game = data.tournaments.find((item) => item.id === rpsSpectatorGameId); showScreen('rps-game'); renderRpsGame(game, false); }));
+    const active = document.getElementById('rpsActivePlayers');
+    if (active) active.innerHTML = data.activeUsers && data.activeUsers.length ? '<div class="rps-active-list">' + data.activeUsers.map((player) => '<span class="rps-active-player"><i></i>' + player.name + '</span>').join('') + '</div>' : '<div class="muted">No active players right now.</div>';
+    const mine = data.mine[0] || (rpsSpectatorGameId ? data.tournaments.find((game) => game.id === rpsSpectatorGameId) : null);
+    renderRpsGame(mine, !!data.mine[0]);
   }
   async function loadRpsGames(){
-    if (!rpsAuthReady() || rpsLoading) return;
+    if (!rpsAuthReady()) {
+      const active = document.getElementById('rpsActivePlayers');
+      const games = document.getElementById('rpsGamesList');
+      if (active) active.innerHTML = '<div class="muted">Open the game inside Telegram to see online players.</div>';
+      if (games) games.innerHTML = '<div class="muted">Telegram login is required to create or join a tournament.</div>';
+      rpsLobbyData = { activeUsers: [] };
+      renderRpsGame(null, false);
+      return;
+    }
+    if (rpsLoading) return;
     rpsLoading = true;
     try {
       const response = await fetch(SERVER_URL + '/api/rps/tournaments?token=' + encodeURIComponent(serverSession.token));
       if (!response.ok) throw new Error('RPS lobby unavailable');
-      renderRpsGames(await response.json());
+      const data = await response.json();
+      if (!localRpsGame) renderRpsGames(data);
     } catch (e) { rpsMessage(e.message); }
     finally { rpsLoading = false; }
   }
   async function createRps(){
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return startLocalRpsBot();
     if (!rpsAuthReady()) return rpsMessage('Open the game in Telegram to play.');
-    const button = document.getElementById('rpsCreateBtn');
-    const stake = Number(document.getElementById('rpsStake').value);
+    const button = document.getElementById('rpsCreateDirectBtn') || document.getElementById('rpsCreateBtn');
+    const stakeInput = document.getElementById('rpsStakeDirect') || document.getElementById('rpsStake');
+    const stake = Number(stakeInput.value);
     button.disabled = true;
     rpsMessage('Creating game...');
     try {
@@ -1297,26 +1363,166 @@
     if (!response.ok) return rpsMessage(data.error || 'Could not play hand.');
     applyServerState(data.state); loadRpsGames();
   }
-  document.getElementById('rpsCreateBtn').addEventListener('click', createRps);
-  document.getElementById('rpsBackBtn').addEventListener('click', () => showScreen('game-menu'));
-  document.getElementById('rpsStake').addEventListener('input', () => {
+  async function loadGameLobby(){
+    const playersEl = document.getElementById('gameLobbyPlayers');
+    const statusEl = document.getElementById('gameLobbyStatus');
+    const countEl = document.getElementById('gameLobbyCount');
+    const roomsEl = document.getElementById('gameRoomList');
+    if (!playersEl) return;
+    if (!rpsAuthReady()) {
+      playersEl.innerHTML = '<div class="game-lobby-empty">Öffne das Spiel in Telegram, damit Online-Spieler angezeigt werden.</div>';
+      if (statusEl) statusEl.textContent = 'Telegram-Verbindung erforderlich';
+      if (countEl) countEl.textContent = '0 online';
+      if (roomsEl) roomsEl.innerHTML = '<div class="game-lobby-empty">Telegram-Verbindung erforderlich, um Räume zu betreten.</div>';
+      return;
+    }
+    try {
+      const response = await fetch(SERVER_URL + '/api/game/lobby?token=' + encodeURIComponent(serverSession.token));
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Lobby nicht verfügbar');
+      const players = data.players || [];
+      playersEl.innerHTML = players.length ? players.map((player, index) => '<div class="game-lobby-player"><div class="game-lobby-character"><img src="sprites/' + (index % 2 ? 'mann.png' : 'frau.png') + '" alt=""></div><strong>' + player.name + '<small><i></i> Online · ' + Number(player.balance || 0).toFixed(3) + ' TON</small></strong></div>').join('') : '<div class="game-lobby-empty">Noch keine Spieler online.</div>';
+      if (statusEl) statusEl.textContent = players.length + ' Spieler sind gerade online';
+      if (countEl) countEl.textContent = players.length + ' online';
+      const roomsResponse = await fetch(SERVER_URL + '/api/game/rooms?token=' + encodeURIComponent(serverSession.token));
+      const roomsData = await roomsResponse.json();
+      const activeRoom = (roomsData.rooms || []).find((room) => room.isPlayer && room.status === 'playing');
+      if (activeRoom) { showGameRoom(activeRoom); return; }
+      if (roomsEl) {
+        roomsEl.innerHTML = (roomsData.rooms || []).map((room) => '<div class="game-room-card"><div><strong>' + Number(room.stake).toFixed(3) + ' TON Raum</strong><span>' + room.playerCount + '/4 Spieler · ' + (room.status === 'playing' ? 'Läuft' : 'Offen') + ' · Gewinner 90%</span></div><button data-game-room="' + room.id + '" ' + (room.status !== 'open' || room.playerCount >= 4 || room.isPlayer ? 'disabled' : '') + '>' + (room.isPlayer ? 'Dabei' : room.status === 'open' ? 'Beitreten' : 'Voll') + '</button></div>').join('');
+        roomsEl.querySelectorAll('[data-game-room]').forEach((button) => button.addEventListener('click', () => joinGameRoom(button.dataset.gameRoom)));
+      }
+    } catch (error) {
+      if (statusEl) statusEl.textContent = 'Lobby konnte nicht geladen werden';
+    }
+  }
+  async function joinGameRoom(roomId){
+    if (!rpsAuthReady()) { rpsMessage('Bitte in Telegram öffnen, um einem Raum beizutreten.'); return; }
+    try {
+      const response = await fetch(SERVER_URL + '/api/game/rooms/join', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, roomId }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Raum konnte nicht betreten werden');
+      applyServerState(data.state);
+      if (data.room.status === 'playing') { showGameRoom(data.room); } else { loadGameLobby(); }
+    } catch (error) { const status = document.getElementById('gameLobbyStatus'); if (status) status.textContent = error.message; }
+  }
+  function showGameRoom(room){
+    const screen = document.getElementById('screen-rps-game');
+    const target = document.getElementById('rpsMyGame');
+    if (!screen || !target) return;
+    currentGameRoomId = room.id;
+    showScreen('rps-game');
+    target.innerHTML = '<div class="room-game-card"><div class="room-game-top"><span>3D KNOCKOUT · RUNDE ' + room.round + '</span><b>' + Number(room.stake).toFixed(3) + ' TON</b></div><div class="room-game-3d"><canvas id="roomGame3D"></canvas><span>LIVE ARENA</span></div><div class="room-game-players">' + room.players.map((player) => '<div class="room-game-player ' + (!player.alive ? 'out' : '') + '"><img src="sprites/' + (player.id === room.players[0].id ? 'frau.png' : 'mann.png') + '" alt=""><strong>' + player.name + '</strong><small>' + (player.selected ? '✓ gewählt' : player.alive ? 'wählt...' : 'OUT') + '</small></div>').join('') + '</div><div class="room-game-choice-title">' + (room.myChoice ? 'Auswahl gespeichert' : 'Wähle deine Karte') + '</div><div class="room-game-choices"><button data-room-choice="paper" ' + (room.myChoice ? 'disabled' : '') + '><img src="sprites/papier.png" alt="Papier"><span>PAPIER</span></button><button data-room-choice="scissors" ' + (room.myChoice ? 'disabled' : '') + '><img src="sprites/schere.png" alt="Schere"><span>SCHERE</span></button><button data-room-choice="rock" ' + (room.myChoice ? 'disabled' : '') + '><img src="sprites/stein.png" alt="Stein"><span>STEIN</span></button></div><div class="room-game-status">' + (room.result ? room.result.winnerName + ' gewinnt ' + Number(room.result.winnerPayout).toFixed(3) + ' TON' : room.myChoice ? '✓ Deine Wahl ist gespeichert. Warte auf die anderen Spieler.' : 'Alle wählen. Danach scheidet ein Spieler aus.') + '</div></div>';
+    initRoomGame3D();
+    target.querySelectorAll('[data-room-choice]').forEach((button) => button.addEventListener('click', () => chooseGameRoom(room.id, button.dataset.roomChoice)));
+  }
+  let roomGame3D = null;
+  function initRoomGame3D(){
+    if (roomGame3D || !window.THREE) return;
+    const canvas = document.getElementById('roomGame3D');
+    if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(42,2.4,.1,100); camera.position.set(0,1.8,7); camera.lookAt(0,.4,0);
+    scene.add(new THREE.AmbientLight(0xa887c7,1.7)); const light = new THREE.PointLight(0xffad32,2.4,14); light.position.set(0,4,4); scene.add(light);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.8,.06,12,64),new THREE.MeshBasicMaterial({color:0xa9e34b})); ring.rotation.x=Math.PI/2; scene.add(ring);
+    const files=['sprites/frau.png','sprites/mann.png','sprites/frau.png','sprites/mann.png']; const loader=new THREE.TextureLoader();
+    const cards=files.map((file,index)=>{ const material=new THREE.MeshBasicMaterial({transparent:true,side:THREE.DoubleSide,depthWrite:false}); const mesh=new THREE.Mesh(new THREE.PlaneGeometry(.75,1.5),material); const angle=index*Math.PI/2; mesh.position.set(Math.cos(angle)*1.35,0,Math.sin(angle)*1.35); mesh.rotation.y=-angle+Math.PI; loader.load(file,(texture)=>{material.map=texture;material.needsUpdate=true;}); scene.add(mesh); return mesh; });
+    function resize(){const rect=canvas.getBoundingClientRect();renderer.setSize(rect.width||500,rect.height||170,false);camera.aspect=(rect.width||500)/(rect.height||170);camera.updateProjectionMatrix();}
+    function animate(time){requestAnimationFrame(animate);ring.rotation.z=time*.0004;cards.forEach((card,index)=>{card.position.y=Math.sin(time*.0015+index)*.1;});renderer.render(scene,camera);}
+    roomGame3D={resize}; resize(); requestAnimationFrame(animate); window.addEventListener('resize',resize);
+  }
+  async function chooseGameRoom(roomId, choice){
+    if (!rpsAuthReady()) return;
+    const response = await fetch(SERVER_URL + '/api/game/rooms/choose', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, roomId, choice }) });
+    const data = await response.json();
+    if (response.ok) showGameRoom(data.room); else rpsMessage(data.error || 'Auswahl fehlgeschlagen');
+  }
+  async function refreshGameRoom(){
+    if (!rpsAuthReady() || !currentGameRoomId) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/game/rooms?token=' + encodeURIComponent(serverSession.token));
+      const data = await response.json();
+      const room = (data.rooms || []).find((item) => item.id === currentGameRoomId);
+      if (room && room.status === 'playing') showGameRoom(room);
+      else if (room && room.status === 'finished') showGameRoom(room);
+      else if (!room || room.status === 'open') { currentGameRoomId = null; showScreen('game-menu'); loadGameLobby(); }
+    } catch (error) { /* next poll retries */ }
+  }
+  let gameLobby3D = null;
+  function initGameLobby3D(){
+    if (gameLobby3D || !window.THREE) return;
+    const canvas = document.getElementById('gameLobby3D');
+    if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 2.4, .1, 100);
+    camera.position.set(0, 2.5, 8); camera.lookAt(0, .5, 0);
+    scene.add(new THREE.AmbientLight(0x9b77c4, 1.5));
+    const keyLight = new THREE.PointLight(0xffad32, 2.5, 14); keyLight.position.set(0, 4, 4); scene.add(keyLight);
+    const floor = new THREE.Mesh(new THREE.CylinderGeometry(2.25,2.25,.16,48), new THREE.MeshStandardMaterial({ color:0x321b46, emissive:0x1b0e25, metalness:.5, roughness:.34 }));
+    floor.position.y = -.8; scene.add(floor);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.05,.045,10,64), new THREE.MeshBasicMaterial({ color:0xa9e34b }));
+    ring.rotation.x = Math.PI/2; ring.position.y = -.68; scene.add(ring);
+    const characterLoader = new THREE.TextureLoader();
+    const characterFiles = ['sprites/frau.png','sprites/mann.png','sprites/frau.png','sprites/mann.png'];
+    const players = characterFiles.map((file,index) => {
+      const material = new THREE.MeshBasicMaterial({ transparent:true, side:THREE.DoubleSide, depthWrite:false });
+      const character = new THREE.Mesh(new THREE.PlaneGeometry(1.15,2.35), material);
+      const angle = index * Math.PI/2 + Math.PI/4;
+      character.position.set(Math.cos(angle)*1.5,.05,Math.sin(angle)*1.5);
+      character.rotation.y = -angle + Math.PI;
+      characterLoader.load(file, (texture) => { material.map = texture; material.needsUpdate = true; });
+      scene.add(character);
+      return character;
+    });
+    const cubes = []; for (let i=0;i<8;i++){ const cube = new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.12), new THREE.MeshBasicMaterial({ color: i%2 ? 0xffad32 : 0xa9e34b })); cube.position.set((i-3.5)*.45, .8 + (i%3)*.25, -.5 - (i%2)*.5); scene.add(cube); cubes.push(cube); }
+    function resize(){ const rect=canvas.getBoundingClientRect(); renderer.setSize(rect.width||420,rect.height||150,false); camera.aspect=(rect.width||420)/(rect.height||150); camera.updateProjectionMatrix(); }
+    function animate(time){ requestAnimationFrame(animate); ring.rotation.z=time*.00035; players.forEach((character,index)=>{ character.position.y=.05+Math.sin(time*.0015+index)*.12; character.rotation.z=Math.sin(time*.001+index)*.035; }); cubes.forEach((cube,index)=>{ cube.rotation.x=time*.001+index; cube.rotation.y=time*.0015; }); renderer.render(scene,camera); }
+    gameLobby3D = { resize }; resize(); requestAnimationFrame(animate); window.addEventListener('resize',resize);
+  }
+  const gameLobbyJoinButton = document.getElementById('gameLobbyJoinBtn');
+  if (gameLobbyJoinButton) gameLobbyJoinButton.addEventListener('click', () => {
+    const statusEl = document.getElementById('gameLobbyStatus');
+    if (statusEl) statusEl.textContent = rpsAuthReady() ? 'Du bist in der Lobby.' : 'Bitte in Telegram öffnen, um beizutreten.';
+  });
+  const rpsCreateButton = document.getElementById('rpsCreateBtn');
+  if (rpsCreateButton) rpsCreateButton.addEventListener('click', createRps);
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('#rpsCreateDirectBtn');
+    const isLocalBrowser = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!button || !isLocalBrowser) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    startLocalRpsBot();
+  }, true);
+  const rpsBackButton = document.getElementById('rpsBackBtn');
+  if (rpsBackButton) rpsBackButton.addEventListener('click', () => { localRpsGame = null; showScreen('game-menu'); });
+  const rpsStakeInput = document.getElementById('rpsStake');
+  if (rpsStakeInput) rpsStakeInput.addEventListener('input', () => {
     const stake = Number(document.getElementById('rpsStake').value) || 0;
     document.getElementById('rpsPayoutPreview').textContent = (stake * 2.4).toFixed(6) + ' TON';
   });
   setInterval(() => {
     const lobby = document.getElementById('screen-game-menu');
     const match = document.getElementById('screen-rps-game');
-    if ((lobby && lobby.classList.contains('active')) || (match && match.classList.contains('active'))) loadRpsGames();
+    if (!localRpsGame && lobby && lobby.classList.contains('active')) loadGameLobby();
+    else if (!localRpsGame && match && match.classList.contains('active') && currentGameRoomId) refreshGameRoom();
+    else if (!localRpsGame && match && match.classList.contains('active')) loadRpsGames();
   }, 5000);
   function showScreen(name){
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
     refreshTopUI();
     if (name === 'tournament') renderLeaderboard();
-    if (name === 'game-menu' || name === 'rps-game') loadRpsGames();
+    if (name === 'game-menu') initGameLobby3D();
+    if (!localRpsGame && name === 'game-menu') loadGameLobby();
+    if (!localRpsGame && name === 'rps-game' && currentGameRoomId) refreshGameRoom();
+    else if (!localRpsGame && name === 'rps-game') loadRpsGames();
   }
   navButtons.forEach(b => b.addEventListener('click', () => {
     if (b.dataset.screen === 'game' && b.classList.contains('play-btn')){ enterGame(); }
+    else if (b.dataset.screen === 'game-menu'){ showScreen('game-menu'); }
     else { showScreen(b.dataset.screen); }
   }));
   document.getElementById('toHomeBtn').addEventListener('click', () => showScreen('home'));
