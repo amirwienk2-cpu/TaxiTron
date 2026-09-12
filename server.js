@@ -296,22 +296,20 @@ function publicState(user) {
 const RPS_CHOICES = new Set(['rock', 'paper', 'scissors']);
 const RPS_MIN_STAKE = 0.001;
 const RPS_GAME_TTL_MS = 30 * 60 * 1000;
-const GAME_ROOM_STAKES = [0.001, 0.01, 0.1];
-const GAME_ROOM_RESET_DELAY_MS = 8000;
+const GAME_ROOM_STAKE = 0.001;
+const GAME_ROOM_RESET_DELAY_MS = 0;
 function gameRoomId(stake) { return 'room-' + String(stake).replace('.', '-'); }
 function createGameRoom(stake) {
   return { id: gameRoomId(stake), mode: 'room-knockout', stake, status: 'open', round: 0, players: [], choices: {}, result: null, resetAt: 0, createdAt: Date.now() };
 }
 function ensureGameRooms() {
   let changed = false;
-  GAME_ROOM_STAKES.forEach((stake) => {
-    const id = gameRoomId(stake);
-    const room = rpsGames[id];
-    if (!room || (room.status === 'finished' && room.resetAt && Date.now() >= room.resetAt)) {
-      rpsGames[id] = createGameRoom(stake);
-      changed = true;
-    }
-  });
+  const id = gameRoomId(GAME_ROOM_STAKE);
+  const room = rpsGames[id];
+  if (!room || room.status === 'finished') {
+    rpsGames[id] = createGameRoom(GAME_ROOM_STAKE);
+    changed = true;
+  }
   if (changed) persistRpsGames();
 }
 function gameRoomPublic(room, uid) {
@@ -865,7 +863,7 @@ app.get('/api/game/lobby', requireUserFromQuery, (req, res) => {
 
 app.get('/api/game/rooms', requireUserFromQuery, (req, res) => {
   ensureGameRooms();
-  res.json({ rooms: GAME_ROOM_STAKES.map((stake) => gameRoomPublic(rpsGames[gameRoomId(stake)], req.uid)) });
+  res.json({ rooms: [gameRoomPublic(rpsGames[gameRoomId(GAME_ROOM_STAKE)], req.uid)] });
 });
 
 app.post('/api/game/rooms/join', requireUserFromBody, (req, res) => {
