@@ -179,6 +179,15 @@
 
   <!-- GAME MENU -->
   <main class="screen" id="screen-game-menu">
+    <div class="game-lobby-panel">
+      <div class="game-lobby-header"><div><span class="game-lobby-kicker">TAXITRON ONLINE</span><h1>Game Lobby</h1><p>Alle Spieler im Raum sehen und gemeinsam beitreten.</p></div><span class="game-lobby-live"><i></i> LIVE</span></div>
+      <div class="game-lobby-3d"><canvas id="gameLobby3D"></canvas><span>2D LOBBY</span></div>
+      <div class="game-lobby-room"><div><strong>Offene Lobby</strong><span id="gameLobbyStatus">Warte auf Spieler...</span></div><b id="gameLobbyCount">0 online</b></div>
+      <div class="game-lobby-players" id="gameLobbyPlayers"><div class="game-lobby-empty">Spieler werden geladen...</div></div>
+      <div class="game-room-list" id="gameRoomList"><div class="game-lobby-empty">Räume werden geladen...</div></div>
+      <button class="game-lobby-join" id="gameLobbyJoinBtn" type="button">Lobby beitreten</button>
+      <div class="game-lobby-note">Die Spielerliste wird automatisch aktualisiert.</div>
+    </div>
     <div class="hero" style="padding:22px 20px;">
       <h1 style="font-size:1.3rem;">Game</h1>
       <p>Four-player knockout tournament. Losers are eliminated each round.</p>
@@ -191,14 +200,36 @@
       <div class="rps-payout-preview"><span>Winner payout</span><strong id="rpsPayoutPreview">0.002400 TON</strong><small>60% of the four-player pot</small></div>
       <div class="task-status" id="rpsStatus"></div>
     </div>
+    <div class="rps-card rps-active-card"><div class="rps-section-heading"><h2>Active players</h2><span class="rps-live-label">LIVE</span></div><div id="rpsActivePlayers"><div class="muted">Loading players...</div></div></div>
     <div class="rps-card"><h2>Open games</h2><div id="rpsGamesList"><div class="muted">Open the Game tab to load games.</div></div></div>
   </main>
 
   <!-- RPS MATCH -->
   <main class="screen" id="screen-rps-game">
-    <div class="rps-match-top"><button class="rps-back-button" id="rpsBackBtn">Back</button><span>LIVE MATCH</span><span class="rps-match-dot"></span></div>
-    <div class="rps-match-hero"><span class="rps-kicker">ROCK PAPER SCISSORS</span><h1>Choose your hand</h1><p>One hand each. The winner takes 90% of the pot.</p></div>
-    <div class="rps-match-card" id="rpsMyGameCard" hidden><div class="rps-3d-wrap"><canvas id="rps3dCanvas"></canvas></div><div id="rpsMyGame"></div></div>
+    <div class="rps-reference-layout">
+      <aside class="rps-reference-sidebar">
+        <div class="rps-profile"><div class="rps-profile-avatar">✎</div><div><strong id="rpsProfileName">Gast32</strong><span>Neuling</span><div class="rps-level-track"><i></i></div></div><b>0 LVL</b></div>
+        <div class="rps-sidebar-title"><strong>Live im Duell</strong><span>ONLINE</span></div>
+        <div class="rps-player-list" id="rpsReferencePlayers"></div>
+        <div class="rps-create-reference"><label for="rpsStakeDirect">Einsatz pro Spieler</label><div><input id="rpsStakeDirect" type="number" min="0.001" step="0.001" value="0.001"><span>TON</span></div><button id="rpsCreateDirectBtn" type="button" onclick="window.startLocalRpsBot && window.startLocalRpsBot()">Spiel erstellen</button><small>4 Spieler · Gewinner 60%</small></div>
+        <div class="rps-sidebar-spacer"></div>
+        <div class="rps-shop-banner"><strong>Shop</strong><span>🪙 0</span><small>Werbung entfernen</small></div>
+        <div class="rps-discord">◉ &nbsp; T R E T E  U N S E R E M<br>DISCORDSERVER BEI</div>
+        <div class="rps-sidebar-footer"><span>◖</span><span>▣</span><span>♟</span><span>⚙</span></div>
+      </aside>
+      <section class="rps-reference-board">
+        <header><strong>Nachtduell</strong><span class="rps-round-badge">RUNDE 1</span><button id="rpsBackBtn">Zur Lobby</button></header>
+        <div class="rps-reference-arena">
+          <div class="rps-reference-opponents" id="rpsReferenceOpponents"></div>
+          <div class="rps-reference-dots">•••</div>
+          <div class="rps-reference-choice"><button data-rps-choice="rock"><span class="rps-choice-mark">R</span><strong>STEIN</strong></button><button data-rps-choice="paper"><span class="rps-choice-mark">P</span><strong>PAPIER</strong></button><button data-rps-choice="scissors"><span class="rps-choice-mark">S</span><strong>SCHERE</strong></button></div>
+          <div class="rps-reference-hearts">♥♥♥♥<span>♥</span></div>
+          <div class="rps-reference-status" id="rpsMyGame"></div>
+          <div class="rps-3d-wrap"><canvas id="rps3dCanvas"></canvas></div>
+        </div>
+      </section>
+    </div>
+    <div class="rps-match-card" id="rpsMyGameCard" hidden></div>
   </main>
 
   <!-- GAME (3D) -->
@@ -248,6 +279,6 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="app.js?v=level3-x30"></script>
+<script src="app.js?v=level3-x40-rooms-3d"></script>
 </body>
 </html>
