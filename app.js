@@ -1160,6 +1160,52 @@
   const navButtons = document.querySelectorAll('.bottomnav button');
   let rpsLoading = false;
   const rpsLabels = { rock: '✊ Rock', paper: '✋ Paper', scissors: '✌️ Scissors' };
+  let rps3d = null;
+  function makeRpsLabel(text, color){
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 160;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = color; ctx.font = 'bold 64px Segoe UI'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, 256, 80);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent:true }));
+    sprite.scale.set(2.5, .78, 1);
+    return sprite;
+  }
+  function initRps3D(){
+    if (rps3d || !window.THREE) return;
+    const canvas = document.getElementById('rps3dCanvas');
+    if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, 2.6, .1, 100);
+    camera.position.set(0, 4.8, 9); camera.lookAt(0, 1, 0);
+    scene.add(new THREE.AmbientLight(0x9daeff, 1.4));
+    const light = new THREE.PointLight(0xffd56a, 2.4, 20); light.position.set(0, 5, 4); scene.add(light);
+    const floor = new THREE.Mesh(new THREE.CylinderGeometry(5.3, 5.3, .35, 48), new THREE.MeshStandardMaterial({ color:0x151b35, metalness:.45, roughness:.35 }));
+    floor.position.y = -.25; scene.add(floor);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(4.2, .06, 12, 64), new THREE.MeshBasicMaterial({ color:0xffd56a }));
+    ring.rotation.x = Math.PI/2; ring.position.y = -.05; scene.add(ring);
+    const left = new THREE.Mesh(new THREE.BoxGeometry(2.4, .55, 2.1), new THREE.MeshStandardMaterial({ color:0x1e5aa8, metalness:.3, roughness:.3 }));
+    const right = new THREE.Mesh(new THREE.BoxGeometry(2.4, .55, 2.1), new THREE.MeshStandardMaterial({ color:0x8d294b, metalness:.3, roughness:.3 }));
+    left.position.set(-2.8, .15, 0); right.position.set(2.8, .15, 0); scene.add(left, right);
+    const vs = makeRpsLabel('VS', '#ffd56a'); vs.position.set(0, 1.1, 0); scene.add(vs);
+    const leftLabel = makeRpsLabel('PLAYER', '#a9d5ff'); leftLabel.position.set(-2.8, 1.15, 0); scene.add(leftLabel);
+    const rightLabel = makeRpsLabel('OPPONENT', '#ffb2c8'); rightLabel.position.set(2.8, 1.15, 0); scene.add(rightLabel);
+    const leftHand = makeRpsLabel('?', '#ffffff'); leftHand.position.set(-2.8, 2.35, 0); scene.add(leftHand);
+    const rightHand = makeRpsLabel('?', '#ffffff'); rightHand.position.set(2.8, 2.35, 0); scene.add(rightHand);
+    function resize(){ const rect = canvas.getBoundingClientRect(); renderer.setSize(rect.width || 520, rect.height || 190, false); camera.aspect = (rect.width || 520) / (rect.height || 190); camera.updateProjectionMatrix(); }
+    function animate(time){ requestAnimationFrame(animate); ring.rotation.z = time * .00025; renderer.render(scene, camera); }
+    rps3d = { scene, renderer, camera, canvas, leftHand, rightHand, resize, animate };
+    resize(); requestAnimationFrame(animate); window.addEventListener('resize', resize);
+  }
+  function updateRps3D(game){
+    initRps3D(); if (!rps3d || !game) return;
+    const icon = { rock:'✊', paper:'✋', scissors:'✌️' };
+    const leftText = game.result ? icon[game.result.creatorChoice] : game.isCreator && game.myChoice ? icon[game.myChoice] : '?';
+    const rightText = game.result ? icon[game.result.opponentChoice] : !game.isCreator && game.myChoice ? icon[game.myChoice] : '?';
+    [ [rps3d.leftHand, leftText], [rps3d.rightHand, rightText] ].forEach(([sprite, text]) => { sprite.material.map.dispose(); const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=160; const ctx=canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.font='bold 92px Segoe UI'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(text,256,80); sprite.material.map=new THREE.CanvasTexture(canvas); sprite.material.needsUpdate=true; });
+  }
   function rpsAuthReady(){ return SERVER_URL && serverSession.online && serverSession.token; }
   function rpsMessage(text){ const el = document.getElementById('rpsStatus'); if (el) el.textContent = text; }
   function renderRpsGame(game, mine){
@@ -1169,6 +1215,7 @@
     card.hidden = !game;
     if (!game) return;
     const result = game.result;
+    updateRps3D(game);
     const handLabel = { rock:'Rock', paper:'Paper', scissors:'Scissors' };
     const handIcon = { rock:'✊', paper:'✋', scissors:'✌️' };
     const roomInfo = '<div class="rps-room-head"><div><span class="rps-kicker">MATCH ROOM</span><strong>' + (game.creatorName || 'Player') + ' <i>VS</i> ' + (game.opponentName || 'Waiting...') + '</strong></div><span class="rps-status-pill">' + game.status + '</span></div><div class="rps-money-grid"><div><small>STAKE EACH</small><b>' + Number(game.stake).toFixed(6) + ' TON</b></div><div><small>TOTAL POT</small><b>' + Number(game.pot).toFixed(6) + ' TON</b></div><div><small>WINNER PAYOUT</small><b>' + Number(game.winnerPayout).toFixed(6) + ' TON</b></div><div><small>PLATFORM 10%</small><b>' + Number(game.platformFee).toFixed(6) + ' TON</b></div></div>';
