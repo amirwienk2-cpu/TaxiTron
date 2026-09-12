@@ -325,7 +325,7 @@ function gameRoomPublic(room, uid) {
   return {
     id: room.id, stake: room.stake, status: room.status, round: room.round,
     playerCount: room.players.length, maxPlayers: 4,
-    players: room.players.map((player) => ({ id: String(player.id), name: player.name, balance: Number(users[String(player.id)]?.ton || 0), alive: player.alive, selected: room.choices[String(player.id)] ? true : false })),
+    players: room.players.map((player) => ({ id: String(player.id), name: player.name, isMe: String(player.id) === String(uid), balance: Number(users[String(player.id)]?.ton || 0), alive: player.alive, selected: room.choices[String(player.id)] ? true : false })),
     isPlayer: room.players.some((player) => String(player.id) === String(uid)),
     myChoice: room.choices[String(uid)] || null,
     pot: room.stake * 4,

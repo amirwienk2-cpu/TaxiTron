@@ -476,6 +476,7 @@
   let players = [];
   let round = 1;
   let locked = false;
+  let liveRoom = false;
 
   const phaseBanner = document.getElementById('phaseBanner');
   const resultLine = document.getElementById('resultLine');
@@ -510,6 +511,29 @@
     updatePhaseBanner();
     startRound();
   }
+
+  function applyLiveRoom(room){
+    liveRoom = true;
+    locked = false;
+    const orderedPlayers = (room.players || []).slice().sort((first, second) => Number(second.isMe) - Number(first.isMe));
+    players = orderedPlayers.map((player, index) => ({ id:index, name:player.name, human:!!player.isMe, alive:player.alive !== false, choice:null }));
+    round = room.round || 1;
+    players.forEach((player) => {
+      const nameEl = document.getElementById('name-' + player.id);
+      const avatarEl = document.getElementById('avatar-' + player.id);
+      const pedestal = document.getElementById('pedestal-' + player.id);
+      if (nameEl) nameEl.textContent = player.name;
+      if (avatarEl) avatarEl.textContent = player.name.charAt(0).toUpperCase();
+      if (pedestal) pedestal.classList.toggle('out', player.alive === false);
+    });
+    updatePhaseBanner();
+    const localChoice = { rock:'stein', paper:'papier', scissors:'schere' }[room.myChoice] || null;
+    controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = !!localChoice; button.classList.toggle('picked', button.dataset.move === localChoice); });
+    waitingNote.textContent = room.myChoice ? 'Choice locked. Waiting for the other players...' : 'Choose your move.';
+  }
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'taxitron-room-state') applyLiveRoom(event.data.room);
+  });
 
   function alivePlayers(){ return players.filter(p=>p.alive); }
 
@@ -548,6 +572,14 @@
     if(!btn || locked) return;
     locked = true;
     const move = btn.dataset.move;
+    if (liveRoom) {
+      locked = true;
+      controls.querySelectorAll('.choice-btn').forEach((button) => { button.disabled = true; button.classList.toggle('picked', button === btn); });
+      waitingNote.textContent = 'Choice locked. Waiting for the other players...';
+      const serverChoice = { stein:'rock', papier:'paper', schere:'scissors' }[move];
+      window.parent.postMessage({ type:'taxitron-choice', choice:serverChoice }, '*');
+      return;
+    }
     controls.querySelectorAll('.choice-btn').forEach(b=>{
       b.disabled = true;
       if(b === btn) b.classList.add('picked');
