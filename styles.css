@@ -248,8 +248,19 @@
   .rps-card h2{ margin:0 0 6px; font-size:1rem; }
   .rps-card p{ margin:0 0 12px; }
   .rps-create-row{ display:flex; gap:8px; align-items:center; }
-  .rps-create-row input{ min-width:0; width:110px; padding:11px; border-radius:10px; border:1px solid #3b3850; background:#0e0e16; color:#fff; }
-  .rps-create-row .menu-btn{ margin:0; flex:1; }
+  .rps-create-card{ margin:18px 20px; padding:18px; border:1px solid #6b5420; border-radius:16px; background:linear-gradient(145deg,#211d16,#13131c 58%,#1c1828); box-shadow:0 12px 26px rgba(0,0,0,.25); }
+  .rps-create-heading{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .rps-create-heading h2{ margin:0; font-size:1.15rem; }
+  .rps-create-mark{ width:42px; height:42px; display:flex; align-items:center; justify-content:center; border:1px solid #ffd56a; border-radius:50%; color:#ffd56a; font-weight:900; font-size:.72rem; }
+  .rps-input-label{ display:block; margin:15px 0 6px; color:#e8e6ef; font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.6px; }
+  .rps-stake-input{ display:flex; align-items:center; min-width:0; flex:1; padding:0 12px; border:1px solid #554824; border-radius:10px; background:#0c0c12; }
+  .rps-stake-input input{ min-width:0; width:100%; padding:12px 0; border:0; outline:0; background:transparent; color:#fff; font-size:1rem; font-weight:800; }
+  .rps-stake-input span{ color:#ffd56a; font-size:.75rem; font-weight:900; }
+  .rps-create-row .menu-btn{ margin:0; flex:0 0 43%; }
+  .rps-create-button{ background:linear-gradient(180deg,#ffd56a,#d49b24); color:#211705; box-shadow:0 4px 0 #805d19; }
+  .rps-payout-preview{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:14px; padding:11px 12px; border-radius:10px; background:rgba(255,213,106,.08); border:1px solid rgba(255,213,106,.22); }
+  .rps-payout-preview span,.rps-payout-preview small{ color:#bdb5a2; font-size:.68rem; }
+  .rps-payout-preview strong{ color:#8fffb0; font-size:.86rem; }
   .rps-game-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid #302d40; }
   .rps-game-row:last-child{ border-bottom:0; }
   .rps-game-meta{ min-width:0; }
