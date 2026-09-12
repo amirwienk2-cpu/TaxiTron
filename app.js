@@ -1421,9 +1421,21 @@
     if (!frame) return;
     currentGameRoomId = room.id;
     const params = (room.players || []).map((player, index) => 'p' + index + '=' + encodeURIComponent(player.name)).join('&');
-    frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-1';
+    if (frame.dataset.roomId !== room.id || frame.hidden) {
+      frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-2';
+      frame.dataset.roomId = room.id;
+    }
     frame.hidden = false;
+    frame.onload = () => sendRoomToGameFrame(room);
   }
+  function sendRoomToGameFrame(room){
+    const frame = document.getElementById('gameExperienceFrame');
+    if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type:'taxitron-room-state', room }, '*');
+  }
+  window.addEventListener('message', (event) => {
+    if (!event.data || event.data.type !== 'taxitron-choice' || !currentGameRoomId) return;
+    chooseGameRoom(currentGameRoomId, event.data.choice);
+  });
   function showGameRoom(room){
     const screen = document.getElementById('screen-rps-game');
     const target = document.getElementById('rpsMyGame');
@@ -1451,7 +1463,7 @@
     if (!rpsAuthReady()) return;
     const response = await fetch(SERVER_URL + '/api/game/rooms/choose', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, roomId, choice }) });
     const data = await response.json();
-    if (response.ok) showGameRoom(data.room); else rpsMessage(data.error || 'Auswahl fehlgeschlagen');
+    if (response.ok) { showGameHtml(data.room); sendRoomToGameFrame(data.room); } else rpsMessage(data.error || 'Auswahl fehlgeschlagen');
   }
   async function refreshGameRoom(){
     if (!rpsAuthReady() || !currentGameRoomId) return;
@@ -1459,7 +1471,7 @@
       const response = await fetch(SERVER_URL + '/api/game/rooms?token=' + encodeURIComponent(serverSession.token));
       const data = await response.json();
       const room = (data.rooms || []).find((item) => item.id === currentGameRoomId);
-      if (room && room.status === 'playing') showGameHtml(room);
+      if (room && room.status === 'playing') { showGameHtml(room); sendRoomToGameFrame(room); }
       else if (room && room.status === 'finished') showGameHtml(room);
       else if (!room || room.status === 'open') { currentGameRoomId = null; showScreen('game-menu'); loadGameLobby(); }
     } catch (error) { /* next poll retries */ }
