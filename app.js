@@ -1541,7 +1541,7 @@
     if (!localRpsGame && lobby && lobby.classList.contains('active')) loadGameLobby();
     else if (!localRpsGame && match && match.classList.contains('active') && currentGameRoomId) refreshGameRoom();
     else if (!localRpsGame && match && match.classList.contains('active')) loadRpsGames();
-  }, 5000);
+  }, 500);
   function showScreen(name){
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
