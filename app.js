@@ -1355,7 +1355,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     // images are cropped tight to the visible object (no transparent padding),
     // so the bottom edge of the sprite is the bottom of the tree / wreck
     const imgAspect = 1;
-    const height = isTree ? 2.6 : 2.8;
+    const height = isTree ? 2.6 : 3.6;
     const width = height * imgAspect;
     const skinMat = new THREE.MeshBasicMaterial({
       map: tex,
@@ -1716,12 +1716,6 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       spawnPerson();
       personTimer = 3.2 + Math.random()*2.4;
     }
-    // spawn weapon power-up every 1000m of distance
-    if (distance >= nextWeaponDist){
-      spawnWeapon();
-      nextWeaponDist += 1000;
-    }
-
     // move obstacles
     for (let i=obstacles.length-1;i>=0;i--){
       const o = obstacles[i];
