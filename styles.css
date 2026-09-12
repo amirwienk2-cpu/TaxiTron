@@ -436,6 +436,7 @@
   .hero-badge{ background:radial-gradient(circle at 35% 28%,#ffb338,#8f2b18 72%,#35111d); border-color:#d35b25; box-shadow:0 0 22px rgba(255,123,34,.35); }
   #screen-rps-game{ font-family:Georgia,'Times New Roman',serif; }
   #screen-rps-game{ display:none; position:fixed; inset:0; z-index:40; overflow:auto; background:#100b18; }
+  #screen-rps-game .room-game-3d,#screen-rps-game .room-game-choices,#screen-rps-game .room-game-choice-title{ display:none !important; }
   #screen-rps-game.active{ display:block; }
   #screen-game-menu > *{ display:none !important; }
   #screen-game-menu > .game-lobby-panel{ display:block !important; }
