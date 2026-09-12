@@ -485,11 +485,14 @@
   const centerEmblem = document.getElementById('centerEmblem');
 
   function initPlayers(){
+    const params = new URLSearchParams(window.location.search);
+    const roomNames = [0,1,2,3].map((id) => params.get('p' + id)).filter(Boolean);
+    const names = roomNames.length === 4 ? roomNames : ['You','Krax','Vello','Orna'];
     players = [
-      { id:0, name:'You', human:true, alive:true, choice:null },
-      { id:1, name:BOT_NAMES[0], human:false, alive:true, choice:null },
-      { id:2, name:BOT_NAMES[1], human:false, alive:true, choice:null },
-      { id:3, name:BOT_NAMES[2], human:false, alive:true, choice:null },
+      { id:0, name:names[0], human:true, alive:true, choice:null },
+      { id:1, name:names[1], human:false, alive:true, choice:null },
+      { id:2, name:names[2], human:false, alive:true, choice:null },
+      { id:3, name:names[3], human:false, alive:true, choice:null },
     ];
     round = 1;
     players.forEach(p=>{
