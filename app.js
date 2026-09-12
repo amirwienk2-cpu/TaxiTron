@@ -1188,7 +1188,7 @@
       const material = handMaterial(color);
       const palm = new THREE.Mesh(new THREE.BoxGeometry(1.25, .45, 1.05), material);
       palm.position.y = .45; group.add(palm);
-      const addFinger = (x, y, z, length, rotation) => { const finger = new THREE.Mesh(new THREE.CapsuleGeometry(.16, length, 6, 12), material); finger.position.set(x, y, z); finger.rotation.z = rotation || 0; group.add(finger); };
+      const addFinger = (x, y, z, length, rotation) => { const finger = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, length, 12), material); finger.position.set(x, y, z); finger.rotation.z = rotation || 0; group.add(finger); };
       if (choice === 'rock' || choice === '?') addFinger(0, .95, 0, .55, 0);
       if (choice === 'paper') for (let i=-2; i<=2; i++) addFinger(i*.25, 1.2, 0, 1.05, 0);
       if (choice === 'scissors'){ addFinger(-.25, 1.25, 0, 1.15, -.28); addFinger(.25, 1.25, 0, 1.15, .28); }
@@ -1206,7 +1206,7 @@
     initRps3D(); if (!rps3d || !game) return;
     const leftChoice = game.result ? game.result.creatorChoice : game.isCreator && game.myChoice ? game.myChoice : '?';
     const rightChoice = game.result ? game.result.opponentChoice : !game.isCreator && game.myChoice ? game.myChoice : '?';
-    const replaceHand = (side, choice, color) => { const position = side.position.clone(); const rotation = side.rotation.clone(); rps3d.scene.remove(side); const next = (choice === 'rock' || choice === 'paper' || choice === 'scissors') ? (function(){ const group = new THREE.Group(); const material = new THREE.MeshStandardMaterial({ color, metalness:.15, roughness:.32 }); const palm = new THREE.Mesh(new THREE.BoxGeometry(1.25,.45,1.05), material); palm.position.y=.45; group.add(palm); const finger = (x,y,z,length,rot) => { const f=new THREE.Mesh(new THREE.CapsuleGeometry(.16,length,6,12),material); f.position.set(x,y,z); f.rotation.z=rot||0; group.add(f); }; if(choice==='rock') finger(0,.95,0,.55,0); if(choice==='paper') for(let i=-2;i<=2;i++) finger(i*.25,1.2,0,1.05,0); if(choice==='scissors'){finger(-.25,1.25,0,1.15,-.28);finger(.25,1.25,0,1.15,.28);} return group; })() : makeRpsLabel('?', '#ffffff'); next.position.copy(position); next.rotation.copy(rotation); rps3d.scene.add(next); return next; };
+    const replaceHand = (side, choice, color) => { const position = side.position.clone(); const rotation = side.rotation.clone(); rps3d.scene.remove(side); const next = (choice === 'rock' || choice === 'paper' || choice === 'scissors') ? (function(){ const group = new THREE.Group(); const material = new THREE.MeshStandardMaterial({ color, metalness:.15, roughness:.32 }); const palm = new THREE.Mesh(new THREE.BoxGeometry(1.25,.45,1.05), material); palm.position.y=.45; group.add(palm); const finger = (x,y,z,length,rot) => { const f=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,length,12),material); f.position.set(x,y,z); f.rotation.z=rot||0; group.add(f); }; if(choice==='rock') finger(0,.95,0,.55,0); if(choice==='paper') for(let i=-2;i<=2;i++) finger(i*.25,1.2,0,1.05,0); if(choice==='scissors'){finger(-.25,1.25,0,1.15,-.28);finger(.25,1.25,0,1.15,.28);} return group; })() : makeRpsLabel('?', '#ffffff'); next.position.copy(position); next.rotation.copy(rotation); rps3d.scene.add(next); return next; };
     rps3d.leftHand = replaceHand(rps3d.leftHand, leftChoice, 0x4b9cff);
     rps3d.rightHand = replaceHand(rps3d.rightHand, rightChoice, 0xff5f82);
   }
@@ -1285,6 +1285,10 @@
     applyServerState(data.state); loadRpsGames();
   }
   document.getElementById('rpsCreateBtn').addEventListener('click', createRps);
+  document.getElementById('rpsStake').addEventListener('input', () => {
+    const stake = Number(document.getElementById('rpsStake').value) || 0;
+    document.getElementById('rpsPayoutPreview').textContent = (stake * 1.8).toFixed(6) + ' TON';
+  });
   setInterval(() => { if (document.getElementById('screen-game-menu').classList.contains('active')) loadRpsGames(); }, 5000);
   function showScreen(name){
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));

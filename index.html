@@ -183,10 +183,12 @@
       <h1 style="font-size:1.3rem;">Game</h1>
       <p>Rock, paper, scissors against another player.</p>
     </div>
-    <div class="rps-card">
-      <h2>Open a game</h2>
-      <p class="muted">Set a TON stake. The winner receives both stakes.</p>
-      <div class="rps-create-row"><input id="rpsStake" type="number" min="0.001" step="0.001" value="0.001"><button class="menu-btn" id="rpsCreateBtn">Create game</button></div>
+    <div class="rps-create-card">
+      <div class="rps-create-heading"><div><span class="rps-kicker">PLAYER MATCH</span><h2>Create a challenge</h2></div><span class="rps-create-mark">VS</span></div>
+      <p class="muted">Choose your stake. Your opponent matches it and the winner receives 90% of the pot.</p>
+      <label class="rps-input-label" for="rpsStake">Your stake</label>
+      <div class="rps-create-row"><div class="rps-stake-input"><input id="rpsStake" type="number" min="0.001" step="0.001" value="0.001"><span>TON</span></div><button class="menu-btn rps-create-button" id="rpsCreateBtn">Create game</button></div>
+      <div class="rps-payout-preview"><span>Winner payout</span><strong id="rpsPayoutPreview">0.001800 TON</strong><small>10% platform fee included</small></div>
       <div class="task-status" id="rpsStatus"></div>
     </div>
     <div class="rps-card"><h2>Open games</h2><div id="rpsGamesList"><div class="muted">Open the Game tab to load games.</div></div></div>
