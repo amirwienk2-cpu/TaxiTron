@@ -700,8 +700,8 @@ app.post('/api/rps/play', requireUserFromBody, (req, res) => {
   if (game.creatorChoice && game.opponentChoice){
     const winner = rpsWinner(game.creatorChoice, game.opponentChoice);
     const pot = game.stake * 2;
-    const platformFee = winner === 'tie' ? 0 : pot * 0.1;
-    const winnerPayout = winner === 'tie' ? game.stake : pot - platformFee;
+    const platformFee = winner === 'tie' ? 0 : Number((pot * 0.1).toFixed(9));
+    const winnerPayout = winner === 'tie' ? game.stake : Number((pot - platformFee).toFixed(9));
     game.result = { winner, creatorChoice: game.creatorChoice, opponentChoice: game.opponentChoice, payout: winnerPayout, platformFee };
     game.status = 'finished';
     if (winner === 'tie'){
