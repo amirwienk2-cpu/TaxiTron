@@ -374,7 +374,7 @@
     color:var(--amber-bright);
     margin-bottom:6px;
   }
-  .modal-sub{ font-size:13px; color:#c9bda2; margin-bottom:20px; }
+  .modal-sub{ font-size:13px; color:#c9bda2; margin-bottom:20px; white-space:pre-line; }
   .restart-btn{
     font-family:'Inter',sans-serif;
     font-weight:700;
@@ -435,6 +435,12 @@
     display:block;
     margin-top:4px;
     color:#c9bda2;
+    line-height:1.4;
+  }
+  .history-choices{
+    display:block;
+    margin-top:4px;
+    color:#e7d8b5;
     line-height:1.4;
   }
   .history-payout{
@@ -564,7 +570,8 @@
     }
     historyList.innerHTML = history.map((entry) => {
       const playersText = entry.players.map((name) => escapeHtml(name)).join(', ');
-      return '<article class="history-item"><span class="history-winner">Gewinner: ' + escapeHtml(entry.winner) + '</span><span class="history-players">Mitgespielt: ' + playersText + '</span><span class="history-payout">Gewinn: ' + escapeHtml(entry.payout) + '</span></article>';
+      const choicesText = (entry.choices || []).map((choice) => escapeHtml(choice)).join(' · ');
+      return '<article class="history-item"><span class="history-winner">Gewinner: ' + escapeHtml(entry.winner) + '</span><span class="history-players">Mitgespielt: ' + playersText + '</span>' + (choicesText ? '<span class="history-choices">Wahlen: ' + choicesText + '</span>' : '') + '<span class="history-payout">Gewinn: ' + escapeHtml(entry.payout) + '</span></article>';
     }).join('');
   }
 
@@ -572,10 +579,10 @@
     return String(value).replace(/[&<>"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[character]));
   }
 
-  function addHistoryEntry(winner, playerNames, payout, id){
+  function addHistoryEntry(winner, playerNames, payout, id, choices){
     const history = readHistory();
     if (id && history.some((entry) => entry.id === id)) return;
-    history.unshift({ id:id || 'local-' + Date.now(), winner:winner || 'Unbekannt', players:playerNames.filter(Boolean), payout:payout || '0.000 TON' });
+    history.unshift({ id:id || 'local-' + Date.now(), winner:winner || 'Unbekannt', players:playerNames.filter(Boolean), choices:(choices || []).filter(Boolean), payout:payout || '0.000 TON' });
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
     renderHistory();
   }
@@ -592,10 +599,10 @@
     const roomNames = [0,1,2,3].map((id) => params.get('p' + id)).filter(Boolean);
     const names = roomNames.length === 4 ? roomNames : ['Waiting...','Waiting...','Waiting...','Waiting...'];
     players = [
-      { id:0, name:names[0], human:true, alive:true, choice:null },
-      { id:1, name:names[1], human:false, alive:true, choice:null },
-      { id:2, name:names[2], human:false, alive:true, choice:null },
-      { id:3, name:names[3], human:false, alive:true, choice:null },
+      { id:0, name:names[0], human:true, alive:true, choice:null, lastChoice:null },
+      { id:1, name:names[1], human:false, alive:true, choice:null, lastChoice:null },
+      { id:2, name:names[2], human:false, alive:true, choice:null, lastChoice:null },
+      { id:3, name:names[3], human:false, alive:true, choice:null, lastChoice:null },
     ];
     round = 1;
     players.forEach(p=>{
@@ -682,7 +689,10 @@
         resultLine.classList.remove('round-win');
       }
       if (room.result && room.result.winnerName) {
-        addHistoryEntry(room.result.winnerName, (room.players || []).map((player) => player.name), Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON', room.id + ':' + room.result.winnerId);
+        const finalChoices = (room.players || []).filter((player) => player.choice).map((player) => player.name + ': ' + LABEL[{ rock:'stein', papier:'papier', schere:'schere' }[player.choice] || player.choice] + ' ' + ICONS[{ rock:'stein', papier:'papier', schere:'schere' }[player.choice] || player.choice]);
+        resultLine.textContent = finalChoices.join(' · ') + ' · Gewinner: ' + room.result.winnerName + ' · Gewinn: ' + Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON';
+        resultLine.classList.add('round-win');
+        addHistoryEntry(room.result.winnerName, (room.players || []).map((player) => player.name), Number(room.result.winnerPayout || room.winnerPayout || 0).toFixed(3) + ' TON', room.id + ':' + room.result.winnerId, finalChoices);
       }
     }
     if ((room.players || []).length < 4) {
@@ -775,6 +785,7 @@
   function resolveRound(active){
     const moves = active.map(p=>p.choice);
     const distinct = [...new Set(moves)];
+    active.forEach((player) => { player.lastChoice = player.choice; });
 
     if(distinct.length === 1 || distinct.length === 3){
       resultLine.textContent = 'Draw — everyone plays again!';
@@ -807,7 +818,7 @@
     setTimeout(()=>{
       const remaining = alivePlayers();
       if(remaining.length === 1){
-        showWinner(remaining[0]);
+        showWinner(remaining[0], active);
       } else {
         round++;
         startRound();
@@ -815,12 +826,16 @@
     }, 1900);
   }
 
-  function showWinner(winner){
-    addHistoryEntry(winner.name, players.map((player) => player.name), localPayout());
+  function showWinner(winner, finalPlayers){
+    const choices = players.filter((player) => player.lastChoice || player.choice).map((player) => {
+      const choice = player.choice || player.lastChoice;
+      return player.name + ': ' + LABEL[choice] + ' ' + ICONS[choice];
+    });
+    resultLine.textContent = choices.join(' · ') + ' · Gewinner: ' + winner.name + ' · Gewinn: ' + localPayout();
+    resultLine.classList.add('round-win');
+    addHistoryEntry(winner.name, players.map((player) => player.name), localPayout(), null, choices);
     document.getElementById('modalTitle').textContent = winner.human ? 'You win!' : winner.name + ' wins!';
-    document.getElementById('modalSub').textContent = winner.human
-      ? 'You defeated all three opponents in the arena.'
-      : winner.name + ' conquered the arena. Choose better next time.';
+    document.getElementById('modalSub').textContent = choices.join('\n') + '\n\nGewinner: ' + winner.name + '\nGewinn: ' + localPayout();
     document.getElementById('modalCrown').textContent = winner.human ? '🏆' : '💀';
     modalOverlay.classList.add('show');
   }
