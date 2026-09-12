@@ -1179,32 +1179,36 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(42, 2.6, .1, 100);
-    camera.position.set(0, 4.8, 9); camera.lookAt(0, 1, 0);
-    scene.add(new THREE.AmbientLight(0x9daeff, 1.4));
-    const light = new THREE.PointLight(0xffd56a, 2.4, 20); light.position.set(0, 5, 4); scene.add(light);
-    const floor = new THREE.Mesh(new THREE.CylinderGeometry(5.3, 5.3, .35, 48), new THREE.MeshStandardMaterial({ color:0x151b35, metalness:.45, roughness:.35 }));
-    floor.position.y = -.25; scene.add(floor);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(4.2, .06, 12, 64), new THREE.MeshBasicMaterial({ color:0xffd56a }));
-    ring.rotation.x = Math.PI/2; ring.position.y = -.05; scene.add(ring);
-    const left = new THREE.Mesh(new THREE.BoxGeometry(2.4, .55, 2.1), new THREE.MeshStandardMaterial({ color:0x1e5aa8, metalness:.3, roughness:.3 }));
-    const right = new THREE.Mesh(new THREE.BoxGeometry(2.4, .55, 2.1), new THREE.MeshStandardMaterial({ color:0x8d294b, metalness:.3, roughness:.3 }));
-    left.position.set(-2.8, .15, 0); right.position.set(2.8, .15, 0); scene.add(left, right);
-    const vs = makeRpsLabel('VS', '#ffd56a'); vs.position.set(0, 1.1, 0); scene.add(vs);
-    const leftLabel = makeRpsLabel('PLAYER', '#a9d5ff'); leftLabel.position.set(-2.8, 1.15, 0); scene.add(leftLabel);
-    const rightLabel = makeRpsLabel('OPPONENT', '#ffb2c8'); rightLabel.position.set(2.8, 1.15, 0); scene.add(rightLabel);
-    const leftHand = makeRpsLabel('?', '#ffffff'); leftHand.position.set(-2.8, 2.35, 0); scene.add(leftHand);
-    const rightHand = makeRpsLabel('?', '#ffffff'); rightHand.position.set(2.8, 2.35, 0); scene.add(rightHand);
+    camera.position.set(0, 1.7, 9); camera.lookAt(0, 1.2, 0);
+    scene.add(new THREE.AmbientLight(0xaab8e8, 1.6));
+    const light = new THREE.PointLight(0xffd56a, 2.2, 20); light.position.set(0, 5, 5); scene.add(light);
+    const handMaterial = (color) => new THREE.MeshStandardMaterial({ color, metalness:.15, roughness:.32 });
+    function buildHand(choice, color){
+      const group = new THREE.Group();
+      const material = handMaterial(color);
+      const palm = new THREE.Mesh(new THREE.BoxGeometry(1.25, .45, 1.05), material);
+      palm.position.y = .45; group.add(palm);
+      const addFinger = (x, y, z, length, rotation) => { const finger = new THREE.Mesh(new THREE.CapsuleGeometry(.16, length, 6, 12), material); finger.position.set(x, y, z); finger.rotation.z = rotation || 0; group.add(finger); };
+      if (choice === 'rock' || choice === '?') addFinger(0, .95, 0, .55, 0);
+      if (choice === 'paper') for (let i=-2; i<=2; i++) addFinger(i*.25, 1.2, 0, 1.05, 0);
+      if (choice === 'scissors'){ addFinger(-.25, 1.25, 0, 1.15, -.28); addFinger(.25, 1.25, 0, 1.15, .28); }
+      group.scale.set(.95, .95, .95); return group;
+    }
+    const leftHand = buildHand('?', 0x4b9cff); leftHand.position.set(-2.4, 0, 0); leftHand.rotation.y = .18;
+    const rightHand = buildHand('?', 0xff5f82); rightHand.position.set(2.4, 0, 0); rightHand.rotation.y = -.18;
+    scene.add(leftHand, rightHand);
     function resize(){ const rect = canvas.getBoundingClientRect(); renderer.setSize(rect.width || 520, rect.height || 190, false); camera.aspect = (rect.width || 520) / (rect.height || 190); camera.updateProjectionMatrix(); }
-    function animate(time){ requestAnimationFrame(animate); ring.rotation.z = time * .00025; renderer.render(scene, camera); }
-    rps3d = { scene, renderer, camera, canvas, leftHand, rightHand, resize, animate };
+    function animate(time){ requestAnimationFrame(animate); leftHand.rotation.y = .18 + Math.sin(time*.001)*.08; rightHand.rotation.y = -.18 - Math.sin(time*.001)*.08; renderer.render(scene, camera); }
+    rps3d = { scene, renderer, camera, canvas, leftHand, rightHand, resize, animate, handMaterial };
     resize(); requestAnimationFrame(animate); window.addEventListener('resize', resize);
   }
   function updateRps3D(game){
     initRps3D(); if (!rps3d || !game) return;
-    const icon = { rock:'✊', paper:'✋', scissors:'✌️' };
-    const leftText = game.result ? icon[game.result.creatorChoice] : game.isCreator && game.myChoice ? icon[game.myChoice] : '?';
-    const rightText = game.result ? icon[game.result.opponentChoice] : !game.isCreator && game.myChoice ? icon[game.myChoice] : '?';
-    [ [rps3d.leftHand, leftText], [rps3d.rightHand, rightText] ].forEach(([sprite, text]) => { sprite.material.map.dispose(); const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=160; const ctx=canvas.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.font='bold 92px Segoe UI'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(text,256,80); sprite.material.map=new THREE.CanvasTexture(canvas); sprite.material.needsUpdate=true; });
+    const leftChoice = game.result ? game.result.creatorChoice : game.isCreator && game.myChoice ? game.myChoice : '?';
+    const rightChoice = game.result ? game.result.opponentChoice : !game.isCreator && game.myChoice ? game.myChoice : '?';
+    const replaceHand = (side, choice, color) => { const position = side.position.clone(); const rotation = side.rotation.clone(); rps3d.scene.remove(side); const next = (choice === 'rock' || choice === 'paper' || choice === 'scissors') ? (function(){ const group = new THREE.Group(); const material = new THREE.MeshStandardMaterial({ color, metalness:.15, roughness:.32 }); const palm = new THREE.Mesh(new THREE.BoxGeometry(1.25,.45,1.05), material); palm.position.y=.45; group.add(palm); const finger = (x,y,z,length,rot) => { const f=new THREE.Mesh(new THREE.CapsuleGeometry(.16,length,6,12),material); f.position.set(x,y,z); f.rotation.z=rot||0; group.add(f); }; if(choice==='rock') finger(0,.95,0,.55,0); if(choice==='paper') for(let i=-2;i<=2;i++) finger(i*.25,1.2,0,1.05,0); if(choice==='scissors'){finger(-.25,1.25,0,1.15,-.28);finger(.25,1.25,0,1.15,.28);} return group; })() : makeRpsLabel('?', '#ffffff'); next.position.copy(position); next.rotation.copy(rotation); rps3d.scene.add(next); return next; };
+    rps3d.leftHand = replaceHand(rps3d.leftHand, leftChoice, 0x4b9cff);
+    rps3d.rightHand = replaceHand(rps3d.rightHand, rightChoice, 0xff5f82);
   }
   function rpsAuthReady(){ return SERVER_URL && serverSession.online && serverSession.token; }
   function rpsMessage(text){ const el = document.getElementById('rpsStatus'); if (el) el.textContent = text; }
