@@ -257,7 +257,14 @@
   }
 
   function todayStr(){
-    return new Date().toISOString().slice(0,10);
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Berlin',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return values.year + '-' + values.month + '-' + values.day;
   }
   /* ---- Daily passive TON reward earned from owned taxi skins (e.g. Level 2 / Level 3) ---- */
   function creditSkinRewards(){
@@ -284,9 +291,15 @@
     if (store.pointsDate !== t){
       store.pointsDate = t;
       store.pointsToday = 0;
+      saveStore();
     }
     creditSkinRewards();
   }
+  setInterval(() => {
+    const previousDate = store.pointsDate;
+    ensureDailyReset();
+    if (store.pointsDate !== previousDate) refreshTopUI();
+  }, 30000);
   function addPointsFromCoins(coinsAdded){
     ensureDailyReset();
     const rawGain = (coinsAdded / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
