@@ -875,7 +875,7 @@
         lastPersonScore += reward;
         savePending();
         refreshTopUI();
-        statusEl.textContent = 'Completed. +500 monsters added to your wallet.';
+        statusEl.textContent = 'Completed. +500 Zombies added to your wallet.';
       } else {
         statusEl.textContent = 'Completed. Reward already claimed.';
       }
