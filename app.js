@@ -1387,7 +1387,9 @@
       const roomsResponse = await fetch(SERVER_URL + '/api/game/rooms?token=' + encodeURIComponent(serverSession.token));
       const roomsData = await roomsResponse.json();
       const activeRoom = (roomsData.rooms || []).find((room) => room.isPlayer && room.status === 'playing');
-      if (activeRoom) { showGameRoom(activeRoom); return; }
+      if (activeRoom) { showGameHtml(activeRoom); return; }
+      const gameFrame = document.getElementById('gameExperienceFrame');
+      if (gameFrame) { gameFrame.hidden = true; gameFrame.removeAttribute('src'); }
       if (roomsEl) {
         const room = roomsData.rooms && roomsData.rooms[0];
         const roomPlayers = room && room.players && room.players.length ? room.players.map((player) => '<b class="game-room-player-name"><i></i>' + player.name + '</b>').join('') : '<span class="game-room-empty">No players have joined yet.</span>';
@@ -1410,8 +1412,16 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Raum konnte nicht betreten werden');
       applyServerState(data.state);
-      if (data.room.status === 'playing') { showGameRoom(data.room); } else { loadGameLobby(); }
+      if (data.room.status === 'playing') { showGameHtml(data.room); } else { loadGameLobby(); }
     } catch (error) { const status = document.getElementById('gameLobbyStatus'); if (status) status.textContent = error.message; }
+  }
+  function showGameHtml(room){
+    const frame = document.getElementById('gameExperienceFrame');
+    if (!frame) return;
+    currentGameRoomId = room.id;
+    const params = (room.players || []).map((player, index) => 'p' + index + '=' + encodeURIComponent(player.name)).join('&');
+    frame.src = 'Game.html?room=' + encodeURIComponent(room.id) + '&' + params + '&v=room-live-1';
+    frame.hidden = false;
   }
   function showGameRoom(room){
     const screen = document.getElementById('screen-rps-game');
@@ -1448,8 +1458,8 @@
       const response = await fetch(SERVER_URL + '/api/game/rooms?token=' + encodeURIComponent(serverSession.token));
       const data = await response.json();
       const room = (data.rooms || []).find((item) => item.id === currentGameRoomId);
-      if (room && room.status === 'playing') showGameRoom(room);
-      else if (room && room.status === 'finished') showGameRoom(room);
+      if (room && room.status === 'playing') showGameHtml(room);
+      else if (room && room.status === 'finished') showGameHtml(room);
       else if (!room || room.status === 'open') { currentGameRoomId = null; showScreen('game-menu'); loadGameLobby(); }
     } catch (error) { /* next poll retries */ }
   }

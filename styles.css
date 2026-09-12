@@ -440,6 +440,9 @@
   #screen-rps-game.active{ display:block; }
   #screen-game-menu > *{ display:none !important; }
   #screen-game-menu > .game-lobby-panel{ display:block !important; }
+  #screen-game-menu > .game-experience-frame{ display:block !important; }
+  .game-experience-frame{ width:100%; height:760px; margin-top:12px; border:1px solid #6b3d78; border-radius:14px; background:#151210; overflow:hidden; }
+  .game-experience-frame[hidden]{ display:none !important; }
   .game-lobby-panel{ margin:8px 0; padding:13px; border:1px solid #6b3d78; border-radius:14px; background:linear-gradient(145deg,#24142e,#130d1a); box-shadow:0 8px 18px rgba(0,0,0,.3); }
   .game-lobby-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
   .game-lobby-kicker{ display:block; color:#a9e34b; font-size:10px; font-weight:900; letter-spacing:2px; }
@@ -477,6 +480,7 @@
   @media(max-width:620px){ .room-game-card{ padding:12px 10px; }.room-game-players{ gap:6px; margin:14px 0; }.room-game-player{ padding:7px; }.room-game-player img{ width:36px; height:48px; }.room-game-player strong{ font-size:.65rem; }.room-game-choices img{ width:52px; height:52px; } }
   .game-lobby-join{ width:100%; margin-top:9px; padding:9px; border:0; border-radius:8px; background:linear-gradient(180deg,#ffad32,#e9572f); color:#25110a; font:900 .75rem Georgia,serif; cursor:pointer; box-shadow:0 3px 0 #873019; }.game-lobby-join:active{ transform:translateY(2px); box-shadow:0 1px 0 #873019; }.game-lobby-note{ margin-top:6px; color:#8f7c9a; font-size:.58rem; text-align:center; }
   @media(max-width:620px){ .game-lobby-panel{ margin:5px 0; padding:10px; }.game-lobby-header h1{ font-size:1.15rem; }.game-lobby-3d{ height:100px; }.game-lobby-players{ gap:4px; max-height:190px; }.game-lobby-player{ padding:5px; }.game-lobby-player strong{ font-size:.62rem; } }
+  @media(max-width:620px){ .game-experience-frame{ height:720px; border-radius:10px; } }
   #screen-game-menu:before{ content:none; display:none; }
   #screen-rps-game .rps-reference-arena:before{ content:none !important; }
   /* Original TaxiTron duel board, independent from the reference image. */
