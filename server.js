@@ -370,7 +370,8 @@ function resolveGameRoom(room) {
   room.lastRoundChoices = { ...room.choices };
   if (unique.size === 2) {
     const pair = Array.from(unique);
-    loserChoice = rpsWinner(pair[0], pair[1]) === 'creator' ? pair[1] : pair[0];
+    const winnerChoice = winningChoice(pair[0], pair[1]);
+    loserChoice = winnerChoice === pair[0] ? pair[1] : pair[0];
   } else {
     const loser = active[Math.floor(Math.random() * active.length)];
     loser.alive = false; loser.eliminated = true;
@@ -408,8 +409,13 @@ function rpsPublicGame(game, uid) {
 }
 function rpsWinner(first, second) {
   if (first === second) return 'tie';
-  if ((first === 'rock' && second === 'scissors') || (first === 'paper' && second === 'rock') || (first === 'scissors' && second === 'paper')) return 'creator';
+  if (winningChoice(first, second) === first) return 'creator';
   return 'opponent';
+}
+function winningChoice(first, second) {
+  if (first === second) return 'tie';
+  const wins = { rock:'scissors', paper:'rock', scissors:'paper' };
+  return wins[first] === second ? first : second;
 }
 function expireRpsGames() {
   let changed = false;
