@@ -325,13 +325,67 @@ function expireRpsGames() {
   Object.keys(rpsGames).forEach((id) => {
     const game = rpsGames[id];
     if (game.status !== 'open' || Date.now() < game.expiresAt) return;
-    const user = users[String(game.creatorId)];
-    if (user) user.ton += game.stake;
+    if (game.mode === 'four-player') {
+      (game.players || []).forEach((player) => {
+        const user = users[String(player.id)];
+        if (user) user.ton += game.stake;
+      });
+    } else {
+      const user = users[String(game.creatorId)];
+      if (user) user.ton += game.stake;
+    }
     game.status = 'cancelled';
     game.result = 'expired-refund';
     changed = true;
   });
   if (changed) { persist(); persistRpsGames(); }
+}
+
+function rpsTournamentPublic(game, uid) {
+  const players = game.players || [];
+  const pot = game.stake * 4;
+  const me = players.find((player) => String(player.id) === String(uid));
+  const match = (game.matches || []).find((item) => (item.a === uid || item.b === uid) && !item.winner);
+  return {
+    id: game.id, mode: 'four-player', status: game.status, round: game.round || 0,
+    stake: game.stake, pot, winnerPayout: pot * 0.6, runnerUpPayout: pot * 0.2, platformFee: pot * 0.2,
+    players: players.map((player) => ({ id: player.id, name: player.name, alive: player.alive, eliminated: player.eliminated })),
+    playerCount: players.length, maxPlayers: 4, isPlayer: !!me,
+    myChoice: me ? me.choice || null : null,
+    match: match ? { opponentName: players.find((player) => String(player.id) === String(String(match.a) === String(uid) ? match.b : match.a))?.name || 'Opponent' } : null,
+    result: game.result || null,
+  };
+}
+function makeTournamentMatches(playerIds) {
+  return [{ a: playerIds[0], b: playerIds[1], aChoice: null, bChoice: null, winner: null }, { a: playerIds[2], b: playerIds[3], aChoice: null, bChoice: null, winner: null }];
+}
+function resolveTournamentMatch(game, match) {
+  if (!match.aChoice || !match.bChoice) return false;
+  const winner = rpsWinner(match.aChoice, match.bChoice);
+  if (winner === 'tie') { match.aChoice = null; match.bChoice = null; return false; }
+  match.winner = winner === 'creator' ? match.a : match.b;
+  const loser = match.winner === match.a ? match.b : match.a;
+  const winnerPlayer = game.players.find((player) => player.id === match.winner);
+  const loserPlayer = game.players.find((player) => player.id === loser);
+  if (winnerPlayer) winnerPlayer.choice = null;
+  if (loserPlayer) { loserPlayer.alive = false; loserPlayer.eliminated = true; loserPlayer.choice = null; }
+  return true;
+}
+function advanceTournament(game) {
+  if (!game.matches.every((match) => match.winner)) return;
+  const winners = game.matches.map((match) => match.winner);
+  if (game.round === 1) { game.round = 2; game.matches = [{ a: winners[0], b: winners[1], aChoice: null, bChoice: null, winner: null }]; return; }
+  const winnerId = winners[0];
+  const runnerUpId = winnerId === game.matches[0].a ? game.matches[0].b : game.matches[0].a;
+  const pot = game.stake * 4;
+  const winnerPayout = Number((pot * 0.6).toFixed(9));
+  const runnerUpPayout = Number((pot * 0.2).toFixed(9));
+  const platformFee = Number((pot * 0.2).toFixed(9));
+  users[String(winnerId)].ton += winnerPayout;
+  users[String(runnerUpId)].ton += runnerUpPayout;
+  if (PLATFORM_USER_ID && users[PLATFORM_USER_ID]) users[PLATFORM_USER_ID].ton += platformFee;
+  game.status = 'finished';
+  game.result = { winnerId, runnerUpId, winnerPayout, runnerUpPayout, platformFee, pot };
 }
 
 // ---------------------------------------------------------------
@@ -716,6 +770,56 @@ app.post('/api/rps/play', requireUserFromBody, (req, res) => {
   }
   persistRpsGames();
   res.json({ state: publicState(user), game: rpsPublicGame(game, user.id) });
+});
+
+// ---- Four-player knockout RPS tournaments ----
+app.get('/api/rps/tournaments', requireUserFromQuery, (req, res) => {
+  const uid = String(req.uid);
+  const tournaments = Object.values(rpsGames).filter((game) => game.mode === 'four-player' && game.status === 'open' && !game.players.some((player) => String(player.id) === uid)).map((game) => rpsTournamentPublic(game, uid));
+  const mine = Object.values(rpsGames).filter((game) => game.mode === 'four-player' && game.players.some((player) => String(player.id) === uid) && game.status !== 'finished').slice(-1).map((game) => rpsTournamentPublic(game, uid));
+  const finished = Object.values(rpsGames).filter((game) => game.mode === 'four-player' && game.players.some((player) => String(player.id) === uid) && game.status === 'finished').slice(-1).map((game) => rpsTournamentPublic(game, uid));
+  res.json({ tournaments, mine: mine.length ? mine : finished });
+});
+
+app.post('/api/rps/tournaments/create', requireUserFromBody, (req, res) => {
+  const stake = Number(req.body && req.body.stake);
+  if (!Number.isFinite(stake) || stake < RPS_MIN_STAKE || stake > 1000) return res.status(400).json({ error: 'invalid-stake' });
+  const user = req.user;
+  if (user.ton < stake) return res.status(400).json({ error: 'insufficient-funds' });
+  const id = crypto.randomUUID();
+  user.ton -= stake;
+  rpsGames[id] = { id, mode:'four-player', stake, players:[{ id:user.id, name:user.name, alive:true, eliminated:false, choice:null }], status:'open', round:0, matches:[], result:null, createdAt:Date.now(), expiresAt:Date.now() + RPS_GAME_TTL_MS };
+  persist(); persistRpsGames();
+  res.json({ state: publicState(user), game: rpsTournamentPublic(rpsGames[id], user.id) });
+});
+
+app.post('/api/rps/tournaments/join', requireUserFromBody, (req, res) => {
+  const game = rpsGames[String(req.body && req.body.gameId)];
+  if (!game || game.mode !== 'four-player' || game.status !== 'open') return res.status(404).json({ error:'tournament-not-open' });
+  const user = req.user;
+  if (game.players.some((player) => String(player.id) === String(user.id))) return res.status(409).json({ error:'already-joined' });
+  if (user.ton < game.stake) return res.status(400).json({ error:'insufficient-funds' });
+  user.ton -= game.stake;
+  game.players.push({ id:user.id, name:user.name, alive:true, eliminated:false, choice:null });
+  if (game.players.length === 4) { game.status = 'playing'; game.round = 1; game.matches = makeTournamentMatches(game.players.map((player) => player.id)); }
+  persist(); persistRpsGames();
+  res.json({ state: publicState(user), game: rpsTournamentPublic(game, user.id) });
+});
+
+app.post('/api/rps/tournaments/play', requireUserFromBody, (req, res) => {
+  const game = rpsGames[String(req.body && req.body.gameId)];
+  const choice = String(req.body && req.body.choice || '');
+  if (!game || game.mode !== 'four-player' || game.status !== 'playing') return res.status(404).json({ error:'tournament-not-playing' });
+  if (!RPS_CHOICES.has(choice)) return res.status(400).json({ error:'invalid-choice' });
+  const uid = String(req.user.id);
+  const match = game.matches.find((item) => (String(item.a) === uid || String(item.b) === uid) && !item.winner);
+  if (!match) return res.status(403).json({ error:'not-active-player' });
+  if (String(match.a) === uid) { if (match.aChoice) return res.status(409).json({ error:'choice-already-made' }); match.aChoice = choice; }
+  else { if (match.bChoice) return res.status(409).json({ error:'choice-already-made' }); match.bChoice = choice; }
+  resolveTournamentMatch(game, match);
+  advanceTournament(game);
+  persist(); persistRpsGames();
+  res.json({ state: publicState(req.user), game: rpsTournamentPublic(game, uid) });
 });
 
 // ---- Withdraw ----

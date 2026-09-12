@@ -1218,6 +1218,17 @@
     if (!card || !target) return;
     card.hidden = !game;
     if (!game) return;
+    if (game.mode === 'four-player'){
+      const players = game.players || [];
+      const roster = players.map((player) => '<span class="rps-player-chip ' + (player.eliminated ? 'eliminated' : '') + '">' + player.name + (player.eliminated ? ' OUT' : '') + '</span>').join('');
+      const result = game.result;
+      const matchText = game.match ? 'Your opponent: ' + game.match.opponentName : game.status === 'open' ? 'Waiting for ' + (4 - game.playerCount) + ' more players.' : 'Your semifinal is complete. Waiting for the other match.';
+      const payoutText = result ? '<div class="rps-result win">Winner receives ' + Number(result.winnerPayout).toFixed(6) + ' TON · 2nd receives ' + Number(result.runnerUpPayout).toFixed(6) + ' TON</div>' : '';
+      target.innerHTML = '<div class="rps-room-head"><div><span class="rps-kicker">4 PLAYER KNOCKOUT · ROUND ' + game.round + '</span><strong>Players ' + game.playerCount + '/4</strong></div><span class="rps-status-pill">' + game.status + '</span></div><div class="rps-player-roster">' + roster + '</div><div class="rps-money-grid"><div><small>TOTAL POT</small><b>' + Number(game.pot).toFixed(6) + ' TON</b></div><div><small>1ST PLACE · 60%</small><b>' + Number(game.winnerPayout).toFixed(6) + ' TON</b></div><div><small>2ND PLACE · 20%</small><b>' + Number(game.runnerUpPayout).toFixed(6) + ' TON</b></div><div><small>FEE · 20%</small><b>' + Number(game.platformFee).toFixed(6) + ' TON</b></div></div><p class="muted rps-round-message">' + matchText + '</p>' + (game.status === 'playing' && game.match && !game.myChoice ? '<div class="rps-hand-row"><button class="rps-hand" data-rps-choice="rock">✊</button><button class="rps-hand" data-rps-choice="paper">✋</button><button class="rps-hand" data-rps-choice="scissors">✌️</button></div>' : game.status === 'playing' ? '<p class="muted">Your hand is locked. Waiting for the other player.</p>' : '') + payoutText;
+      updateRps3D(game);
+      target.querySelectorAll('[data-rps-choice]').forEach((button) => button.addEventListener('click', () => playRps(game.id, button.dataset.rpsChoice)));
+      return;
+    }
     const result = game.result;
     updateRps3D(game);
     const handLabel = { rock:'Rock', paper:'Paper', scissors:'Scissors' };
@@ -1232,7 +1243,7 @@
   function renderRpsGames(data){
     const list = document.getElementById('rpsGamesList');
     if (!list) return;
-    list.innerHTML = data.games.length ? data.games.map((game) => '<div class="rps-game-row"><div class="rps-game-meta"><strong>' + game.creatorName + '</strong><small>Stake: ' + Number(game.stake).toFixed(6) + ' TON | Winner: ' + Number(game.winnerPayout).toFixed(6) + ' TON</small></div><button class="menu-btn" data-rps-join="' + game.id + '">Join room</button></div>').join('') : '<div class="muted">No open games right now.</div>';
+    list.innerHTML = data.tournaments.length ? data.tournaments.map((game) => '<div class="rps-game-row"><div class="rps-game-meta"><strong>' + game.players.map((player) => player.name).join(', ') + '</strong><small>' + game.playerCount + '/4 players | Stake: ' + Number(game.stake).toFixed(6) + ' TON | Winner: ' + Number(game.winnerPayout).toFixed(6) + ' TON</small></div><button class="menu-btn" data-rps-join="' + game.id + '">Join tournament</button></div>').join('') : '<div class="muted">No open tournaments right now.</div>';
     list.querySelectorAll('[data-rps-join]').forEach((button) => button.addEventListener('click', () => joinRps(button.dataset.rpsJoin)));
     renderRpsGame(data.mine[0] || null, true);
   }
@@ -1240,7 +1251,7 @@
     if (!rpsAuthReady() || rpsLoading) return;
     rpsLoading = true;
     try {
-      const response = await fetch(SERVER_URL + '/api/rps/games?token=' + encodeURIComponent(serverSession.token));
+      const response = await fetch(SERVER_URL + '/api/rps/tournaments?token=' + encodeURIComponent(serverSession.token));
       if (!response.ok) throw new Error('RPS lobby unavailable');
       renderRpsGames(await response.json());
     } catch (e) { rpsMessage(e.message); }
@@ -1253,7 +1264,7 @@
     button.disabled = true;
     rpsMessage('Creating game...');
     try {
-      const response = await fetch(SERVER_URL + '/api/rps/create', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, stake }) });
+      const response = await fetch(SERVER_URL + '/api/rps/tournaments/create', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, stake }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not create game.');
       applyServerState(data.state); rpsMessage('Game opened. Waiting for an opponent.'); loadRpsGames();
@@ -1268,7 +1279,7 @@
     if (!rpsAuthReady()) return rpsMessage('Open the game in Telegram to join.');
     rpsMessage('Joining room...');
     try {
-      const response = await fetch(SERVER_URL + '/api/rps/join', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId }) });
+      const response = await fetch(SERVER_URL + '/api/rps/tournaments/join', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not join game.');
       applyServerState(data.state);
@@ -1281,7 +1292,7 @@
     }
   }
   async function playRps(gameId, choice){
-    const response = await fetch(SERVER_URL + '/api/rps/play', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId, choice }) });
+    const response = await fetch(SERVER_URL + '/api/rps/tournaments/play', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ token:serverSession.token, gameId, choice }) });
     const data = await response.json();
     if (!response.ok) return rpsMessage(data.error || 'Could not play hand.');
     applyServerState(data.state); loadRpsGames();
@@ -1290,7 +1301,7 @@
   document.getElementById('rpsBackBtn').addEventListener('click', () => showScreen('game-menu'));
   document.getElementById('rpsStake').addEventListener('input', () => {
     const stake = Number(document.getElementById('rpsStake').value) || 0;
-    document.getElementById('rpsPayoutPreview').textContent = (stake * 1.8).toFixed(6) + ' TON';
+    document.getElementById('rpsPayoutPreview').textContent = (stake * 2.4).toFixed(6) + ' TON';
   });
   setInterval(() => {
     const lobby = document.getElementById('screen-game-menu');
