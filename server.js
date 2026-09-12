@@ -298,9 +298,36 @@ const RPS_MIN_STAKE = 0.001;
 const RPS_GAME_TTL_MS = 30 * 60 * 1000;
 const GAME_ROOM_STAKE = 0.001;
 const GAME_ROOM_RESET_DELAY_MS = 0;
+const GAME_ROUND_TIMEOUT_MS = 18 * 1000;
+const GAME_PLAYER_OFFLINE_MS = 35 * 1000;
+const GAME_RANDOM_CHOICES = ['rock', 'paper', 'scissors'];
 function gameRoomId(stake) { return 'room-' + String(stake).replace('.', '-'); }
 function createGameRoom(stake) {
-  return { id: gameRoomId(stake), mode: 'room-knockout', stake, status: 'open', round: 0, players: [], choices: {}, revealedChoices: {}, lastRoundChoices: {}, lastRoundWinners: [], result: null, resetAt: 0, createdAt: Date.now() };
+  return { id: gameRoomId(stake), mode: 'room-knockout', stake, status: 'open', round: 0, roundStartedAt: 0, players: [], choices: {}, revealedChoices: {}, lastRoundChoices: {}, lastRoundWinners: [], result: null, resetAt: 0, createdAt: Date.now() };
+}
+function resetGameRoom(room) {
+  room.players.forEach((player) => {
+    const user = users[String(player.id)];
+    if (user) user.ton += room.stake;
+  });
+  rpsGames[room.id] = createGameRoom(GAME_ROOM_STAKE);
+}
+function enforceGameRoomTimeout(room) {
+  if (!room || room.mode !== 'room-knockout' || room.status !== 'playing' || !room.roundStartedAt) return false;
+  const now = Date.now();
+  const disconnected = room.players.some((player) => player.alive && now - Number(users[String(player.id)]?.lastSeenAt || 0) > GAME_PLAYER_OFFLINE_MS);
+  if (disconnected) {
+    resetGameRoom(room);
+    return true;
+  }
+  const active = room.players.filter((player) => player.alive);
+  if (now - room.roundStartedAt < GAME_ROUND_TIMEOUT_MS) return false;
+  active.forEach((player) => {
+    const uid = String(player.id);
+    if (!room.choices[uid]) room.choices[uid] = GAME_RANDOM_CHOICES[Math.floor(Math.random() * GAME_RANDOM_CHOICES.length)];
+  });
+  resolveGameRoom(room);
+  return true;
 }
 function ensureGameRooms() {
   let changed = false;
@@ -317,9 +344,11 @@ function ensureGameRooms() {
   } else if (room.mode === 'room-knockout' && room.players.length >= 4 && room.status === 'open') {
     room.status = 'playing';
     room.round = room.round || 1;
+    room.roundStartedAt = Date.now();
     changed = true;
   }
-  if (changed) persistRpsGames();
+  if (room && enforceGameRoomTimeout(room)) changed = true;
+  if (changed) { persist(); persistRpsGames(); }
 }
 function gameRoomPublic(room, uid) {
   const playerCount = Array.isArray(room.players) ? room.players.length : 0;
@@ -348,11 +377,11 @@ function resolveGameRoom(room) {
   const choices = active.map((player) => room.choices[String(player.id)]).filter(Boolean);
   if (choices.length !== active.length) return;
   const unique = new Set(choices);
-  if (unique.size === 1) { room.lastRoundChoices = { ...room.choices }; room.lastRoundWinners = []; room.choices = {}; room.round += 1; return; }
+  if (unique.size === 1) { room.lastRoundChoices = { ...room.choices }; room.lastRoundWinners = []; room.choices = {}; room.round += 1; room.roundStartedAt = Date.now(); return; }
   if (active.length === 2) {
     room.revealedChoices = { ...room.choices };
     const winnerSide = rpsWinner(choices[0], choices[1]);
-    if (winnerSide === 'tie') { room.lastRoundChoices = { ...room.choices }; room.lastRoundWinners = []; room.choices = {}; room.round += 1; return; }
+    if (winnerSide === 'tie') { room.lastRoundChoices = { ...room.choices }; room.lastRoundWinners = []; room.choices = {}; room.round += 1; room.roundStartedAt = Date.now(); return; }
     const winner = winnerSide === 'creator' ? active[0] : active[1];
     const loser = winner === active[0] ? active[1] : active[0];
     loser.alive = false; loser.eliminated = true;
@@ -365,6 +394,7 @@ function resolveGameRoom(room) {
     if (PLATFORM_USER_ID && users[PLATFORM_USER_ID]) users[PLATFORM_USER_ID].ton += fee;
     room.result = { winnerId: String(winner.id), winnerName: winner.name, winnerPayout, fee };
     room.resetAt = Date.now() + GAME_ROOM_RESET_DELAY_MS;
+    room.roundStartedAt = 0;
     return;
   }
   let loserChoice = null;
@@ -380,6 +410,7 @@ function resolveGameRoom(room) {
     room.lastRoundWinners = [];
     room.choices = {};
     room.round += 1;
+    room.roundStartedAt = Date.now();
     return;
   }
   if (loserChoice) {
@@ -389,6 +420,7 @@ function resolveGameRoom(room) {
   }
   room.choices = {};
   room.round += 1;
+  room.roundStartedAt = Date.now();
   const remaining = room.players.filter((player) => player.alive);
   if (remaining.length === 2) { room.round += 1; }
 }
@@ -894,6 +926,7 @@ app.get('/api/game/lobby', requireUserFromQuery, (req, res) => {
 });
 
 app.get('/api/game/rooms', requireUserFromQuery, (req, res) => {
+  req.user.lastSeenAt = Date.now();
   ensureGameRooms();
   res.json({ rooms: [gameRoomPublic(rpsGames[gameRoomId(GAME_ROOM_STAKE)], req.uid)] });
 });
@@ -909,7 +942,8 @@ app.post('/api/game/rooms/join', requireUserFromBody, (req, res) => {
   if (user.ton < room.stake) return res.status(400).json({ error: 'insufficient-funds' });
   user.ton -= room.stake;
   room.players.push({ id: user.id, name: user.name, alive: true, eliminated: false });
-  if (room.players.length === 4) { room.status = 'playing'; room.round = 1; }
+  user.lastSeenAt = Date.now();
+  if (room.players.length === 4) { room.status = 'playing'; room.round = 1; room.roundStartedAt = Date.now(); }
   persist(); persistRpsGames();
   res.json({ state: publicState(user), room: gameRoomPublic(room, user.id) });
 });
@@ -921,6 +955,7 @@ app.post('/api/game/rooms/choose', requireUserFromBody, (req, res) => {
   if (!room || room.mode !== 'room-knockout' || room.status !== 'playing') return res.status(409).json({ error: 'room-not-playing' });
   if (!RPS_CHOICES.has(choice)) return res.status(400).json({ error: 'invalid-choice' });
   const uid = String(req.user.id);
+  req.user.lastSeenAt = Date.now();
   const player = room.players.find((item) => String(item.id) === uid && item.alive);
   if (!player) return res.status(403).json({ error: 'not-active-player' });
   if (room.choices[uid]) return res.status(409).json({ error: 'choice-already-made' });
