@@ -48,6 +48,7 @@ const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
@@ -295,6 +296,9 @@ const RPS_CHOICES = new Set(['rock', 'paper', 'scissors']);
 const RPS_MIN_STAKE = 0.001;
 const RPS_GAME_TTL_MS = 30 * 60 * 1000;
 function rpsPublicGame(game, uid) {
+  const pot = game.stake * 2;
+  const platformFee = game.status === 'finished' && game.result ? game.result.platformFee : pot * 0.1;
+  const winnerPayout = game.status === 'finished' && game.result ? game.result.payout : pot * 0.9;
   return {
     id: game.id,
     stake: game.stake,
@@ -305,6 +309,9 @@ function rpsPublicGame(game, uid) {
     isOpponent: String(game.opponentId || '') === String(uid),
     myChoice: String(game.creatorId) === String(uid) ? game.creatorChoice || null : String(game.opponentId || '') === String(uid) ? game.opponentChoice || null : null,
     result: game.status === 'finished' ? game.result : null,
+    pot,
+    platformFee,
+    winnerPayout,
     expiresAt: game.expiresAt,
   };
 }
@@ -687,14 +694,18 @@ app.post('/api/rps/play', requireUserFromBody, (req, res) => {
   else game.opponentChoice = choice;
   if (game.creatorChoice && game.opponentChoice){
     const winner = rpsWinner(game.creatorChoice, game.opponentChoice);
-    game.result = { winner, creatorChoice: game.creatorChoice, opponentChoice: game.opponentChoice, payout: winner === 'tie' ? game.stake : game.stake * 2 };
+    const pot = game.stake * 2;
+    const platformFee = winner === 'tie' ? 0 : pot * 0.1;
+    const winnerPayout = winner === 'tie' ? game.stake : pot - platformFee;
+    game.result = { winner, creatorChoice: game.creatorChoice, opponentChoice: game.opponentChoice, payout: winnerPayout, platformFee };
     game.status = 'finished';
     if (winner === 'tie'){
       users[String(game.creatorId)].ton += game.stake;
       users[String(game.opponentId)].ton += game.stake;
     } else {
       const winnerId = winner === 'creator' ? game.creatorId : game.opponentId;
-      users[String(winnerId)].ton += game.stake * 2;
+      users[String(winnerId)].ton += winnerPayout;
+      if (PLATFORM_USER_ID && users[PLATFORM_USER_ID]) users[PLATFORM_USER_ID].ton += platformFee;
     }
     persist();
   }
@@ -899,6 +910,7 @@ app.listen(PORT, () => {
   }
   if (!BOT_TOKEN) console.warn('WARNING: BOT_TOKEN not set — /api/auth will always fail.');
   if (!DEPOSIT_ADDRESS) console.warn('WARNING: DEPOSIT_ADDRESS not set — automatic deposits are disabled.');
+  if (!PLATFORM_USER_ID) console.warn('WARNING: PLATFORM_USER_ID not set — RPS platform fees cannot be credited.');
   else {
     console.log('[deposit] automatic scanner enabled every ' + Math.round(DEPOSIT_POLL_MS / 1000) + 's.');
     setTimeout(scanDeposits, 1000);
