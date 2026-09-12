@@ -1150,7 +1150,7 @@
     if (name === 'tournament') renderLeaderboard();
   }
   navButtons.forEach(b => b.addEventListener('click', () => {
-    if (b.dataset.screen === 'game'){ enterGame(); }
+    if (b.dataset.screen === 'game' && b.classList.contains('play-btn')){ enterGame(); }
     else { showScreen(b.dataset.screen); }
   }));
   document.getElementById('toHomeBtn').addEventListener('click', () => showScreen('home'));
