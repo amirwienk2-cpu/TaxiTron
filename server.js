@@ -326,12 +326,14 @@ function gameRoomPublic(room, uid) {
   const liveStatus = playerCount >= 4 ? 'playing' : 'open';
   const activePlayers = room.players.filter((player) => player.alive);
   const allActiveSelected = activePlayers.length > 0 && activePlayers.every((player) => room.choices[String(player.id)]);
-  const revealChoices = allActiveSelected || room.status === 'finished';
-  const choicesToReveal = allActiveSelected ? room.choices : (room.status === 'finished' ? room.revealedChoices || {} : room.lastRoundChoices || {});
+  const lastRoundChoices = room.lastRoundChoices || {};
+  const hasLastRoundReveal = Object.keys(lastRoundChoices).length > 0;
+  const revealChoices = allActiveSelected || hasLastRoundReveal || room.status === 'finished';
+  const choicesToReveal = allActiveSelected ? room.choices : (hasLastRoundReveal ? lastRoundChoices : room.revealedChoices || {});
   return {
     id: room.id, stake: room.stake, status: liveStatus, round: room.round,
     playerCount, maxPlayers: 4,
-    players: room.players.map((player) => ({ id: String(player.id), name: player.name, isMe: String(player.id) === String(uid), balance: Number(users[String(player.id)]?.ton || 0), alive: player.alive, selected: room.choices[String(player.id)] ? true : false, choice: revealChoices ? choicesToReveal[String(player.id)] || null : null })),
+    players: room.players.map((player) => ({ id: String(player.id), name: player.name, isMe: String(player.id) === String(uid), balance: Number(users[String(player.id)]?.ton || 0), alive: player.alive, selected: !!(room.choices[String(player.id)] || choicesToReveal[String(player.id)]), choice: revealChoices ? choicesToReveal[String(player.id)] || null : null })),
     isPlayer: room.players.some((player) => String(player.id) === String(uid)),
     myChoice: room.choices[String(uid)] || null,
     pot: room.stake * 4,
@@ -345,11 +347,11 @@ function resolveGameRoom(room) {
   const choices = active.map((player) => room.choices[String(player.id)]).filter(Boolean);
   if (choices.length !== active.length) return;
   const unique = new Set(choices);
-  if (unique.size === 1) { room.choices = {}; room.round += 1; return; }
+  if (unique.size === 1) { room.lastRoundChoices = { ...room.choices }; room.choices = {}; room.round += 1; return; }
   if (active.length === 2) {
     room.revealedChoices = { ...room.choices };
     const winnerSide = rpsWinner(choices[0], choices[1]);
-    if (winnerSide === 'tie') { room.choices = {}; room.round += 1; return; }
+    if (winnerSide === 'tie') { room.lastRoundChoices = { ...room.choices }; room.choices = {}; room.round += 1; return; }
     const winner = winnerSide === 'creator' ? active[0] : active[1];
     const loser = winner === active[0] ? active[1] : active[0];
     loser.alive = false; loser.eliminated = true;
