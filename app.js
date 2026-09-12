@@ -1390,11 +1390,12 @@
       if (activeRoom) { showGameRoom(activeRoom); return; }
       if (roomsEl) {
         const room = roomsData.rooms && roomsData.rooms[0];
-        roomsEl.innerHTML = room ? '<div class="game-room-card"><div><strong>Open game · 0.001 TON</strong><span>' + room.playerCount + '/4 players · ' + (room.status === 'playing' ? 'Starting' : 'Waiting') + ' · Winner 90%</span></div></div>' : '';
+        const roomPlayers = room && room.players && room.players.length ? room.players.map((player) => '<b class="game-room-player-name"><i></i>' + player.name + '</b>').join('') : '<span class="game-room-empty">No players have joined yet.</span>';
+        roomsEl.innerHTML = room ? '<div class="game-room-card"><div><strong>Live game · 0.001 TON</strong><span>' + room.playerCount + '/4 players · ' + (room.status === 'playing' ? 'Playing now' : 'Waiting for players') + ' · Winner 90%</span><div class="game-room-roster">' + roomPlayers + '</div></div></div>' : '';
         const joinButton = document.getElementById('gameLobbyJoinBtn');
         if (joinButton && room) {
           joinButton.disabled = room.status !== 'open' || room.playerCount >= 4 || room.isPlayer;
-          joinButton.textContent = room.isPlayer ? 'Joined · 0.001 TON' : room.status === 'open' ? 'Join game · 0.001 TON' : 'Game starting...';
+          joinButton.textContent = room.isPlayer ? 'Joined · 0.001 TON' : room.status === 'open' ? 'Join game · 0.001 TON' : 'Full · watch live';
           joinButton.onclick = () => { if (!room.isPlayer && room.status === 'open') joinGameRoom(room.id); };
         }
       }

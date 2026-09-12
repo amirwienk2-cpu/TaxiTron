@@ -462,6 +462,10 @@
   .game-room-card{ display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; padding:9px 10px; border:1px solid #5e3970; border-radius:9px; background:#1c1027; }
   .game-room-card strong,.game-room-card span{ display:block; }.game-room-card strong{ color:#ffad32; font-size:.82rem; }.game-room-card span{ margin-top:3px; color:#b6a6be; font-size:.62rem; }
   .game-room-card button{ padding:7px 10px; border:1px solid #a9e34b; border-radius:7px; background:#263a23; color:#d9f6a3; font:800 .65rem Georgia,serif; cursor:pointer; }.game-room-card button:disabled{ opacity:.45; cursor:not-allowed; }
+  .game-room-roster{ display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+  .game-room-player-name{ display:inline-flex; align-items:center; gap:4px; padding:4px 6px; border:1px solid #563568; border-radius:999px; color:#f8eedf; font-size:.62rem; font-weight:800; }
+  .game-room-player-name i{ width:5px; height:5px; border-radius:50%; background:#a9e34b; box-shadow:0 0 6px #a9e34b; }
+  .game-room-empty{ color:#8f7c9a; font-size:.62rem; }
   .room-game-card{ max-width:620px; margin:0 auto; min-height:100vh; padding:20px 16px; background:radial-gradient(circle at 50% 25%,#3a1d4c,#100b18 62%); color:#f8eedf; }
   .room-game-top{ display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border:1px solid #70458a; border-radius:12px; background:#24132f; color:#a9e34b; font-size:.75rem; font-weight:900; letter-spacing:1px; }
   .room-game-top b{ color:#ffad32; }
