@@ -323,7 +323,7 @@ function ensureGameRooms() {
 }
 function gameRoomPublic(room, uid) {
   const playerCount = Array.isArray(room.players) ? room.players.length : 0;
-  const liveStatus = playerCount >= 4 ? 'playing' : 'open';
+  const liveStatus = room.status === 'finished' ? 'finished' : playerCount >= 4 ? 'playing' : 'open';
   const activePlayers = room.players.filter((player) => player.alive);
   const allActiveSelected = activePlayers.length > 0 && activePlayers.every((player) => room.choices[String(player.id)]);
   const lastRoundChoices = room.lastRoundChoices || {};
@@ -374,7 +374,6 @@ function resolveGameRoom(room) {
     const pair = Array.from(unique);
     const countA = active.filter((player) => room.choices[String(player.id)] === pair[0]).length;
     const countB = active.filter((player) => room.choices[String(player.id)] === pair[1]).length;
-    if (countA === countB) { room.lastRoundWinners = []; room.choices = {}; room.round += 1; return; }
     const winnerChoice = winningChoice(pair[0], pair[1]);
     loserChoice = winnerChoice === pair[0] ? pair[1] : pair[0];
   } else {
