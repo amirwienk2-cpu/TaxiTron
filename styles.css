@@ -287,6 +287,10 @@
   .rps-hands small,.rps-hands span{ display:block; color:#a8a3b8; font-size:.68rem; }
   .rps-hands strong{ display:block; font-size:2rem; margin:7px 0; }
   .rps-vs{ color:#ffd93d; font-size:.65rem; font-weight:900; }
+  .rps-player-roster{ display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+  .rps-player-chip{ padding:6px 8px; border-radius:999px; background:#1e5aa8; color:#fff; font-size:.68rem; font-weight:800; }
+  .rps-player-chip.eliminated{ background:#3b2730; color:#a8a3b8; text-decoration:line-through; }
+  .rps-round-message{ padding:10px; border-radius:9px; background:#0e0e16; }
   .rps-3d-wrap{ height:190px; margin:0 -4px 14px; overflow:hidden; border-radius:12px; background:#090b16; border:1px solid #2b3150; }
   #rps3dCanvas{ display:block; width:100%; height:100%; }
   .rps-match-top{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px 0; color:#ffd56a; font-size:.7rem; font-weight:900; letter-spacing:1px; }
