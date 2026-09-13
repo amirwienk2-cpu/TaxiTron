@@ -220,18 +220,19 @@
   }
   if (localStorage.getItem('cr3d_serverUid')) loadAccountAttempts();
   function saveStore(){
-    localStorage.setItem('cr3d_coins', store.coins);
-    localStorage.setItem('cr3d_best', store.best);
-    localStorage.setItem('cr3d_runs', store.runs);
-    localStorage.setItem('cr3d_upgrades', JSON.stringify(store.upgrades));
-    localStorage.setItem('cr3d_level', store.level);
-    localStorage.setItem('cr3d_points', store.points);
-    localStorage.setItem('cr3d_pointsToday', store.pointsToday);
-    localStorage.setItem('cr3d_pointsDate', store.pointsDate);
-    localStorage.setItem('cr3d_skin', store.skin);
-    localStorage.setItem('cr3d_ownedSkins', JSON.stringify(store.ownedSkins));
-    localStorage.setItem('cr3d_skinRewards', JSON.stringify(store.skinRewards));
-    localStorage.setItem('cr3d_taskChannelRewardClaimed', store.taskChannelRewardClaimed ? '1' : '0');
+    const save = (name, value) => localStorage.setItem(accountStorageKey(name), value);
+    save('cr3d_coins', store.coins);
+    save('cr3d_best', store.best);
+    save('cr3d_runs', store.runs);
+    save('cr3d_upgrades', JSON.stringify(store.upgrades));
+    save('cr3d_level', store.level);
+    save('cr3d_points', store.points);
+    save('cr3d_pointsToday', store.pointsToday);
+    save('cr3d_pointsDate', store.pointsDate);
+    save('cr3d_skin', store.skin);
+    save('cr3d_ownedSkins', JSON.stringify(store.ownedSkins));
+    save('cr3d_skinRewards', JSON.stringify(store.skinRewards));
+    save('cr3d_taskChannelRewardClaimed', store.taskChannelRewardClaimed ? '1' : '0');
     localStorage.setItem(accountStorageKey('cr3d_attemptsLeft'), store.attemptsLeft);
     const attemptsResetKey = accountStorageKey('cr3d_attemptsResetAt');
     if (store.attemptsResetAt) localStorage.setItem(attemptsResetKey, store.attemptsResetAt);
@@ -814,9 +815,7 @@
     const accountChanged = state.uid && previousUid !== String(state.uid);
     if (accountChanged){
       localStorage.setItem('cr3d_serverUid', String(state.uid));
-      const accountAttemptsKey = 'cr3d_attemptsLeft_' + String(state.uid);
-      if (previousUid || localStorage.getItem(accountAttemptsKey) !== null) loadAccountAttempts();
-      else saveStore();
+      loadAccountAttempts();
       lastPersonScore = parseInt(localStorage.getItem(accountStorageKey('cr3d_pendingZombies')) || '0', 10);
       lastDistance = parseFloat(localStorage.getItem(accountStorageKey('cr3d_pendingDistance')) || '0');
       store.skinRewards = {};
