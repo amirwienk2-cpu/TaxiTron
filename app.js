@@ -1640,6 +1640,61 @@
   road.position.set(0, 0, -ROAD_LEN/2 + 20);
   scene.add(road);
 
+  // Repeating grime, oil marks, and tire wear break up the otherwise clean highway.
+  const roadDirtGroup = new THREE.Group();
+  const oilStainMaterial = new THREE.MeshBasicMaterial({ color:0x11111a, transparent:true, opacity:0.42, depthWrite:false });
+  const rubberMarkMaterial = new THREE.MeshBasicMaterial({ color:0x15151d, transparent:true, opacity:0.32, depthWrite:false });
+  const dirtPatches = [
+    { x:-4.4, z:-18, w:1.1, l:2.8, r:-0.12 },
+    { x:2.8, z:-36, w:0.8, l:3.6, r:0.08 },
+    { x:-1.2, z:-58, w:1.6, l:1.4, r:0.25 },
+    { x:4.1, z:-77, w:0.9, l:2.4, r:-0.18 },
+    { x:-3.2, z:-101, w:1.4, l:3.2, r:0.1 },
+    { x:1.5, z:-126, w:1.9, l:1.3, r:-0.22 },
+    { x:-4.6, z:-151, w:0.75, l:3.8, r:0.16 },
+    { x:3.3, z:-179, w:1.2, l:2.1, r:-0.08 },
+    { x:-1.9, z:-204, w:1.7, l:1.5, r:0.18 },
+    { x:4.4, z:-231, w:1.0, l:3.4, r:-0.16 }
+  ];
+  dirtPatches.forEach(({ x, z, w, l, r }, index) => {
+    const patch = new THREE.Mesh(new THREE.PlaneGeometry(w, l), oilStainMaterial);
+    patch.rotation.x = -Math.PI/2;
+    patch.rotation.z = r;
+    patch.position.set(x, 0.026, z);
+    roadDirtGroup.add(patch);
+    if (index % 2 === 0) {
+      const tireMark = new THREE.Mesh(new THREE.PlaneGeometry(0.16, l * 1.35), rubberMarkMaterial);
+      tireMark.rotation.x = -Math.PI/2;
+      tireMark.rotation.z = r + 0.04;
+      tireMark.position.set(x + 0.32, 0.028, z + 0.4);
+      roadDirtGroup.add(tireMark);
+    }
+  });
+  const asphaltDamageMaterial = new THREE.MeshBasicMaterial({ color:0x0b0b12, transparent:true, opacity:0.72, depthWrite:false });
+  const asphaltCrackMaterial = new THREE.MeshBasicMaterial({ color:0x171721, transparent:true, opacity:0.82, depthWrite:false });
+  [
+    { x:-2.7, z:-29, radius:0.48 },
+    { x:1.1, z:-72, radius:0.36 },
+    { x:3.9, z:-116, radius:0.55 },
+    { x:-0.8, z:-164, radius:0.42 },
+    { x:-4.1, z:-218, radius:0.5 }
+  ].forEach(({ x, z, radius }, index) => {
+    const pothole = new THREE.Mesh(new THREE.CircleGeometry(radius, 7), asphaltDamageMaterial);
+    pothole.rotation.x = -Math.PI/2;
+    pothole.rotation.z = index * 0.37;
+    pothole.position.set(x, 0.031, z);
+    roadDirtGroup.add(pothole);
+
+    for (let crackIndex = 0; crackIndex < 3; crackIndex += 1) {
+      const crack = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.012, 0.7 + crackIndex * 0.16), asphaltCrackMaterial);
+      crack.rotation.x = -Math.PI/2;
+      crack.rotation.z = index * 0.37 + (crackIndex - 1) * 0.55;
+      crack.position.set(x + (crackIndex - 1) * 0.34, 0.034, z + (crackIndex - 1) * 0.28);
+      roadDirtGroup.add(crack);
+    }
+  });
+  scene.add(roadDirtGroup);
+
   // Curbs
   const curbMat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.6 });
   [-1,1].forEach(side=>{
@@ -1654,6 +1709,258 @@
   ground.rotation.x = -Math.PI/2;
   ground.position.set(0, -0.05, -ROAD_LEN/2 + 20);
   scene.add(ground);
+  // Match the recycle distance to the actual building row so no empty stretch appears.
+  const sceneryTrackLength = 270;
+
+  // Raised sidewalks between the road and the building fronts.
+  const sidewalkGroup = new THREE.Group();
+  const sidewalkMat = new THREE.MeshStandardMaterial({ color:0x686b70, roughness:0.92 });
+  const sidewalkEdgeMat = new THREE.MeshStandardMaterial({ color:0x96999d, roughness:0.82 });
+  [-1, 1].forEach((side) => {
+    const sidewalkX = side * (ROAD_W/2 + 1.25);
+    const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, ROAD_LEN + 40), sidewalkMat);
+    sidewalk.position.set(sidewalkX, 0.015, -ROAD_LEN/2 + 20);
+    sidewalkGroup.add(sidewalk);
+
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, ROAD_LEN + 40), sidewalkEdgeMat);
+    edge.position.set(side * (ROAD_W/2 + 2.32), 0.08, -ROAD_LEN/2 + 20);
+    sidewalkGroup.add(edge);
+
+    for (let z = -ROAD_LEN + 10; z < 30; z += 6) {
+      const seam = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.012, 0.045), sidewalkEdgeMat);
+      seam.position.set(sidewalkX, 0.06, z);
+      sidewalkGroup.add(seam);
+    }
+  });
+  scene.add(sidewalkGroup);
+
+  // Low-poly city blocks beside the highway so the roadside shadows have visible sources.
+  const buildingGroup = new THREE.Group();
+  const buildingMaterials = [
+    new THREE.MeshStandardMaterial({ color:0x182237, roughness:0.78, metalness:0.18 }),
+    new THREE.MeshStandardMaterial({ color:0x29243c, roughness:0.82, metalness:0.12 }),
+    new THREE.MeshStandardMaterial({ color:0x33283d, roughness:0.76, metalness:0.16 }),
+    new THREE.MeshStandardMaterial({ color:0x151c2c, roughness:0.86, metalness:0.2 })
+  ];
+  const windowMaterials = [
+    new THREE.MeshBasicMaterial({ color:0xffbd68, transparent:true, opacity:0.96, side:THREE.DoubleSide }),
+    new THREE.MeshBasicMaterial({ color:0x78c9ff, transparent:true, opacity:0.92, side:THREE.DoubleSide }),
+    new THREE.MeshBasicMaterial({ color:0xa7e7ff, transparent:true, opacity:0.9, side:THREE.DoubleSide })
+  ];
+  const darkWindowMaterial = new THREE.MeshBasicMaterial({ color:0x080d18, transparent:true, opacity:0.96, side:THREE.DoubleSide });
+  const glassFacadeMat = new THREE.MeshStandardMaterial({
+    color:0x182c46,
+    emissive:0x071526,
+    emissiveIntensity:0.8,
+    roughness:0.28,
+    metalness:0.35,
+    transparent:true,
+    opacity:0.92,
+    side:THREE.DoubleSide
+  });
+  const facadeAccentMaterials = [
+    new THREE.MeshBasicMaterial({ color:0xffa84d }),
+    new THREE.MeshBasicMaterial({ color:0x65d9ff }),
+    new THREE.MeshBasicMaterial({ color:0xb58cff })
+  ];
+  const doorMaterial = new THREE.MeshBasicMaterial({ color:0x10243a, transparent:true, opacity:0.96, side:THREE.DoubleSide });
+  const doorFrameMaterial = new THREE.MeshBasicMaterial({ color:0x7d9ab3 });
+  const rooftopSpectatorMaterial = new THREE.MeshStandardMaterial({
+    color:0x252d40,
+    emissive:0x0b1324,
+    emissiveIntensity:0.9,
+    roughness:0.92,
+    metalness:0.05
+  });
+  const buildingData = [
+    { z:-242, width:7, depth:28, height:10 },
+    { z:-214, width:6, depth:25, height:8 },
+    { z:-187, width:9, depth:27, height:13 },
+    { z:-159, width:6, depth:25, height:9 },
+    { z:-131, width:8, depth:29, height:12 },
+    { z:-102, width:6, depth:25, height:8 },
+    { z:-75, width:9, depth:27, height:13 },
+    { z:-47, width:6, depth:25, height:9 },
+    { z:-19, width:8, depth:29, height:11 },
+    { z:8, width:5, depth:24, height:7 }
+  ];
+  [-1, 1].forEach((side) => {
+    buildingData.forEach((building, index) => {
+      const material = buildingMaterials[index % buildingMaterials.length];
+      const block = new THREE.Mesh(
+        new THREE.BoxGeometry(building.width, building.height, building.depth),
+        material
+      );
+      const sideGap = ROAD_W/2 + 2.1 + (index % 2) * 0.7;
+      block.position.set(side * (sideGap + building.width/2), building.height/2, building.z);
+      buildingGroup.add(block);
+
+      const roof = new THREE.Mesh(
+        new THREE.BoxGeometry(building.width + 0.18, 0.16, building.depth + 0.18),
+        material
+      );
+      roof.position.set(block.position.x, building.height + 0.08, building.z);
+      buildingGroup.add(roof);
+
+      const facade = new THREE.Mesh(
+        new THREE.PlaneGeometry(building.width * 0.78, building.height * 0.74),
+        glassFacadeMat
+      );
+      facade.rotation.y = side < 0 ? Math.PI/2 : -Math.PI/2;
+      facade.position.set(side * (sideGap - 0.025), building.height * 0.43, building.z);
+      buildingGroup.add(facade);
+
+      const crown = new THREE.Mesh(
+        new THREE.BoxGeometry(building.width * 0.62, 0.45, building.depth * 0.42),
+        buildingMaterials[(index + 1) % buildingMaterials.length]
+      );
+      crown.position.set(block.position.x, building.height + 0.36, building.z - building.depth * 0.12);
+      buildingGroup.add(crown);
+
+      const accentMaterial = facadeAccentMaterials[index % facadeAccentMaterials.length];
+      const lightBar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.09, building.width * 0.64),
+        accentMaterial
+      );
+      lightBar.rotation.y = side < 0 ? Math.PI/2 : -Math.PI/2;
+      lightBar.position.set(side * (sideGap - 0.055), building.height * 0.82, building.z);
+      buildingGroup.add(lightBar);
+
+      [-1, 1].forEach((edgeSide) => {
+        const column = new THREE.Mesh(
+          new THREE.BoxGeometry(0.1, building.height * 0.76, 0.12),
+          accentMaterial
+        );
+        column.position.set(
+          side * (sideGap - 0.06),
+          building.height * 0.43,
+          building.z + edgeSide * building.width * 0.28
+        );
+        buildingGroup.add(column);
+      });
+
+      if (index % 2 === 0) {
+        const mast = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.035, 0.05, 1.1, 6),
+          accentMaterial
+        );
+        mast.position.set(block.position.x, building.height + 1.05, building.z);
+        buildingGroup.add(mast);
+        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), accentMaterial);
+        beacon.position.set(block.position.x, building.height + 1.63, building.z);
+        buildingGroup.add(beacon);
+
+        [-0.3, 0.3].forEach((zOffset, spectatorIndex) => {
+          const spectatorHeight = spectatorIndex ? 0.95 : 1.1;
+          const body = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.22, 0.27, spectatorHeight * 0.72, 8),
+            rooftopSpectatorMaterial
+          );
+          body.position.set(block.position.x - (side * 0.45), building.height + 0.22 + spectatorHeight * 0.34, building.z + building.depth * 0.28 + zOffset);
+          buildingGroup.add(body);
+
+          const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), rooftopSpectatorMaterial);
+          head.position.set(block.position.x - (side * 0.45), building.height + 0.78 + spectatorHeight * 0.3, building.z + building.depth * 0.28 + zOffset);
+          buildingGroup.add(head);
+        });
+      }
+
+      const windowRows = Math.max(2, Math.floor(building.height / 3));
+      const windowColumns = Math.max(2, Math.floor(building.depth / 4));
+      for (let row = 0; row < windowRows; row += 1) {
+        for (let column = 0; column < windowColumns; column += 1) {
+          // Most apartments are dark: only a few windows still have power in the zombie city.
+          const isLit = (row * 5 + column * 3 + index) % 5 === 0;
+          const window = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.82, 0.58),
+            isLit ? windowMaterials[(row + column + index) % windowMaterials.length] : darkWindowMaterial
+          );
+          const zOffset = (column - (windowColumns - 1) / 2) * 3.2;
+          const yOffset = 1.4 + row * 2.3;
+          window.rotation.y = side < 0 ? Math.PI/2 : -Math.PI/2;
+          window.position.set(
+            side * (sideGap - 0.02),
+            yOffset,
+            building.z + zOffset
+          );
+          buildingGroup.add(window);
+        }
+      }
+
+      const door = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 1.75), doorMaterial);
+      door.rotation.y = side < 0 ? Math.PI/2 : -Math.PI/2;
+      door.position.set(side * (sideGap - 0.08), 0.9, building.z);
+      buildingGroup.add(door);
+
+      [-0.53, 0.53].forEach((frameOffset) => {
+        const doorPost = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.95, 0.07), doorFrameMaterial);
+        doorPost.rotation.y = side < 0 ? Math.PI/2 : -Math.PI/2;
+        doorPost.position.set(side * (sideGap - 0.095), 0.98, building.z + frameOffset);
+        buildingGroup.add(doorPost);
+      });
+      const doorHeader = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 1.13), doorFrameMaterial);
+      doorHeader.rotation.y = side < 0 ? Math.PI/2 : -Math.PI/2;
+      doorHeader.position.set(side * (sideGap - 0.095), 1.94, building.z);
+      buildingGroup.add(doorHeader);
+
+      const doorHandle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.05), facadeAccentMaterials[index % facadeAccentMaterials.length]);
+      doorHandle.position.set(side * (sideGap - 0.11), 0.9, building.z + 0.25);
+      buildingGroup.add(doorHandle);
+    });
+  });
+  const buildingRepeat = buildingGroup.clone();
+  buildingRepeat.position.z = -sceneryTrackLength;
+  buildingGroup.add(buildingRepeat);
+  scene.add(buildingGroup);
+
+  // Long building shadows along both sides of the highway.
+  const buildingShadowMat = new THREE.MeshBasicMaterial({
+    color:0x080711,
+    transparent:true,
+    opacity:0.48,
+    depthWrite:false
+  });
+  const buildingShadows = new THREE.Group();
+  [-1, 1].forEach((side) => {
+    const shadowData = [
+      { z:-232, length:28, width:3.2 },
+      { z:-190, length:18, width:2.1 },
+      { z:-145, length:32, width:4.2 },
+      { z:-96, length:22, width:2.8 },
+      { z:-43, length:30, width:3.6 },
+      { z:5, length:18, width:2.3 }
+    ];
+    shadowData.forEach(({ z, length, width }, index) => {
+      const shadow = new THREE.Mesh(new THREE.PlaneGeometry(width, length), buildingShadowMat);
+      const inwardOffset = ROAD_W/2 + 0.35 + width/2;
+      shadow.rotation.x = -Math.PI/2;
+      shadow.position.set(side * inwardOffset, 0.012, z + (index % 2 ? 2 : -2));
+      shadow.rotation.z = side * (index % 2 ? -0.08 : 0.05);
+      buildingShadows.add(shadow);
+    });
+  });
+  const shadowRepeat = buildingShadows.clone();
+  shadowRepeat.position.z = -sceneryTrackLength;
+  buildingShadows.add(shadowRepeat);
+  scene.add(buildingShadows);
+
+  // Small facade debris falling onto the sidewalks gives the zombie city some life.
+  const fallingDebrisGroup = new THREE.Group();
+  const fallingDebris = [];
+  const debrisMaterial = new THREE.MeshStandardMaterial({ color:0x6c6672, roughness:0.96 });
+  [-1, 1].forEach((side, sideIndex) => {
+    [-70, -145, -220].forEach((z, index) => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.24 + index * 0.08, 0.18 + index * 0.04, 0.32),
+        debrisMaterial
+      );
+      mesh.position.set(side * (ROAD_W/2 + 2.65), 3.8 + index * 0.7, z - sideIndex * 12);
+      mesh.rotation.set(0.2 * index, 0.4 * sideIndex, 0.3 * index);
+      fallingDebrisGroup.add(mesh);
+      fallingDebris.push({ mesh, startY:mesh.position.y, fallSpeed:1.1 + index * 0.25 });
+    });
+  });
+  scene.add(fallingDebrisGroup);
 
   // warm lantern glow sprite (canvas radial gradient)
   const lanternGlowCanvas = document.createElement('canvas');
@@ -1672,10 +1979,10 @@
     depthWrite: false,
     blending: THREE.AdditiveBlending
   });
+  const lanternGroup = new THREE.Group();
 
   const sceneryZStart = -ROAD_LEN + 5;
   const sceneryZEnd = 25;
-  const sceneryTrackLength = ROAD_LEN + 80;
   const lanternPoleMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.7, metalness: 0.3 });
   const lanternHeadMat = new THREE.MeshStandardMaterial({ color: 0x3a2410, emissive: 0xff8a2a, emissiveIntensity: 1.4, roughness: 0.5 });
   [-1, 1].forEach(side => {
@@ -1689,22 +1996,23 @@
         const poleH = 3.4;
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, poleH, 8), lanternPoleMat);
         pole.position.set(lanternX, poleH/2, z);
-        scene.add(pole);
+        lanternGroup.add(pole);
 
         const head = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.4, 0.32), lanternHeadMat);
         head.position.set(lanternX, poleH + 0.15, z);
-        scene.add(head);
+        lanternGroup.add(head);
 
         const glow = new THREE.Sprite(lanternGlowMat);
         glow.scale.set(2.2, 2.2, 1);
         glow.position.set(lanternX, poleH + 0.15, z);
-        scene.add(glow);
+        lanternGroup.add(glow);
 
       }
 
       z += (isTelegramWebView ? 18 : 12) + Math.random() * (isTelegramWebView ? 10 : 9);
     }
   });
+  scene.add(lanternGroup);
 
   // Recycling dashed lane lines
   const dashGroup = new THREE.Group();
@@ -2011,6 +2319,13 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     obstacles = [];
     people = [];
     particles = [];
+    sidewalkGroup.position.z = 0;
+    buildingGroup.position.z = 0;
+    buildingShadows.position.z = 0;
+    lanternGroup.position.z = 0;
+    fallingDebrisGroup.position.z = 0;
+    roadDirtGroup.position.z = 0;
+    fallingDebris.forEach((debris) => { debris.mesh.position.y = debris.startY; });
     weapons && weapons.forEach(w => scene.remove(w.mesh));
     weapons = [];
     nextWeaponDist = 1000;
@@ -2189,6 +2504,19 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     dashes.forEach(d => {
       d.position.z += speed * dt * 60;
       if (d.position.z > END_Z + 4) d.position.z -= dashCountPerLine * (DASH_LEN+DASH_GAP);
+    });
+
+    // Keep the roadside city moving with the road and recycle it ahead of the player.
+    const sceneryStep = speed * dt * 60;
+    [roadDirtGroup, sidewalkGroup, buildingGroup, buildingShadows, lanternGroup, fallingDebrisGroup].forEach((group) => {
+      group.position.z += sceneryStep;
+      if (group.position.z > sceneryTrackLength) group.position.z -= sceneryTrackLength;
+    });
+    fallingDebris.forEach((debris) => {
+      debris.mesh.position.y -= debris.fallSpeed * dt;
+      debris.mesh.rotation.x += dt * 1.8;
+      debris.mesh.rotation.z += dt * 1.2;
+      if (debris.mesh.position.y < 0.12) debris.mesh.position.y = debris.startY;
     });
 
     // spawn obstacles
