@@ -1750,7 +1750,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   const GAME_TAXI_RED_URI = 'sprites/Taxilevel2.png';
   const GAME_TAXI_LEVEL_THREE_URI = 'sprites/taxilevel3.png';
   const GAME_TAXI_LEVEL_FOUR_URI = 'sprites/Taxilevel4.png';
-  const GAME_SKIN_OVERRIDES = { yellow: TAXI_SKIN_URI, red: GAME_TAXI_RED_URI, white: GAME_TAXI_LEVEL_THREE_URI, green: GAME_TAXI_LEVEL_FOUR_URI };
+  const GAME_TAXI_LEVEL_ONE_URI = 'sprites/taxilevel1.png';
+  const GAME_SKIN_OVERRIDES = { yellow: GAME_TAXI_LEVEL_ONE_URI, red: GAME_TAXI_RED_URI, white: GAME_TAXI_LEVEL_THREE_URI, green: GAME_TAXI_LEVEL_FOUR_URI };
   const skinTextureCache = {};
   function getSkinTexture(key){
     if (!skinTextureCache[key]){
