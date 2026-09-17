@@ -19,6 +19,9 @@
       chatOpenInTelegram: 'Open the game in Telegram to chat.',
       chatTooFast: 'Please wait a moment before sending another message.',
       chatEmpty: 'No messages yet — say hi!',
+      chatMutedHint: 'You have been muted by a chat admin and cannot send messages.',
+      chatMute: 'Mute',
+      chatUnmute: 'Unmute',
       navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
       shopTitle: '🧟 Zombie Gear',
       shopDesc: 'Invest your coins in permanent upgrades for every ride.',
@@ -119,6 +122,9 @@
       chatOpenInTelegram: 'برای گفتگو، بازی را در تلگرام باز کن.',
       chatTooFast: 'لطفاً قبل از ارسال پیام دیگر کمی صبر کن.',
       chatEmpty: 'هنوز پیامی نیست — سلام کن!',
+      chatMutedHint: 'یک مدیر گفتگو شما را بی‌صدا کرده و نمی‌توانید پیام ارسال کنید.',
+      chatMute: 'بی‌صدا',
+      chatUnmute: 'رفع بی‌صدایی',
       navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
       shopTitle: '🧟 تجهیزات زامبی',
       shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
@@ -1009,17 +1015,33 @@
       box.appendChild(empty);
       return;
     }
+    // Keep our own live admin/mute flags in sync with the server on every poll,
+    // so the chat input disables itself right away if we get muted mid-session.
+    const mine = list.find(u => serverSession.uid && String(u.uid) === String(serverSession.uid));
+    if (mine) {
+      serverSession.isChatAdmin = mine.isChatAdmin === true;
+      serverSession.chatMuted = mine.chatMuted === true;
+      updateChatAvailability();
+    }
     list.forEach(u => {
       const isMine = serverSession.uid && String(u.uid) === String(serverSession.uid);
       const row = document.createElement('div');
-      row.className = 'online-user-chip' + (isMine ? ' mine' : '');
+      row.className = 'online-user-chip' + (isMine ? ' mine' : '') + (u.isChatAdmin ? ' admin' : '') + (u.chatMuted ? ' muted' : '');
       const nameEl = document.createElement('span');
       nameEl.className = 'online-user-name';
-      nameEl.textContent = u.name;
+      nameEl.textContent = (u.isChatAdmin ? '⭐ ' : '') + (u.chatMuted ? '🔇 ' : '') + u.name;
       const balEl = document.createElement('span');
       balEl.className = 'online-user-balance';
       balEl.textContent = formatTonShort(u.ton) + ' TON';
       row.appendChild(nameEl); row.appendChild(balEl);
+      if (serverSession.isChatAdmin && !isMine) {
+        const muteBtn = document.createElement('button');
+        muteBtn.type = 'button';
+        muteBtn.className = 'online-user-mute-btn';
+        muteBtn.textContent = u.chatMuted ? t('chatUnmute') : t('chatMute');
+        muteBtn.addEventListener('click', () => moderateChatUser(u.uid, !u.chatMuted));
+        row.appendChild(muteBtn);
+      }
       box.appendChild(row);
     });
   }
@@ -1098,14 +1120,31 @@
       chatSyncInFlight = false;
     }
   }
+  async function moderateChatUser(targetUid, muted){
+    if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
+    try {
+      await fetch(SERVER_URL + '/api/chat/moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, targetUid, muted })
+      });
+      syncOnlineUsers();
+    } catch (error) {
+      // silently ignore - user can retry
+    }
+  }
   function updateChatAvailability(){
     const input = document.getElementById('chatInput');
     const btn = document.getElementById('chatSendBtn');
     const hint = document.getElementById('chatHint');
-    const available = !!(serverSession.online && serverSession.token);
+    const muted = serverSession.chatMuted === true;
+    const available = !!(serverSession.online && serverSession.token) && !muted;
     if (input) input.disabled = !available;
     if (btn) btn.disabled = !available;
-    if (hint) hint.style.display = available ? 'none' : 'block';
+    if (hint) {
+      if (muted) { hint.textContent = t('chatMutedHint'); hint.style.display = 'block'; }
+      else { hint.textContent = t('chatOpenInTelegram'); hint.style.display = available ? 'none' : 'block'; }
+    }
   }
   async function sendChatMessage(){
     const input = document.getElementById('chatInput');
@@ -1286,6 +1325,8 @@
   });
 
   function applyServerState(state){
+    if (typeof state.isChatAdmin === 'boolean') serverSession.isChatAdmin = state.isChatAdmin;
+    if (typeof state.chatMuted === 'boolean') { serverSession.chatMuted = state.chatMuted; updateChatAvailability(); }
     const previousUid = localStorage.getItem('cr3d_serverUid');
     const accountChanged = state.uid && previousUid !== String(state.uid);
     if (accountChanged){

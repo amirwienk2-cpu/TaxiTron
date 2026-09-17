@@ -163,8 +163,14 @@
   .online-users-list{ display:flex; flex-wrap:wrap; gap:8px; max-height:140px; overflow-y:auto; }
   .online-user-chip{ display:flex; flex-direction:column; gap:2px; background:#1c1c2a; border:1px solid #262436; border-radius:10px; padding:6px 10px; min-width:84px; }
   .online-user-chip.mine{ border-color:#3a3524; background:rgba(255,217,61,0.08); }
+  .online-user-chip.admin{ border-color:#ffd93d; box-shadow:0 0 0 1px rgba(255,217,61,0.35); }
+  .online-user-chip.admin .online-user-name{ color:#ffd93d; }
+  .online-user-chip.muted{ border-color:#ff5c6c; opacity:0.75; }
+  .online-user-chip.muted .online-user-name{ color:#ff8a93; }
   .online-user-name{ font-size:0.76rem; font-weight:700; color:#e6e2f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
   .online-user-balance{ font-size:0.7rem; font-weight:800; color:#ffd93d; }
+  .online-user-mute-btn{ margin-top:4px; font-size:0.65rem; font-weight:700; padding:3px 6px; border-radius:6px; border:1px solid #3b3850; background:#262436; color:#e6e2f0; cursor:pointer; }
+  .online-user-mute-btn:hover{ background:#33314a; }
   .online-user-empty{ font-size:0.78rem; color:#8b86a0; padding:4px 2px; }
 
   /* ---------- HOME COMMUNITY CHAT ---------- */
