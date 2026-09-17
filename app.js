@@ -2072,6 +2072,17 @@
   }));
   document.getElementById('toHomeBtn').addEventListener('click', () => showScreen('home'));
 
+  function notifyServerRunStart(){
+    // Lets the server time this run from its own clock, so the tournament
+    // score submitted at the end can be checked for plausibility.
+    if (SERVER_URL && serverSession.online && serverSession.token){
+      fetch(SERVER_URL + '/api/run/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token })
+      }).catch(() => {});
+    }
+  }
   function enterGame(){
     if (!hasAttemptsLeft() || dailyEarningsComplete()){
       showScreen('home');
@@ -2085,6 +2096,7 @@
     reset();
     running = true;
     startRenderLoop();
+    notifyServerRunStart();
   }
   function leaveGameToHome(){
     showScreen('home');
@@ -3019,6 +3031,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     reset();
     running = true;
     startRenderLoop();
+    notifyServerRunStart();
   });
 
   function update(dt){

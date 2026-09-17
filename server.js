@@ -103,6 +103,11 @@ const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const INIT_DATA_MAX_AGE_MS = 24 * 60 * 60 * 1000; // reject stale Telegram auth payloads
 const MAX_ZOMBIES_PER_CALL = 10000; // basic anti-cheat ceiling
 const MAX_DISTANCE_PER_CALL = 1000000;
+// Anti-cheat for tournament submissions: the server (not the client) times how
+// long a run actually lasted since /api/run/start was called, so a forged or
+// instant request can no longer claim an implausibly high zombie count.
+const MIN_MS_PER_TOURNAMENT_ZOMBIE = 400; // generous ceiling: ~2.5 zombies/sec sustained
+const TOURNAMENT_PLAUSIBILITY_BUFFER = 5; // small slack for bursts/lag near round end
 
 // ---------------------------------------------------------------
 // Storage: load once, keep in memory, persist through a write queue
@@ -242,6 +247,7 @@ function newUser(id, name) {
     tournamentBest: 0,
     tournamentDistance: 0,
     tournamentWeekKey: '',
+    runStartedAt: 0,
     depositTxs: [],
     deposits: [],
     purchases: [],
@@ -1180,6 +1186,13 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
   }
 });
 
+// ---- Marks the server-side start of a run so /api/submit-score can later
+//      verify how long the round realistically took (anti-cheat, see below) ----
+app.post('/api/run/start', requireUserFromBody, (req, res) => {
+  req.user.runStartedAt = Date.now();
+  res.json({ ok: true });
+});
+
 // ---- Exchange a run's zombies for coins + (capped) TON ----
 app.post('/api/run', requireUserFromBody, (req, res) => {
   const user = req.user;
@@ -1554,6 +1567,19 @@ app.post('/api/submit-score', requireUserFromBody, (req, res) => {
   let { distance, zombies } = req.body || {};
   zombies = Math.max(0, Math.min(MAX_ZOMBIES_PER_CALL, Math.floor(Number(zombies) || 0)));
   distance = Math.max(0, Math.min(MAX_DISTANCE_PER_CALL, Math.floor(Number(distance) || 0)));
+
+  // Anti-cheat: trust only the server's own clock, not anything the client
+  // claims about elapsed time. Without a matching /api/run/start beforehand
+  // (or if the reported zombie count is not plausible for the elapsed time),
+  // the submission gets clamped down instead of blindly accepted.
+  const startedAt = Number(user.runStartedAt || 0);
+  const elapsedMs = startedAt > 0 ? Math.max(0, Date.now() - startedAt) : 0;
+  const maxPlausibleZombies = Math.floor(elapsedMs / MIN_MS_PER_TOURNAMENT_ZOMBIE) + TOURNAMENT_PLAUSIBILITY_BUFFER;
+  if (zombies > maxPlausibleZombies) {
+    console.warn(`[anti-cheat] submit-score: user ${user.id} reported ${zombies} zombies after ${elapsedMs}ms (max plausible ${maxPlausibleZombies}) - clamped`);
+    zombies = Math.max(0, maxPlausibleZombies);
+  }
+  user.runStartedAt = 0; // consumed - the next round needs a fresh /api/run/start
 
   ensureTournamentReset(user);
   if (zombies > user.tournamentBest) {
