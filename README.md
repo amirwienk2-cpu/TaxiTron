@@ -11,23 +11,31 @@ no client changes needed, just deploy this and point `SERVER_URL` at it.
 ## Setup
 
 ```bash
-cd server
 npm install
-cp .env.example .env   # then fill in BOT_TOKEN, SESSION_SECRET, ADMIN_SECRET
+copy .env.example .env   # then fill in the real secret values
 npm start
 ```
 
 ## Deploying on Railway
 
-1. Push this `server/` folder to your GitHub repo (same repo as the game
-   is fine — Railway just needs a Root Directory / start command pointing
-   at it).
+1. Deploy this repository from GitHub. The backend is the root-level
+  `server.js`, so leave Railway's Root Directory empty.
 2. Add a Volume, mount it at `/data`.
 3. Set environment variables: `BOT_TOKEN`, `SESSION_SECRET`,
-   `ADMIN_SECRET`, `PLATFORM_USER_ID`, `DATA_DIR=/data`, optionally `DEPOSIT_ADDRESS`.
+  `ADMIN_SECRET`, `PLATFORM_USER_ID`, `DATA_DIR=/data`. For Monster Crash
+  voice chat, set `TURN_URL`, `TURN_USERNAME`, and `TURN_CREDENTIAL` from a
+  private TURN provider. TURN is required for reliable Telegram mobile voice
+  chat because many mobile networks cannot connect through STUN alone. Use an
+  HTTPS public domain for the Mini App so Telegram can grant microphone access.
 4. Deploy. Railway provides `PORT` automatically.
-5. In `index.html`, make sure `SERVER_URL` points at the Railway domain.
+5. In `app.js`, make sure `SERVER_URL` points at the Railway domain.
+  The current production fallback is `https://taxitron-production.up.railway.app`.
 6. Set `ADMIN_SECRET` and open `/admin` to review and complete manual payouts.
+
+Railway's generated public domain must be configured in the service's
+Networking settings. If you use a different domain, update the `SERVER_URL`
+fallback in `app.js` and the default `MINI_APP_URL` and `TELEGRAM_WEBHOOK_URL`
+values in `server.js` before deploying.
 
 ## API
 
