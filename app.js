@@ -12,6 +12,12 @@
       howto3: 'Avoid other cars — one hit ends the ride',
       howto4: 'Trade collected zombies for coins in your Wallet ({rate} coins per zombie)',
       onlinePeopleOnline: '{count} people online now',
+      chatTitle: '💬 Community Chat',
+      chatPlaceholder: 'Write a message...',
+      chatSend: 'Send',
+      chatOpenInTelegram: 'Open the game in Telegram to chat.',
+      chatTooFast: 'Please wait a moment before sending another message.',
+      chatEmpty: 'No messages yet — say hi!',
       navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
       shopTitle: '🧟 Zombie Gear',
       shopDesc: 'Invest your coins in permanent upgrades for every ride.',
@@ -105,6 +111,12 @@
       howto3: 'از برخورد با ماشین‌های دیگر خودداری کن — یک برخورد به مسیر پایان می‌دهد',
       howto4: 'زامبی‌های جمع‌شده را در کیف پول با سکه معاوضه کن ({rate} سکه به ازای هر زامبی)',
       onlinePeopleOnline: '{count} نفر اکنون آنلاین هستند',
+      chatTitle: '💬 گفتگوی جامعه',
+      chatPlaceholder: 'پیامی بنویس...',
+      chatSend: 'ارسال',
+      chatOpenInTelegram: 'برای گفتگو، بازی را در تلگرام باز کن.',
+      chatTooFast: 'لطفاً قبل از ارسال پیام دیگر کمی صبر کن.',
+      chatEmpty: 'هنوز پیامی نیست — سلام کن!',
       navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
       shopTitle: '🧟 تجهیزات زامبی',
       shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
@@ -979,6 +991,114 @@
   syncOnlineCount();
   setInterval(syncOnlineCount, 15000);
 
+  // ---- Community chat shown on Home, under the online-player count ----
+  let chatLastId = 0;
+  let chatSyncInFlight = false;
+  let chatSendInFlight = false;
+  function formatChatTime(ts){
+    try { return new Date(ts).toLocaleTimeString(currentLang === 'fa' ? 'fa-IR' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); }
+    catch (error) { return ''; }
+  }
+  function appendChatMessage(msg){
+    const list = document.getElementById('chatMessages');
+    if (!list) return;
+    const emptyNote = list.querySelector('.chat-empty');
+    if (emptyNote) emptyNote.remove();
+    const isMine = serverSession.uid && String(msg.uid) === String(serverSession.uid);
+    const row = document.createElement('div');
+    row.className = 'chat-msg' + (isMine ? ' mine' : '');
+    const head = document.createElement('div');
+    head.className = 'chat-msg-head';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'chat-msg-name';
+    nameEl.textContent = msg.name || ('Player ' + msg.uid);
+    const timeEl = document.createElement('span');
+    timeEl.className = 'chat-msg-time';
+    timeEl.textContent = formatChatTime(msg.ts);
+    head.appendChild(nameEl); head.appendChild(timeEl);
+    const textEl = document.createElement('div');
+    textEl.className = 'chat-msg-text';
+    textEl.textContent = msg.text; // textContent only - never render as HTML
+    row.appendChild(head); row.appendChild(textEl);
+    list.appendChild(row);
+    const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+    if (nearBottom) list.scrollTop = list.scrollHeight;
+  }
+  function renderChatEmptyState(){
+    const list = document.getElementById('chatMessages');
+    if (!list || list.children.length) return;
+    const note = document.createElement('div');
+    note.className = 'chat-empty';
+    note.textContent = t('chatEmpty');
+    list.appendChild(note);
+  }
+  async function syncChat(){
+    if (!SERVER_URL || chatSyncInFlight) return;
+    chatSyncInFlight = true;
+    try {
+      const response = await fetch(SERVER_URL + '/api/chat/messages?after=' + chatLastId);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.messages) && data.messages.length) {
+          data.messages.forEach(msg => { appendChatMessage(msg); chatLastId = Math.max(chatLastId, msg.id); });
+        } else if (chatLastId === 0) {
+          renderChatEmptyState();
+        }
+      }
+    } catch (error) {
+      // silently retry on the next interval
+    } finally {
+      chatSyncInFlight = false;
+    }
+  }
+  function updateChatAvailability(){
+    const input = document.getElementById('chatInput');
+    const btn = document.getElementById('chatSendBtn');
+    const hint = document.getElementById('chatHint');
+    const available = !!(serverSession.online && serverSession.token);
+    if (input) input.disabled = !available;
+    if (btn) btn.disabled = !available;
+    if (hint) hint.style.display = available ? 'none' : 'block';
+  }
+  async function sendChatMessage(){
+    const input = document.getElementById('chatInput');
+    if (!input || chatSendInFlight) return;
+    const text = input.value.trim();
+    if (!text || !serverSession.online || !serverSession.token) return;
+    chatSendInFlight = true;
+    try {
+      const response = await fetch(SERVER_URL + '/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, text })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.message) {
+        input.value = '';
+        appendChatMessage(data.message);
+        chatLastId = Math.max(chatLastId, data.message.id);
+      } else if (response.status === 429) {
+        const hint = document.getElementById('chatHint');
+        if (hint) {
+          const prevText = hint.textContent;
+          hint.textContent = t('chatTooFast'); hint.style.display = 'block';
+          setTimeout(() => { hint.textContent = prevText; hint.style.display = 'none'; }, 2500);
+        }
+      }
+    } catch (error) {
+      // leave the text in the input so the user can retry
+    } finally {
+      chatSendInFlight = false;
+    }
+  }
+  const chatSendBtnEl = document.getElementById('chatSendBtn');
+  const chatInputEl = document.getElementById('chatInput');
+  if (chatSendBtnEl) chatSendBtnEl.addEventListener('click', sendChatMessage);
+  if (chatInputEl) chatInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+  updateChatAvailability();
+  syncChat();
+  setInterval(syncChat, 4000);
+
   document.querySelectorAll('.invite-claim-btn').forEach(button => {
     button.addEventListener('click', async () => {
       if (!serverSession.online || !serverSession.token) return;
@@ -1060,13 +1180,16 @@
       const data = await res.json();
       serverSession.token = data.token;
       serverSession.online = true;
+      serverSession.uid = data.state && data.state.uid;
       window.__depositDebug = 'ok';
       applyServerState(data.state);
       renderReferralUI(data.state);
       syncWithdrawalStatuses();
+      updateChatAvailability();
     } catch (e) {
       if (!window.__depositDebug) window.__depositDebug = 'fetch-error: ' + (e && e.message);
       serverSession.online = false; // fall back to local economy silently
+      updateChatAvailability();
     } finally {
       loadDepositMemo();
     }

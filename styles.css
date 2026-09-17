@@ -157,6 +157,25 @@
   .online-dot{ width:9px; height:9px; border-radius:50%; background:#3dff8a; box-shadow:0 0 8px #3dff8a; animation:onlinePulse 1.6s ease-in-out infinite; flex-shrink:0; }
   @keyframes onlinePulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.55; transform:scale(.8); } }
 
+  /* ---------- HOME COMMUNITY CHAT ---------- */
+  .chat-card{ background:#15151f; border:1px solid #262436; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .chat-title{ margin:0; font-size:0.92rem; color:#ffd93d; text-align:center; }
+  .chat-messages{ display:flex; flex-direction:column; gap:8px; max-height:220px; min-height:60px; overflow-y:auto; padding-right:2px; }
+  .chat-msg{ background:#1c1c2a; border:1px solid #262436; border-radius:12px; padding:8px 10px; max-width:88%; align-self:flex-start; }
+  .chat-msg.mine{ align-self:flex-end; background:rgba(255,217,61,0.1); border-color:#3a3524; }
+  .chat-msg-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .chat-msg-name{ font-size:0.75rem; font-weight:800; color:#ffd93d; }
+  .chat-msg-time{ font-size:0.65rem; color:#8b86a0; flex-shrink:0; }
+  .chat-msg-text{ font-size:0.82rem; color:#e6e2f0; line-height:1.4; margin-top:2px; word-break:break-word; }
+  .chat-empty{ font-size:0.8rem; color:#8b86a0; text-align:center; padding:14px 0; }
+  .chat-input-row{ display:flex; gap:8px; }
+  .chat-input{ flex:1; background:#1c1c2a; border:1px solid #2c2a3a; border-radius:10px; padding:10px 12px; font-size:0.85rem; color:#fff; }
+  .chat-input:disabled{ opacity:0.5; }
+  .chat-input::placeholder{ color:#6f6a80; }
+  .chat-send-btn{ background:linear-gradient(160deg,#ffd93d,#ff9d3d); color:#1a1610; font-weight:800; font-size:0.85rem; border:none; border-radius:10px; padding:0 18px; }
+  .chat-send-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .chat-hint{ display:none; font-size:0.75rem; color:#8b86a0; text-align:center; }
+
   .wallet-hero{ background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; border-radius:16px; padding:24px; text-align:center; }
   .wallet-hero .big-coin{ font-size:2.3rem; font-weight:900; color:#ffd93d; }
   .wallet-hero .sub{ color:#a8a3b8; font-size:0.85rem; margin-top:2px; }
@@ -451,14 +470,14 @@
   body{ background-image:linear-gradient(rgba(16,13,24,.78),rgba(16,13,24,.9)),url('sprites/HauntedHouse.jpg'); background-size:cover; background-position:center; background-attachment:fixed; }
   #appShell{ background:rgba(16,13,24,.72); box-shadow:0 0 60px rgba(0,0,0,.62); }
   .screen{ color:var(--halloween-ink); }
-  .hero,.balance-card,.wallet-hero,.wallet-balance-card,.exchange-card,.withdraw-box,.howto,.stat-card,.task-card,.rps-card{ background:linear-gradient(145deg,rgba(36,26,43,.96),rgba(20,16,28,.96)); border-color:#51345e; box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.04); }
+  .hero,.balance-card,.wallet-hero,.wallet-balance-card,.exchange-card,.withdraw-box,.howto,.stat-card,.task-card,.rps-card,.chat-card{ background:linear-gradient(145deg,rgba(36,26,43,.96),rgba(20,16,28,.96)); border-color:#51345e; box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.04); }
   .hero h1,h1{ background:linear-gradient(90deg,var(--halloween-pumpkin),var(--halloween-orange)); -webkit-background-clip:text; background-clip:text; }
-  .hero p,.muted,.withdraw-balance,.howto-row .howto-text,.note-box,.task-card p{ color:var(--halloween-muted); }
+  .hero p,.muted,.withdraw-balance,.howto-row .howto-text,.note-box,.task-card p,.chat-msg-text,.chat-empty,.chat-hint,.chat-msg-time{ color:var(--halloween-muted); }
   .menu-btn,.btn{ background:linear-gradient(180deg,var(--halloween-pumpkin),var(--halloween-orange)); color:#281308; box-shadow:0 5px 0 #a54613,0 8px 18px rgba(255,107,25,.2); font-family:inherit; }
   .menu-btn.secondary{ color:var(--halloween-pumpkin); border-color:#75477d; background:rgba(36,26,43,.72); box-shadow:none; }
   .menu-btn:disabled{ opacity:.48; }
   .note-box{ background:rgba(169,227,75,.07); border-color:rgba(169,227,75,.3); }
-  .balance-label,.cap-row,.howto-title,.stat-card.gold .value,.balance-value,.exchange-token-value.gold,.rps-payout-preview strong{ color:var(--halloween-pumpkin); }
+  .balance-label,.cap-row,.howto-title,.stat-card.gold .value,.balance-value,.exchange-token-value.gold,.rps-payout-preview strong,.chat-title,.chat-msg-name{ color:var(--halloween-pumpkin); }
   .balance-card{ border-color:#a15a22; background:linear-gradient(145deg,#34202a,#1d1523); }
   .cap-fill{ background:linear-gradient(90deg,var(--halloween-green),var(--halloween-orange)); }
   .stat-card.coral .value{ color:#ff7557; }
@@ -467,7 +486,7 @@
   .wb-icon{ background:rgba(255,123,34,.12); border-color:rgba(255,123,34,.35); }.wb-icon.ton{ background:rgba(169,227,75,.1); border-color:rgba(169,227,75,.3); }
   .wallet-tabs,.wallet-tab-panel{ background:transparent; }
   .wallet-tabs{ border-color:#51345e; }.wallet-tab{ color:#b6a6be; }.wallet-tab.active{ background:linear-gradient(180deg,var(--halloween-pumpkin),var(--halloween-orange)); color:#281308; }
-  .withdraw-input,.deposit-address,.exchange-token-icon,.howto-row,.rps-stake-input{ background:#140f1c; border-color:#51345e; color:var(--halloween-ink); }
+  .withdraw-input,.deposit-address,.exchange-token-icon,.howto-row,.rps-stake-input,.chat-msg,.chat-input{ background:#140f1c; border-color:#51345e; color:var(--halloween-ink); }
   .withdraw-input:focus{ border-color:var(--halloween-orange); }
   .withdraw-input::placeholder{ color:#765f7d; }
   .bottomnav,.lang-switch{ background:#0d0a12; border-color:#3d2947; }.bottomnav button{ color:#9d8ba5; }.bottomnav button.active{ color:var(--halloween-pumpkin); }.bottomnav button.play-btn{ color:var(--halloween-green); }

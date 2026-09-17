@@ -112,6 +112,12 @@ const MAX_DISTANCE_PER_CALL = 1000000;
 const MIN_MS_PER_TOURNAMENT_ZOMBIE = 40; // ceiling: 25 zombies/sec sustained
 const TOURNAMENT_PLAUSIBILITY_BUFFER = 300; // slack for bursts/high-speed late-game stretches
 
+// ---- Global chat (shown on Home, under the online-player count) ----
+const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
+const CHAT_MAX_STORED = 200; // how many messages are kept on disk/in memory
+const CHAT_MAX_LEN = 300; // characters per message
+const CHAT_MIN_INTERVAL_MS = 2000; // basic anti-spam: one message per user every 2s
+
 // ---------------------------------------------------------------
 // Storage: load once, keep in memory, persist through a write queue
 // ---------------------------------------------------------------
@@ -168,6 +174,18 @@ try {
   console.error('[rps] games file unreadable: ' + e.message);
 }
 
+let chatMessages = [];
+try {
+  if (fs.existsSync(CHAT_FILE)) {
+    const loaded = JSON.parse(fs.readFileSync(CHAT_FILE, 'utf8'));
+    if (Array.isArray(loaded)) chatMessages = loaded.slice(-CHAT_MAX_STORED);
+  }
+} catch (e) {
+  console.error('[chat] messages file unreadable: ' + e.message);
+}
+let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
+const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
+
 // Keep a copy of the last good state from startup as a safety net
 try {
   if (Object.keys(users).length > 0) fs.writeFileSync(BACKUP_FILE, JSON.stringify(users));
@@ -208,6 +226,16 @@ function persistRpsGames() {
 }
 setInterval(expireRpsGames, 30000);
 
+function persistChat() {
+  const tmp = CHAT_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(chatMessages));
+    fs.renameSync(tmp, CHAT_FILE);
+  } catch (e) {
+    console.error('[chat] write failed: ' + e.message);
+  }
+}
+
 function flushSync() {
   try {
     const tmp = DATA_FILE + '.shutdown.tmp';
@@ -222,6 +250,12 @@ function flushSync() {
     fs.renameSync(RPS_FILE + '.shutdown.tmp', RPS_FILE);
   } catch (e) {
     console.error('[rps] final flush failed: ' + e.message);
+  }
+  try {
+    fs.writeFileSync(CHAT_FILE + '.shutdown.tmp', JSON.stringify(chatMessages));
+    fs.renameSync(CHAT_FILE + '.shutdown.tmp', CHAT_FILE);
+  } catch (e) {
+    console.error('[chat] final flush failed: ' + e.message);
   }
 }
 
@@ -953,6 +987,27 @@ app.get('/api/online-count', (req, res) => {
   const now = Date.now();
   const count = Object.values(users).filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS).length;
   res.json({ online: count });
+});
+
+// ---- Global chat (shown on Home, under the online-player count) ----
+// GET returns messages newer than ?after=<id> (or the last ~50 if omitted), for polling.
+app.get('/api/chat/messages', (req, res) => {
+  const after = Number(req.query.after) || 0;
+  let messages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
+  res.json({ messages });
+});
+app.post('/api/chat/send', requireUserFromBody, (req, res) => {
+  const raw = String((req.body && req.body.text) || '').replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  if (!raw) return res.status(400).json({ error: 'empty-message' });
+  const text = raw.slice(0, CHAT_MAX_LEN);
+  const lastAt = chatLastSentAt[req.uid] || 0;
+  if (Date.now() - lastAt < CHAT_MIN_INTERVAL_MS) return res.status(429).json({ error: 'too-fast' });
+  chatLastSentAt[req.uid] = Date.now();
+  const message = { id: chatNextId++, uid: req.uid, name: req.user.name || ('Player ' + req.uid), text, ts: Date.now() };
+  chatMessages.push(message);
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  persistChat();
+  res.json({ message });
 });
 
 // ---- Deposit info ----
