@@ -828,6 +828,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname, { index: false }));
+app.get('/vendor/livekit-client.umd.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'node_modules', 'livekit-client', 'dist', 'livekit-client.umd.js'));
+});
 app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', 'public'), { index: 'monster-crash.html' }));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));

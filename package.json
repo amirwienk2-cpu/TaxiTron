@@ -13,6 +13,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
+    "livekit-client": "^2.22.3",
     "livekit-server-sdk": "^2.13.2",
     "ws": "^8.21.3"
   }
