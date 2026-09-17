@@ -258,7 +258,7 @@ function attachMonsterCrash(server, opts) {
           p.lastSeen = now;
         } else if (m.t === 'grab' && phase === 'play') {
           const mo = monsters[m.i | 0];
-          if (mo && mo.active && Math.hypot(mo.x - p.x, mo.z - p.z) < 4.5) {
+          if (mo && mo.active && Math.hypot(mo.x - p.x, mo.z - p.z) < 6.5) {
             mo.active = false;
             mo.respawnAt = Date.now() + 2000 + Math.random() * 2000;
             p.monsters++;

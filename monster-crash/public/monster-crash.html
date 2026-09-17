@@ -467,7 +467,7 @@ function stepMe(c,dt){
       burst(mo.x,1,mo.z,mo.col,10,9,.6);ping(1320);if(tg&&tg.HapticFeedback)tg.HapticFeedback.impactOccurred('light');}});}
   // Position senden
   const t=performance.now();
-  if(!c.out&&t-game.lastSend>66){game.lastSend=t;send({t:'pos',x:+c.x.toFixed(2),z:+c.z.toFixed(2),a:+c.a.toFixed(3)});}
+  if(!c.out&&t-game.lastSend>40){game.lastSend=t;send({t:'pos',x:+c.x.toFixed(2),z:+c.z.toFixed(2),a:+c.a.toFixed(3)});}
   return fs;
 }
 function stepOther(c,dt){
@@ -492,7 +492,6 @@ function updIntroCam(dt){
   camera.position.set(Math.sin(game.introAngle)*radius,35,Math.cos(game.introAngle)*radius);
   camera.lookAt(0,1,0);
 }
-let hudT=0;
 function updHud(dt){
   const c=game.my;
   $('myMon').textContent='👾 '+(c?c.monsters:0);
@@ -504,7 +503,6 @@ function updHud(dt){
   const s=Math.ceil(game.left);
   $('timer').textContent=game.phase==='play'?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:game.phase==='break'?'Break':'Get ready!';
   $('timer').style.color=game.phase==='play'&&s<=10?'var(--hot)':'';
-  hudT-=dt;if(hudT>0)return;hudT=.25;
   const alive=[...game.cars.values()].filter(o=>!o.out).sort((a,b)=>b.monsters-a.monsters);
   $('roundLbl').textContent=`Round ${game.round} · ${alive.length} left · Pot ${ton(game.pot)} TON`;
   $('board').innerHTML=alive.map((o,i)=>`<div class="${i===alive.length-1?'low':o.me?'me':''}"><span><span style="color:${hex(o.color)}">■</span> ${esc(o.name)}</span><span>${o.monsters} 👾</span></div>`).join('');
