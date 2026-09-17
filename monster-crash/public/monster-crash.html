@@ -593,8 +593,9 @@ async function handleVoiceSignal(m){
       const answer=await state.pc.createAnswer();
       await state.pc.setLocalDescription(answer);
       voiceSignal(peer,{description:state.pc.localDescription});
-      if(state.negotiationPending&&state.pc.signalingState==='stable')voiceOffer(peer);
     }
+    // a renegotiate request received mid-offer would otherwise be dropped forever
+    if(state.negotiationPending&&state.pc.signalingState==='stable')voiceOffer(peer);
   }else if(data.candidate){
     if(state.ignoreOffer)return;
     if(state.pc.remoteDescription){
