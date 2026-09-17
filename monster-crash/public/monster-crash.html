@@ -395,10 +395,12 @@ function boostVoiceStream(){
   try{
     voiceInputContext=new AudioContext();
     const source=voiceInputContext.createMediaStreamSource(voiceStream);
+    const compressor=voiceInputContext.createDynamicsCompressor();
     const gain=voiceInputContext.createGain();
     const destination=voiceInputContext.createMediaStreamDestination();
-    gain.gain.value=2;
-    source.connect(gain).connect(destination);
+    compressor.threshold.value=-28;compressor.knee.value=20;compressor.ratio.value=8;
+    compressor.attack.value=.003;compressor.release.value=.25;gain.gain.value=2.5;
+    source.connect(compressor).connect(gain).connect(destination);
     voiceInputContext.resume().catch(()=>{});
     voiceOutputStream=destination.stream;
   }catch(error){console.warn('[monster-crash] microphone boost unavailable',error);}
@@ -468,7 +470,7 @@ function voicePeer(id){
   if(voiceStream){
     transceiver.sender.replaceTrack(voiceTrack()).then(()=>{
       transceiver.direction='sendrecv';state.sentStream=true;state.trackReady=true;
-      voiceOffer(id);
+      if(state.shouldOffer)voiceOffer(id);else voiceSignal(id,{renegotiate:true});
     }).catch(error=>console.warn('[monster-crash] microphone track attach failed',error));
   }else if(state.shouldOffer){
     voiceOffer(id);
@@ -502,7 +504,7 @@ async function requestVoiceAccess(){
         await state.transceiver.sender.replaceTrack(voiceTrack());
         state.transceiver.direction='sendrecv';
         state.sentStream=true;
-        voiceOffer(id);
+        if(state.shouldOffer)voiceOffer(id);else voiceSignal(id,{renegotiate:true});
       }
     }
     return true;
@@ -574,7 +576,9 @@ async function handleVoiceSignal(m){
   if(!peer)return;
   voicePeer(peer);
   const state=voicePeers.get(peer);if(!state)return;
-  if(data.description){
+  if(data.renegotiate){
+    if(state.shouldOffer)voiceOffer(peer);
+  }else if(data.description){
     const offerCollision=data.description.type==='offer'&&(state.makingOffer||state.pc.signalingState!=='stable');
     state.ignoreOffer=!state.polite&&offerCollision;
     if(state.ignoreOffer)return;
