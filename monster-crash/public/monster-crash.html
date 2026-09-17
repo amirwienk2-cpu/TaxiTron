@@ -335,7 +335,7 @@ function readInput(){
 const WS_URL=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/mc';
 let ws=null,me=null,offset=0,lobby=null,game=null,view='connect';
 const send=m=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));};
-let voiceStream=null,voiceEnabled=false,voicePeers=new Map(),voiceAudioContext=null,voiceAudioUnlocked=false,voiceLobbyStarted=false,voiceLobbyAnnounced=false;
+let voiceStream=null,voiceOutputStream=null,voiceInputContext=null,voiceEnabled=false,voicePeers=new Map(),voiceAudioContext=null,voiceAudioUnlocked=false,voiceLobbyStarted=false,voiceLobbyAnnounced=false;
 const voiceSupported=!!(window.RTCPeerConnection&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
 function voiceUnavailableMessage(){
   if(!window.isSecureContext)return 'Voice chat needs an HTTPS game URL inside Telegram.';
@@ -366,13 +366,15 @@ function unlockVoiceAudio(){
       voiceAudioContext.resume().catch(error=>console.warn('[monster-crash] audio output unlock failed',error));
     }
     voiceAudioUnlocked=true;
-    for(const peer of voicePeers.values())if(peer.audio&&!peer.outputSource)peer.audio.play().catch(()=>{});
+    for(const peer of voicePeers.values())if(peer.audio)peer.audio.play().catch(()=>{});
   }catch(error){console.warn('[monster-crash] audio output unlock failed',error);}
 }
 function voiceReset(){
-  for(const peer of voicePeers.values()){peer.pc.close();peer.outputSource?.disconnect();peer.audio?.remove();}
+  for(const peer of voicePeers.values()){peer.pc.close();peer.audio?.remove();}
   voicePeers.clear();
   if(voiceStream){voiceStream.getTracks().forEach(track=>track.stop());voiceStream=null;}
+  voiceOutputStream=null;
+  if(voiceInputContext){voiceInputContext.close().catch(()=>{});voiceInputContext=null;}
   if(voiceAudioContext){voiceAudioContext.close().catch(()=>{});voiceAudioContext=null;}
   voiceAudioUnlocked=false;
   voiceLobbyStarted=false;
@@ -381,18 +383,21 @@ function voiceReset(){
   syncVoiceButton();
 }
 function voiceSignal(peer,data){send({t:'voice-signal',data:{to:peer, ...data}});}
-function connectRemoteVoice(state,stream){
-  if(!voiceAudioContext||state.outputStream===stream)return false;
+function voiceTrack(){return (voiceOutputStream||voiceStream)?.getAudioTracks()[0]||null;}
+function boostVoiceStream(){
+  const AudioContext=window.AudioContext||window.webkitAudioContext;
+  const track=voiceStream?.getAudioTracks()[0];
+  if(!AudioContext||!track)return;
   try{
-    state.outputSource?.disconnect();
-    state.outputSource=voiceAudioContext.createMediaStreamSource(stream);
-    state.outputSource.connect(voiceAudioContext.destination);
-    state.outputStream=stream;
-    return true;
-  }catch(error){
-    console.warn('[monster-crash] AudioContext remote playback failed',error);
-    return false;
-  }
+    voiceInputContext=new AudioContext();
+    const source=voiceInputContext.createMediaStreamSource(voiceStream);
+    const gain=voiceInputContext.createGain();
+    const destination=voiceInputContext.createMediaStreamDestination();
+    gain.gain.value=1.5;
+    source.connect(gain).connect(destination);
+    voiceInputContext.resume().catch(()=>{});
+    voiceOutputStream=destination.stream;
+  }catch(error){console.warn('[monster-crash] microphone boost unavailable',error);}
 }
 async function voiceOffer(peer){
   const state=voicePeers.get(peer);
@@ -421,18 +426,17 @@ function voicePeer(id){
   const pc=new RTCPeerConnection({iceServers:servers});
   const transceiver=pc.addTransceiver('audio',{direction:'sendrecv'});
   const shouldOffer=String(me.id)<String(id);
-  const state={pc,audio:null,outputSource:null,outputStream:null,transceiver,sentStream:false,pendingCandidates:[],makingOffer:false,negotiationPending:false,ignoreOffer:false,polite:!shouldOffer,shouldOffer};
+  const state={pc,audio:null,transceiver,sentStream:false,pendingCandidates:[],makingOffer:false,negotiationPending:false,ignoreOffer:false,polite:!shouldOffer,shouldOffer};
   voicePeers.set(id,state);
-  if(voiceStream){transceiver.sender.replaceTrack(voiceStream.getAudioTracks()[0]);transceiver.direction='sendrecv';state.sentStream=true;}
+  if(voiceStream){transceiver.sender.replaceTrack(voiceTrack());transceiver.direction='sendrecv';state.sentStream=true;}
   pc.onicecandidate=e=>{if(e.candidate)voiceSignal(id,{candidate:e.candidate});};
   pc.onnegotiationneeded=()=>{if(state.shouldOffer)voiceOffer(id);};
   pc.ontrack=e=>{
     const audio=state.audio||document.createElement('audio');
     const stream=e.streams[0]||new MediaStream([e.track]);
-    const routed=connectRemoteVoice(state,stream);
-    audio.autoplay=true;audio.playsInline=true;audio.muted=routed;audio.volume=1;audio.srcObject=stream;
+    audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;audio.srcObject=stream;
     audio.dataset.voicePeer=id;if(!audio.isConnected)document.body.appendChild(audio);state.audio=audio;
-    const play=()=>{if(state.outputSource)return;audio.play().catch(error=>{
+    const play=()=>{audio.play().catch(error=>{
       console.warn('[monster-crash] remote voice playback was blocked',error);
       if(error&&error.name==='NotAllowedError')toast('Tap the mic once to enable incoming voice.');
     });};
@@ -461,13 +465,16 @@ async function requestVoiceAccess(){
   unlockVoiceAudio();
   if(!voiceSupported){toast(voiceUnavailableMessage());return false;}
   try{
-    if(!voiceStream)voiceStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    if(!voiceStream){
+      voiceStream=await navigator.mediaDevices.getUserMedia({audio:{autoGainControl:true,echoCancellation:true,noiseSuppression:true},video:false});
+      boostVoiceStream();
+    }
     voiceStream.getAudioTracks().forEach(track=>track.enabled=true);
     voiceEnabled=true;
     syncVoiceButton();
     for(const [id,state] of voicePeers){
       if(!state.sentStream){
-        await state.transceiver.sender.replaceTrack(voiceStream.getAudioTracks()[0]);
+        await state.transceiver.sender.replaceTrack(voiceTrack());
         state.transceiver.direction='sendrecv';
         state.sentStream=true;
         voiceOffer(id);
