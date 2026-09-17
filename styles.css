@@ -157,17 +157,19 @@
   .online-dot{ width:9px; height:9px; border-radius:50%; background:#3dff8a; box-shadow:0 0 8px #3dff8a; animation:onlinePulse 1.6s ease-in-out infinite; flex-shrink:0; }
   @keyframes onlinePulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.55; transform:scale(.8); } }
 
-  /* ---------- HOME COMMUNITY CHAT ---------- */
-  .chat-card{ background:#15151f; border:1px solid #262436; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; }
-  .chat-title{ margin:0; font-size:0.92rem; color:#ffd93d; text-align:center; }
-  .online-users-panel{ border:1px solid #262436; border-radius:12px; padding:10px 12px; background:#1c1c2a; }
-  .online-users-title{ display:flex; align-items:center; gap:8px; font-size:0.78rem; font-weight:700; color:#a8a3b8; margin-bottom:8px; }
+  /* ---------- HOME ONLINE USERS (separate card, above chat) ---------- */
+  .online-users-card{ background:#15151f; border:1px solid #262436; border-radius:14px; padding:14px 16px; }
+  .online-users-title{ display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:700; color:#a8a3b8; margin-bottom:10px; }
   .online-users-list{ display:flex; flex-wrap:wrap; gap:8px; max-height:140px; overflow-y:auto; }
-  .online-user-chip{ display:flex; flex-direction:column; gap:2px; background:#15151f; border:1px solid #262436; border-radius:10px; padding:6px 10px; min-width:84px; }
+  .online-user-chip{ display:flex; flex-direction:column; gap:2px; background:#1c1c2a; border:1px solid #262436; border-radius:10px; padding:6px 10px; min-width:84px; }
   .online-user-chip.mine{ border-color:#3a3524; background:rgba(255,217,61,0.08); }
   .online-user-name{ font-size:0.76rem; font-weight:700; color:#e6e2f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
   .online-user-balance{ font-size:0.7rem; font-weight:800; color:#ffd93d; }
   .online-user-empty{ font-size:0.78rem; color:#8b86a0; padding:4px 2px; }
+
+  /* ---------- HOME COMMUNITY CHAT ---------- */
+  .chat-card{ background:#15151f; border:1px solid #262436; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .chat-title{ margin:0; font-size:0.92rem; color:#ffd93d; text-align:center; }
   .chat-messages{ display:flex; flex-direction:column; gap:8px; max-height:220px; min-height:60px; overflow-y:auto; padding-right:2px; }
   .chat-msg{ background:#1c1c2a; border:1px solid #262436; border-radius:12px; padding:8px 10px; max-width:88%; align-self:flex-start; }
   .chat-msg.mine{ align-self:flex-end; background:rgba(255,217,61,0.1); border-color:#3a3524; }
@@ -478,7 +480,7 @@
   body{ background-image:linear-gradient(rgba(16,13,24,.78),rgba(16,13,24,.9)),url('sprites/HauntedHouse.jpg'); background-size:cover; background-position:center; background-attachment:fixed; }
   #appShell{ background:rgba(16,13,24,.72); box-shadow:0 0 60px rgba(0,0,0,.62); }
   .screen{ color:var(--halloween-ink); }
-  .hero,.balance-card,.wallet-hero,.wallet-balance-card,.exchange-card,.withdraw-box,.howto,.stat-card,.task-card,.rps-card,.chat-card{ background:linear-gradient(145deg,rgba(36,26,43,.96),rgba(20,16,28,.96)); border-color:#51345e; box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.04); }
+  .hero,.balance-card,.wallet-hero,.wallet-balance-card,.exchange-card,.withdraw-box,.howto,.stat-card,.task-card,.rps-card,.chat-card,.online-users-card{ background:linear-gradient(145deg,rgba(36,26,43,.96),rgba(20,16,28,.96)); border-color:#51345e; box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.04); }
   .hero h1,h1{ background:linear-gradient(90deg,var(--halloween-pumpkin),var(--halloween-orange)); -webkit-background-clip:text; background-clip:text; }
   .hero p,.muted,.withdraw-balance,.howto-row .howto-text,.note-box,.task-card p,.chat-msg-text,.chat-empty,.chat-hint,.chat-msg-time{ color:var(--halloween-muted); }
   .menu-btn,.btn{ background:linear-gradient(180deg,var(--halloween-pumpkin),var(--halloween-orange)); color:#281308; box-shadow:0 5px 0 #a54613,0 8px 18px rgba(255,107,25,.2); font-family:inherit; }
