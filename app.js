@@ -23,6 +23,8 @@
       chatMute: 'Mute',
       chatUnmute: 'Unmute',
       chatAdminTag: 'Admin',
+      chatReply: 'Reply',
+      chatReplyingTo: 'Replying to',
       navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
       shopTitle: '🧟 Zombie Gear',
       shopDesc: 'Invest your coins in permanent upgrades for every ride.',
@@ -127,6 +129,8 @@
       chatMute: 'بی‌صدا',
       chatUnmute: 'رفع بی‌صدایی',
       chatAdminTag: 'ادمین',
+      chatReply: 'پاسخ',
+      chatReplyingTo: 'در پاسخ به',
       navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
       shopTitle: '🧟 تجهیزات زامبی',
       shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
@@ -1066,6 +1070,23 @@
   let chatLastId = 0;
   let chatSyncInFlight = false;
   let chatSendInFlight = false;
+  let chatReplyTarget = null; // { id, name, text } - the message currently being replied to, or null
+  function setChatReplyTarget(msg){
+    chatReplyTarget = msg ? { id: msg.id, name: msg.name, text: msg.text } : null;
+    const preview = document.getElementById('chatReplyPreview');
+    const nameEl = document.getElementById('chatReplyPreviewName');
+    const excerptEl = document.getElementById('chatReplyPreviewExcerpt');
+    if (!preview) return;
+    if (chatReplyTarget) {
+      if (nameEl) nameEl.textContent = chatReplyTarget.name || '';
+      if (excerptEl) excerptEl.textContent = chatReplyTarget.text.slice(0, 60) + (chatReplyTarget.text.length > 60 ? '…' : '');
+      preview.style.display = 'flex';
+      const input = document.getElementById('chatInput');
+      if (input) input.focus();
+    } else {
+      preview.style.display = 'none';
+    }
+  }
   function formatChatTime(ts){
     try { return new Date(ts).toLocaleTimeString(currentLang === 'fa' ? 'fa-IR' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); }
     catch (error) { return ''; }
@@ -1095,10 +1116,29 @@
     timeEl.className = 'chat-msg-time';
     timeEl.textContent = formatChatTime(msg.ts);
     head.appendChild(nameEl); head.appendChild(timeEl);
+    row.appendChild(head);
+    if (msg.replyTo) {
+      const quote = document.createElement('div');
+      quote.className = 'chat-msg-quote';
+      const quoteName = document.createElement('span');
+      quoteName.className = 'chat-msg-quote-name';
+      quoteName.textContent = msg.replyTo.name || '';
+      const quoteText = document.createElement('span');
+      quoteText.className = 'chat-msg-quote-text';
+      quoteText.textContent = msg.replyTo.text || '';
+      quote.appendChild(quoteName); quote.appendChild(quoteText);
+      row.appendChild(quote);
+    }
     const textEl = document.createElement('div');
     textEl.className = 'chat-msg-text';
     textEl.textContent = msg.text; // textContent only - never render as HTML
-    row.appendChild(head); row.appendChild(textEl);
+    row.appendChild(textEl);
+    const replyBtn = document.createElement('button');
+    replyBtn.type = 'button';
+    replyBtn.className = 'chat-msg-reply-btn';
+    replyBtn.textContent = t('chatReply');
+    replyBtn.addEventListener('click', () => setChatReplyTarget(msg));
+    row.appendChild(replyBtn);
     list.appendChild(row);
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     if (nearBottom) list.scrollTop = list.scrollHeight;
@@ -1166,11 +1206,12 @@
       const response = await fetch(SERVER_URL + '/api/chat/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: serverSession.token, text })
+        body: JSON.stringify({ token: serverSession.token, text, replyTo: chatReplyTarget ? chatReplyTarget.id : undefined })
       });
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.message) {
         input.value = '';
+        setChatReplyTarget(null);
         appendChatMessage(data.message);
         chatLastId = Math.max(chatLastId, data.message.id);
       } else if (response.status === 429) {
@@ -1189,8 +1230,10 @@
   }
   const chatSendBtnEl = document.getElementById('chatSendBtn');
   const chatInputEl = document.getElementById('chatInput');
+  const chatReplyCancelBtnEl = document.getElementById('chatReplyCancelBtn');
   if (chatSendBtnEl) chatSendBtnEl.addEventListener('click', sendChatMessage);
   if (chatInputEl) chatInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+  if (chatReplyCancelBtnEl) chatReplyCancelBtnEl.addEventListener('click', () => setChatReplyTarget(null));
   updateChatAvailability();
   syncChat();
   setInterval(syncChat, 4000);

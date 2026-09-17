@@ -1063,7 +1063,13 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   const lastAt = chatLastSentAt[req.uid] || 0;
   if (Date.now() - lastAt < CHAT_MIN_INTERVAL_MS) return res.status(429).json({ error: 'too-fast' });
   chatLastSentAt[req.uid] = Date.now();
-  const message = { id: chatNextId++, uid: req.uid, name: req.user.name || ('Player ' + req.uid), text, ts: Date.now(), isAdmin: req.user.isChatAdmin === true };
+  const replyToId = Number(req.body && req.body.replyTo) || 0;
+  let replyTo = null;
+  if (replyToId > 0) {
+    const original = chatMessages.find((m) => m.id === replyToId);
+    if (original) replyTo = { id: original.id, name: original.name, text: original.text.slice(0, 120) };
+  }
+  const message = { id: chatNextId++, uid: req.uid, name: req.user.name || ('Player ' + req.uid), text, ts: Date.now(), isAdmin: req.user.isChatAdmin === true, replyTo };
   chatMessages.push(message);
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
