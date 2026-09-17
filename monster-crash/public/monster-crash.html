@@ -84,7 +84,6 @@ button{font:inherit;cursor:pointer}
       <div class="plist lobbyPlayers" id="lPlayers"></div>
     </div>
   </div>
-  <button id="voiceLobby" class="big alt hidden" type="button">🎙️ Test mic in lobby</button>
   <button class="big" id="btnJoin">Join – 0.001 TON</button>
   <p class="note">Stake 0.001 TON · If fewer than 3 players join, it is automatically refunded.</p>
 </div></div>
@@ -331,219 +330,12 @@ function readInput(){
 const WS_URL=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/mc';
 let ws=null,me=null,offset=0,lobby=null,game=null,view='connect';
 const send=m=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));};
-<<<<<<< HEAD
 let authData=tg&&tg.initData?tg.initData:null;
 function connect(){
   if(!authData){
     $('connMsg').textContent='Open this page from Telegram to continue.';
     return;
   }
-=======
-let voiceStream=null,voiceOutputStream=null,voiceInputContext=null,voiceEnabled=false,voicePeers=new Map(),voiceAudioContext=null,voiceAudioUnlocked=false,voiceLobbyStarted=false,voiceLobbyAnnounced=false;
-const voiceSupported=!!(window.RTCPeerConnection&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
-function voiceUnavailableMessage(){
-  if(!window.isSecureContext)return 'Voice chat needs an HTTPS game URL inside Telegram.';
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return 'This Telegram client cannot access the microphone.';
-  return 'Voice chat is not supported in this Telegram client.';
-}
-function getVoiceButton(){return view==='game' ? $('voice') : $('voiceLobby');}
-function syncVoiceButton(){
-  if(!voiceSupported){
-    $('voice').classList.add('hidden');
-    $('voiceLobby').classList.add('hidden');
-    return;
-  }
-  const active=view==='game';
-  $('voice').classList.toggle('hidden', !active);
-  $('voiceLobby').classList.toggle('hidden', active);
-  const button=getVoiceButton();
-  if(!button)return;
-  button.classList.toggle('on', voiceEnabled);
-  button.textContent=voiceEnabled ? '🎙️ Turn mic off' : (active ? '🎙️ Turn mic on' : '🎙️ Test mic in lobby');
-}
-function unlockVoiceAudio(){
-  if(voiceAudioUnlocked)return;
-  try{
-    const AudioContext=window.AudioContext||window.webkitAudioContext;
-    if(AudioContext){
-      voiceAudioContext=voiceAudioContext||new AudioContext();
-      voiceAudioContext.resume().catch(error=>console.warn('[monster-crash] audio output unlock failed',error));
-    }
-    voiceAudioUnlocked=true;
-    for(const peer of voicePeers.values())if(peer.audio)peer.audio.play().catch(()=>{});
-  }catch(error){console.warn('[monster-crash] audio output unlock failed',error);}
-}
-function removeVoicePeer(id){
-  const peer=voicePeers.get(id);if(!peer)return;
-  clearTimeout(peer.reconnectTimer);peer.pc.close();peer.audio?.remove();voicePeers.delete(id);
-}
-function voiceReset(){
-  for(const id of [...voicePeers.keys()])removeVoicePeer(id);
-  voicePeers.clear();
-  if(voiceStream){voiceStream.getTracks().forEach(track=>track.stop());voiceStream=null;}
-  voiceOutputStream=null;
-  if(voiceInputContext){voiceInputContext.close().catch(()=>{});voiceInputContext=null;}
-  if(voiceAudioContext){voiceAudioContext.close().catch(()=>{});voiceAudioContext=null;}
-  voiceAudioUnlocked=false;
-  voiceLobbyStarted=false;
-  voiceLobbyAnnounced=false;
-  voiceEnabled=false;
-  syncVoiceButton();
-}
-function voiceSignal(peer,data){send({t:'voice-signal',data:{to:peer, ...data}});}
-function voiceTrack(){return (voiceOutputStream||voiceStream)?.getAudioTracks()[0]||null;}
-function boostVoiceStream(){
-  const AudioContext=window.AudioContext||window.webkitAudioContext;
-  const track=voiceStream?.getAudioTracks()[0];
-  if(!AudioContext||!track)return;
-  try{
-    voiceInputContext=new AudioContext();
-    const source=voiceInputContext.createMediaStreamSource(voiceStream);
-    const gain=voiceInputContext.createGain();
-    const destination=voiceInputContext.createMediaStreamDestination();
-    gain.gain.value=2;
-    source.connect(gain).connect(destination);
-    voiceInputContext.resume().catch(()=>{});
-    voiceOutputStream=destination.stream;
-  }catch(error){console.warn('[monster-crash] microphone boost unavailable',error);}
-}
-async function voiceOffer(peer,restartIce=false){
-  const state=voicePeers.get(peer);
-  if(!state)return;
-  if(state.makingOffer||state.pc.signalingState!=='stable'){
-    state.negotiationPending=true;
-    return;
-  }
-  try{
-    state.makingOffer=true;
-    state.negotiationPending=false;
-    const offer=await state.pc.createOffer(restartIce?{iceRestart:true}:undefined);
-    await state.pc.setLocalDescription(offer);
-    voiceSignal(peer,{description:state.pc.localDescription});
-  }catch(error){console.warn('[monster-crash] voice negotiation failed',error);}
-  finally{
-    state.makingOffer=false;
-    if(state.negotiationPending&&state.pc.signalingState==='stable')voiceOffer(peer);
-  }
-}
-function voicePeer(id){
-  if(!me||id===me.id)return;
-  if(voicePeers.has(id)){
-    const state=voicePeers.get(id);
-    if(state.pc.connectionState==='failed'||state.pc.connectionState==='closed')recoverVoicePeer(id,true);
-    return;
-  }
-  const servers=game&&game.iceServers&&game.iceServers.length?game.iceServers:lobby&&lobby.iceServers&&lobby.iceServers.length?lobby.iceServers:[{urls:'stun:stun.l.google.com:19302'}];
-  const pc=new RTCPeerConnection({iceServers:servers});
-  const transceiver=pc.addTransceiver('audio',{direction:'sendrecv'});
-  const shouldOffer=String(me.id)<String(id);
-  const state={pc,audio:null,transceiver,sentStream:false,trackReady:!voiceStream,pendingCandidates:[],makingOffer:false,negotiationPending:false,ignoreOffer:false,polite:!shouldOffer,shouldOffer,reconnectTimer:null};
-  voicePeers.set(id,state);
-  pc.onicecandidate=e=>{if(e.candidate)voiceSignal(id,{candidate:e.candidate});};
-  pc.onnegotiationneeded=()=>{if(state.shouldOffer&&state.trackReady)voiceOffer(id);};
-  pc.ontrack=e=>{
-    const audio=state.audio||document.createElement('audio');
-    const stream=e.streams[0]||new MediaStream([e.track]);
-    audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;audio.srcObject=stream;
-    audio.dataset.voicePeer=id;if(!audio.isConnected)document.body.appendChild(audio);state.audio=audio;
-    const play=()=>{audio.play().catch(error=>{
-      console.warn('[monster-crash] remote voice playback was blocked',error);
-      if(error&&error.name==='NotAllowedError')toast('Tap the mic once to enable incoming voice.');
-    });};
-    audio.oncanplay=play;
-    audio.onloadedmetadata=play;
-    e.track.onunmute=play;
-    e.track.onended=()=>{if(!stream.getAudioTracks().some(track=>track.readyState==='live')){audio.pause();recoverVoicePeer(id);}};
-    if(voiceAudioUnlocked)play();
-  };
-  pc.onconnectionstatechange=()=>{
-    if(pc.connectionState==='connected'){
-      clearTimeout(state.reconnectTimer);state.reconnectTimer=null;
-      toast('Voice connected.',1800);
-      if(!state.announced){state.announced=true;send({t:'voice-hello'});}
-    }
-    if(pc.connectionState==='disconnected'&&!state.reconnectTimer){
-      state.reconnectTimer=setTimeout(()=>recoverVoicePeer(id),3000);
-    }
-    if(pc.connectionState==='failed'){
-      toast('Voice connection interrupted. Retrying…',3000);recoverVoicePeer(id,true);
-    }
-  };
-  if(voiceStream){
-    transceiver.sender.replaceTrack(voiceTrack()).then(()=>{
-      transceiver.direction='sendrecv';state.sentStream=true;state.trackReady=true;
-      voiceOffer(id);
-    }).catch(error=>console.warn('[monster-crash] microphone track attach failed',error));
-  }else if(state.shouldOffer){
-    voiceOffer(id);
-  }
-}
-function recoverVoicePeer(id,rebuild=false){
-  const state=voicePeers.get(id);if(!state)return;
-  clearTimeout(state.reconnectTimer);state.reconnectTimer=null;
-  if(!me||!ws||ws.readyState!==1)return;
-  if(!rebuild&&state.pc.connectionState!=='failed'&&state.pc.connectionState!=='closed'){
-    voiceOffer(id,true);return;
-  }
-  removeVoicePeer(id);
-  voicePeer(id);
-  send({t:'voice-hello'});
-}
-async function requestVoiceAccess(){
-  const button=getVoiceButton();
-  unlockVoiceAudio();
-  if(!voiceSupported){toast(voiceUnavailableMessage());return false;}
-  try{
-    if(!voiceStream){
-      voiceStream=await navigator.mediaDevices.getUserMedia({audio:{autoGainControl:true,echoCancellation:true,noiseSuppression:true},video:false});
-      boostVoiceStream();
-    }
-    voiceStream.getAudioTracks().forEach(track=>track.enabled=true);
-    voiceEnabled=true;
-    syncVoiceButton();
-    for(const [id,state] of voicePeers){
-      if(!state.sentStream){
-        await state.transceiver.sender.replaceTrack(voiceTrack());
-        state.transceiver.direction='sendrecv';
-        state.sentStream=true;
-        voiceOffer(id);
-      }
-    }
-    return true;
-  }catch(error){
-    console.error('[monster-crash] microphone access failed',error);
-    const message=error&&error.name==='NotAllowedError'
-      ? 'Allow microphone access for Telegram, then tap the mic again.'
-      : error&&error.name==='NotFoundError'
-        ? 'No microphone was found on this device.'
-        : 'Microphone access failed. Try again from the Telegram app.';
-    toast(message);
-    syncVoiceButton();
-    voiceEnabled=false;
-    return false;
-  }
-}
-async function toggleVoice(){
-  const button=getVoiceButton();
-  if(!voiceSupported){toast(voiceUnavailableMessage());return;}
-  if(voiceEnabled){
-    if(voiceStream)voiceStream.getAudioTracks().forEach(track=>track.enabled=false);
-    voiceEnabled=false;syncVoiceButton();return;
-  }
-  await requestVoiceAccess();
-}
-async function enableVoiceAutomatically(){
-  if(!voiceSupported||voiceEnabled)return;
-  syncVoiceButton();
-  toast('Tap the mic button to allow voice chat.');
-}
-let authData=tg&&tg.initData?tg.initData:null;
-function connect(){
-  if(!authData){
-    $('connMsg').textContent='Open this page from Telegram to continue.';
-    return;
-  }
->>>>>>> origin/main
   ws=new WebSocket(WS_URL);
   ws.onopen=()=>send({t:'auth',initData:authData});
   ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch{return;}handle(m);};
@@ -561,51 +353,6 @@ function handle(m){
     case 'round':if(game)newRound(m);break;
     case 'out':if(game)onOut(m);break;
     case 'end':if(game)onEnd(m);break;
-<<<<<<< HEAD
-=======
-    case 'voice-peer':voicePeer(m.id);break;
-    case 'voice-signal':handleVoiceSignal(m);break;
-  }
-  function startLobbyVoice(){
-    if(!voiceSupported){toast(voiceUnavailableMessage(),5000);return;}
-    if(!voiceLobbyStarted){
-      voiceLobbyStarted=true;
-      syncVoiceButton();
-      toast('Tap the mic button to allow voice chat.');
-    }
-      if(inLobby()&&!voiceLobbyAnnounced){voiceLobbyAnnounced=true;send({t:'voice-hello'});}
-  }
-}
-async function handleVoiceSignal(m){
-  const data=m.data||{},peer=m.from;
-  if(!peer)return;
-  voicePeer(peer);
-  const state=voicePeers.get(peer);if(!state)return;
-  if(data.description){
-    const offerCollision=data.description.type==='offer'&&(state.makingOffer||state.pc.signalingState!=='stable');
-    state.ignoreOffer=!state.polite&&offerCollision;
-    if(state.ignoreOffer)return;
-    if(data.description.type==='offer'&&offerCollision){
-      await state.pc.setLocalDescription({type:'rollback'});
-    }
-    await state.pc.setRemoteDescription(data.description);
-    for(const candidate of state.pendingCandidates.splice(0)){
-      try{await state.pc.addIceCandidate(candidate);}catch(error){console.warn('[monster-crash] queued ICE candidate rejected',error);}
-    }
-    if(data.description.type==='offer'){
-      const answer=await state.pc.createAnswer();
-      await state.pc.setLocalDescription(answer);
-      voiceSignal(peer,{description:state.pc.localDescription});
-      if(state.negotiationPending&&state.pc.signalingState==='stable')voiceOffer(peer);
-    }
-  }else if(data.candidate){
-    if(state.ignoreOffer)return;
-    if(state.pc.remoteDescription){
-      try{await state.pc.addIceCandidate(data.candidate);}catch(error){console.warn('[monster-crash] ICE candidate rejected',error);}
-    }else{
-      state.pendingCandidates.push(data.candidate);
-    }
->>>>>>> origin/main
   }
 }
 
@@ -632,13 +379,7 @@ setInterval(()=>{
   const s=Math.max(0,Math.ceil((lobby.endsAt-(Date.now()+offset))/1000));
   $('lTimer').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
 },250);
-<<<<<<< HEAD
 $('btnJoin').onclick=()=>{initAudio();if(inLobby())send({t:'leave'});else{$('btnJoin').disabled=true;send({t:'join'});}};
-=======
-$('btnJoin').onclick=()=>{initAudio();unlockVoiceAudio();if(inLobby())send({t:'leave'});else{$('btnJoin').disabled=true;send({t:'join'});}};
-$('voice').onclick=toggleVoice;
-$('voiceLobby').onclick=toggleVoice;
->>>>>>> origin/main
 $('btnBack').onclick=()=>{window.location.href='/';};
 
 // ---------- Game ----------
@@ -649,13 +390,8 @@ function startGame(m){
   for(const p of m.players){const c=makeCar(p,me&&p.id===me.id);game.cars.set(p.id,c);if(c.me)game.my=c;c.g.visible=!c.out;}
   const c=game.my;if(c)camera.position.set(c.x-Math.sin(c.a)*19,10,c.z-Math.cos(c.a)*19);
   $('touch').classList.toggle('hidden',!isTouch);
-<<<<<<< HEAD
-=======
-  send({t:'voice-hello'});
->>>>>>> origin/main
   $('banner').classList.add('hidden');
-  view='game';screen('game');syncVoiceButton();
-  toast('Tap the mic button to allow voice chat.');
+  view='game';screen('game');
 }
 function applyState(s){
   game.phase=s.ph;game.left=s.left;game.round=s.round;

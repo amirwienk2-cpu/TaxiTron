@@ -67,42 +67,6 @@ const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
-<<<<<<< HEAD
-=======
-const TURN_URL = String(process.env.TURN_URL || '').trim();
-const TURN_USERNAME = String(process.env.TURN_USERNAME || '').trim();
-const TURN_CREDENTIAL = String(process.env.TURN_CREDENTIAL || '').trim();
-// Expand a single TURN host into UDP + TCP + TLS candidates so voice still
-// connects on networks that block one transport (common on mobile/corporate Wi-Fi).
-function turnVariants(url, username, credential) {
-  if (!url || !username || !credential) return [];
-  const match = url.match(/^turns?:([^?]+)/i);
-  if (!match) return [{ urls: url, username, credential }];
-  const hostPort = match[1];
-  const urls = url.startsWith('turns:')
-    ? [`turns:${hostPort}?transport=tcp`]
-    : [`turn:${hostPort}?transport=udp`, `turn:${hostPort}?transport=tcp`, `turns:${hostPort}?transport=tcp`];
-  return [{ urls, username, credential }];
-}
-
-const MONSTER_CRASH_ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun.cloudflare.com:3478' },
-  ...turnVariants(TURN_URL, TURN_USERNAME, TURN_CREDENTIAL),
-  // Always keep this free relay as a backup candidate, even with a custom TURN
-  // configured, so a single provider outage/rate-limit doesn't cut off some players.
-  {
-    urls: [
-      'turn:openrelay.metered.ca:80',
-      'turn:openrelay.metered.ca:443',
-      'turns:openrelay.metered.ca:443?transport=tcp',
-    ],
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-];
-
->>>>>>> origin/main
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
 const DATA_DIR = process.env.DATA_DIR || RAILWAY_VOLUME_PATH || path.join(__dirname, 'data');
