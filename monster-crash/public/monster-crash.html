@@ -393,16 +393,12 @@ function boostVoiceStream(){
   const track=voiceStream?.getAudioTracks()[0];
   if(!AudioContext||!track)return;
   try{
-    // reuse the context unlocked synchronously in the click gesture; a fresh
-    // context created after the getUserMedia await can stay suspended on iOS/WebKit
-    voiceInputContext=voiceAudioContext=voiceAudioContext||new AudioContext();
+    voiceInputContext=new AudioContext();
     const source=voiceInputContext.createMediaStreamSource(voiceStream);
-    const compressor=voiceInputContext.createDynamicsCompressor();
     const gain=voiceInputContext.createGain();
     const destination=voiceInputContext.createMediaStreamDestination();
-    compressor.threshold.value=-28;compressor.knee.value=20;compressor.ratio.value=8;
-    compressor.attack.value=.003;compressor.release.value=.25;gain.gain.value=2.5;
-    source.connect(compressor).connect(gain).connect(destination);
+    gain.gain.value=2;
+    source.connect(gain).connect(destination);
     voiceInputContext.resume().catch(()=>{});
     voiceOutputStream=destination.stream;
   }catch(error){console.warn('[monster-crash] microphone boost unavailable',error);}
@@ -472,7 +468,7 @@ function voicePeer(id){
   if(voiceStream){
     transceiver.sender.replaceTrack(voiceTrack()).then(()=>{
       transceiver.direction='sendrecv';state.sentStream=true;state.trackReady=true;
-      if(state.shouldOffer)voiceOffer(id);else voiceSignal(id,{renegotiate:true});
+      voiceOffer(id);
     }).catch(error=>console.warn('[monster-crash] microphone track attach failed',error));
   }else if(state.shouldOffer){
     voiceOffer(id);
@@ -506,7 +502,7 @@ async function requestVoiceAccess(){
         await state.transceiver.sender.replaceTrack(voiceTrack());
         state.transceiver.direction='sendrecv';
         state.sentStream=true;
-        if(state.shouldOffer)voiceOffer(id);else voiceSignal(id,{renegotiate:true});
+        voiceOffer(id);
       }
     }
     return true;
@@ -578,9 +574,7 @@ async function handleVoiceSignal(m){
   if(!peer)return;
   voicePeer(peer);
   const state=voicePeers.get(peer);if(!state)return;
-  if(data.renegotiate){
-    if(state.shouldOffer)voiceOffer(peer);
-  }else if(data.description){
+  if(data.description){
     const offerCollision=data.description.type==='offer'&&(state.makingOffer||state.pc.signalingState!=='stable');
     state.ignoreOffer=!state.polite&&offerCollision;
     if(state.ignoreOffer)return;
@@ -595,9 +589,8 @@ async function handleVoiceSignal(m){
       const answer=await state.pc.createAnswer();
       await state.pc.setLocalDescription(answer);
       voiceSignal(peer,{description:state.pc.localDescription});
+      if(state.negotiationPending&&state.pc.signalingState==='stable')voiceOffer(peer);
     }
-    // a renegotiate request received mid-offer would otherwise be dropped forever
-    if(state.negotiationPending&&state.pc.signalingState==='stable')voiceOffer(peer);
   }else if(data.candidate){
     if(state.ignoreOffer)return;
     if(state.pc.remoteDescription){
