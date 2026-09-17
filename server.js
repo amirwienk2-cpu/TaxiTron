@@ -101,7 +101,7 @@ const MIN_WITHDRAW = 1; // TON
 const WITHDRAWAL_FEE_RATE = 0.01;
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const INIT_DATA_MAX_AGE_MS = 24 * 60 * 60 * 1000; // reject stale Telegram auth payloads
-const MAX_ZOMBIES_PER_CALL = 2000; // basic anti-cheat ceiling
+const MAX_ZOMBIES_PER_CALL = 10000; // basic anti-cheat ceiling
 const MAX_DISTANCE_PER_CALL = 1000000;
 
 // ---------------------------------------------------------------
