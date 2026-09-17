@@ -46,8 +46,6 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-require('dotenv').config();
-const { AccessToken } = require('livekit-server-sdk');
 const { attachMonsterCrash } = require('./monster-crash/monster-crash');
 
 // ---------------------------------------------------------------
@@ -69,9 +67,24 @@ const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
-const LIVEKIT_URL = String(process.env.LIVEKIT_URL || '').trim();
-const LIVEKIT_API_KEY = String(process.env.LIVEKIT_API_KEY || '').trim();
-const LIVEKIT_API_SECRET = String(process.env.LIVEKIT_API_SECRET || '').trim();
+const TURN_URL = String(process.env.TURN_URL || '').trim();
+const TURN_USERNAME = String(process.env.TURN_USERNAME || '').trim();
+const TURN_CREDENTIAL = String(process.env.TURN_CREDENTIAL || '').trim();
+const MONSTER_CRASH_ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  ...(TURN_URL && TURN_USERNAME && TURN_CREDENTIAL
+    ? [{ urls: TURN_URL, username: TURN_USERNAME, credential: TURN_CREDENTIAL }]
+    : [{
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turns:openrelay.metered.ca:443?transport=tcp',
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    }]),
+];
 
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
@@ -828,28 +841,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname, { index: false }));
-app.get('/vendor/livekit-client.umd.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'node_modules', 'livekit-client', 'dist', 'livekit-client.umd.js'));
-});
 app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', 'public'), { index: 'monster-crash.html' }));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
-app.post('/monster-crash/livekit-token', async (req, res) => {
-  if (!LIVEKIT_URL || !LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
-    return res.status(503).json({ error: 'voice-chat-not-configured' });
-  }
-  const user = verifyMonsterCrashUser(req.body && req.body.initData);
-  if (!user) return res.status(401).json({ error: 'invalid-telegram-auth' });
-
-  const token = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
-    identity: user.id,
-    name: user.name,
-    ttl: '10m',
-  });
-  token.addGrant({ roomJoin: true, room: 'monster-crash', canPublish: true, canSubscribe: true });
-  return res.json({ url: LIVEKIT_URL, token: await token.toJwt() });
-});
 
 app.get('/admin', (req, res) => {
   if (!ADMIN_SECRET) return res.status(503).send('Admin panel is disabled: ADMIN_SECRET is not configured.');
@@ -1837,6 +1831,7 @@ const server = http.createServer(app);
 attachMonsterCrash(server, {
   verifyUser: verifyMonsterCrashUser,
   economy: monsterCrashEconomy,
+  iceServers: MONSTER_CRASH_ICE_SERVERS,
 });
 
 server.listen(PORT, () => {

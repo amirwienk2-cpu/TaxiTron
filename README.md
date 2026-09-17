@@ -16,22 +16,21 @@ copy .env.example .env   # then fill in the real secret values
 npm start
 ```
 
-## Deployment
+## Deploying on Railway
 
-Deploy this repository to any Node.js host. The backend is the root-level
-`server.js`; set `PORT` if your host does not provide one, and use persistent
-storage for `DATA_DIR`.
-
-Set `BOT_TOKEN`, `SESSION_SECRET`, `ADMIN_SECRET`, `PLATFORM_USER_ID`, and the
-economy variables listed below. For Monster Crash voice chat, create a LiveKit
-Cloud project and set `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and
-`LIVEKIT_API_SECRET`. LiveKit Cloud provides the media and TURN infrastructure;
-no Railway or separate TURN configuration is required. Use an HTTPS public
-domain for the Mini App so Telegram can grant microphone access.
-
-Set `SERVER_URL` in `app.js`, plus `MINI_APP_URL` and
-`TELEGRAM_WEBHOOK_URL` in the deployment environment, to your public domain.
-Set `ADMIN_SECRET` and open `/admin` to review and complete manual payouts.
+1. Deploy this repository from GitHub. The backend is the root-level
+  `server.js`, so leave Railway's Root Directory empty.
+2. Add a Volume, mount it at `/data`.
+3. Set environment variables: `BOT_TOKEN`, `SESSION_SECRET`,
+  `ADMIN_SECRET`, `PLATFORM_USER_ID`, `DATA_DIR=/data`. For Monster Crash
+  voice chat, set `TURN_URL`, `TURN_USERNAME`, and `TURN_CREDENTIAL` from a
+  private TURN provider. TURN is required for reliable Telegram mobile voice
+  chat because many mobile networks cannot connect through STUN alone. Use an
+  HTTPS public domain for the Mini App so Telegram can grant microphone access.
+4. Deploy. Railway provides `PORT` automatically.
+5. In `app.js`, make sure `SERVER_URL` points at the Railway domain.
+  The current production fallback is `https://taxitron-production.up.railway.app`.
+6. Set `ADMIN_SECRET` and open `/admin` to review and complete manual payouts.
 
 Railway's generated public domain must be configured in the service's
 Networking settings. If you use a different domain, update the `SERVER_URL`
