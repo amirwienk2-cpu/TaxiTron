@@ -25,7 +25,6 @@ const DEFAULTS = {
   breakSeconds: 5,
   monsterCount: 50,
   arena: 60,
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 };
 
 const OBSTACLES = [
@@ -96,7 +95,6 @@ function attachMonsterCrash(server, opts) {
     winnerShare: cfg.winnerShare,
     min: cfg.minPlayers,
     max: cfg.maxPlayers,
-    iceServers: cfg.iceServers,
   });
   const broadcastLobby = () => {
     const v = lobbyView();
@@ -181,25 +179,6 @@ function attachMonsterCrash(server, opts) {
       if (m.t === 'join') return join(ws);
       if (m.t === 'leave') return leave(ws);
       if (m.t === 'lobby') { if (!ws.matchId) send(ws, lobbyView()); return; }
-      if (m.t === 'voice-hello' || m.t === 'voice-signal') {
-        const mt = ws.matchId && matches.get(ws.matchId);
-        const target = m.t === 'voice-signal' && m.data && m.data.to;
-        const players = mt ? mt.players.values() : lobby.players.values();
-        if (!mt && ws.matchId) return;
-        for (const player of players) {
-          if (player.id === ws.user.id || (target && player.id !== target)) continue;
-          const peer = conns.get(player.id);
-          if (m.t === 'voice-hello') {
-            send(ws, { t: 'voice-peer', id: player.id });
-            send(peer, { t: 'voice-peer', id: ws.user.id });
-          } else {
-            const data = { ...m.data };
-            delete data.to;
-            send(peer, { t: 'voice-signal', from: ws.user.id, data });
-          }
-        }
-        return;
-      }
       const mt = ws.matchId && matches.get(ws.matchId);
       if (mt) mt.onMsg(ws.user.id, m);
     });
