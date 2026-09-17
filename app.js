@@ -1091,7 +1091,7 @@
     try { return new Date(ts).toLocaleTimeString(currentLang === 'fa' ? 'fa-IR' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); }
     catch (error) { return ''; }
   }
-  function appendChatMessage(msg){
+  function appendChatMessage(msg, forceScroll){
     const list = document.getElementById('chatMessages');
     if (!list) return;
     const emptyNote = list.querySelector('.chat-empty');
@@ -1141,7 +1141,7 @@
     row.appendChild(replyBtn);
     list.appendChild(row);
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
-    if (nearBottom) list.scrollTop = list.scrollHeight;
+    if (forceScroll || nearBottom) list.scrollTop = list.scrollHeight;
   }
   function renderChatEmptyState(){
     const list = document.getElementById('chatMessages');
@@ -1158,9 +1158,15 @@
       const response = await fetch(SERVER_URL + '/api/chat/messages?after=' + chatLastId);
       if (response.ok) {
         const data = await response.json();
+        const isInitialLoad = chatLastId === 0;
         if (Array.isArray(data.messages) && data.messages.length) {
-          data.messages.forEach(msg => { appendChatMessage(msg); chatLastId = Math.max(chatLastId, msg.id); });
-        } else if (chatLastId === 0) {
+          data.messages.forEach(msg => { appendChatMessage(msg, isInitialLoad); chatLastId = Math.max(chatLastId, msg.id); });
+          if (isInitialLoad) {
+            const list = document.getElementById('chatMessages');
+            // Panel may not have been laid out yet on first load - scroll again once it is.
+            if (list) setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
+          }
+        } else if (isInitialLoad) {
           renderChatEmptyState();
         }
       }
