@@ -19,7 +19,7 @@ const DEFAULTS = {
   winnerShare: 0.8,          // 80 % an den Sieger, Rest an die App
   minPlayers: 3,
   maxPlayers: 10,
-  lobbySeconds: 300,         // 5:00
+  lobbySeconds: 180,         // 3:00
   roundSeconds: 60,          // 1:00
   countSeconds: 5,
   breakSeconds: 5,
