@@ -23,6 +23,8 @@
       chatMute: 'Mute',
       chatUnmute: 'Unmute',
       chatDisabledHint: 'Chat has been turned off by an admin. Sending is temporarily disabled.',
+      chatGlobalTurnOff: '🚫 Turn chat off for everyone',
+      chatGlobalTurnOn: '💬 Turn chat back on',
       chatAdminTag: 'Admin',
       chatReply: 'Reply',
       chatReplyingTo: 'Replying to',
@@ -130,6 +132,8 @@
       chatMute: 'بی‌صدا',
       chatUnmute: 'رفع بی‌صدایی',
       chatDisabledHint: 'گفتگو توسط یک مدیر خاموش شده است. ارسال پیام موقتاً غیرفعال است.',
+      chatGlobalTurnOff: '🚫 خاموش کردن گفتگو برای همه',
+      chatGlobalTurnOn: '💬 روشن کردن دوباره گفتگو',
       chatAdminTag: 'ادمین',
       chatReply: 'پاسخ',
       chatReplyingTo: 'در پاسخ به',
@@ -1008,6 +1012,36 @@
   setInterval(syncOnlineCount, 15000);
 
   // ---- Online users list shown above the chat, with each user's TON balance ----
+  let chatGloballyEnabled = true;
+  function updateChatGlobalToggleBtn(){
+    const btn = document.getElementById('chatGlobalToggleBtn');
+    if (!btn) return;
+    if (!serverSession.isChatAdmin) { btn.style.display = 'none'; return; }
+    btn.style.display = 'inline-flex';
+    btn.textContent = chatGloballyEnabled ? t('chatGlobalTurnOff') : t('chatGlobalTurnOn');
+    btn.className = 'chat-global-toggle-btn' + (chatGloballyEnabled ? '' : ' is-off');
+  }
+  async function toggleChatGlobally(){
+    if (!serverSession.online || !serverSession.token) return;
+    const nextEnabled = !chatGloballyEnabled;
+    try {
+      const response = await fetch(SERVER_URL + '/api/chat/set-enabled', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, enabled: nextEnabled })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        chatGloballyEnabled = data.chatEnabled !== false;
+        updateChatGlobalToggleBtn();
+        updateChatAvailability();
+      }
+    } catch (error) {
+      // silently ignore - user can retry
+    }
+  }
+  const chatGlobalToggleBtnEl = document.getElementById('chatGlobalToggleBtn');
+  if (chatGlobalToggleBtnEl) chatGlobalToggleBtnEl.addEventListener('click', toggleChatGlobally);
   function formatTonShort(v){
     const n = Number(v) || 0;
     return n.toFixed(n < 1 ? 4 : 2);
@@ -1029,6 +1063,7 @@
     if (mine) {
       serverSession.isChatAdmin = mine.isChatAdmin === true;
       serverSession.chatMuted = mine.chatMuted === true;
+      updateChatGlobalToggleBtn();
       updateChatAvailability();
     }
     list.forEach(u => {
@@ -1072,7 +1107,6 @@
   let chatLastId = 0;
   let chatSyncInFlight = false;
   let chatSendInFlight = false;
-  let chatGloballyEnabled = true;
   let chatReplyTarget = null; // { id, name, text } - the message currently being replied to, or null
   function setChatReplyTarget(msg){
     chatReplyTarget = msg ? { id: msg.id, name: msg.name, text: msg.text } : null;
@@ -1164,7 +1198,7 @@
         const isInitialLoad = chatLastId === 0;
         const wasEnabled = chatGloballyEnabled;
         chatGloballyEnabled = data.enabled !== false;
-        if (chatGloballyEnabled !== wasEnabled) updateChatAvailability();
+        if (chatGloballyEnabled !== wasEnabled) { updateChatAvailability(); updateChatGlobalToggleBtn(); }
         if (Array.isArray(data.messages) && data.messages.length) {
           data.messages.forEach(msg => { appendChatMessage(msg, isInitialLoad); chatLastId = Math.max(chatLastId, msg.id); });
           if (isInitialLoad) {

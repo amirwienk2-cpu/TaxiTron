@@ -172,6 +172,10 @@
   .online-user-mute-btn{ margin-top:4px; font-size:0.65rem; font-weight:700; padding:3px 6px; border-radius:6px; border:1px solid #3b3850; background:#262436; color:#e6e2f0; cursor:pointer; }
   .online-user-mute-btn:hover{ background:#33314a; }
   .online-user-empty{ font-size:0.78rem; color:#8b86a0; padding:4px 2px; }
+  .chat-global-toggle-btn{ display:inline-flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:800; padding:6px 12px; border-radius:8px; border:1px solid #3ddc84; background:rgba(61,220,132,0.12); color:#3ddc84; cursor:pointer; margin-bottom:10px; }
+  .chat-global-toggle-btn:hover{ background:rgba(61,220,132,0.2); }
+  .chat-global-toggle-btn.is-off{ border-color:#ff5c6c; background:rgba(255,92,108,0.12); color:#ff8a93; }
+  .chat-global-toggle-btn.is-off:hover{ background:rgba(255,92,108,0.2); }
 
   /* ---------- HOME COMMUNITY CHAT ---------- */
   .chat-card{ background:#15151f; border:1px solid #262436; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; }

@@ -1096,6 +1096,14 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   res.json({ message });
 });
 
+// A chat admin can flip the global on/off switch directly from the app (in addition to the /admin panel).
+app.post('/api/chat/set-enabled', requireUserFromBody, (req, res) => {
+  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
+  chatEnabled = req.body.enabled === true;
+  persistChatSettings();
+  res.json({ ok: true, chatEnabled });
+});
+
 // A user promoted to "chat admin" (via /admin panel) can mute/unmute other chat users.
 app.post('/api/chat/moderate', requireUserFromBody, (req, res) => {
   if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
