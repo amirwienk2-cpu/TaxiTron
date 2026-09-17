@@ -495,7 +495,7 @@ function updIntroCam(dt){
 let hudT=0;
 function updHud(dt){
   const c=game.my;
-  $('myMon').textContent='👾 '+(c?c.total:0);
+  $('myMon').textContent='👾 '+(c?c.monsters:0);
   $('myBoost').style.width=(c?c.boost:0)+'%';
   $('spect').classList.toggle('hidden',!(c&&c.out));
   const cnt=$('count');
@@ -507,7 +507,7 @@ function updHud(dt){
   hudT-=dt;if(hudT>0)return;hudT=.25;
   const alive=[...game.cars.values()].filter(o=>!o.out).sort((a,b)=>b.monsters-a.monsters);
   $('roundLbl').textContent=`Round ${game.round} · ${alive.length} left · Pot ${ton(game.pot)} TON`;
-  $('board').innerHTML=alive.map((o,i)=>`<div class="${i===alive.length-1?'low':o.me?'me':''}"><span><span style="color:${hex(o.color)}">■</span> ${esc(o.name)}</span><span>${o.total} 👾</span></div>`).join('');
+  $('board').innerHTML=alive.map((o,i)=>`<div class="${i===alive.length-1?'low':o.me?'me':''}"><span><span style="color:${hex(o.color)}">■</span> ${esc(o.name)}</span><span>${o.monsters} 👾</span></div>`).join('');
 }
 
 // Background camera for the lobby
