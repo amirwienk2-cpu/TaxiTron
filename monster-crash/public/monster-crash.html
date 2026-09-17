@@ -369,8 +369,12 @@ function unlockVoiceAudio(){
     for(const peer of voicePeers.values())if(peer.audio)peer.audio.play().catch(()=>{});
   }catch(error){console.warn('[monster-crash] audio output unlock failed',error);}
 }
+function removeVoicePeer(id){
+  const peer=voicePeers.get(id);if(!peer)return;
+  clearTimeout(peer.reconnectTimer);peer.pc.close();peer.audio?.remove();voicePeers.delete(id);
+}
 function voiceReset(){
-  for(const peer of voicePeers.values()){peer.pc.close();peer.audio?.remove();}
+  for(const id of [...voicePeers.keys()])removeVoicePeer(id);
   voicePeers.clear();
   if(voiceStream){voiceStream.getTracks().forEach(track=>track.stop());voiceStream=null;}
   voiceOutputStream=null;
@@ -399,7 +403,7 @@ function boostVoiceStream(){
     voiceOutputStream=destination.stream;
   }catch(error){console.warn('[monster-crash] microphone boost unavailable',error);}
 }
-async function voiceOffer(peer){
+async function voiceOffer(peer,restartIce=false){
   const state=voicePeers.get(peer);
   if(!state)return;
   if(state.makingOffer||state.pc.signalingState!=='stable'){
@@ -409,7 +413,8 @@ async function voiceOffer(peer){
   try{
     state.makingOffer=true;
     state.negotiationPending=false;
-    await state.pc.setLocalDescription();
+    const offer=await state.pc.createOffer(restartIce?{iceRestart:true}:undefined);
+    await state.pc.setLocalDescription(offer);
     voiceSignal(peer,{description:state.pc.localDescription});
   }catch(error){console.warn('[monster-crash] voice negotiation failed',error);}
   finally{
@@ -426,7 +431,7 @@ function voicePeer(id){
   const pc=new RTCPeerConnection({iceServers:servers});
   const transceiver=pc.addTransceiver('audio',{direction:'sendrecv'});
   const shouldOffer=String(me.id)<String(id);
-  const state={pc,audio:null,transceiver,sentStream:false,trackReady:!voiceStream,pendingCandidates:[],makingOffer:false,negotiationPending:false,ignoreOffer:false,polite:!shouldOffer,shouldOffer};
+  const state={pc,audio:null,transceiver,sentStream:false,trackReady:!voiceStream,pendingCandidates:[],makingOffer:false,negotiationPending:false,ignoreOffer:false,polite:!shouldOffer,shouldOffer,reconnectTimer:null};
   voicePeers.set(id,state);
   pc.onicecandidate=e=>{if(e.candidate)voiceSignal(id,{candidate:e.candidate});};
   pc.onnegotiationneeded=()=>{if(state.shouldOffer&&state.trackReady)voiceOffer(id);};
@@ -442,19 +447,19 @@ function voicePeer(id){
     audio.oncanplay=play;
     audio.onloadedmetadata=play;
     e.track.onunmute=play;
-    e.track.onended=()=>{if(!stream.getAudioTracks().some(track=>track.readyState==='live'))audio.pause();};
+    e.track.onended=()=>{if(!stream.getAudioTracks().some(track=>track.readyState==='live')){audio.pause();recoverVoicePeer(id);}};
     if(voiceAudioUnlocked)play();
   };
   pc.onconnectionstatechange=()=>{
     if(pc.connectionState==='connected'){
+      clearTimeout(state.reconnectTimer);state.reconnectTimer=null;
       toast('Voice connected.',1800);
     }
-    if(['failed','closed'].includes(pc.connectionState)){
-      state.audio?.remove();voicePeers.delete(id);
-      if(pc.connectionState==='failed'){
-        toast('Voice connection interrupted. Retrying…',3000);
-        setTimeout(()=>{if(me&&ws&&ws.readyState===1&&!voicePeers.has(id))voicePeer(id);},1500);
-      }
+    if(pc.connectionState==='disconnected'&&!state.reconnectTimer){
+      state.reconnectTimer=setTimeout(()=>recoverVoicePeer(id),3000);
+    }
+    if(pc.connectionState==='failed'){
+      toast('Voice connection interrupted. Retrying…',3000);recoverVoicePeer(id,true);
     }
   };
   if(voiceStream){
@@ -465,6 +470,17 @@ function voicePeer(id){
   }else if(state.shouldOffer){
     voiceOffer(id);
   }
+}
+function recoverVoicePeer(id,rebuild=false){
+  const state=voicePeers.get(id);if(!state)return;
+  clearTimeout(state.reconnectTimer);state.reconnectTimer=null;
+  if(!me||!ws||ws.readyState!==1)return;
+  if(!rebuild&&state.pc.connectionState!=='failed'&&state.pc.connectionState!=='closed'){
+    voiceOffer(id,true);return;
+  }
+  removeVoicePeer(id);
+  voicePeer(id);
+  send({t:'voice-hello'});
 }
 async function requestVoiceAccess(){
   const button=getVoiceButton();
