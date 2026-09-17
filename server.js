@@ -106,8 +106,11 @@ const MAX_DISTANCE_PER_CALL = 1000000;
 // Anti-cheat for tournament submissions: the server (not the client) times how
 // long a run actually lasted since /api/run/start was called, so a forged or
 // instant request can no longer claim an implausibly high zombie count.
-const MIN_MS_PER_TOURNAMENT_ZOMBIE = 400; // generous ceiling: ~2.5 zombies/sec sustained
-const TOURNAMENT_PLAUSIBILITY_BUFFER = 5; // small slack for bursts/lag near round end
+// The in-game speed (and therefore the zombie spawn rate) keeps ramping up
+// the longer a run lasts, so this must stay generous enough for a skilled,
+// long-lasting run to not get falsely clamped.
+const MIN_MS_PER_TOURNAMENT_ZOMBIE = 40; // ceiling: 25 zombies/sec sustained
+const TOURNAMENT_PLAUSIBILITY_BUFFER = 300; // slack for bursts/high-speed late-game stretches
 
 // ---------------------------------------------------------------
 // Storage: load once, keep in memory, persist through a write queue
@@ -827,7 +830,16 @@ function requireAdmin(req, res, next) {
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname, { index: false }));
+app.use(express.static(__dirname, {
+  index: false,
+  setHeaders: (res, filePath) => {
+    // Avoid stale cached client code (e.g. Telegram WebView) missing anti-cheat
+    // or gameplay fixes after a deploy.
+    if (/\.(html|js|css)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  },
+}));
 app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', 'public'), {
   index: 'monster-crash.html',
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'),
