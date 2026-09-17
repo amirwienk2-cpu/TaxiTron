@@ -181,6 +181,7 @@
   .chat-msg.mine{ align-self:flex-end; background:rgba(255,217,61,0.1); border-color:#3a3524; }
   .chat-msg-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
   .chat-msg-name{ font-size:0.75rem; font-weight:800; color:#ffd93d; }
+  .chat-msg-name.admin{ color:#fff2b0; text-shadow:0 0 6px rgba(255,217,61,0.6); }
   .chat-msg-time{ font-size:0.65rem; color:#8b86a0; flex-shrink:0; }
   .chat-msg-text{ font-size:0.82rem; color:#e6e2f0; line-height:1.4; margin-top:2px; word-break:break-word; }
   .chat-empty{ font-size:0.8rem; color:#8b86a0; text-align:center; padding:14px 0; }

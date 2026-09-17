@@ -22,6 +22,7 @@
       chatMutedHint: 'You have been muted by a chat admin and cannot send messages.',
       chatMute: 'Mute',
       chatUnmute: 'Unmute',
+      chatAdminTag: 'Admin',
       navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
       shopTitle: '🧟 Zombie Gear',
       shopDesc: 'Invest your coins in permanent upgrades for every ride.',
@@ -125,6 +126,7 @@
       chatMutedHint: 'یک مدیر گفتگو شما را بی‌صدا کرده و نمی‌توانید پیام ارسال کنید.',
       chatMute: 'بی‌صدا',
       chatUnmute: 'رفع بی‌صدایی',
+      chatAdminTag: 'ادمین',
       navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
       shopTitle: '🧟 تجهیزات زامبی',
       shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
@@ -1079,8 +1081,8 @@
     const head = document.createElement('div');
     head.className = 'chat-msg-head';
     const nameEl = document.createElement('span');
-    nameEl.className = 'chat-msg-name';
-    nameEl.textContent = msg.name || ('Player ' + msg.uid);
+    nameEl.className = 'chat-msg-name' + (msg.isAdmin ? ' admin' : '');
+    nameEl.textContent = (msg.name || ('Player ' + msg.uid)) + (msg.isAdmin ? ' (' + t('chatAdminTag') + ')' : '');
     const timeEl = document.createElement('span');
     timeEl.className = 'chat-msg-time';
     timeEl.textContent = formatChatTime(msg.ts);
