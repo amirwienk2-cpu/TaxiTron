@@ -114,6 +114,7 @@ const TOURNAMENT_PLAUSIBILITY_BUFFER = 300; // slack for bursts/high-speed late-
 
 // ---- Global chat (shown on Home, under the online-player count) ----
 const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
+const CHAT_SETTINGS_FILE = path.join(DATA_DIR, 'chat-settings.json');
 const CHAT_MAX_STORED = 200; // how many messages are kept on disk/in memory
 const CHAT_MAX_LEN = 300; // characters per message
 const CHAT_MIN_INTERVAL_MS = 2000; // basic anti-spam: one message per user every 2s
@@ -185,6 +186,21 @@ try {
 }
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
+
+// Global on/off switch an admin can flip from the /admin panel - disables sending for everyone.
+let chatEnabled = true;
+try {
+  if (fs.existsSync(CHAT_SETTINGS_FILE)) {
+    const loaded = JSON.parse(fs.readFileSync(CHAT_SETTINGS_FILE, 'utf8'));
+    if (loaded && typeof loaded.enabled === 'boolean') chatEnabled = loaded.enabled;
+  }
+} catch (e) {
+  console.error('[chat] settings file unreadable: ' + e.message);
+}
+function persistChatSettings() {
+  try { fs.writeFileSync(CHAT_SETTINGS_FILE, JSON.stringify({ enabled: chatEnabled })); }
+  catch (e) { console.error('[chat] could not write settings: ' + e.message); }
+}
 
 // Keep a copy of the last good state from startup as a safety net
 try {
@@ -949,8 +965,11 @@ document.getElementById('load').onclick=load;
 document.getElementById('loadWithdrawals').onclick=()=>loadWithdrawals();
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
 const list=document.getElementById('list');
-list.innerHTML='<div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
+list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
+function updateChatToggleBtn(enabled){const btn=document.getElementById('chatEnableToggle');btn.textContent=enabled?'💬 Chat ist AN — jetzt ausschalten':'🚫 Chat ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
+document.getElementById('chatEnableToggle').onclick=async()=>{const enabled=document.getElementById('chatEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/chat/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateChatToggleBtn(dd.chatEnabled);status(dd.chatEnabled?'Chat wurde aktiviert.':'Chat wurde fuer alle deaktiviert.')}else status((await rr.json()).error||'Request failed')};
 async function runSearch(){const q=document.getElementById('chatUserSearch').value;status('Nutzer werden geladen...');const r=await fetch('/admin/chat-users?query='+encodeURIComponent(q),{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}
+updateChatToggleBtn(d.chatEnabled);
 const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'':'Keine Nutzer gefunden.';
 d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.chatMuted?' is-muted':'');
 const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
@@ -1053,9 +1072,10 @@ app.get('/api/online-users', (req, res) => {
 app.get('/api/chat/messages', (req, res) => {
   const after = Number(req.query.after) || 0;
   let messages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
-  res.json({ messages });
+  res.json({ messages, enabled: chatEnabled });
 });
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
+  if (!chatEnabled) return res.status(403).json({ error: 'chat-disabled' });
   if (req.user.chatMuted === true) return res.status(403).json({ error: 'muted' });
   const raw = String((req.body && req.body.text) || '').replace(/[\u0000-\u001f\u007f]/g, '').trim();
   if (!raw) return res.status(400).json({ error: 'empty-message' });
@@ -1822,7 +1842,13 @@ app.get('/admin/chat-users', requireAdmin, (req, res) => {
     chatMuted: u.chatMuted === true,
     lastSeenAt: Number(u.lastSeenAt || 0),
   }));
-  res.json({ users: list });
+  res.json({ users: list, chatEnabled });
+});
+
+app.post('/admin/chat/set-enabled', requireAdmin, (req, res) => {
+  chatEnabled = req.body.enabled === true;
+  persistChatSettings();
+  res.json({ ok: true, chatEnabled });
 });
 
 app.post('/admin/chat/set-admin', requireAdmin, (req, res) => {

@@ -22,6 +22,7 @@
       chatMutedHint: 'You have been muted by a chat admin and cannot send messages.',
       chatMute: 'Mute',
       chatUnmute: 'Unmute',
+      chatDisabledHint: 'Chat has been turned off by an admin. Sending is temporarily disabled.',
       chatAdminTag: 'Admin',
       chatReply: 'Reply',
       chatReplyingTo: 'Replying to',
@@ -128,6 +129,7 @@
       chatMutedHint: 'یک مدیر گفتگو شما را بی‌صدا کرده و نمی‌توانید پیام ارسال کنید.',
       chatMute: 'بی‌صدا',
       chatUnmute: 'رفع بی‌صدایی',
+      chatDisabledHint: 'گفتگو توسط یک مدیر خاموش شده است. ارسال پیام موقتاً غیرفعال است.',
       chatAdminTag: 'ادمین',
       chatReply: 'پاسخ',
       chatReplyingTo: 'در پاسخ به',
@@ -1070,6 +1072,7 @@
   let chatLastId = 0;
   let chatSyncInFlight = false;
   let chatSendInFlight = false;
+  let chatGloballyEnabled = true;
   let chatReplyTarget = null; // { id, name, text } - the message currently being replied to, or null
   function setChatReplyTarget(msg){
     chatReplyTarget = msg ? { id: msg.id, name: msg.name, text: msg.text } : null;
@@ -1159,6 +1162,9 @@
       if (response.ok) {
         const data = await response.json();
         const isInitialLoad = chatLastId === 0;
+        const wasEnabled = chatGloballyEnabled;
+        chatGloballyEnabled = data.enabled !== false;
+        if (chatGloballyEnabled !== wasEnabled) updateChatAvailability();
         if (Array.isArray(data.messages) && data.messages.length) {
           data.messages.forEach(msg => { appendChatMessage(msg, isInitialLoad); chatLastId = Math.max(chatLastId, msg.id); });
           if (isInitialLoad) {
@@ -1194,11 +1200,12 @@
     const btn = document.getElementById('chatSendBtn');
     const hint = document.getElementById('chatHint');
     const muted = serverSession.chatMuted === true;
-    const available = !!(serverSession.online && serverSession.token) && !muted;
+    const available = !!(serverSession.online && serverSession.token) && !muted && chatGloballyEnabled;
     if (input) input.disabled = !available;
     if (btn) btn.disabled = !available;
     if (hint) {
-      if (muted) { hint.textContent = t('chatMutedHint'); hint.style.display = 'block'; }
+      if (!chatGloballyEnabled) { hint.textContent = t('chatDisabledHint'); hint.style.display = 'block'; }
+      else if (muted) { hint.textContent = t('chatMutedHint'); hint.style.display = 'block'; }
       else { hint.textContent = t('chatOpenInTelegram'); hint.style.display = available ? 'none' : 'block'; }
     }
   }
@@ -1227,6 +1234,9 @@
           hint.textContent = t('chatTooFast'); hint.style.display = 'block';
           setTimeout(() => { hint.textContent = prevText; hint.style.display = 'none'; }, 2500);
         }
+      } else if (data.error === 'chat-disabled') {
+        chatGloballyEnabled = false;
+        updateChatAvailability();
       }
     } catch (error) {
       // leave the text in the input so the user can retry
