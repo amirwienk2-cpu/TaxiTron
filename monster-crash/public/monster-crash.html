@@ -397,7 +397,7 @@ function boostVoiceStream(){
     const source=voiceInputContext.createMediaStreamSource(voiceStream);
     const gain=voiceInputContext.createGain();
     const destination=voiceInputContext.createMediaStreamDestination();
-    gain.gain.value=1.5;
+    gain.gain.value=2;
     source.connect(gain).connect(destination);
     voiceInputContext.resume().catch(()=>{});
     voiceOutputStream=destination.stream;
@@ -425,6 +425,8 @@ async function voiceOffer(peer,restartIce=false){
 function voicePeer(id){
   if(!me||id===me.id)return;
   if(voicePeers.has(id)){
+    const state=voicePeers.get(id);
+    if(state.pc.connectionState==='failed'||state.pc.connectionState==='closed')recoverVoicePeer(id,true);
     return;
   }
   const servers=game&&game.iceServers&&game.iceServers.length?game.iceServers:lobby&&lobby.iceServers&&lobby.iceServers.length?lobby.iceServers:[{urls:'stun:stun.l.google.com:19302'}];
@@ -454,6 +456,7 @@ function voicePeer(id){
     if(pc.connectionState==='connected'){
       clearTimeout(state.reconnectTimer);state.reconnectTimer=null;
       toast('Voice connected.',1800);
+      if(!state.announced){state.announced=true;send({t:'voice-hello'});}
     }
     if(pc.connectionState==='disconnected'&&!state.reconnectTimer){
       state.reconnectTimer=setTimeout(()=>recoverVoicePeer(id),3000);
@@ -563,10 +566,7 @@ function handle(m){
       syncVoiceButton();
       toast('Tap the mic button to allow voice chat.');
     }
-    if(inLobby()&&!voiceLobbyAnnounced){
-      voiceLobbyAnnounced=true;
-      send({t:'voice-hello'});
-    }
+      if(inLobby()&&!voiceLobbyAnnounced){voiceLobbyAnnounced=true;send({t:'voice-hello'});}
   }
 }
 async function handleVoiceSignal(m){
