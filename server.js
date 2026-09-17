@@ -822,7 +822,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname, { index: false }));
-app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', 'public'), { index: 'monster-crash.html' }));
+app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', 'public'), {
+  index: 'monster-crash.html',
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'),
+}));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
