@@ -1038,7 +1038,11 @@ app.get('/api/online-users', (req, res) => {
   const now = Date.now();
   const list = Object.values(users)
     .filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS)
-    .sort((a, b) => Number(b.lastSeenAt || 0) - Number(a.lastSeenAt || 0))
+    .sort((a, b) => {
+      const adminDiff = (b.isChatAdmin === true ? 1 : 0) - (a.isChatAdmin === true ? 1 : 0);
+      if (adminDiff !== 0) return adminDiff;
+      return Number(b.lastSeenAt || 0) - Number(a.lastSeenAt || 0);
+    })
     .slice(0, 100)
     .map((user) => ({ uid: String(user.id), name: user.name || ('Player ' + user.id), ton: Number(user.ton || 0), isChatAdmin: user.isChatAdmin === true, chatMuted: user.chatMuted === true }));
   res.json({ users: list });
