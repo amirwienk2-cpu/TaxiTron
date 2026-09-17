@@ -85,6 +85,7 @@ button{font:inherit;cursor:pointer}
     </div>
   </div>
   <button class="big" id="btnJoin">Join – 0.001 TON</button>
+  <button class="big alt" id="btnLobbyBack">Back to home</button>
   <p class="note">Stake 0.001 TON · If fewer than 3 players join, it is automatically refunded.</p>
 </div></div>
 
@@ -380,6 +381,7 @@ setInterval(()=>{
   $('lTimer').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
 },250);
 $('btnJoin').onclick=()=>{initAudio();if(inLobby())send({t:'leave'});else{$('btnJoin').disabled=true;send({t:'join'});}};
+$('btnLobbyBack').onclick=()=>{if(inLobby())send({t:'leave'});window.location.href='/';};
 $('btnBack').onclick=()=>{window.location.href='/';};
 
 // ---------- Game ----------
