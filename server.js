@@ -419,6 +419,12 @@ function berlinWeekKey(date) {
   return start.getFullYear() + '-' + String(start.getMonth() + 1).padStart(2, '0') + '-' + String(start.getDate()).padStart(2, '0');
 }
 
+function daysBetweenDayKeys(fromKey, toKey) {
+  const from = Date.parse(fromKey + 'T00:00:00Z');
+  const to = Date.parse(toKey + 'T00:00:00Z');
+  if (!Number.isFinite(from) || !Number.isFinite(to)) return 0;
+  return Math.round((to - from) / 86400000);
+}
 function ensureDailyReset(user) {
   const today = berlinDayKey();
   if (!user.tonTodayByLevel || typeof user.tonTodayByLevel !== 'object') {
@@ -458,14 +464,28 @@ function publicState(user) {
   user.level = ownedSkins.indexOf('green') !== -1 ? 4 : ownedSkins.indexOf('white') !== -1 ? 3 : ownedSkins.indexOf('red') !== -1 ? 2 : 1;
   if (!user.skinRewards || typeof user.skinRewards !== 'object') user.skinRewards = {};
   const rewardDays = { red:30, white:30, green:30 };
+  const today = berlinDayKey();
   Object.keys(rewardDays).forEach((key) => {
     if (ownedSkins.includes(key) && !user.skinRewards[key]) {
-      user.skinRewards[key] = { remainingDays: rewardDays[key], expiresAt: Date.now() + rewardDays[key] * 86400000, lastCreditDate: berlinDayKey(), lastEarnedDate: '' };
+      user.skinRewards[key] = { remainingDays: rewardDays[key], expiresAt: Date.now() + rewardDays[key] * 86400000, lastCreditDate: today, lastEarnedDate: '' };
     } else if (ownedSkins.includes(key) && user.skinRewards[key] && !user.skinRewards[key].expiresAt) {
       user.skinRewards[key].expiresAt = Date.now() + Number(user.skinRewards[key].remainingDays || rewardDays[key]) * 86400000;
     }
     if (user.skinRewards[key] && !Number.isFinite(Number(user.skinRewards[key].remainingDays))) {
       user.skinRewards[key].remainingDays = rewardDays[key];
+    }
+    // Calendar-based countdown: every Berlin calendar day that passes deducts a day,
+    // no matter whether the user played or reached their daily TON cap that day.
+    if (ownedSkins.includes(key) && user.skinRewards[key]) {
+      const reward = user.skinRewards[key];
+      const lastCredit = reward.lastCreditDate || today;
+      const elapsedDays = daysBetweenDayKeys(lastCredit, today);
+      if (elapsedDays > 0) {
+        reward.remainingDays = Math.max(0, Number(reward.remainingDays || 0) - elapsedDays);
+        reward.lastCreditDate = today;
+      } else if (!reward.lastCreditDate) {
+        reward.lastCreditDate = today;
+      }
     }
   });
   return {
@@ -1309,14 +1329,6 @@ app.post('/api/run', requireUserFromBody, (req, res) => {
   user.ton += gain;
   user.tonTodayByLevel[level] = levelToday + gain;
   user.tonToday = user.tonTodayByLevel[level];
-  if (user.tonTodayByLevel[level] >= dailyCap - 1e-9 && level >= 2) {
-    const rewardKey = level >= 4 ? 'green' : level >= 3 ? 'white' : 'red';
-    const reward = user.skinRewards && user.skinRewards[rewardKey];
-    if (reward && reward.lastEarnedDate !== berlinDayKey() && Number(reward.remainingDays) > 0) {
-      reward.remainingDays = Math.max(0, Number(reward.remainingDays) - 1);
-      reward.lastEarnedDate = berlinDayKey();
-    }
-  }
 
   user.runs += 1;
   user.best = Math.max(user.best, zombies);
