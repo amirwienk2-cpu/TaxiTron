@@ -393,7 +393,9 @@ function boostVoiceStream(){
   const track=voiceStream?.getAudioTracks()[0];
   if(!AudioContext||!track)return;
   try{
-    voiceInputContext=new AudioContext();
+    // reuse the context unlocked synchronously in the click gesture; a fresh
+    // context created after the getUserMedia await can stay suspended on iOS/WebKit
+    voiceInputContext=voiceAudioContext=voiceAudioContext||new AudioContext();
     const source=voiceInputContext.createMediaStreamSource(voiceStream);
     const compressor=voiceInputContext.createDynamicsCompressor();
     const gain=voiceInputContext.createGain();
