@@ -288,20 +288,41 @@ function monsterAt(i){
   return monsters[i];
 }
 
-// Cars
+// Cars (monster-truck style: oversized wheels, lifted chassis, red tail lights + antenna)
 const glass=new THREE.MeshStandardMaterial({color:0x1b2233,metalness:.6,roughness:.2});
-const metal=new THREE.MeshStandardMaterial({color:0x9aa0aa,metalness:.8,roughness:.3});
-const tire=new THREE.MeshStandardMaterial({color:0x111111});
+const metal=new THREE.MeshStandardMaterial({color:0x2b2e35,metalness:.75,roughness:.35});
+const tire=new THREE.MeshStandardMaterial({color:0x111111,roughness:.9});
+const rim=new THREE.MeshStandardMaterial({color:0xd8d8d8,metalness:.8,roughness:.25});
 const lamp=new THREE.MeshBasicMaterial({color:0xfff6c0});
-const wheelGeo=new THREE.CylinderGeometry(.5,.5,.45,14);wheelGeo.rotateZ(Math.PI/2);
+const tailLamp=new THREE.MeshBasicMaterial({color:0xff2b3c});
+const antennaMat=new THREE.MeshStandardMaterial({color:0x1a1a1a,metalness:.6,roughness:.4});
+const antennaTip=new THREE.MeshBasicMaterial({color:0xff2b3c});
+const wheelGeo=new THREE.CylinderGeometry(.95,.95,.7,16);wheelGeo.rotateZ(Math.PI/2);
+const rimGeo=new THREE.CylinderGeometry(.4,.4,.74,10);rimGeo.rotateZ(Math.PI/2);
 function box(w,h,d,mat,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;return m;}
 function nameSprite(text,color){const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.font='bold 30px Rubik, sans-serif';x.textAlign='center';x.lineWidth=6;x.strokeStyle='#15161a';x.strokeText(text,128,42);x.fillStyle=hex(color);x.fillText(text,128,42);
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(5,1.25,1);s.position.y=3.4;return s;}
 function makeCar(p,isMe){
   const color=COLORS[p.color%COLORS.length];const g=new THREE.Group();
   const mat=new THREE.MeshStandardMaterial({color,metalness:.35,roughness:.4});
-  g.add(box(2.2,.85,3.8,mat,0,.8,0),box(1.75,.7,1.8,glass,0,1.55,-.35),box(2.5,.5,.4,metal,0,.6,2.05),box(2.3,.4,.3,metal,0,.6,-2),box(.45,.22,.1,lamp,.7,.95,1.92),box(.45,.22,.1,lamp,-.7,.95,1.92));
-  const wheels=[];for(const [x,z] of [[1.1,1.25],[-1.1,1.25],[1.1,-1.25],[-1.1,-1.25]]){const w=new THREE.Mesh(wheelGeo,tire);w.position.set(x,.5,z);g.add(w);wheels.push(w);}
+  // lifted body + cab (monster-truck stance)
+  g.add(box(2.3,.95,3.6,mat,0,1.55,0),box(1.7,.75,1.7,glass,0,2.35,-.35));
+  // front/rear bumpers
+  g.add(box(2.55,.5,.4,metal,0,1.1,2.05),box(2.35,.45,.35,metal,0,1.1,-2.05));
+  // headlights + tail lights (rear, like the reference photo)
+  g.add(box(.4,.22,.1,lamp,.75,1.65,1.92),box(.4,.22,.1,lamp,-.75,1.65,1.92));
+  g.add(box(.32,.34,.1,tailLamp,.85,1.7,-2.02),box(.32,.34,.1,tailLamp,-.85,1.7,-2.02));
+  // whip antenna with red tip
+  const ant=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,1.6,6),antennaMat);ant.position.set(.9,3,-1.7);ant.rotation.z=-.12;g.add(ant);
+  const antTipMesh=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),antennaTip);antTipMesh.position.set(.98,3.75,-1.72);g.add(antTipMesh);
+  // suspension axle bars linking the oversized wheels
+  const axleGeo=new THREE.CylinderGeometry(.08,.08,2.6,8);axleGeo.rotateZ(Math.PI/2);
+  const axleF=new THREE.Mesh(axleGeo,metal);axleF.position.set(0,.95,1.25);g.add(axleF);
+  const axleR=new THREE.Mesh(axleGeo,metal);axleR.position.set(0,.95,-1.25);g.add(axleR);
+  const wheels=[];for(const [x,z] of [[1.3,1.25],[-1.3,1.25],[1.3,-1.25],[-1.3,-1.25]]){
+    const w=new THREE.Mesh(wheelGeo,tire);w.position.set(x,.95,z);g.add(w);wheels.push(w);
+    const rimMesh=new THREE.Mesh(rimGeo,rim);rimMesh.position.set(x,.95,z);g.add(rimMesh);
+  }
   if(!isMe)g.add(nameSprite(p.name,color));
   scene.add(g);
   return {id:p.id,name:p.name,color,g,wheels,x:p.x,z:p.z,a:p.a,tx:p.x,tz:p.z,ta:p.a,vx:0,vz:0,boost:100,boosting:false,monsters:0,total:0,out:!!p.out,me:isMe,roll:0};
