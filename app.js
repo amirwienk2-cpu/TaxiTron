@@ -1082,7 +1082,15 @@
     head.className = 'chat-msg-head';
     const nameEl = document.createElement('span');
     nameEl.className = 'chat-msg-name' + (msg.isAdmin ? ' admin' : '');
-    nameEl.textContent = (msg.name || ('Player ' + msg.uid)) + (msg.isAdmin ? ' (' + t('chatAdminTag') + ')' : '');
+    if (msg.isAdmin) {
+      const badge = document.createElement('img');
+      badge.src = 'sprites/admin.png';
+      badge.alt = t('chatAdminTag');
+      badge.title = t('chatAdminTag');
+      badge.className = 'chat-admin-badge';
+      nameEl.appendChild(badge);
+    }
+    nameEl.appendChild(document.createTextNode(msg.name || ('Player ' + msg.uid)));
     const timeEl = document.createElement('span');
     timeEl.className = 'chat-msg-time';
     timeEl.textContent = formatChatTime(msg.ts);
