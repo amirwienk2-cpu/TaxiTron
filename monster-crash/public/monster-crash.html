@@ -426,11 +426,10 @@ function voicePeer(id){
   const pc=new RTCPeerConnection({iceServers:servers});
   const transceiver=pc.addTransceiver('audio',{direction:'sendrecv'});
   const shouldOffer=String(me.id)<String(id);
-  const state={pc,audio:null,transceiver,sentStream:false,pendingCandidates:[],makingOffer:false,negotiationPending:false,ignoreOffer:false,polite:!shouldOffer,shouldOffer};
+  const state={pc,audio:null,transceiver,sentStream:false,trackReady:!voiceStream,pendingCandidates:[],makingOffer:false,negotiationPending:false,ignoreOffer:false,polite:!shouldOffer,shouldOffer};
   voicePeers.set(id,state);
-  if(voiceStream){transceiver.sender.replaceTrack(voiceTrack());transceiver.direction='sendrecv';state.sentStream=true;}
   pc.onicecandidate=e=>{if(e.candidate)voiceSignal(id,{candidate:e.candidate});};
-  pc.onnegotiationneeded=()=>{if(state.shouldOffer)voiceOffer(id);};
+  pc.onnegotiationneeded=()=>{if(state.shouldOffer&&state.trackReady)voiceOffer(id);};
   pc.ontrack=e=>{
     const audio=state.audio||document.createElement('audio');
     const stream=e.streams[0]||new MediaStream([e.track]);
@@ -458,7 +457,14 @@ function voicePeer(id){
       }
     }
   };
-  if(state.shouldOffer)voiceOffer(id);
+  if(voiceStream){
+    transceiver.sender.replaceTrack(voiceTrack()).then(()=>{
+      transceiver.direction='sendrecv';state.sentStream=true;state.trackReady=true;
+      voiceOffer(id);
+    }).catch(error=>console.warn('[monster-crash] microphone track attach failed',error));
+  }else if(state.shouldOffer){
+    voiceOffer(id);
+  }
 }
 async function requestVoiceAccess(){
   const button=getVoiceButton();
@@ -567,6 +573,7 @@ async function handleVoiceSignal(m){
       const answer=await state.pc.createAnswer();
       await state.pc.setLocalDescription(answer);
       voiceSignal(peer,{description:state.pc.localDescription});
+      if(state.negotiationPending&&state.pc.signalingState==='stable')voiceOffer(peer);
     }
   }else if(data.candidate){
     if(state.ignoreOffer)return;
