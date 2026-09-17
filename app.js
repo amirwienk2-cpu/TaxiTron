@@ -13,6 +13,7 @@
       howto4: 'Trade collected zombies for coins in your Wallet ({rate} coins per zombie)',
       onlinePeopleOnline: '{count} people online now',
       chatTitle: '💬 Community Chat',
+      onlineUsersTitle: 'Online now',
       chatPlaceholder: 'Write a message...',
       chatSend: 'Send',
       chatOpenInTelegram: 'Open the game in Telegram to chat.',
@@ -112,6 +113,7 @@
       howto4: 'زامبی‌های جمع‌شده را در کیف پول با سکه معاوضه کن ({rate} سکه به ازای هر زامبی)',
       onlinePeopleOnline: '{count} نفر اکنون آنلاین هستند',
       chatTitle: '💬 گفتگوی جامعه',
+      onlineUsersTitle: 'اکنون آنلاین هستند',
       chatPlaceholder: 'پیامی بنویس...',
       chatSend: 'ارسال',
       chatOpenInTelegram: 'برای گفتگو، بازی را در تلگرام باز کن.',
@@ -990,6 +992,51 @@
   }
   syncOnlineCount();
   setInterval(syncOnlineCount, 15000);
+
+  // ---- Online users list shown above the chat, with each user's TON balance ----
+  function formatTonShort(v){
+    const n = Number(v) || 0;
+    return n.toFixed(n < 1 ? 4 : 2);
+  }
+  function renderOnlineUsers(list){
+    const box = document.getElementById('onlineUsersList');
+    if (!box) return;
+    box.innerHTML = '';
+    if (!Array.isArray(list) || !list.length) {
+      const empty = document.createElement('div');
+      empty.className = 'online-user-empty';
+      empty.textContent = t('chatEmpty');
+      box.appendChild(empty);
+      return;
+    }
+    list.forEach(u => {
+      const isMine = serverSession.uid && String(u.uid) === String(serverSession.uid);
+      const row = document.createElement('div');
+      row.className = 'online-user-chip' + (isMine ? ' mine' : '');
+      const nameEl = document.createElement('span');
+      nameEl.className = 'online-user-name';
+      nameEl.textContent = u.name;
+      const balEl = document.createElement('span');
+      balEl.className = 'online-user-balance';
+      balEl.textContent = formatTonShort(u.ton) + ' TON';
+      row.appendChild(nameEl); row.appendChild(balEl);
+      box.appendChild(row);
+    });
+  }
+  async function syncOnlineUsers(){
+    if (!SERVER_URL) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/online-users');
+      if (response.ok) {
+        const data = await response.json();
+        renderOnlineUsers(data.users);
+      }
+    } catch (error) {
+      // silently retry on the next interval - not critical info
+    }
+  }
+  syncOnlineUsers();
+  setInterval(syncOnlineUsers, 15000);
 
   // ---- Community chat shown on Home, under the online-player count ----
   let chatLastId = 0;

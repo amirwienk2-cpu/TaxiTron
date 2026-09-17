@@ -989,6 +989,17 @@ app.get('/api/online-count', (req, res) => {
   res.json({ online: count });
 });
 
+// Lightweight list of currently online users (name + TON balance) for the Home chat sidebar.
+app.get('/api/online-users', (req, res) => {
+  const now = Date.now();
+  const list = Object.values(users)
+    .filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS)
+    .sort((a, b) => Number(b.lastSeenAt || 0) - Number(a.lastSeenAt || 0))
+    .slice(0, 100)
+    .map((user) => ({ uid: String(user.id), name: user.name || ('Player ' + user.id), ton: Number(user.ton || 0) }));
+  res.json({ users: list });
+});
+
 // ---- Global chat (shown on Home, under the online-player count) ----
 // GET returns messages newer than ?after=<id> (or the last ~50 if omitted), for polling.
 app.get('/api/chat/messages', (req, res) => {
