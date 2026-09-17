@@ -11,6 +11,7 @@
       howto2: 'Collect zombies — the more on board, the faster your car goes',
       howto3: 'Avoid other cars — one hit ends the ride',
       howto4: 'Trade collected zombies for coins in your Wallet ({rate} coins per zombie)',
+      onlinePeopleOnline: '{count} people online now',
       navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
       shopTitle: '🧟 Zombie Gear',
       shopDesc: 'Invest your coins in permanent upgrades for every ride.',
@@ -103,6 +104,7 @@
       howto2: 'زامبی‌ها را جمع کن — هرچه بیشتر سوار باشند، ماشینت سریع‌تر می‌شود',
       howto3: 'از برخورد با ماشین‌های دیگر خودداری کن — یک برخورد به مسیر پایان می‌دهد',
       howto4: 'زامبی‌های جمع‌شده را در کیف پول با سکه معاوضه کن ({rate} سکه به ازای هر زامبی)',
+      onlinePeopleOnline: '{count} نفر اکنون آنلاین هستند',
       navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
       shopTitle: '🧟 تجهیزات زامبی',
       shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
@@ -209,6 +211,7 @@
     updateCoinCountUI(true);
     renderWithdrawUI();
     updateExchangeRateUI();
+    if (window.__lastOnlineCount !== undefined) renderOnlineCount(window.__lastOnlineCount);
   }
   document.querySelectorAll('.lang-flag').forEach(f => {
     f.addEventListener('click', () => applyLanguage(f.dataset.lang));
@@ -955,6 +958,26 @@
   }
   setInterval(syncReferralStatus, 5000);
   renderReferralUI();
+
+  // ---- Online player count shown under "How it works" on Home ----
+  function renderOnlineCount(count){
+    window.__lastOnlineCount = count;
+    const el = document.getElementById('onlineText');
+    if (el) el.textContent = t('onlinePeopleOnline').replace('{count}', count);
+  }
+  async function syncOnlineCount(){
+    if (!SERVER_URL) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/online-count');
+      if (!response.ok) return;
+      const data = await response.json();
+      if (Number.isFinite(data.online)) renderOnlineCount(data.online);
+    } catch (error) {
+      // silently retry on the next interval - not critical info
+    }
+  }
+  syncOnlineCount();
+  setInterval(syncOnlineCount, 15000);
 
   document.querySelectorAll('.invite-claim-btn').forEach(button => {
     button.addEventListener('click', async () => {

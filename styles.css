@@ -153,6 +153,9 @@
   .howto-row{ display:flex; align-items:flex-start; gap:12px; background:#1c1c2a; border:1px solid #262436; border-radius:12px; padding:10px 12px; }
   .howto-row .howto-ic{ font-size:1.15rem; width:34px; height:34px; border-radius:10px; background:#15151f; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:1px solid #2c2a3a; }
   .howto-row .howto-text{ font-size:0.85rem; color:#a8a3b8; line-height:1.45; padding-top:5px; }
+  .online-row{ display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #262436; font-size:0.82rem; color:#a8a3b8; font-weight:600; }
+  .online-dot{ width:9px; height:9px; border-radius:50%; background:#3dff8a; box-shadow:0 0 8px #3dff8a; animation:onlinePulse 1.6s ease-in-out infinite; flex-shrink:0; }
+  @keyframes onlinePulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.55; transform:scale(.8); } }
 
   .wallet-hero{ background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; border-radius:16px; padding:24px; text-align:center; }
   .wallet-hero .big-coin{ font-size:2.3rem; font-weight:900; color:#ffd93d; }

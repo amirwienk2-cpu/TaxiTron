@@ -947,6 +947,14 @@ app.post('/api/auth', (req, res) => {
   res.json({ token, state });
 });
 
+// ---- Online player count (any user seen in the last 90s, i.e. app still open) ----
+const ONLINE_WINDOW_MS = 90000;
+app.get('/api/online-count', (req, res) => {
+  const now = Date.now();
+  const count = Object.values(users).filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS).length;
+  res.json({ online: count });
+});
+
 // ---- Deposit info ----
 app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
   res.json({
