@@ -335,7 +335,7 @@ function readInput(){
 const WS_URL=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/mc';
 let ws=null,me=null,offset=0,lobby=null,game=null,view='connect';
 const send=m=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));};
-let voiceStream=null,voiceEnabled=false,voicePeers=new Map(),voiceAudioContext=null,voiceAudioUnlocked=false,voiceLobbyStarted=false;
+let voiceStream=null,voiceEnabled=false,voicePeers=new Map(),voiceAudioContext=null,voiceAudioUnlocked=false,voiceLobbyStarted=false,voiceLobbyAnnounced=false;
 const voiceSupported=!!(window.RTCPeerConnection&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
 function voiceUnavailableMessage(){
   if(!window.isSecureContext)return 'Voice chat needs an HTTPS game URL inside Telegram.';
@@ -376,6 +376,7 @@ function voiceReset(){
   if(voiceAudioContext){voiceAudioContext.close().catch(()=>{});voiceAudioContext=null;}
   voiceAudioUnlocked=false;
   voiceLobbyStarted=false;
+  voiceLobbyAnnounced=false;
   voiceEnabled=false;
   syncVoiceButton();
 }
@@ -466,9 +467,10 @@ async function requestVoiceAccess(){
     syncVoiceButton();
     for(const [id,state] of voicePeers){
       if(!state.sentStream){
-        state.transceiver.sender.replaceTrack(voiceStream.getAudioTracks()[0]);
+        await state.transceiver.sender.replaceTrack(voiceStream.getAudioTracks()[0]);
         state.transceiver.direction='sendrecv';
         state.sentStream=true;
+        voiceOffer(id);
       }
     }
     return true;
@@ -526,12 +528,16 @@ function handle(m){
     case 'voice-signal':handleVoiceSignal(m);break;
   }
   function startLobbyVoice(){
-    if(voiceLobbyStarted)return;
     if(!voiceSupported){toast(voiceUnavailableMessage(),5000);return;}
-    voiceLobbyStarted=true;
-    syncVoiceButton();
-    send({t:'voice-hello'});
-    toast('Tap the mic button to allow voice chat.');
+    if(!voiceLobbyStarted){
+      voiceLobbyStarted=true;
+      syncVoiceButton();
+      toast('Tap the mic button to allow voice chat.');
+    }
+    if(inLobby()&&!voiceLobbyAnnounced){
+      voiceLobbyAnnounced=true;
+      send({t:'voice-hello'});
+    }
   }
 }
 async function handleVoiceSignal(m){
