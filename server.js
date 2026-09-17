@@ -67,16 +67,6 @@ const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
-const TURN_URL = String(process.env.TURN_URL || '').trim();
-const TURN_USERNAME = String(process.env.TURN_USERNAME || '').trim();
-const TURN_CREDENTIAL = String(process.env.TURN_CREDENTIAL || '').trim();
-const MONSTER_CRASH_ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  ...(TURN_URL && TURN_USERNAME && TURN_CREDENTIAL
-    ? [{ urls: TURN_URL, username: TURN_USERNAME, credential: TURN_CREDENTIAL }]
-    : []),
-];
-
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
 const DATA_DIR = process.env.DATA_DIR || RAILWAY_VOLUME_PATH || path.join(__dirname, 'data');
@@ -1822,7 +1812,6 @@ const server = http.createServer(app);
 attachMonsterCrash(server, {
   verifyUser: verifyMonsterCrashUser,
   economy: monsterCrashEconomy,
-  iceServers: MONSTER_CRASH_ICE_SERVERS,
 });
 
 server.listen(PORT, () => {
