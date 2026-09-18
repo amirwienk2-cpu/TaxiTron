@@ -85,7 +85,7 @@
       nextReset: 'Next reset in',
       youTag: 'YOU', youName: 'You',
       walletSub: 'Coin balance',
-      tonBalanceLabel: 'TON balance',
+      tonBalanceLabel: 'GRAM balance',
       exchangeTitle: 'Exchange',
       exchangeRateLabel: '{rate} coins per zombie',
       depositTab: '📥 Deposit',
@@ -197,7 +197,7 @@
       nextReset: 'بازنشانی بعدی در',
       youTag: 'شما', youName: 'شما',
       walletSub: 'موجودی سکه',
-      tonBalanceLabel: 'موجودی تون',
+      tonBalanceLabel: 'موجودی GRAM',
       exchangeTitle: 'معاوضه',
       exchangeRateLabel: '{rate} سکه به ازای هر زامبی',
       depositTab: '📥 واریز',
@@ -1091,7 +1091,7 @@
       nameEl.appendChild(document.createTextNode((u.chatMuted ? '🔇 ' : '') + u.name));
       const balEl = document.createElement('span');
       balEl.className = 'online-user-balance';
-      balEl.textContent = formatTonShort(u.ton) + ' TON';
+      balEl.textContent = formatTonShort(u.ton) + ' GRAM';
       row.appendChild(nameEl); row.appendChild(balEl);
       if ((serverSession.isChatAdmin || serverSession.isDesigner) && !isMine) {
         const muteBtn = document.createElement('button');
