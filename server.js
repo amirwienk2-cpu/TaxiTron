@@ -188,8 +188,8 @@ let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
 const chatEventClients = new Set();
 
-function broadcastChatEvent(type) {
-  const payload = 'event: chat-update\ndata: ' + JSON.stringify({ type }) + '\n\n';
+function broadcastChatEvent(type, details = {}) {
+  const payload = 'event: chat-update\ndata: ' + JSON.stringify({ type, ...details }) + '\n\n';
   chatEventClients.forEach((response) => {
     try {
       response.write(payload);
@@ -1168,6 +1168,20 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   persistChat();
   res.json({ message });
   broadcastChatEvent('message');
+});
+
+app.post('/api/chat/delete', requireUserFromBody, (req, res) => {
+  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
+  const messageId = Number(req.body && req.body.messageId);
+  if (!Number.isSafeInteger(messageId) || messageId <= 0) {
+    return res.status(400).json({ error: 'invalid-message-id' });
+  }
+  const messageIndex = chatMessages.findIndex((message) => message.id === messageId);
+  if (messageIndex === -1) return res.status(404).json({ error: 'message-not-found' });
+  chatMessages.splice(messageIndex, 1);
+  persistChat();
+  res.json({ ok: true, messageId });
+  broadcastChatEvent('message-deleted', { messageId });
 });
 
 // A chat admin can flip the global on/off switch directly from the app (in addition to the /admin panel).

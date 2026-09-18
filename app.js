@@ -28,6 +28,9 @@
       chatAdminTag: 'Admin',
       chatReply: 'Reply',
       chatReplyingTo: 'Replying to',
+      chatDelete: 'Delete',
+      chatDeleteConfirm: 'Delete this message?',
+      chatDeleteFailed: 'The message could not be deleted.',
       navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
       shopTitle: '🧟 Zombie Gear',
       shopDesc: 'Invest your coins in permanent upgrades for every ride.',
@@ -137,6 +140,9 @@
       chatAdminTag: 'ادمین',
       chatReply: 'پاسخ',
       chatReplyingTo: 'در پاسخ به',
+      chatDelete: 'حذف',
+      chatDeleteConfirm: 'این پیام حذف شود؟',
+      chatDeleteFailed: 'پیام حذف نشد.',
       navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
       shopTitle: '🧟 تجهیزات زامبی',
       shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
@@ -1065,6 +1071,7 @@
       serverSession.isDesigner = mine.isDesigner === true;
       serverSession.chatMuted = mine.chatMuted === true;
       updateChatGlobalToggleBtn();
+      updateChatDeleteControls();
       updateChatAvailability();
     }
     list.forEach(u => {
@@ -1138,6 +1145,32 @@
     try { return new Date(ts).toLocaleTimeString(currentLang === 'fa' ? 'fa-IR' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); }
     catch (error) { return ''; }
   }
+  function removeChatMessage(messageId){
+    const id = Number(messageId);
+    if (!Number.isSafeInteger(id)) return;
+    const row = document.querySelector('.chat-msg[data-message-id="' + id + '"]');
+    if (row) row.remove();
+    renderedChatMessageIds.delete(id);
+    if (chatReplyTarget && Number(chatReplyTarget.id) === id) setChatReplyTarget(null);
+    renderChatEmptyState();
+  }
+  function updateChatDeleteControls(){
+    document.querySelectorAll('.chat-msg-delete-btn').forEach(button => {
+      button.hidden = serverSession.isChatAdmin !== true;
+    });
+  }
+  async function deleteChatMessage(messageId){
+    if (!serverSession.online || !serverSession.token || serverSession.isChatAdmin !== true) return;
+    if (!window.confirm(t('chatDeleteConfirm'))) return;
+    const response = await fetch(SERVER_URL + '/api/chat/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: serverSession.token, messageId })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'chat-delete-failed');
+    removeChatMessage(data.messageId);
+  }
   function appendChatMessage(msg, forceScroll){
     const list = document.getElementById('chatMessages');
     if (!list) return;
@@ -1149,6 +1182,7 @@
     const isMine = serverSession.uid && String(msg.uid) === String(serverSession.uid);
     const row = document.createElement('div');
     row.className = 'chat-msg' + (isMine ? ' mine' : '');
+    if (Number.isFinite(messageId)) row.dataset.messageId = String(messageId);
     const head = document.createElement('div');
     head.className = 'chat-msg-head';
     const nameEl = document.createElement('span');
@@ -1197,6 +1231,18 @@
     replyBtn.textContent = t('chatReply');
     replyBtn.addEventListener('click', () => setChatReplyTarget(msg));
     row.appendChild(replyBtn);
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'chat-msg-delete-btn';
+    deleteBtn.textContent = t('chatDelete');
+    deleteBtn.hidden = serverSession.isChatAdmin !== true;
+    deleteBtn.addEventListener('click', () => {
+      deleteChatMessage(msg.id).catch(error => {
+        console.error('[chat] delete failed:', error);
+        window.alert(t('chatDeleteFailed'));
+      });
+    });
+    row.appendChild(deleteBtn);
     list.appendChild(row);
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
     if (forceScroll || nearBottom) list.scrollTop = list.scrollHeight;
@@ -1310,7 +1356,12 @@
   syncChat();
   if (SERVER_URL && typeof EventSource !== 'undefined') {
     const chatEvents = new EventSource(SERVER_URL + '/api/chat/events');
-    chatEvents.addEventListener('chat-update', syncChat);
+    chatEvents.addEventListener('chat-update', event => {
+      let update = {};
+      try { update = JSON.parse(event.data); } catch (error) { /* fetch latest messages below */ }
+      if (update.type === 'message-deleted') removeChatMessage(update.messageId);
+      else syncChat();
+    });
   }
   setInterval(syncChat, 4000);
 
@@ -1456,6 +1507,7 @@
   function applyServerState(state){
     if (typeof state.isChatAdmin === 'boolean') serverSession.isChatAdmin = state.isChatAdmin;
     if (typeof state.isDesigner === 'boolean') serverSession.isDesigner = state.isDesigner;
+    updateChatDeleteControls();
     if (typeof state.chatMuted === 'boolean') { serverSession.chatMuted = state.chatMuted; updateChatAvailability(); }
     const previousUid = localStorage.getItem('cr3d_serverUid');
     const accountChanged = state.uid && previousUid !== String(state.uid);

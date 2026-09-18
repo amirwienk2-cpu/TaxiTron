@@ -199,6 +199,9 @@
   .chat-msg-quote-text{ font-size:0.72rem; color:#a8a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .chat-msg-reply-btn{ margin-top:4px; font-size:0.65rem; font-weight:700; color:#8b86a0; background:none; border:none; padding:0; cursor:pointer; }
   .chat-msg-reply-btn:hover{ color:#ffd93d; }
+  .chat-msg-delete-btn{ margin:4px 0 0 10px; font-size:0.65rem; font-weight:700; color:#ff8a93; background:none; border:none; padding:0; cursor:pointer; }
+  .chat-msg-delete-btn:hover{ color:#ff5c6c; }
+  .chat-msg-delete-btn[hidden]{ display:none; }
   .chat-reply-preview{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(255,217,61,0.08); border:1px solid #3a3524; border-left:3px solid #ffd93d; border-radius:8px; padding:6px 10px; }
   .chat-reply-preview-text{ display:flex; flex-direction:column; gap:1px; overflow:hidden; }
   .chat-reply-preview-label{ font-size:0.65rem; color:#8b86a0; }
