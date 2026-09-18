@@ -1006,7 +1006,7 @@ document.getElementById('chatUserSearch').addEventListener('keydown',e=>{if(e.ke
 runSearch();
 }
 document.getElementById('loadChatAdmin').onclick=loadChatAdmin;
-document.getElementById('reset').onclick=async()=>{const s=secret();if(!s){status('Enter the admin secret.');return}if(!confirm("WARNING: This resets all players' coins, TON, level, skins, stats, and withdrawals. Deposits remain protected. Continue?"))return;status('Resetting all players...');const r=await fetch('/admin/reset-users',{method:'POST',headers:{'x-admin-secret':s}});const d=await r.json();status(r.ok?'Reset complete for '+d.count+' players.':(d.error||'Reset failed'));if(r.ok)load()};
+document.getElementById('reset').onclick=async()=>{const s=secret();if(!s){status('Enter the admin secret.');return}if(!confirm("WARNING: This resets all players' coins, TON, level, skins, stats, and withdrawals. Deposits and one-time invite reward claims remain protected. Continue?"))return;status('Resetting all players...');const r=await fetch('/admin/reset-users',{method:'POST',headers:{'x-admin-secret':s}});const d=await r.json();status(r.ok?'Reset complete for '+d.count+' players.':(d.error||'Reset failed'));if(r.ok)load()};
 setInterval(()=>{if(secret())loadWithdrawals({silent:true})},15000);
 setInterval(()=>{if(secret())pollMoneyEvents()},15000);
 </script></body></html>`);
@@ -2066,7 +2066,6 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.withdrawals = [];
     user.taskChannelRewardClaimed = false;
     user.withdrawChannelTaskRewardClaimed = false;
-    user.inviteRewardsClaimed = {};
     user.depositTxs = depositTxs;
   });
 
