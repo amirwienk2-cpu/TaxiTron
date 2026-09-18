@@ -218,6 +218,26 @@
   .chat-send-btn:disabled{ opacity:0.4; cursor:not-allowed; }
   .chat-hint{ display:none; font-size:0.75rem; color:#8b86a0; text-align:center; }
 
+  /* ---------- LIVE LUCKY WHEEL ---------- */
+  .wheel-event-card{ position:relative; flex:0 0 auto; overflow:hidden; background:radial-gradient(circle at 50% 30%,rgba(128,0,240,.2),transparent 50%),#15151f; border:1px solid #51345e; border-radius:18px; padding:18px 16px; }
+  .wheel-event-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .wheel-event-heading h3{ margin:2px 0 0; color:#fff; font-size:1.05rem; }
+  .wheel-event-kicker{ color:#b040f0; font-size:.64rem; font-weight:900; letter-spacing:1.4px; }
+  .wheel-live-badge{ color:#ff5c6c; background:rgba(255,92,108,.12); border:1px solid rgba(255,92,108,.4); border-radius:999px; padding:4px 8px; font-size:.65rem; font-weight:900; }
+  .wheel-event-status{ color:#b7afc7; font-size:.78rem; line-height:1.4; min-height:22px; }
+  .wheel-stage{ position:relative; width:min(280px,82vw); aspect-ratio:1; margin:14px auto; filter:drop-shadow(0 12px 24px rgba(0,0,0,.45)); }
+  .wheel-canvas{ display:block; width:100%; height:100%; border-radius:50%; will-change:transform; }
+  .wheel-pointer{ position:absolute; z-index:3; top:-8px; left:50%; width:0; height:0; transform:translateX(-50%); border-left:14px solid transparent; border-right:14px solid transparent; border-top:28px solid #fff; filter:drop-shadow(0 2px 4px rgba(0,0,0,.8)); }
+  .wheel-hub{ position:absolute; z-index:2; inset:50% auto auto 50%; width:58px; height:58px; transform:translate(-50%,-50%); display:grid; place-items:center; border-radius:50%; background:linear-gradient(145deg,#fff,#c8b8dc); border:6px solid #1a1222; box-shadow:0 0 0 3px #8000f0,0 4px 14px rgba(0,0,0,.55); font-size:1.35rem; }
+  .wheel-winner{ margin:8px 0 12px; padding:11px 12px; text-align:center; color:#1c1600; background:linear-gradient(135deg,#fff3a5,#ffd93d); border-radius:10px; font-size:.9rem; font-weight:900; box-shadow:0 0 18px rgba(255,217,61,.28); }
+  .wheel-winner[hidden]{ display:none; }
+  .wheel-participants{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; min-height:28px; color:#8b86a0; font-size:.72rem; }
+  .wheel-participant-chip{ max-width:125px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:4px 8px; color:#e9e2f5; background:#21182b; border:1px solid #51345e; border-radius:999px; }
+  .wheel-event-actions{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:14px; }
+  .wheel-event-actions .menu-btn{ width:auto; min-width:120px; margin:0; }
+  .wheel-admin-btn{ background:linear-gradient(145deg,#8000f0,#b040f0); color:#fff; }
+  .wheel-event-error{ min-height:18px; margin-top:8px; color:#ff8a93; font-size:.72rem; text-align:center; }
+
   .wallet-hero{ background:linear-gradient(160deg,#1c1c2a,#100f18); border:1px solid #2c2a3a; border-radius:16px; padding:24px; text-align:center; }
   .wallet-hero .big-coin{ font-size:2.3rem; font-weight:900; color:#ffd93d; }
   .wallet-hero .sub{ color:#a8a3b8; font-size:0.85rem; margin-top:2px; }

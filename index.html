@@ -65,6 +65,29 @@
       </div>
       <div class="chat-hint" id="chatHint" data-i18n="chatOpenInTelegram">Open the game in Telegram to chat.</div>
     </div>
+    <section class="wheel-event-card" id="wheelEventCard">
+      <div class="wheel-event-heading">
+        <div>
+          <div class="wheel-event-kicker" data-i18n="wheelEventKicker">LIVE EVENT</div>
+          <h3 data-i18n="wheelEventTitle">🎡 Lucky Wheel</h3>
+        </div>
+        <span class="wheel-live-badge" data-i18n="wheelLive">● LIVE</span>
+      </div>
+      <p class="wheel-event-status" id="wheelEventStatus"></p>
+      <div class="wheel-stage">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheelCanvas" class="wheel-canvas" width="560" height="560"></canvas>
+        <div class="wheel-hub">🎁</div>
+      </div>
+      <div class="wheel-winner" id="wheelWinner" hidden></div>
+      <div class="wheel-participants" id="wheelParticipants"></div>
+      <div class="wheel-event-actions">
+        <button type="button" class="menu-btn" id="wheelJoinBtn" data-i18n="wheelJoin">Join wheel</button>
+        <button type="button" class="menu-btn wheel-admin-btn" id="wheelSpinBtn" data-i18n="wheelSpin" hidden>Spin wheel</button>
+        <button type="button" class="menu-btn secondary wheel-admin-btn" id="wheelNewRoundBtn" data-i18n="wheelNewRound" hidden>Open new round</button>
+      </div>
+      <div class="wheel-event-error" id="wheelEventError"></div>
+    </section>
   </main>
 
   <!-- SHOP -->
