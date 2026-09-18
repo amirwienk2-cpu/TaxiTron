@@ -1072,7 +1072,7 @@
       row.className = 'online-user-chip' + (isMine ? ' mine' : '') + (u.isChatAdmin ? ' admin' : '') + (u.chatMuted ? ' muted' : '');
       const nameEl = document.createElement('span');
       nameEl.className = 'online-user-name';
-      nameEl.textContent = (u.isChatAdmin ? '⭐ ' : '') + (u.chatMuted ? '🔇 ' : '') + u.name;
+      nameEl.textContent = (u.chatMuted ? '🔇 ' : '') + u.name;
       const balEl = document.createElement('span');
       balEl.className = 'online-user-balance';
       balEl.textContent = formatTonShort(u.ton) + ' TON';
