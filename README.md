@@ -53,8 +53,9 @@ values in `server.js` before deploying.
 
 Deposits are scanned automatically every 30 seconds through TonAPI. Set
 `DEPOSIT_ADDRESS`, `TONAPI_URL`, and optionally `DEPOSIT_POLL_MS` in the
-deployment environment. Deposits must include the personal `TT-<Telegram ID>`
-comment; each transaction is credited only once.
+deployment environment. Deposits must include the personal `TT<Telegram ID>`
+comment (without a dash); each transaction is credited only once. Legacy
+`TT-<Telegram ID>` comments are still accepted for previously sent transfers.
 
 RPS games use `PLATFORM_USER_ID` as the Telegram user ID that receives the
 10% fee from completed non-tie games. The winner receives the remaining 90%

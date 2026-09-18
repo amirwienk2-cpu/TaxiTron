@@ -1118,7 +1118,7 @@ app.post('/api/chat/moderate', requireUserFromBody, (req, res) => {
 // ---- Deposit info ----
 app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
   res.json({
-    memo: 'TT-' + req.uid,
+    memo: 'TT' + req.uid,
     address: DEPOSIT_ADDRESS || undefined,
   });
 });
@@ -1300,7 +1300,9 @@ async function scanDeposits() {
       for (const action of event.actions || []) {
         const transfer = action.type === 'TonTransfer' && action.TonTransfer;
         if (!transfer || action.status !== 'ok' || transfer.recipient.address !== account.address) continue;
-        const match = /^TT-(\d+)$/.exec(String(transfer.comment || '').trim());
+        // New deposit memos omit the dash. Keep accepting the old format so
+        // transfers already sent with a legacy memo are still credited.
+        const match = /^TT-?(\d+)$/.exec(String(transfer.comment || '').trim());
         if (!match || Number(transfer.amount) <= 0) continue;
         const user = users[match[1]];
         if (!user) continue;
@@ -1331,7 +1333,8 @@ function getNativeTransfer(event, uid) {
   return (event.actions || []).find((action) => {
     const transfer = action.type === 'TonTransfer' && action.TonTransfer;
     return transfer && action.status === 'ok' &&
-      transfer.comment === 'TT-' + uid && Number(transfer.amount) > 0;
+      (transfer.comment === 'TT' + uid || transfer.comment === 'TT-' + uid) &&
+      Number(transfer.amount) > 0;
   });
 }
 
