@@ -115,11 +115,9 @@ const TOURNAMENT_PLAUSIBILITY_BUFFER = 300; // slack for bursts/high-speed late-
 // ---- Global chat (shown on Home, under the online-player count) ----
 const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
 const CHAT_SETTINGS_FILE = path.join(DATA_DIR, 'chat-settings.json');
-const WHEEL_EVENT_FILE = path.join(DATA_DIR, 'wheel-event.json');
 const CHAT_MAX_STORED = 200; // how many messages are kept on disk/in memory
 const CHAT_MAX_LEN = 300; // characters per message
 const CHAT_MIN_INTERVAL_MS = 2000; // basic anti-spam: one message per user every 2s
-const WHEEL_SPIN_DURATION_MS = 7000;
 
 // ---------------------------------------------------------------
 // Storage: load once, keep in memory, persist through a write queue
@@ -186,31 +184,6 @@ try {
 } catch (e) {
   console.error('[chat] messages file unreadable: ' + e.message);
 }
-
-function newWheelEvent(round = 1) {
-  return {
-    round,
-    status: 'open',
-    participants: [],
-    winner: null,
-    winnerIndex: null,
-    spinStartedAt: 0,
-    spinDurationMs: WHEEL_SPIN_DURATION_MS,
-  };
-}
-
-let wheelEvent = newWheelEvent();
-try {
-  if (fs.existsSync(WHEEL_EVENT_FILE)) {
-    const loaded = readJsonFile(WHEEL_EVENT_FILE);
-    if (Array.isArray(loaded.participants) && ['open', 'spinning', 'finished'].includes(loaded.status)) {
-      wheelEvent = { ...newWheelEvent(Number(loaded.round) || 1), ...loaded };
-    }
-  }
-} catch (e) {
-  console.error('[wheel] event file unreadable: ' + e.message);
-}
-
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
 const chatEventClients = new Set();
@@ -225,47 +198,6 @@ function broadcastChatEvent(type, details = {}) {
     }
   });
 }
-
-let wheelFinishTimer = null;
-
-function publicWheelState(token) {
-  const payload = token ? verifyToken(token) : null;
-  const uid = payload ? String(payload.uid) : '';
-  return {
-    round: wheelEvent.round,
-    status: wheelEvent.status,
-    participants: wheelEvent.participants.map((participant) => ({ name: participant.name })),
-    participantCount: wheelEvent.participants.length,
-    joined: !!uid && wheelEvent.participants.some((participant) => participant.uid === uid),
-    winner: wheelEvent.status === 'finished' && wheelEvent.winner
-      ? { name: wheelEvent.winner.name }
-      : null,
-    winnerIndex: wheelEvent.status === 'open' ? null : wheelEvent.winnerIndex,
-    spinStartedAt: wheelEvent.spinStartedAt,
-    spinDurationMs: wheelEvent.spinDurationMs,
-  };
-}
-
-function finishWheelSpin(round) {
-  if (wheelEvent.round !== round || wheelEvent.status !== 'spinning') return;
-  wheelEvent.status = 'finished';
-  persistWheelEvent();
-  broadcastChatEvent('wheel-update');
-}
-
-function scheduleWheelFinish() {
-  if (wheelFinishTimer) clearTimeout(wheelFinishTimer);
-  wheelFinishTimer = null;
-  if (wheelEvent.status !== 'spinning') return;
-  const remaining = Math.max(0, Number(wheelEvent.spinStartedAt) + Number(wheelEvent.spinDurationMs) - Date.now());
-  const round = wheelEvent.round;
-  wheelFinishTimer = setTimeout(() => {
-    wheelFinishTimer = null;
-    finishWheelSpin(round);
-  }, remaining);
-}
-
-scheduleWheelFinish();
 
 // Global on/off switch an admin can flip from the /admin panel. When off,
 // regular users cannot send, while chat admins can still moderate the chat.
@@ -333,16 +265,6 @@ function persistChat() {
   }
 }
 
-function persistWheelEvent() {
-  const tmp = WHEEL_EVENT_FILE + '.tmp';
-  try {
-    fs.writeFileSync(tmp, JSON.stringify(wheelEvent));
-    fs.renameSync(tmp, WHEEL_EVENT_FILE);
-  } catch (e) {
-    console.error('[wheel] write failed: ' + e.message);
-  }
-}
-
 function flushSync() {
   try {
     const tmp = DATA_FILE + '.shutdown.tmp';
@@ -363,12 +285,6 @@ function flushSync() {
     fs.renameSync(CHAT_FILE + '.shutdown.tmp', CHAT_FILE);
   } catch (e) {
     console.error('[chat] final flush failed: ' + e.message);
-  }
-  try {
-    fs.writeFileSync(WHEEL_EVENT_FILE + '.shutdown.tmp', JSON.stringify(wheelEvent));
-    fs.renameSync(WHEEL_EVENT_FILE + '.shutdown.tmp', WHEEL_EVENT_FILE);
-  } catch (e) {
-    console.error('[wheel] final flush failed: ' + e.message);
   }
 }
 
@@ -1220,51 +1136,6 @@ app.get('/api/chat/events', (req, res) => {
     clearInterval(heartbeat);
     chatEventClients.delete(res);
   });
-});
-
-app.get('/api/wheel', (req, res) => {
-  res.json({ event: publicWheelState(req.query && req.query.token) });
-});
-
-app.post('/api/wheel/join', requireUserFromBody, (req, res) => {
-  if (wheelEvent.status !== 'open') return res.status(409).json({ error: 'wheel-not-open' });
-  const existing = wheelEvent.participants.find((participant) => participant.uid === req.uid);
-  if (!existing) {
-    wheelEvent.participants.push({
-      uid: req.uid,
-      name: req.user.name || ('Player ' + req.uid),
-    });
-    persistWheelEvent();
-    broadcastChatEvent('wheel-update');
-  }
-  res.json({ event: publicWheelState(req.body.token) });
-});
-
-app.post('/api/wheel/spin', requireUserFromBody, (req, res) => {
-  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
-  if (wheelEvent.status !== 'open') return res.status(409).json({ error: 'wheel-not-open' });
-  if (wheelEvent.participants.length < 2) {
-    return res.status(409).json({ error: 'wheel-needs-two-participants' });
-  }
-
-  wheelEvent.winnerIndex = crypto.randomInt(wheelEvent.participants.length);
-  wheelEvent.winner = { ...wheelEvent.participants[wheelEvent.winnerIndex] };
-  wheelEvent.status = 'spinning';
-  wheelEvent.spinStartedAt = Date.now();
-  wheelEvent.spinDurationMs = WHEEL_SPIN_DURATION_MS;
-  persistWheelEvent();
-  scheduleWheelFinish();
-  res.json({ event: publicWheelState(req.body.token) });
-  broadcastChatEvent('wheel-update');
-});
-
-app.post('/api/wheel/new-round', requireUserFromBody, (req, res) => {
-  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
-  if (wheelEvent.status !== 'finished') return res.status(409).json({ error: 'wheel-round-not-finished' });
-  wheelEvent = newWheelEvent(wheelEvent.round + 1);
-  persistWheelEvent();
-  res.json({ event: publicWheelState(req.body.token) });
-  broadcastChatEvent('wheel-update');
 });
 
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {

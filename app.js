@@ -31,21 +31,6 @@
       chatDelete: 'Delete',
       chatDeleteConfirm: 'Delete this message?',
       chatDeleteFailed: 'The message could not be deleted.',
-      wheelEventKicker: 'LIVE EVENT',
-      wheelEventTitle: '🎡 Lucky Wheel',
-      wheelLive: '● LIVE',
-      wheelJoin: 'Join wheel',
-      wheelJoined: 'Joined ✓',
-      wheelSpin: 'Spin wheel',
-      wheelNewRound: 'Open new round',
-      wheelOpenStatus: 'Round {round} is open — {count} players joined.',
-      wheelSpinningStatus: 'The wheel is spinning live...',
-      wheelFinishedStatus: 'Round {round} has finished.',
-      wheelWinner: '🏆 Winner: {name} — 1 GRAM',
-      wheelNoParticipants: 'No players have joined yet.',
-      wheelNeedTelegram: 'Open the app in Telegram to join.',
-      wheelNeedsTwo: 'At least 2 players must join before spinning.',
-      wheelActionFailed: 'The wheel action failed. Please try again.',
       navHome: 'Home', navShop: 'Shop', navPlay: 'Play', navTournament: 'Tournament', navWallet: 'Wallet',
       shopTitle: '🧟 Zombie Gear',
       shopDesc: 'Invest your coins in permanent upgrades for every ride.',
@@ -158,21 +143,6 @@
       chatDelete: 'حذف',
       chatDeleteConfirm: 'این پیام حذف شود؟',
       chatDeleteFailed: 'پیام حذف نشد.',
-      wheelEventKicker: 'رویداد زنده',
-      wheelEventTitle: '🎡 گردونه شانس',
-      wheelLive: '● زنده',
-      wheelJoin: 'ورود به گردونه',
-      wheelJoined: 'وارد شدی ✓',
-      wheelSpin: 'چرخاندن گردونه',
-      wheelNewRound: 'باز کردن دور جدید',
-      wheelOpenStatus: 'دور {round} باز است — {count} بازیکن وارد شده‌اند.',
-      wheelSpinningStatus: 'گردونه به‌صورت زنده در حال چرخش است...',
-      wheelFinishedStatus: 'دور {round} تمام شد.',
-      wheelWinner: '🏆 Winner: {name} — 1 GRAM',
-      wheelNoParticipants: 'هنوز بازیکنی وارد نشده است.',
-      wheelNeedTelegram: 'برای ورود، برنامه را در تلگرام باز کنید.',
-      wheelNeedsTwo: 'برای چرخاندن حداقل ۲ بازیکن لازم است.',
-      wheelActionFailed: 'عملیات گردونه انجام نشد. دوباره تلاش کنید.',
       navHome: 'خانه', navShop: 'فروشگاه', navPlay: 'بازی', navTournament: 'مسابقه', navWallet: 'کیف پول',
       shopTitle: '🧟 تجهیزات زامبی',
       shopDesc: 'سکه‌هایت را در ارتقاءهای دائمی برای هر مسیر سرمایه‌گذاری کن.',
@@ -953,7 +923,7 @@
   // Fill in your deployed server's URL here once it's online, e.g.
   // const SERVER_URL = "https://your-server.example.com";
   const SERVER_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? location.origin
+    ? ''
     : "https://taxitron-production.up.railway.app";
   const serverSession = { token: null, online: false };
 
@@ -1405,219 +1375,10 @@
       let update = {};
       try { update = JSON.parse(event.data); } catch (error) { /* fetch latest messages below */ }
       if (update.type === 'message-deleted') removeChatMessage(update.messageId);
-      else if (update.type === 'wheel-update') syncWheel();
       else syncChat();
     });
   }
   setInterval(syncChat, 4000);
-
-  // ---- Live lucky-wheel event shown below the community chat ----
-  const WHEEL_COLORS = ['#7c3cff', '#ff4fc3', '#ff9d3d', '#3ddc84', '#3d9cff', '#ffd93d', '#ff5c6c', '#9b6cff'];
-  let wheelState = null;
-  let wheelSyncInFlight = false;
-  let wheelActionInFlight = false;
-  let wheelAnimatedRound = 0;
-
-  function wheelText(key, values){
-    let text = t(key);
-    Object.keys(values || {}).forEach(name => {
-      text = text.replace('{' + name + '}', values[name]);
-    });
-    return text;
-  }
-
-  function drawWheel(participants){
-    const canvas = document.getElementById('wheelCanvas');
-    if (!canvas) return;
-    const context = canvas.getContext('2d');
-    const size = canvas.width;
-    const center = size / 2;
-    const radius = center - 10;
-    context.clearRect(0, 0, size, size);
-
-    if (!participants.length) {
-      context.beginPath();
-      context.arc(center, center, radius, 0, Math.PI * 2);
-      context.fillStyle = '#262436';
-      context.fill();
-      context.strokeStyle = '#8000f0';
-      context.lineWidth = 10;
-      context.stroke();
-      return;
-    }
-
-    const arc = Math.PI * 2 / participants.length;
-    participants.forEach((participant, index) => {
-      const start = -Math.PI / 2 + index * arc;
-      const end = start + arc;
-      context.beginPath();
-      context.moveTo(center, center);
-      context.arc(center, center, radius, start, end);
-      context.closePath();
-      context.fillStyle = WHEEL_COLORS[index % WHEEL_COLORS.length];
-      context.fill();
-      context.strokeStyle = 'rgba(10,10,18,0.75)';
-      context.lineWidth = 4;
-      context.stroke();
-
-      context.save();
-      context.translate(center, center);
-      context.rotate(start + arc / 2);
-      context.textAlign = 'right';
-      context.textBaseline = 'middle';
-      context.fillStyle = '#fff';
-      context.font = 'bold 24px Segoe UI, Arial, sans-serif';
-      context.shadowColor = 'rgba(0,0,0,0.8)';
-      context.shadowBlur = 4;
-      const name = String(participant.name || 'Player');
-      context.fillText(name.length > 15 ? name.slice(0, 14) + '…' : name, radius - 22, 0);
-      context.restore();
-    });
-  }
-
-  function wheelTargetRotation(state){
-    const count = state.participants.length;
-    if (!count || !Number.isInteger(state.winnerIndex)) return 0;
-    return 2160 - (state.winnerIndex + 0.5) * (360 / count);
-  }
-
-  function updateWheelRotation(state){
-    const canvas = document.getElementById('wheelCanvas');
-    if (!canvas) return;
-    if (state.status === 'open') {
-      canvas.style.transition = 'none';
-      canvas.style.transform = 'rotate(0deg)';
-      wheelAnimatedRound = 0;
-      return;
-    }
-
-    const target = wheelTargetRotation(state);
-    if (state.status === 'finished') {
-      if (wheelAnimatedRound === state.round) return;
-      canvas.style.transition = 'none';
-      canvas.style.transform = 'rotate(' + target + 'deg)';
-      wheelAnimatedRound = state.round;
-      return;
-    }
-
-    if (wheelAnimatedRound === state.round) return;
-    wheelAnimatedRound = state.round;
-    const elapsed = Math.max(0, Date.now() - Number(state.spinStartedAt || 0));
-    const remaining = Math.max(0, Number(state.spinDurationMs || 0) - elapsed);
-    canvas.style.transition = 'none';
-    canvas.style.transform = 'rotate(0deg)';
-    void canvas.offsetWidth;
-    canvas.style.transition = 'transform ' + remaining + 'ms cubic-bezier(0.12, 0.72, 0.08, 1)';
-    canvas.style.transform = 'rotate(' + target + 'deg)';
-  }
-
-  function renderWheel(state){
-    wheelState = state;
-    const participants = Array.isArray(state.participants) ? state.participants : [];
-    drawWheel(participants);
-    updateWheelRotation(state);
-
-    const status = document.getElementById('wheelEventStatus');
-    if (status) {
-      const key = state.status === 'spinning' ? 'wheelSpinningStatus' :
-        state.status === 'finished' ? 'wheelFinishedStatus' : 'wheelOpenStatus';
-      status.textContent = wheelText(key, { round: state.round, count: state.participantCount });
-    }
-
-    const winner = document.getElementById('wheelWinner');
-    if (winner) {
-      winner.hidden = !state.winner;
-      winner.textContent = state.winner ? wheelText('wheelWinner', { name: state.winner.name }) : '';
-    }
-
-    const participantList = document.getElementById('wheelParticipants');
-    if (participantList) {
-      participantList.innerHTML = '';
-      if (!participants.length) {
-        participantList.textContent = t('wheelNoParticipants');
-      } else {
-        participants.forEach(participant => {
-          const chip = document.createElement('span');
-          chip.className = 'wheel-participant-chip';
-          chip.textContent = participant.name;
-          participantList.appendChild(chip);
-        });
-      }
-    }
-
-    const joinButton = document.getElementById('wheelJoinBtn');
-    if (joinButton) {
-      joinButton.textContent = state.joined ? t('wheelJoined') : t('wheelJoin');
-      joinButton.disabled = wheelActionInFlight || state.joined || state.status !== 'open' ||
-        !serverSession.online || !serverSession.token;
-      joinButton.title = !serverSession.online || !serverSession.token ? t('wheelNeedTelegram') : '';
-    }
-
-    const spinButton = document.getElementById('wheelSpinBtn');
-    if (spinButton) {
-      spinButton.hidden = serverSession.isChatAdmin !== true;
-      spinButton.disabled = wheelActionInFlight || state.status !== 'open' || participants.length < 2;
-    }
-
-    const newRoundButton = document.getElementById('wheelNewRoundBtn');
-    if (newRoundButton) {
-      newRoundButton.hidden = serverSession.isChatAdmin !== true || state.status !== 'finished';
-      newRoundButton.disabled = wheelActionInFlight;
-    }
-  }
-
-  async function syncWheel(){
-    if (!SERVER_URL || wheelSyncInFlight) return;
-    wheelSyncInFlight = true;
-    try {
-      let url = SERVER_URL + '/api/wheel';
-      if (serverSession.online && serverSession.token) url += '?token=' + encodeURIComponent(serverSession.token);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('wheel-http-' + response.status);
-      const data = await response.json();
-      if (data.event) renderWheel(data.event);
-    } catch (error) {
-      const errorElement = document.getElementById('wheelEventError');
-      if (errorElement) errorElement.textContent = t('wheelActionFailed');
-    } finally {
-      wheelSyncInFlight = false;
-    }
-  }
-
-  async function runWheelAction(path){
-    if (wheelActionInFlight || !serverSession.online || !serverSession.token) return;
-    wheelActionInFlight = true;
-    if (wheelState) renderWheel(wheelState);
-    const errorElement = document.getElementById('wheelEventError');
-    if (errorElement) errorElement.textContent = '';
-    try {
-      const response = await fetch(SERVER_URL + path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: serverSession.token })
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message = data.error === 'wheel-needs-two-participants' ? t('wheelNeedsTwo') : t('wheelActionFailed');
-        throw new Error(message);
-      }
-      if (data.event) renderWheel(data.event);
-    } catch (error) {
-      if (errorElement) errorElement.textContent = error.message || t('wheelActionFailed');
-    } finally {
-      wheelActionInFlight = false;
-      if (wheelState) renderWheel(wheelState);
-    }
-  }
-
-  const wheelJoinButton = document.getElementById('wheelJoinBtn');
-  const wheelSpinButton = document.getElementById('wheelSpinBtn');
-  const wheelNewRoundButton = document.getElementById('wheelNewRoundBtn');
-  if (wheelJoinButton) wheelJoinButton.addEventListener('click', () => runWheelAction('/api/wheel/join'));
-  if (wheelSpinButton) wheelSpinButton.addEventListener('click', () => runWheelAction('/api/wheel/spin'));
-  if (wheelNewRoundButton) wheelNewRoundButton.addEventListener('click', () => runWheelAction('/api/wheel/new-round'));
-  syncWheel();
-  setInterval(syncWheel, 4000);
 
   document.querySelectorAll('.invite-claim-btn').forEach(button => {
     button.addEventListener('click', async () => {
