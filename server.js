@@ -1778,7 +1778,7 @@ app.get('/api/leaderboard', (req, res) => {
     .filter((e) => e.best > 0)
     .sort((a, b) => (b.best - a.best) || (b.distance - a.distance));
 
-  const top = ranked.slice(0, 10).map((e) => ({ name: e.name, best: e.best }));
+  const top = ranked.slice(0, 50).map((e) => ({ name: e.name, best: e.best }));
 
   let you;
   const token = req.query && req.query.token;
