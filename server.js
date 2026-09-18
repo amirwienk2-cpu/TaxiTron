@@ -187,7 +187,8 @@ try {
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
 
-// Global on/off switch an admin can flip from the /admin panel - disables sending for everyone.
+// Global on/off switch an admin can flip from the /admin panel. When off,
+// regular users cannot send, while chat admins can still moderate the chat.
 let chatEnabled = true;
 try {
   if (fs.existsSync(CHAT_SETTINGS_FILE)) {
@@ -1075,7 +1076,7 @@ app.get('/api/chat/messages', (req, res) => {
   res.json({ messages, enabled: chatEnabled });
 });
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
-  if (!chatEnabled) return res.status(403).json({ error: 'chat-disabled' });
+  if (!chatEnabled && req.user.isChatAdmin !== true) return res.status(403).json({ error: 'chat-disabled' });
   if (req.user.chatMuted === true) return res.status(403).json({ error: 'muted' });
   const raw = String((req.body && req.body.text) || '').replace(/[\u0000-\u001f\u007f]/g, '').trim();
   if (!raw) return res.status(400).json({ error: 'empty-message' });

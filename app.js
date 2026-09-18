@@ -1234,11 +1234,12 @@
     const btn = document.getElementById('chatSendBtn');
     const hint = document.getElementById('chatHint');
     const muted = serverSession.chatMuted === true;
-    const available = !!(serverSession.online && serverSession.token) && !muted && chatGloballyEnabled;
+    const available = !!(serverSession.online && serverSession.token) &&
+      !muted && (chatGloballyEnabled || serverSession.isChatAdmin === true);
     if (input) input.disabled = !available;
     if (btn) btn.disabled = !available;
     if (hint) {
-      if (!chatGloballyEnabled) { hint.textContent = t('chatDisabledHint'); hint.style.display = 'block'; }
+      if (!chatGloballyEnabled && serverSession.isChatAdmin !== true) { hint.textContent = t('chatDisabledHint'); hint.style.display = 'block'; }
       else if (muted) { hint.textContent = t('chatMutedHint'); hint.style.display = 'block'; }
       else { hint.textContent = t('chatOpenInTelegram'); hint.style.display = available ? 'none' : 'block'; }
     }
