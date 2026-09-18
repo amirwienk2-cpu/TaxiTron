@@ -314,6 +314,7 @@ function newUser(id, name) {
     referralRewardClaimed: false,
     inviteRewardsClaimed: {},
     isChatAdmin: false,
+    isDesigner: false,
     chatMuted: false,
   };
 }
@@ -531,8 +532,13 @@ function publicState(user) {
     adRewardClaimed: user.adRewardClaimed === true,
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
     isChatAdmin: user.isChatAdmin === true,
+    isDesigner: user.isDesigner === true,
     chatMuted: user.chatMuted === true,
   };
+}
+
+function canModerateChat(user) {
+  return user && (user.isChatAdmin === true || user.isDesigner === true);
 }
 
 function hasWithdrawnToday(user) {
@@ -928,7 +934,7 @@ app.get('/admin', (req, res) => {
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TaxiTron Admin</title><style>
 body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:1000px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.danger{background:#ff5c6c;color:#260b10}.sound-off{background:#3b3850;color:#f5f2ff}.sound-on{background:#3ddc84;color:#062012}.toolbar{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.status{color:#aaa3b8;margin:12px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat{padding:14px;border:1px solid #3b3850;border-radius:8px;background:#181824}.stat b{display:block;font-size:24px;color:#ffd93d}.row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.row.new-withdrawal{background:rgba(61,220,132,0.16);border-left:4px solid #3ddc84;animation:flash-row 1.4s ease-in-out 4}@keyframes flash-row{0%,100%{background:rgba(61,220,132,0.16)}50%{background:rgba(61,220,132,0.38)}}.muted{color:#aaa3b8;font-size:12px}.reset-attempts{background:#3b3850;color:#f5f2ff;font-size:12px;padding:8px}@media(max-width:650px){.stats{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
-.chat-admin-row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(255,217,61,0.08)}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}
+.chat-admin-row{display:grid;grid-template-columns:1.2fr .2fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}
 </style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
@@ -968,18 +974,20 @@ async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){s
 const list=document.getElementById('list');
 list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
 function updateChatToggleBtn(enabled){const btn=document.getElementById('chatEnableToggle');btn.textContent=enabled?'💬 Chat ist AN — jetzt ausschalten':'🚫 Chat ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
-document.getElementById('chatEnableToggle').onclick=async()=>{const enabled=document.getElementById('chatEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/chat/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateChatToggleBtn(dd.chatEnabled);status(dd.chatEnabled?'Chat wurde aktiviert.':'Chat wurde fuer alle deaktiviert.')}else status((await rr.json()).error||'Request failed')};
+document.getElementById('chatEnableToggle').onclick=async()=>{const enabled=document.getElementById('chatEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/chat/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateChatToggleBtn(dd.chatEnabled);status(dd.chatEnabled?'Chat wurde aktiviert.':'Chat wurde fuer normale Nutzer deaktiviert.')}else status((await rr.json()).error||'Request failed')};
 async function runSearch(){const q=document.getElementById('chatUserSearch').value;status('Nutzer werden geladen...');const r=await fetch('/admin/chat-users?query='+encodeURIComponent(q),{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}
 updateChatToggleBtn(d.chatEnabled);
 const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'':'Keine Nutzer gefunden.';
-d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.chatMuted?' is-muted':'');
-const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
-row.innerHTML='<span>'+u.name+tags+'<br><span class="muted">UID '+u.uid+'</span></span><span></span><span></span><span></span>';
+d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.chatMuted?' is-muted':'');
+const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
+row.innerHTML='<span>'+u.name+tags+'<br><span class="muted">UID '+u.uid+'</span></span><span></span><span></span><span></span><span></span>';
 const adminBtn=document.createElement('button');adminBtn.className='small-btn';adminBtn.textContent=u.isChatAdmin?'Admin entfernen':'Zum Chat-Admin machen';
 adminBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isChatAdmin:!u.isChatAdmin})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
+const designerBtn=document.createElement('button');designerBtn.className='small-btn';designerBtn.textContent=u.isDesigner?'Designer entfernen':'Zum Designer machen';
+designerBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-designer',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isDesigner:!u.isDesigner})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const muteBtn=document.createElement('button');muteBtn.className='small-btn'+(u.chatMuted?'':' danger');muteBtn.textContent=u.chatMuted?'Entmuten':'Muten';
 muteBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-mute',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,muted:!u.chatMuted})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
-row.children[2].appendChild(adminBtn);row.children[3].appendChild(muteBtn);box.appendChild(row)});
+row.children[2].appendChild(adminBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
 status(d.users.length+' Nutzer geladen.')}
 document.getElementById('chatUserSearchBtn').onclick=runSearch;
 document.getElementById('chatUserSearch').addEventListener('keydown',e=>{if(e.key==='Enter')runSearch()});
@@ -1061,10 +1069,19 @@ app.get('/api/online-users', (req, res) => {
     .sort((a, b) => {
       const adminDiff = (b.isChatAdmin === true ? 1 : 0) - (a.isChatAdmin === true ? 1 : 0);
       if (adminDiff !== 0) return adminDiff;
+      const designerDiff = (b.isDesigner === true ? 1 : 0) - (a.isDesigner === true ? 1 : 0);
+      if (designerDiff !== 0) return designerDiff;
       return Number(b.lastSeenAt || 0) - Number(a.lastSeenAt || 0);
     })
     .slice(0, 100)
-    .map((user) => ({ uid: String(user.id), name: user.name || ('Player ' + user.id), ton: Number(user.ton || 0), isChatAdmin: user.isChatAdmin === true, chatMuted: user.chatMuted === true }));
+    .map((user) => ({
+      uid: String(user.id),
+      name: user.name || ('Player ' + user.id),
+      ton: Number(user.ton || 0),
+      isChatAdmin: user.isChatAdmin === true,
+      isDesigner: user.isDesigner === true,
+      chatMuted: user.chatMuted === true,
+    }));
   res.json({ users: list });
 });
 
@@ -1072,7 +1089,15 @@ app.get('/api/online-users', (req, res) => {
 // GET returns messages newer than ?after=<id> (or the last ~50 if omitted), for polling.
 app.get('/api/chat/messages', (req, res) => {
   const after = Number(req.query.after) || 0;
-  let messages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
+  const storedMessages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
+  const messages = storedMessages.map((message) => {
+    const user = users[String(message.uid)];
+    return {
+      ...message,
+      isAdmin: user ? user.isChatAdmin === true : message.isAdmin === true,
+      isDesigner: user ? user.isDesigner === true : message.isDesigner === true,
+    };
+  });
   res.json({ messages, enabled: chatEnabled });
 });
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
@@ -1090,7 +1115,16 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     const original = chatMessages.find((m) => m.id === replyToId);
     if (original) replyTo = { id: original.id, name: original.name, text: original.text.slice(0, 120) };
   }
-  const message = { id: chatNextId++, uid: req.uid, name: req.user.name || ('Player ' + req.uid), text, ts: Date.now(), isAdmin: req.user.isChatAdmin === true, replyTo };
+  const message = {
+    id: chatNextId++,
+    uid: req.uid,
+    name: req.user.name || ('Player ' + req.uid),
+    text,
+    ts: Date.now(),
+    isAdmin: req.user.isChatAdmin === true,
+    isDesigner: req.user.isDesigner === true,
+    replyTo,
+  };
   chatMessages.push(message);
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
@@ -1105,9 +1139,9 @@ app.post('/api/chat/set-enabled', requireUserFromBody, (req, res) => {
   res.json({ ok: true, chatEnabled });
 });
 
-// A user promoted to "chat admin" (via /admin panel) can mute/unmute other chat users.
+// Chat admins and designers can mute/unmute chat users.
 app.post('/api/chat/moderate', requireUserFromBody, (req, res) => {
-  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
+  if (!canModerateChat(req.user)) return res.status(403).json({ error: 'not-a-chat-moderator' });
   const targetUid = String((req.body && req.body.targetUid) || '');
   const target = users[targetUid];
   if (!target) return res.status(404).json({ error: 'user-not-found' });
@@ -1851,6 +1885,7 @@ app.get('/admin/chat-users', requireAdmin, (req, res) => {
     uid: String(u.id),
     name: u.name || ('Player ' + u.id),
     isChatAdmin: u.isChatAdmin === true,
+    isDesigner: u.isDesigner === true,
     chatMuted: u.chatMuted === true,
     lastSeenAt: Number(u.lastSeenAt || 0),
   }));
@@ -1870,6 +1905,15 @@ app.post('/admin/chat/set-admin', requireAdmin, (req, res) => {
   user.isChatAdmin = req.body.isChatAdmin === true;
   persist();
   res.json({ ok: true, uid, isChatAdmin: user.isChatAdmin });
+});
+
+app.post('/admin/chat/set-designer', requireAdmin, (req, res) => {
+  const uid = String((req.body && req.body.uid) || '');
+  const user = users[uid];
+  if (!user) return res.status(404).json({ error: 'user-not-found' });
+  user.isDesigner = req.body.isDesigner === true;
+  persist();
+  res.json({ ok: true, uid, isDesigner: user.isDesigner });
 });
 
 app.post('/admin/chat/set-mute', requireAdmin, (req, res) => {

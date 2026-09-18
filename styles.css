@@ -165,9 +165,12 @@
   .online-user-chip.mine{ border-color:#3a3524; background:rgba(255,217,61,0.08); }
   .online-user-chip.admin{ border-color:#8000f0; box-shadow:0 0 0 1px rgba(128,0,240,0.45), 0 0 10px rgba(128,0,240,0.28); }
   .online-user-chip.admin .online-user-name{ color:#b040f0; }
+  .online-user-chip.designer{ border-color:#ffd93d; }
+  .online-user-chip.designer .online-user-name{ color:#fff; }
   .online-user-chip.muted{ border-color:#ff5c6c; opacity:0.75; }
   .online-user-chip.muted .online-user-name{ color:#ff8a93; }
-  .online-user-name{ font-size:0.76rem; font-weight:700; color:#e6e2f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
+  .online-user-name{ display:flex; align-items:center; gap:4px; font-size:0.76rem; font-weight:700; color:#e6e2f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
+  .online-designer-badge{ height:18px; width:auto; flex-shrink:0; }
   .online-user-balance{ font-size:0.7rem; font-weight:800; color:#ffd93d; }
   .online-user-mute-btn{ margin-top:4px; font-size:0.65rem; font-weight:700; padding:3px 6px; border-radius:6px; border:1px solid #3b3850; background:#262436; color:#e6e2f0; cursor:pointer; }
   .online-user-mute-btn:hover{ background:#33314a; }
@@ -186,7 +189,9 @@
   .chat-msg-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
   .chat-msg-name{ font-size:0.75rem; font-weight:800; color:#ffd93d; display:inline-flex; align-items:center; gap:4px; }
   .chat-msg-name.admin{ color:#fff; text-shadow:0 0 6px rgba(176,64,240,0.7); }
+  .chat-msg-name.designer{ color:#fff; text-shadow:0 0 6px rgba(255,217,61,0.7); }
   .chat-admin-badge{ height:30px; width:auto; flex-shrink:0; }
+  .chat-designer-badge{ height:30px; width:auto; flex-shrink:0; }
   .chat-msg-time{ font-size:0.65rem; color:#8b86a0; flex-shrink:0; }
   .chat-msg-text{ font-size:0.82rem; color:#e6e2f0; line-height:1.4; margin-top:2px; word-break:break-word; }
   .chat-msg-quote{ display:flex; flex-direction:column; gap:1px; background:rgba(255,255,255,0.05); border-left:3px solid #ffd93d; border-radius:6px; padding:4px 8px; margin-top:4px; }

@@ -1057,11 +1057,12 @@
       box.appendChild(empty);
       return;
     }
-    // Keep our own live admin/mute flags in sync with the server on every poll,
+    // Keep our own live role/mute flags in sync with the server on every poll,
     // so the chat input disables itself right away if we get muted mid-session.
     const mine = list.find(u => serverSession.uid && String(u.uid) === String(serverSession.uid));
     if (mine) {
       serverSession.isChatAdmin = mine.isChatAdmin === true;
+      serverSession.isDesigner = mine.isDesigner === true;
       serverSession.chatMuted = mine.chatMuted === true;
       updateChatGlobalToggleBtn();
       updateChatAvailability();
@@ -1069,15 +1070,23 @@
     list.forEach(u => {
       const isMine = serverSession.uid && String(u.uid) === String(serverSession.uid);
       const row = document.createElement('div');
-      row.className = 'online-user-chip' + (isMine ? ' mine' : '') + (u.isChatAdmin ? ' admin' : '') + (u.chatMuted ? ' muted' : '');
+      row.className = 'online-user-chip' + (isMine ? ' mine' : '') + (u.isChatAdmin ? ' admin' : '') + (u.isDesigner ? ' designer' : '') + (u.chatMuted ? ' muted' : '');
       const nameEl = document.createElement('span');
       nameEl.className = 'online-user-name';
-      nameEl.textContent = (u.chatMuted ? '🔇 ' : '') + u.name;
+      if (u.isDesigner) {
+        const designerBadge = document.createElement('img');
+        designerBadge.src = 'sprites/designer.png';
+        designerBadge.alt = 'Designer';
+        designerBadge.title = 'Designer';
+        designerBadge.className = 'online-designer-badge';
+        nameEl.appendChild(designerBadge);
+      }
+      nameEl.appendChild(document.createTextNode((u.chatMuted ? '🔇 ' : '') + u.name));
       const balEl = document.createElement('span');
       balEl.className = 'online-user-balance';
       balEl.textContent = formatTonShort(u.ton) + ' TON';
       row.appendChild(nameEl); row.appendChild(balEl);
-      if (serverSession.isChatAdmin && !isMine) {
+      if ((serverSession.isChatAdmin || serverSession.isDesigner) && !isMine) {
         const muteBtn = document.createElement('button');
         muteBtn.type = 'button';
         muteBtn.className = 'online-user-mute-btn';
@@ -1139,7 +1148,7 @@
     const head = document.createElement('div');
     head.className = 'chat-msg-head';
     const nameEl = document.createElement('span');
-    nameEl.className = 'chat-msg-name' + (msg.isAdmin ? ' admin' : '');
+    nameEl.className = 'chat-msg-name' + (msg.isAdmin ? ' admin' : '') + (msg.isDesigner ? ' designer' : '');
     if (msg.isAdmin) {
       const badge = document.createElement('img');
       badge.src = 'sprites/adminlila.png';
@@ -1147,6 +1156,14 @@
       badge.title = t('chatAdminTag');
       badge.className = 'chat-admin-badge';
       nameEl.appendChild(badge);
+    }
+    if (msg.isDesigner) {
+      const designerBadge = document.createElement('img');
+      designerBadge.src = 'sprites/designer.png';
+      designerBadge.alt = 'Designer';
+      designerBadge.title = 'Designer';
+      designerBadge.className = 'chat-designer-badge';
+      nameEl.appendChild(designerBadge);
     }
     nameEl.appendChild(document.createTextNode(msg.name || ('Player ' + msg.uid)));
     const timeEl = document.createElement('span');
@@ -1430,6 +1447,7 @@
 
   function applyServerState(state){
     if (typeof state.isChatAdmin === 'boolean') serverSession.isChatAdmin = state.isChatAdmin;
+    if (typeof state.isDesigner === 'boolean') serverSession.isDesigner = state.isDesigner;
     if (typeof state.chatMuted === 'boolean') { serverSession.chatMuted = state.chatMuted; updateChatAvailability(); }
     const previousUid = localStorage.getItem('cr3d_serverUid');
     const accountChanged = state.uid && previousUid !== String(state.uid);
