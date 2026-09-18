@@ -1141,7 +1141,10 @@ app.get('/api/chat/events', (req, res) => {
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   if (!chatEnabled && req.user.isChatAdmin !== true) return res.status(403).json({ error: 'chat-disabled' });
   if (req.user.chatMuted === true) return res.status(403).json({ error: 'muted' });
-  const raw = String((req.body && req.body.text) || '').replace(/[\u0000-\u001f\u007f]/g, '').trim();
+  const raw = String((req.body && req.body.text) || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '')
+    .trim();
   if (!raw) return res.status(400).json({ error: 'empty-message' });
   const text = raw.slice(0, CHAT_MAX_LEN);
   const lastAt = chatLastSentAt[req.uid] || 0;

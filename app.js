@@ -1326,6 +1326,7 @@
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.message) {
         input.value = '';
+        resizeChatInput();
         setChatReplyTarget(null);
         appendChatMessage(data.message);
         chatLastId = Math.max(chatLastId, data.message.id);
@@ -1349,8 +1350,22 @@
   const chatSendBtnEl = document.getElementById('chatSendBtn');
   const chatInputEl = document.getElementById('chatInput');
   const chatReplyCancelBtnEl = document.getElementById('chatReplyCancelBtn');
+  function resizeChatInput(){
+    if (!chatInputEl) return;
+    chatInputEl.style.height = 'auto';
+    chatInputEl.style.height = chatInputEl.scrollHeight + 'px';
+  }
   if (chatSendBtnEl) chatSendBtnEl.addEventListener('click', sendChatMessage);
-  if (chatInputEl) chatInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+  if (chatInputEl) {
+    chatInputEl.addEventListener('input', resizeChatInput);
+    chatInputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    });
+    resizeChatInput();
+  }
   if (chatReplyCancelBtnEl) chatReplyCancelBtnEl.addEventListener('click', () => setChatReplyTarget(null));
   updateChatAvailability();
   syncChat();
