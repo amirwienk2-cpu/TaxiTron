@@ -186,7 +186,7 @@
   .chat-msg-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
   .chat-msg-name{ font-size:0.75rem; font-weight:800; color:#ffd93d; display:inline-flex; align-items:center; gap:4px; }
   .chat-msg-name.admin{ color:#fff2b0; text-shadow:0 0 6px rgba(255,217,61,0.6); }
-  .chat-admin-badge{ height:36px; width:auto; flex-shrink:0; }
+  .chat-admin-badge{ height:30px; width:auto; flex-shrink:0; }
   .chat-msg-time{ font-size:0.65rem; color:#8b86a0; flex-shrink:0; }
   .chat-msg-text{ font-size:0.82rem; color:#e6e2f0; line-height:1.4; margin-top:2px; word-break:break-word; }
   .chat-msg-quote{ display:flex; flex-direction:column; gap:1px; background:rgba(255,255,255,0.05); border-left:3px solid #ffd93d; border-radius:6px; padding:4px 8px; margin-top:4px; }
