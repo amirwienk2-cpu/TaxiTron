@@ -186,6 +186,18 @@ try {
 }
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
+const chatEventClients = new Set();
+
+function broadcastChatEvent(type) {
+  const payload = 'event: chat-update\ndata: ' + JSON.stringify({ type }) + '\n\n';
+  chatEventClients.forEach((response) => {
+    try {
+      response.write(payload);
+    } catch (error) {
+      chatEventClients.delete(response);
+    }
+  });
+}
 
 // Global on/off switch an admin can flip from the /admin panel. When off,
 // regular users cannot send, while chat admins can still moderate the chat.
@@ -1100,6 +1112,32 @@ app.get('/api/chat/messages', (req, res) => {
   });
   res.json({ messages, enabled: chatEnabled });
 });
+
+app.get('/api/chat/events', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+  });
+  res.flushHeaders();
+  res.write('retry: 2000\nevent: connected\ndata: {}\n\n');
+  chatEventClients.add(res);
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': keep-alive\n\n');
+    } catch (error) {
+      clearInterval(heartbeat);
+      chatEventClients.delete(res);
+    }
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    chatEventClients.delete(res);
+  });
+});
+
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   if (!chatEnabled && req.user.isChatAdmin !== true) return res.status(403).json({ error: 'chat-disabled' });
   if (req.user.chatMuted === true) return res.status(403).json({ error: 'muted' });
@@ -1129,6 +1167,7 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
   res.json({ message });
+  broadcastChatEvent('message');
 });
 
 // A chat admin can flip the global on/off switch directly from the app (in addition to the /admin panel).
@@ -1137,6 +1176,7 @@ app.post('/api/chat/set-enabled', requireUserFromBody, (req, res) => {
   chatEnabled = req.body.enabled === true;
   persistChatSettings();
   res.json({ ok: true, chatEnabled });
+  broadcastChatEvent('settings');
 });
 
 // Chat admins and designers can mute/unmute chat users.
@@ -1896,6 +1936,7 @@ app.post('/admin/chat/set-enabled', requireAdmin, (req, res) => {
   chatEnabled = req.body.enabled === true;
   persistChatSettings();
   res.json({ ok: true, chatEnabled });
+  broadcastChatEvent('settings');
 });
 
 app.post('/admin/chat/set-admin', requireAdmin, (req, res) => {

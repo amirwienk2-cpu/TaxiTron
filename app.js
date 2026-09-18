@@ -1116,6 +1116,7 @@
   let chatLastId = 0;
   let chatSyncInFlight = false;
   let chatSendInFlight = false;
+  const renderedChatMessageIds = new Set();
   let chatReplyTarget = null; // { id, name, text } - the message currently being replied to, or null
   function setChatReplyTarget(msg){
     chatReplyTarget = msg ? { id: msg.id, name: msg.name, text: msg.text } : null;
@@ -1140,6 +1141,9 @@
   function appendChatMessage(msg, forceScroll){
     const list = document.getElementById('chatMessages');
     if (!list) return;
+    const messageId = Number(msg.id);
+    if (Number.isFinite(messageId) && renderedChatMessageIds.has(messageId)) return;
+    if (Number.isFinite(messageId)) renderedChatMessageIds.add(messageId);
     const emptyNote = list.querySelector('.chat-empty');
     if (emptyNote) emptyNote.remove();
     const isMine = serverSession.uid && String(msg.uid) === String(serverSession.uid);
@@ -1304,6 +1308,10 @@
   if (chatReplyCancelBtnEl) chatReplyCancelBtnEl.addEventListener('click', () => setChatReplyTarget(null));
   updateChatAvailability();
   syncChat();
+  if (SERVER_URL && typeof EventSource !== 'undefined') {
+    const chatEvents = new EventSource(SERVER_URL + '/api/chat/events');
+    chatEvents.addEventListener('chat-update', syncChat);
+  }
   setInterval(syncChat, 4000);
 
   document.querySelectorAll('.invite-claim-btn').forEach(button => {
