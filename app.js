@@ -1142,7 +1142,7 @@
     nameEl.className = 'chat-msg-name' + (msg.isAdmin ? ' admin' : '');
     if (msg.isAdmin) {
       const badge = document.createElement('img');
-      badge.src = 'sprites/adminnew.png';
+      badge.src = 'sprites/adminlila.png';
       badge.alt = t('chatAdminTag');
       badge.title = t('chatAdminTag');
       badge.className = 'chat-admin-badge';
