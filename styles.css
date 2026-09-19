@@ -161,6 +161,8 @@
   /* ---------- HOME ONLINE USERS (separate card, above chat) ---------- */
   .online-users-card{ background:#15151f; border:1px solid #262436; border-radius:14px; padding:14px 16px; }
   .online-users-title{ display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:700; color:#a8a3b8; margin-bottom:10px; }
+  .online-users-search{ width:100%; box-sizing:border-box; margin-bottom:10px; padding:8px 10px; border-radius:8px; border:1px solid #262436; background:#1c1c2a; color:#e6e2f0; font-size:0.78rem; }
+  .online-users-search:focus{ outline:none; border-color:#ffd93d; }
   .online-users-list{ display:flex; flex-wrap:wrap; gap:8px; max-height:140px; overflow-y:auto; }
   .online-user-chip{ display:flex; flex-direction:column; gap:2px; background:#1c1c2a; border:1px solid #262436; border-radius:10px; padding:6px 10px; min-width:84px; }
   .online-user-chip.mine{ border-color:#3a3524; background:rgba(255,217,61,0.08); }
@@ -203,6 +205,9 @@
   .chat-msg-delete-btn{ margin:4px 0 0 10px; font-size:0.65rem; font-weight:700; color:#ff8a93; background:none; border:none; padding:0; cursor:pointer; }
   .chat-msg-delete-btn:hover{ color:#ff5c6c; }
   .chat-msg-delete-btn[hidden]{ display:none; }
+  .chat-msg-mute-btn{ margin:4px 0 0 10px; font-size:0.65rem; font-weight:700; color:#8b86a0; background:none; border:none; padding:0; cursor:pointer; }
+  .chat-msg-mute-btn:hover{ color:#ffd93d; }
+  .chat-msg-mute-btn[hidden]{ display:none; }
   .chat-reply-preview{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(255,217,61,0.08); border:1px solid #3a3524; border-left:3px solid #ffd93d; border-radius:8px; padding:6px 10px; }
   .chat-reply-preview-text{ display:flex; flex-direction:column; gap:1px; overflow:hidden; }
   .chat-reply-preview-label{ font-size:0.65rem; color:#8b86a0; }

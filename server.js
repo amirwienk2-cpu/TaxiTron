@@ -1250,6 +1250,7 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     ts: Date.now(),
     isAdmin: req.user.isChatAdmin === true,
     isDesigner: req.user.isDesigner === true,
+    chatMuted: req.user.chatMuted === true,
     replyTo,
   };
   chatMessages.push(message);

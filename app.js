@@ -22,6 +22,7 @@
       chatMutedHint: 'You have been muted by a chat admin and cannot send messages.',
       chatMute: 'Mute',
       chatUnmute: 'Unmute',
+      onlineUsersSearchPlaceholder: 'Search players...',
       chatDisabledHint: 'Chat has been turned off by an admin. Sending is temporarily disabled.',
       chatGlobalTurnOff: '🚫 Turn chat off for everyone',
       chatGlobalTurnOn: '💬 Turn chat back on',
@@ -138,6 +139,7 @@
       chatMutedHint: 'یک مدیر گفتگو شما را بی‌صدا کرده و نمی‌توانید پیام ارسال کنید.',
       chatMute: 'بی‌صدا',
       chatUnmute: 'رفع بی‌صدایی',
+      onlineUsersSearchPlaceholder: 'جستجوی بازیکنان...',
       chatDisabledHint: 'گفتگو توسط یک مدیر خاموش شده است. ارسال پیام موقتاً غیرفعال است.',
       chatGlobalTurnOff: '🚫 خاموش کردن گفتگو برای همه',
       chatGlobalTurnOn: '💬 روشن کردن دوباره گفتگو',
@@ -1153,6 +1155,16 @@
     const n = Number(v) || 0;
     return n.toFixed(n < 1 ? 4 : 2);
   }
+  function filterOnlineUsers(){
+    const searchInput = document.getElementById('onlineUsersSearch');
+    const box = document.getElementById('onlineUsersList');
+    if (!searchInput || !box) return;
+    const query = searchInput.value.trim().toLocaleLowerCase();
+    box.querySelectorAll('.online-user-chip').forEach(row => {
+      const match = !query || (row.dataset.search || '').includes(query);
+      row.style.display = match ? '' : 'none';
+    });
+  }
   function renderOnlineUsers(list){
     const box = document.getElementById('onlineUsersList');
     if (!box) return;
@@ -1179,6 +1191,7 @@
       const isMine = serverSession.uid && String(u.uid) === String(serverSession.uid);
       const row = document.createElement('div');
       row.className = 'online-user-chip' + (isMine ? ' mine' : '') + (u.isChatAdmin ? ' admin' : '') + (u.isDesigner ? ' designer' : '') + (u.chatMuted ? ' muted' : '');
+      row.dataset.search = String(u.name || '').toLocaleLowerCase();
       const nameEl = document.createElement('span');
       nameEl.className = 'online-user-name';
       if (u.isDesigner) {
@@ -1204,6 +1217,7 @@
       }
       box.appendChild(row);
     });
+    filterOnlineUsers();
   }
   async function syncOnlineUsers(){
     if (!SERVER_URL) return;
@@ -1219,6 +1233,8 @@
   }
   syncOnlineUsers();
   setInterval(syncOnlineUsers, 15000);
+  const onlineUsersSearchInput = document.getElementById('onlineUsersSearch');
+  if (onlineUsersSearchInput) onlineUsersSearchInput.addEventListener('input', filterOnlineUsers);
 
   // ---- Community chat shown on Home, under the online-player count ----
   let chatLastId = 0;
@@ -1256,8 +1272,13 @@
     renderChatEmptyState();
   }
   function updateChatDeleteControls(){
+    const canModerate = serverSession.isChatAdmin === true || serverSession.isDesigner === true;
     document.querySelectorAll('.chat-msg-delete-btn').forEach(button => {
       button.hidden = serverSession.isChatAdmin !== true;
+    });
+    document.querySelectorAll('.chat-msg-mute-btn').forEach(button => {
+      const isMine = serverSession.uid && button.dataset.uid === String(serverSession.uid);
+      button.hidden = !canModerate || isMine;
     });
   }
   function scrollChatToLatest(){
@@ -1352,6 +1373,22 @@
       });
     });
     row.appendChild(deleteBtn);
+    const canModerate = serverSession.isChatAdmin === true || serverSession.isDesigner === true;
+    const muteBtn = document.createElement('button');
+    muteBtn.type = 'button';
+    muteBtn.className = 'chat-msg-mute-btn';
+    muteBtn.dataset.uid = String(msg.uid);
+    let msgMuted = msg.chatMuted === true;
+    muteBtn.textContent = msgMuted ? t('chatUnmute') : t('chatMute');
+    muteBtn.hidden = !canModerate || isMine;
+    muteBtn.addEventListener('click', () => {
+      msgMuted = !msgMuted;
+      muteBtn.textContent = msgMuted ? t('chatUnmute') : t('chatMute');
+      moderateChatUser(msg.uid, msgMuted).catch(error => {
+        console.error('[chat] mute failed:', error);
+      });
+    });
+    row.appendChild(muteBtn);
     list.appendChild(row);
     scrollChatToLatest();
   }
