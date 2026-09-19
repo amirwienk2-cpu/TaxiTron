@@ -18,6 +18,7 @@
  *   GET  /admin/withdrawals?status=pending
  *   POST /admin/withdrawals/complete   { uid, ts }
  *   POST /admin/withdrawals/reject     { uid, ts }
+ *   POST /admin/withdrawals/restore    { uid, ts }
  *   GET  /admin/deposits
  *   GET  /admin/purchases
  *
@@ -960,7 +961,7 @@ app.get('/admin', (req, res) => {
 <title>TaxiTron Admin</title><style>
 body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:1000px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.danger{background:#ff5c6c;color:#260b10}.sound-off{background:#3b3850;color:#f5f2ff}.sound-on{background:#3ddc84;color:#062012}.toolbar{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.player-search{flex:1;min-width:260px}.search-result-count{align-self:center;color:#aaa3b8;font-size:13px}.status{color:#aaa3b8;margin:12px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat{padding:14px;border:1px solid #3b3850;border-radius:8px;background:#181824}.stat b{display:block;font-size:24px;color:#ffd93d}.row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.row.new-withdrawal{background:rgba(61,220,132,0.16);border-left:4px solid #3ddc84;animation:flash-row 1.4s ease-in-out 4}@keyframes flash-row{0%,100%{background:rgba(61,220,132,0.16)}50%{background:rgba(61,220,132,0.38)}}.muted{color:#aaa3b8;font-size:12px}.reset-attempts{background:#3b3850;color:#f5f2ff;font-size:12px;padding:8px}@media(max-width:650px){.stats{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .2fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -993,8 +994,10 @@ const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'
 if(!silent)status(d.withdrawals.length+' offene Auszahlung(en) geladen.');
 if(newlyArrived.length){playAlertSound();startTitleBlink();if(!silent)status(newlyArrived.length+' neue Auszahlung(en) eingegangen!')}
 }
+async function loadRejectedWithdrawals(){currentView='rejectedWithdrawals';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Abgelehnte Auszahlungen werden geladen...');const r=await fetch('/admin/withdrawals?status=rejected',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'Keine abgelehnten Auszahlungen.';d.withdrawals.forEach(w=>{const row=document.createElement('div');row.className='row';const gross=Number(w.grossAmount!=null?w.grossAmount:w.amount);row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span><b>'+gross.toFixed(6)+' TON</b><br><span class="muted">Wegen Betrug abgelehnt</span></span><span>'+w.address+'</span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><button class="sound-on">↩ Zurückholen</button>';row.querySelector('button').onclick=async()=>{if(!confirm('Diese Auszahlung wieder als offen markieren?'))return;const rr=await fetch('/admin/withdrawals/restore',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts})});const dd=await rr.json();if(rr.ok){status('Auszahlung wurde zurückgeholt und ist wieder offen.');loadRejectedWithdrawals()}else status(dd.error||'Request failed')};list.appendChild(row)});status(d.withdrawals.length+' abgelehnte Auszahlung(en) geladen.')}
 document.getElementById('load').onclick=load;
 document.getElementById('loadWithdrawals').onclick=()=>loadWithdrawals();
+document.getElementById('loadRejectedWithdrawals').onclick=loadRejectedWithdrawals;
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
 const list=document.getElementById('list');
 list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
@@ -2063,6 +2066,20 @@ app.post('/admin/withdrawals/reject', requireAdmin, (req, res) => {
   withdrawal.status = 'rejected';
   withdrawal.rejectionReason = 'fraud';
   withdrawal.rejectedAt = Date.now();
+  persist();
+  res.json({ ok: true, withdrawal });
+});
+
+app.post('/admin/withdrawals/restore', requireAdmin, (req, res) => {
+  const { uid, ts } = req.body || {};
+  const user = users[String(uid)];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const withdrawal = user.withdrawals.find((item) => item.ts === ts);
+  if (!withdrawal) return res.status(404).json({ error: 'unknown-withdrawal' });
+  if (withdrawal.status !== 'rejected') return res.status(409).json({ error: 'withdrawal-is-not-rejected' });
+  withdrawal.status = 'pending';
+  delete withdrawal.rejectionReason;
+  delete withdrawal.rejectedAt;
   persist();
   res.json({ ok: true, withdrawal });
 });
