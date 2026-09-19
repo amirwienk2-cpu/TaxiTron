@@ -929,7 +929,7 @@
     ? ''
     : "https://taxitron-production.up.railway.app";
   const serverSession = { token: null, online: false };
-  const INVITE_EVENT_ENDS_AT = Date.parse('2026-09-22T21:59:00.000Z');
+  const INVITE_EVENT_ENDS_AT = Date.parse('2026-09-19T13:50:22.986Z');
   let inviteEventEndsAt = INVITE_EVENT_ENDS_AT;
 
   function isInviteEventEnded(){

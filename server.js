@@ -67,7 +67,7 @@ const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
-const INVITE_EVENT_ENDS_AT = Date.parse(process.env.INVITE_EVENT_ENDS_AT || '2026-09-22T21:59:00.000Z');
+const INVITE_EVENT_ENDS_AT = Date.parse(process.env.INVITE_EVENT_ENDS_AT || '2026-09-19T13:50:22.986Z');
 if (!Number.isFinite(INVITE_EVENT_ENDS_AT)) throw new Error('INVITE_EVENT_ENDS_AT must be a valid date');
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
