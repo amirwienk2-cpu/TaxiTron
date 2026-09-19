@@ -69,6 +69,11 @@
     <div class="box-event-card" id="boxEventCard" style="display:none;">
       <h3 class="box-event-title" data-i18n="boxEventTitle">🎁 Number Event</h3>
       <p class="box-event-desc" data-i18n="boxEventDesc">Draw a number from 1 to 400. When a box is opened, the player holding the matching number wins 1 TON!</p>
+      <div class="box-event-admin-controls" id="boxEventAdminControls" style="display:none;">
+        <button type="button" id="boxEventStartRoundBtn" class="box-event-round-btn" data-i18n="boxEventStartRound">▶️ Start new round</button>
+        <button type="button" id="boxEventEndRoundBtn" class="box-event-round-btn box-event-round-btn-end" data-i18n="boxEventEndRound">⏹ End round</button>
+      </div>
+      <div class="box-event-waiting" id="boxEventWaiting" data-i18n="boxEventWaiting" style="display:none;">Waiting for the admin to start the next round…</div>
       <div class="box-event-your-number" id="boxEventYourNumber"></div>
       <button type="button" id="boxEventDrawBtn" class="menu-btn box-event-draw-btn" data-i18n="boxEventDraw">Draw a number</button>
       <div class="box-event-boxes" id="boxEventBoxes"></div>

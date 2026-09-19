@@ -258,7 +258,7 @@ function persistInviteCampaignState() {
 // ---- "Draw a number, vote on a box" live chat event (test feature) ----
 function newBoxEventState() {
   return {
-    enabled: true,
+    enabled: false, // players can only draw/vote once an admin starts a round from the app
     drawnNumbers: {}, // uid -> drawn number (1..BOX_EVENT_MAX_NUMBER), unique across all users
     usedWinnerUids: [], // uids that already won a box, excluded from future box winners
     votes: {}, // uid -> boxId currently voted for (one vote per user total)
@@ -1307,6 +1307,25 @@ app.post('/api/box-event/open', requireUserFromBody, (req, res) => {
   persistBoxEventState();
   persist();
   res.json({ ok: true, boxes: boxEventPublicBoxes() });
+});
+
+// A chat admin can start a fresh round directly from the app: clears any previous
+// draws/votes/box winners and re-enables drawing & voting for everyone.
+app.post('/api/box-event/start-round', requireUserFromBody, (req, res) => {
+  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-admin' });
+  boxEventState = newBoxEventState();
+  boxEventState.enabled = true;
+  persistBoxEventState();
+  res.json({ ok: true, enabled: true });
+});
+
+// A chat admin can end the current round (hides draw/vote from regular players)
+// without clearing results, so the box event card only reappears once a new round starts.
+app.post('/api/box-event/end-round', requireUserFromBody, (req, res) => {
+  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-admin' });
+  boxEventState.enabled = false;
+  persistBoxEventState();
+  res.json({ ok: true, enabled: false });
 });
 
 app.post('/admin/box-event/set-enabled', requireAdmin, (req, res) => {

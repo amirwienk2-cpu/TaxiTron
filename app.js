@@ -34,6 +34,9 @@
       boxEventOpen: 'Open box',
       boxEventCongrats: 'Congratulations',
       boxEventBoxLabel: 'Box',
+      boxEventStartRound: '▶️ Start new round',
+      boxEventEndRound: '⏹ End round',
+      boxEventWaiting: 'Waiting for the admin to start the next round…',
       chatDisabledHint: 'Chat has been turned off by an admin. Sending is temporarily disabled.',
       chatGlobalTurnOff: '🚫 Turn chat off for everyone',
       chatGlobalTurnOn: '💬 Turn chat back on',
@@ -162,6 +165,9 @@
       boxEventOpen: 'باز کردن جعبه',
       boxEventCongrats: 'تبریک',
       boxEventBoxLabel: 'جعبه',
+      boxEventStartRound: '▶️ شروع دور جدید',
+      boxEventEndRound: '⏹ پایان دور',
+      boxEventWaiting: 'در انتظار شروع دور بعدی توسط مدیر…',
       chatDisabledHint: 'گفتگو توسط یک مدیر خاموش شده است. ارسال پیام موقتاً غیرفعال است.',
       chatGlobalTurnOff: '🚫 خاموش کردن گفتگو برای همه',
       chatGlobalTurnOn: '💬 روشن کردن دوباره گفتگو',
@@ -1266,23 +1272,43 @@
   function renderBoxEvent(data){
     const card = document.getElementById('boxEventCard');
     if (!card) return;
+    const you = (data && data.you) || {};
+    const isAdmin = you.isAdmin === true;
+    const adminControlsEl = document.getElementById('boxEventAdminControls');
+    const startBtn = document.getElementById('boxEventStartRoundBtn');
+    const endBtn = document.getElementById('boxEventEndRoundBtn');
+    const waitingEl = document.getElementById('boxEventWaiting');
+    const drawBtn = document.getElementById('boxEventDrawBtn');
+    const boxesEl = document.getElementById('boxEventBoxes');
+    const yourNumberEl = document.getElementById('boxEventYourNumber');
     if (!data || !data.enabled) {
-      card.style.display = 'none';
+      // Regular players never see the card until an admin starts a round; admins
+      // still see it so they have a way to actually start the next one.
+      if (!isAdmin) { card.style.display = 'none'; return; }
+      card.style.display = '';
+      if (adminControlsEl) adminControlsEl.style.display = 'flex';
+      if (startBtn) startBtn.style.display = '';
+      if (endBtn) endBtn.style.display = 'none';
+      if (waitingEl) { waitingEl.style.display = ''; waitingEl.textContent = t('boxEventWaiting'); }
+      if (drawBtn) drawBtn.style.display = 'none';
+      if (yourNumberEl) yourNumberEl.textContent = '';
+      if (boxesEl) boxesEl.innerHTML = '';
       return;
     }
     card.style.display = '';
-    const you = data.you || {};
-    const yourNumberEl = document.getElementById('boxEventYourNumber');
+    if (adminControlsEl) adminControlsEl.style.display = isAdmin ? 'flex' : 'none';
+    if (startBtn) startBtn.style.display = isAdmin ? '' : 'none';
+    if (endBtn) endBtn.style.display = isAdmin ? '' : 'none';
+    if (waitingEl) waitingEl.style.display = 'none';
+    if (drawBtn) drawBtn.style.display = '';
     if (yourNumberEl) {
       yourNumberEl.textContent = you.number ? (t('boxEventYourNumberLabel') + ' #' + you.number) : '';
     }
-    const drawBtn = document.getElementById('boxEventDrawBtn');
     if (drawBtn) {
       const canDraw = serverSession.online && !!serverSession.token && !you.number;
       drawBtn.disabled = !canDraw;
       drawBtn.textContent = you.number ? t('boxEventAlreadyDrawn') : t('boxEventDraw');
     }
-    const boxesEl = document.getElementById('boxEventBoxes');
     if (!boxesEl || !Array.isArray(data.boxes)) return;
     const openBoxesVotes = data.boxes.filter(b => !b.opened).map(b => b.votes);
     const maxVotes = openBoxesVotes.length ? Math.max(...openBoxesVotes) : 0;
@@ -1386,8 +1412,38 @@
       console.error('[box-event] open failed', error);
     }
   }
+  async function startBoxEventRound(){
+    if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/box-event/start-round', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token }),
+      });
+      if (!response.ok) throw new Error((await response.json()).error || 'start-failed');
+      syncBoxEvent();
+    } catch (error) {
+      console.error('[box-event] start round failed', error);
+    }
+  }
+  async function endBoxEventRound(){
+    if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/box-event/end-round', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token }),
+      });
+      if (!response.ok) throw new Error((await response.json()).error || 'end-failed');
+      syncBoxEvent();
+    } catch (error) {
+      console.error('[box-event] end round failed', error);
+    }
+  }
   const boxEventDrawBtnEl = document.getElementById('boxEventDrawBtn');
   if (boxEventDrawBtnEl) boxEventDrawBtnEl.addEventListener('click', drawBoxEventNumber);
+  const boxEventStartRoundBtnEl = document.getElementById('boxEventStartRoundBtn');
+  if (boxEventStartRoundBtnEl) boxEventStartRoundBtnEl.addEventListener('click', startBoxEventRound);
+  const boxEventEndRoundBtnEl = document.getElementById('boxEventEndRoundBtn');
+  if (boxEventEndRoundBtnEl) boxEventEndRoundBtnEl.addEventListener('click', endBoxEventRound);
   syncBoxEvent();
   setInterval(syncBoxEvent, 6000);
   const onlineUsersSearchInput = document.getElementById('onlineUsersSearch');
