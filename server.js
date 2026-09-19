@@ -71,6 +71,15 @@ const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
 const INVITE_EVENT_ENDS_AT = Date.parse(process.env.INVITE_EVENT_ENDS_AT || '2026-09-19T13:50:22.986Z');
 if (!Number.isFinite(INVITE_EVENT_ENDS_AT)) throw new Error('INVITE_EVENT_ENDS_AT must be a valid date');
+// ---- "Invite leaderboard" campaign: whoever invites the most new users
+// starting from INVITE_LEADERBOARD_STARTS_AT wins TON once the campaign ends.
+// Only invites completed inside this window count (existing referralCount
+// from before the campaign is untouched).
+const INVITE_LEADERBOARD_STARTS_AT = Date.parse(process.env.INVITE_LEADERBOARD_STARTS_AT || '2026-09-19T15:21:53.666Z');
+const INVITE_LEADERBOARD_ENDS_AT = Date.parse(process.env.INVITE_LEADERBOARD_ENDS_AT || '2026-09-26T15:21:53.666Z');
+if (!Number.isFinite(INVITE_LEADERBOARD_STARTS_AT)) throw new Error('INVITE_LEADERBOARD_STARTS_AT must be a valid date');
+if (!Number.isFinite(INVITE_LEADERBOARD_ENDS_AT)) throw new Error('INVITE_LEADERBOARD_ENDS_AT must be a valid date');
+const INVITE_LEADERBOARD_REWARDS = [20, 10, 5]; // TON for rank 1 / 2 / 3
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
 const DATA_DIR = process.env.DATA_DIR || RAILWAY_VOLUME_PATH || path.join(__dirname, 'data');
@@ -82,6 +91,7 @@ if (ON_RAILWAY && SESSION_SECRET === 'dev-insecure-secret-change-me') {
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
 const RPS_FILE = path.join(DATA_DIR, 'rps-games.json');
+const INVITE_CAMPAIGN_FILE = path.join(DATA_DIR, 'invite-campaign.json');
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
 const STORAGE_PERSISTENT = !ON_RAILWAY || (
@@ -225,6 +235,22 @@ function persistChatSettings() {
   catch (e) { console.error('[chat] could not write settings: ' + e.message); }
 }
 
+// One-time settlement state for the invite leaderboard campaign (payout only
+// happens once, tracked outside of any single user so it survives restarts).
+let inviteCampaignState = { settled: false, winners: [] };
+try {
+  if (fs.existsSync(INVITE_CAMPAIGN_FILE)) {
+    const loaded = JSON.parse(fs.readFileSync(INVITE_CAMPAIGN_FILE, 'utf8'));
+    if (loaded && typeof loaded === 'object') inviteCampaignState = { settled: !!loaded.settled, winners: Array.isArray(loaded.winners) ? loaded.winners : [] };
+  }
+} catch (e) {
+  console.error('[invite-campaign] settings file unreadable: ' + e.message);
+}
+function persistInviteCampaignState() {
+  try { fs.writeFileSync(INVITE_CAMPAIGN_FILE, JSON.stringify(inviteCampaignState)); }
+  catch (e) { console.error('[invite-campaign] could not write settings: ' + e.message); }
+}
+
 // Keep a copy of the last good state from startup as a safety net
 try {
   if (Object.keys(users).length > 0) fs.writeFileSync(BACKUP_FILE, JSON.stringify(users));
@@ -337,6 +363,8 @@ function newUser(id, name) {
     referredBy: null,
     referralRewardClaimed: false,
     inviteRewardsClaimed: {},
+    campaignInvites: 0,
+    campaignLastInviteAt: 0,
     isChatAdmin: false,
     isDesigner: false,
     chatMuted: false,
@@ -345,6 +373,27 @@ function newUser(id, name) {
 }
 
 function referralCodeFor(uid) { return 'ref_' + String(uid); }
+
+// Settles the invite leaderboard once, the first time this is called after
+// the campaign end date. Idempotent: safe to call from every request and
+// from a periodic timer, since it checks inviteCampaignState.settled first.
+function settleInviteLeaderboardIfDue() {
+  if (inviteCampaignState.settled || Date.now() < INVITE_LEADERBOARD_ENDS_AT) return;
+  const ranked = Object.values(users)
+    .filter((u) => Number(u.campaignInvites || 0) > 0)
+    .sort((a, b) => (Number(b.campaignInvites) - Number(a.campaignInvites)) || (Number(a.campaignLastInviteAt || 0) - Number(b.campaignLastInviteAt || 0)));
+  const winners = [];
+  ranked.slice(0, INVITE_LEADERBOARD_REWARDS.length).forEach((user, index) => {
+    const reward = INVITE_LEADERBOARD_REWARDS[index];
+    user.ton += reward;
+    winners.push({ uid: String(user.id), name: user.name, invites: Number(user.campaignInvites), reward, rank: index + 1 });
+  });
+  inviteCampaignState = { settled: true, winners };
+  persistInviteCampaignState();
+  if (winners.length) persist();
+  console.log('[invite-campaign] settled: ' + winners.length + ' winner(s) paid out.');
+}
+setInterval(settleInviteLeaderboardIfDue, 60000);
 
 function applyReferral(user, referralCode) {
   if (!referralCode || user.referredBy || String(referralCode) === referralCodeFor(user.id)) return;
@@ -551,6 +600,7 @@ function publicState(user) {
     referralPendingZombies: Number(user.referralPendingZombies || 0),
     inviteRewardsClaimed: user.inviteRewardsClaimed && typeof user.inviteRewardsClaimed === 'object' ? user.inviteRewardsClaimed : {},
     inviteEventEndsAt: INVITE_EVENT_ENDS_AT,
+    campaignInvites: Number(user.campaignInvites || 0),
     attemptResetVersion: user.attemptResetVersion || 0,
     taskChannelRewardClaimed: user.taskChannelRewardClaimed === true,
     withdrawChannelTaskRewardClaimed: user.withdrawChannelTaskRewardClaimed === true,
@@ -1302,6 +1352,13 @@ app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
         inviter.referralPendingZombies = Number(inviter.referralPendingZombies || 0) + 300;
         inviter.referralRewardCount = Number(inviter.referralRewardCount || 0) + 1;
         referralReward = 300;
+        // Invite leaderboard: only invites completed inside the active
+        // campaign window count towards the ranking/TON prize.
+        const now = Date.now();
+        if (now >= INVITE_LEADERBOARD_STARTS_AT && now < INVITE_LEADERBOARD_ENDS_AT) {
+          inviter.campaignInvites = Number(inviter.campaignInvites || 0) + 1;
+          inviter.campaignLastInviteAt = now;
+        }
       }
       user.referralRewardClaimed = true;
     }
@@ -1950,6 +2007,40 @@ app.get('/api/leaderboard', (req, res) => {
   }
 
   res.json({ top, you });
+});
+
+// ---- Invite leaderboard campaign: top inviters win TON ----
+app.get('/api/invite-leaderboard', (req, res) => {
+  settleInviteLeaderboardIfDue();
+  const ranked = Object.values(users)
+    .filter((u) => Number(u.campaignInvites || 0) > 0)
+    .sort((a, b) => (Number(b.campaignInvites) - Number(a.campaignInvites)) || (Number(a.campaignLastInviteAt || 0) - Number(b.campaignLastInviteAt || 0)));
+  const top = ranked.slice(0, 10).map((u, index) => ({
+    name: u.name,
+    invites: Number(u.campaignInvites),
+    reward: INVITE_LEADERBOARD_REWARDS[index] || 0,
+  }));
+
+  let you;
+  const token = req.query && req.query.token;
+  const payload = token ? verifyToken(token) : null;
+  if (payload && users[String(payload.uid)]) {
+    const uid = String(payload.uid);
+    const me = users[uid];
+    const invites = Number(me.campaignInvites || 0);
+    const rank = ranked.findIndex((e) => String(e.id) === uid) + 1;
+    you = { rank: invites > 0 ? (rank || ranked.length + 1) : 0, invites };
+  }
+
+  res.json({
+    startsAt: INVITE_LEADERBOARD_STARTS_AT,
+    endsAt: INVITE_LEADERBOARD_ENDS_AT,
+    rewards: INVITE_LEADERBOARD_REWARDS,
+    settled: inviteCampaignState.settled,
+    winners: inviteCampaignState.winners,
+    top,
+    you,
+  });
 });
 
 // ---------------------------------------------------------------

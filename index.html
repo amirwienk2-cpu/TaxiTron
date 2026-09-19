@@ -227,16 +227,15 @@
       <div class="task-card-icon">👥</div>
       <div class="task-card-content">
         <h2 data-i18n="inviteFriends">Invite friends</h2>
-        <p data-i18n="inviteDesc">Invite real Telegram users with your personal link. They only need to follow @TaxiiTon. No videos are required.</p>
+        <p data-i18n="inviteLeaderboardDesc">Invite real Telegram users with your personal link. The 3 players who invite the most new users win TON! 🥇 20 TON · 🥈 10 TON · 🥉 5 TON.</p>
         <div class="invite-countdown" id="inviteCountdown">
           <span data-i18n="inviteEndsIn">Campaign ends in</span>
-          <strong id="inviteCountdownValue">12h 00m 00s</strong>
+          <strong id="inviteCountdownValue">7d 00h 00m 00s</strong>
         </div>
         <div class="referral-row"><input id="taskReferralLink" class="withdraw-input" readonly data-i18n-placeholder="inviteLinkPlaceholder" placeholder="Your invite link"><button class="menu-btn secondary" id="taskReferralCopyBtn" type="button" data-i18n="copy">Copy</button></div>
         <button class="menu-btn secondary" id="taskReferralShareBtn" type="button" data-i18n="shareInvite">Share invite link</button>
-        <div class="invite-milestone" id="inviteMilestone5"><span>5 friends → 0.05 TON</span><button class="menu-btn invite-claim-btn" data-invite-threshold="5" type="button" data-i18n="claim">Claim</button></div>
-        <div class="invite-milestone" id="inviteMilestone20"><span>20 friends → 0.3 TON</span><button class="menu-btn invite-claim-btn" data-invite-threshold="20" type="button" data-i18n="claim">Claim</button></div>
-        <div class="invite-milestone" id="inviteMilestone50"><span>50 friends → 1 TON</span><button class="menu-btn invite-claim-btn" data-invite-threshold="50" type="button" data-i18n="claim">Claim</button></div>
+        <div class="invite-leaderboard-you" id="inviteLeaderboardYou"></div>
+        <div class="invite-leaderboard-list" id="inviteLeaderboardList"></div>
         <div class="task-status" id="inviteTaskStatus"></div>
       </div>
     </div>

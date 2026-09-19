@@ -105,8 +105,11 @@
       openChannel: 'Open Telegram channel', checkMembership: 'Check membership', reward500: 'Reward: +500 Zombies',
       joinWithdraw: 'Join @TaxitonWithdraw', followWithdraw: 'Follow the withdrawal news channel to complete this task.',
       inviteFriends: 'Invite friends', inviteDesc: 'Invite real Telegram users with your personal link. They only need to follow @TaxiiTon. No videos are required.',
+      inviteLeaderboardDesc: 'Invite real Telegram users with your personal link. The 3 players who invite the most new users win TON! 🥇 20 TON · 🥈 10 TON · 🥉 5 TON.',
       inviteLinkPlaceholder: 'Your invite link', shareInvite: 'Share invite link', claim: 'Claim', claimed: '✓ Claimed',
       inviteEndsIn: 'Campaign ends in', inviteEnded: 'Campaign ended', inviteClaimClosed: 'This campaign has ended.',
+      inviteYourRank: 'Your rank', inviteInvitesLabel: 'invites', inviteNoInvitesYet: 'No invites yet. Be the first!',
+      inviteCampaignSettled: 'Campaign ended · winners have been paid out.',
       watchVideos: 'Watch 10 videos', watchVideosDesc: 'Complete 10 rewarded videos and receive 0.03 TON in total.', watchVideo: 'Watch video',
       gameLobby: 'Game Lobby', lobbyPlayers: 'All players in the room can see and join together.', openLobby: 'Open lobby', waitingPlayers: 'Waiting for players...',
       online: 'online', lobbyRefresh: 'The player list updates automatically.', game: 'Game', fourPlayer: 'Four-player knockout tournament. Losers are eliminated each round.',
@@ -218,8 +221,11 @@
       openChannel: 'باز کردن کانال تلگرام', checkMembership: 'بررسی عضویت', reward500: 'پاداش: +۵۰۰ زامبی',
       joinWithdraw: 'عضویت در @TaxitonWithdraw', followWithdraw: 'برای انجام این وظیفه در کانال اخبار برداشت عضو شوید.',
       inviteFriends: 'دعوت از دوستان', inviteDesc: 'کاربران واقعی تلگرام را با لینک شخصی خود دعوت کنید. آن‌ها فقط باید در @TaxiiTon عضو شوند؛ تماشای ویدیو لازم نیست.',
+      inviteLeaderboardDesc: 'کاربران واقعی تلگرام را با لینک شخصی خود دعوت کنید. ۳ بازیکنی که بیشترین دعوت را داشته باشند تون می‌برند! 🥇 ۲۰ تون · 🥈 ۱۰ تون · 🥉 ۵ تون.',
       inviteLinkPlaceholder: 'لینک دعوت شما', shareInvite: 'اشتراک‌گذاری لینک دعوت', claim: 'دریافت', claimed: '✓ دریافت شد',
       inviteEndsIn: 'پایان کمپین تا', inviteEnded: 'کمپین پایان یافت', inviteClaimClosed: 'این کمپین به پایان رسیده است.',
+      inviteYourRank: 'رتبه شما', inviteInvitesLabel: 'دعوت', inviteNoInvitesYet: 'هنوز کسی دعوت نشده. اولین نفر باشید!',
+      inviteCampaignSettled: 'کمپین پایان یافت · جوایز برندگان پرداخت شد.',
       watchVideos: 'تماشای ۱۰ ویدیو', watchVideosDesc: '۱۰ ویدیوی پاداشی را کامل کنید و در مجموع ۰٫۰۳ تون بگیرید.', watchVideo: 'تماشای ویدیو',
       gameLobby: 'لابی بازی', lobbyPlayers: 'همه بازیکنان اتاق می‌توانند یکدیگر را ببینند و وارد شوند.', openLobby: 'لابی باز', waitingPlayers: 'در انتظار بازیکنان...',
       online: 'آنلاین', lobbyRefresh: 'فهرست بازیکنان خودکار به‌روزرسانی می‌شود.', game: 'بازی', fourPlayer: 'مسابقه حذفی چهار نفره. بازنده‌ها در هر دور حذف می‌شوند.',
@@ -942,17 +948,17 @@
     ? ''
     : "https://taxitron-production.up.railway.app";
   const serverSession = { token: null, online: false, isBanned: false };
-  const INVITE_EVENT_ENDS_AT = Date.parse('2026-09-19T13:50:22.986Z');
-  let inviteEventEndsAt = INVITE_EVENT_ENDS_AT;
+  let inviteEventEndsAt = 0;
+  let inviteLeaderboardData = null;
 
   function isInviteEventEnded(){
-    return Date.now() >= inviteEventEndsAt;
+    return inviteEventEndsAt > 0 && Date.now() >= inviteEventEndsAt;
   }
 
   function updateInviteCountdown(){
     const countdown = document.getElementById('inviteCountdown');
     const value = document.getElementById('inviteCountdownValue');
-    if (!countdown || !value) return;
+    if (!countdown || !value || !inviteEventEndsAt) return;
     const remaining = Math.max(0, inviteEventEndsAt - Date.now());
     if (remaining === 0) {
       countdown.classList.add('expired');
@@ -1009,20 +1015,63 @@
     if (state) lastInviteState = state;
     state = state || lastInviteState;
     const linkEl = document.getElementById('taskReferralLink');
-    const count = Number(state && state.referralCount || 0);
-    const claimed = state && state.inviteRewardsClaimed || {};
-    const serverEndsAt = Number(state && state.inviteEventEndsAt);
-    if (Number.isFinite(serverEndsAt) && serverEndsAt > 0) inviteEventEndsAt = serverEndsAt;
-    const eventEnded = isInviteEventEnded();
     if (linkEl) linkEl.value = getReferralLink(state) || 'Open the game in Telegram to get your link';
-    document.querySelectorAll('.invite-claim-btn').forEach(button => {
-      const threshold = button.dataset.inviteThreshold;
-      const isClaimed = claimed[String(threshold)] === true;
-      const eligible = count >= Number(threshold);
-      button.disabled = eventEnded || isClaimed || !eligible || !serverSession.online || !serverSession.token;
-      button.textContent = isClaimed ? t('claimed') : eventEnded ? t('inviteEnded') : eligible ? t('claim') : count + '/' + threshold;
-    });
     updateInviteCountdown();
+  }
+
+  function renderInviteLeaderboard(data){
+    if (!data) return;
+    inviteLeaderboardData = data;
+    const serverEndsAt = Number(data.endsAt);
+    if (Number.isFinite(serverEndsAt) && serverEndsAt > 0) inviteEventEndsAt = serverEndsAt;
+    const youEl = document.getElementById('inviteLeaderboardYou');
+    const listEl = document.getElementById('inviteLeaderboardList');
+    if (youEl) {
+      if (data.settled) {
+        youEl.textContent = t('inviteCampaignSettled');
+      } else if (data.you && data.you.rank > 0) {
+        youEl.textContent = t('inviteYourRank') + ': #' + data.you.rank + ' · ' + data.you.invites + ' ' + t('inviteInvitesLabel');
+      } else {
+        youEl.textContent = t('inviteNoInvitesYet');
+      }
+    }
+    if (listEl) {
+      const rows = data.settled && Array.isArray(data.winners) && data.winners.length
+        ? data.winners
+        : data.top;
+      if (!rows || !rows.length) {
+        listEl.innerHTML = '<div class="invite-leaderboard-empty">' + t('inviteNoInvitesYet') + '</div>';
+      } else {
+        listEl.innerHTML = rows.map((row, index) => {
+          const rank = index + 1;
+          const rewardText = row.reward ? ' · ' + row.reward + ' TON' : '';
+          return '<div class="invite-leaderboard-row rank-' + rank + '">'
+            + '<span class="rank">#' + rank + '</span>'
+            + '<span class="name">' + (row.name || '???') + '</span>'
+            + '<span class="invites">' + Number(row.invites || 0) + ' ' + t('inviteInvitesLabel') + '</span>'
+            + '<span class="reward">' + rewardText + '</span>'
+            + '</div>';
+        }).join('');
+      }
+    }
+    updateInviteCountdown();
+  }
+
+  let inviteLeaderboardSyncInFlight = false;
+  async function syncInviteLeaderboard(){
+    if (!SERVER_URL || inviteLeaderboardSyncInFlight) return;
+    inviteLeaderboardSyncInFlight = true;
+    try {
+      const tokenPart = serverSession.token ? '?token=' + encodeURIComponent(serverSession.token) : '';
+      const response = await fetch(SERVER_URL + '/api/invite-leaderboard' + tokenPart);
+      if (!response.ok) return;
+      const data = await response.json();
+      renderInviteLeaderboard(data);
+    } catch (error) {
+      // The next polling cycle retries after a temporary network failure.
+    } finally {
+      inviteLeaderboardSyncInFlight = false;
+    }
   }
 
   let referralSyncInFlight = false;
@@ -1046,6 +1095,8 @@
   setInterval(syncReferralStatus, 5000);
   renderReferralUI();
   setInterval(() => renderInviteUI(), 1000);
+  setInterval(syncInviteLeaderboard, 10000);
+  syncInviteLeaderboard();
 
   // ---- Online player count shown under "How it works" on Home ----
   function renderOnlineCount(count){
@@ -1435,30 +1486,6 @@
     });
   }
   setInterval(syncChat, 4000);
-
-  document.querySelectorAll('.invite-claim-btn').forEach(button => {
-    button.addEventListener('click', async () => {
-      if (!serverSession.online || !serverSession.token) return;
-      const threshold = Number(button.dataset.inviteThreshold);
-      button.disabled = true;
-      try {
-        const response = await fetch(SERVER_URL + '/api/referrals/invite-claim', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: serverSession.token, threshold })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'invite-claim-failed');
-        applyServerState(data.state);
-        renderReferralUI(data.state);
-        refreshTopUI();
-      } catch (error) {
-        const status = document.getElementById('inviteTaskStatus');
-        if (status) status.textContent = error.message === 'invite-event-ended' ? t('inviteClaimClosed') : error.message;
-        renderInviteUI();
-      }
-    });
-  });
 
   document.getElementById('taskReferralCopyBtn').addEventListener('click', async () => {
     const link = document.getElementById('taskReferralLink').value;
