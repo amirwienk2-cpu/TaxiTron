@@ -115,6 +115,12 @@ const MAX_DISTANCE_PER_CALL = 1000000;
 // long-lasting run to not get falsely clamped.
 const MIN_MS_PER_TOURNAMENT_ZOMBIE = 40; // ceiling: 25 zombies/sec sustained
 const TOURNAMENT_PLAUSIBILITY_BUFFER = 300; // slack for bursts/high-speed late-game stretches
+// Anti-cheat for the coin/TON economy: /api/run pays out coins and TON for a
+// finished run's zombie count. Unlike /api/submit-score it has no per-request
+// timing check, which let a script call it back-to-back to farm the daily TON
+// cap in seconds. This enforces a minimum real-world gap between two payouts
+// per account; legitimate players never exchange runs faster than this.
+const MIN_MS_BETWEEN_RUN_EXCHANGES = 4000;
 
 // ---- Global chat (shown on Home, under the online-player count) ----
 const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
@@ -319,6 +325,7 @@ function newUser(id, name) {
     tournamentDistance: 0,
     tournamentWeekKey: '',
     runStartedAt: 0,
+    lastRunAt: 0,
     depositTxs: [],
     deposits: [],
     purchases: [],
@@ -1503,6 +1510,16 @@ app.post('/api/run/start', requireUserFromBody, rejectBannedUser, (req, res) => 
 // ---- Exchange a run's zombies for coins + (capped) TON ----
 app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user;
+  const now = Date.now();
+  const sinceLastRun = now - Number(user.lastRunAt || 0);
+  if (sinceLastRun < MIN_MS_BETWEEN_RUN_EXCHANGES) {
+    // Anti-bot: a script hammering this endpoint back-to-back gets rejected
+    // instead of paid out. Nothing is consumed, so the client just keeps the
+    // pending score and the player can retry once the cooldown has passed.
+    return res.status(429).json({ error: 'run-too-frequent', retryAfterMs: MIN_MS_BETWEEN_RUN_EXCHANGES - sinceLastRun });
+  }
+  user.lastRunAt = now;
+
   let { distance, zombies } = req.body || {};
   zombies = Math.max(0, Math.min(MAX_ZOMBIES_PER_CALL, Math.floor(Number(zombies) || 0)));
   distance = Math.max(0, Math.min(MAX_DISTANCE_PER_CALL, Math.floor(Number(distance) || 0)));
