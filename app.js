@@ -1209,6 +1209,14 @@
       button.hidden = serverSession.isChatAdmin !== true;
     });
   }
+  function scrollChatToLatest(){
+    const list = document.getElementById('chatMessages');
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+    requestAnimationFrame(() => {
+      list.scrollTop = list.scrollHeight;
+    });
+  }
   async function deleteChatMessage(messageId){
     if (!serverSession.online || !serverSession.token || serverSession.isChatAdmin !== true) return;
     if (!window.confirm(t('chatDeleteConfirm'))) return;
@@ -1221,7 +1229,7 @@
     if (!response.ok) throw new Error(data.error || 'chat-delete-failed');
     removeChatMessage(data.messageId);
   }
-  function appendChatMessage(msg, forceScroll){
+  function appendChatMessage(msg){
     const list = document.getElementById('chatMessages');
     if (!list) return;
     const messageId = Number(msg.id);
@@ -1294,8 +1302,7 @@
     });
     row.appendChild(deleteBtn);
     list.appendChild(row);
-    const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
-    if (forceScroll || nearBottom) list.scrollTop = list.scrollHeight;
+    scrollChatToLatest();
   }
   function renderChatEmptyState(){
     const list = document.getElementById('chatMessages');
@@ -1317,11 +1324,10 @@
         chatGloballyEnabled = data.enabled !== false;
         if (chatGloballyEnabled !== wasEnabled) { updateChatAvailability(); updateChatGlobalToggleBtn(); }
         if (Array.isArray(data.messages) && data.messages.length) {
-          data.messages.forEach(msg => { appendChatMessage(msg, isInitialLoad); chatLastId = Math.max(chatLastId, msg.id); });
+          data.messages.forEach(msg => { appendChatMessage(msg); chatLastId = Math.max(chatLastId, msg.id); });
           if (isInitialLoad) {
-            const list = document.getElementById('chatMessages');
             // Panel may not have been laid out yet on first load - scroll again once it is.
-            if (list) setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
+            setTimeout(scrollChatToLatest, 50);
           }
         } else if (isInitialLoad) {
           renderChatEmptyState();
