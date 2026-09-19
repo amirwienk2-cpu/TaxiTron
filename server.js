@@ -1866,15 +1866,32 @@ app.post('/api/referrals/claim', requireUserFromBody, (req, res) => {
   res.json({ rewardZombies, state: publicState(req.user) });
 });
 
-app.post('/api/referrals/exchange', requireUserFromBody, (req, res) => {
-  const rewardZombies = Number(req.user.referralPendingZombies || 0);
-  const coinsGained = rewardZombies;
-  if (rewardZombies > 0) {
-    req.user.coins += coinsGained;
-    req.user.referralPendingZombies = 0;
-    persist();
+app.post('/api/referrals/exchange', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const rewardZombies = Number(user.referralPendingZombies || 0);
+  if (rewardZombies <= 0) {
+    return res.json({ exchangedZombies: 0, coinsGained: 0, tonGained: 0, state: publicState(user) });
   }
-  res.json({ exchangedZombies: rewardZombies, coinsGained, state: publicState(req.user) });
+  ensureDailyReset(user);
+  const coinsGained = rewardZombies;
+  user.coins += coinsGained;
+  user.referralPendingZombies = 0;
+
+  // Referral rewards now also pay out TON, at the same base rate and subject
+  // to the same daily per-level cap as regular run exchanges, so this can't
+  // be used to bypass the daily TON limit.
+  const level = Math.max(1, Math.min(4, Number(user.level) || 1));
+  const dailyCap = level >= 4 ? LEVEL_FOUR_DAILY_PTS_CAP : level >= 3 ? LEVEL_THREE_DAILY_PTS_CAP : level >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
+  const levelToday = Number(user.tonTodayByLevel[level] || 0);
+  const rawGain = (coinsGained / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
+  const allowed = Math.max(0, dailyCap - levelToday);
+  const tonGained = Math.min(rawGain, allowed);
+  user.ton += tonGained;
+  user.tonTodayByLevel[level] = levelToday + tonGained;
+  user.tonToday = user.tonTodayByLevel[level];
+
+  persist();
+  res.json({ exchangedZombies: rewardZombies, coinsGained, tonGained, state: publicState(user) });
 });
 
 // ---- Tournament score submission (separate from the coin economy) ----

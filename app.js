@@ -1491,6 +1491,15 @@
       applyServerState(data.state);
       renderReferralUI(data.state);
       refreshTopUI();
+      const tonGained = Number(data.tonGained || 0);
+      if (tonGained > 0) {
+        const pendingEl = document.getElementById('referralPending');
+        if (pendingEl) {
+          const original = pendingEl.textContent;
+          pendingEl.textContent = 'Exchanged: +' + Number(data.coinsGained || 0) + ' coins, +' + tonGained.toFixed(6) + ' TON';
+          setTimeout(() => { pendingEl.textContent = original; }, 4000);
+        }
+      }
     } catch (error) {
       renderReferralUI({ referralPendingZombies: 0 });
     }
