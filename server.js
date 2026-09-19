@@ -67,6 +67,8 @@ const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
+const INVITE_EVENT_ENDS_AT = Date.parse(process.env.INVITE_EVENT_ENDS_AT || '2026-09-22T21:59:00.000Z');
+if (!Number.isFinite(INVITE_EVENT_ENDS_AT)) throw new Error('INVITE_EVENT_ENDS_AT must be a valid date');
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
 const DATA_DIR = process.env.DATA_DIR || RAILWAY_VOLUME_PATH || path.join(__dirname, 'data');
@@ -537,6 +539,7 @@ function publicState(user) {
     referralRewardCount: Number(user.referralRewardCount || 0),
     referralPendingZombies: Number(user.referralPendingZombies || 0),
     inviteRewardsClaimed: user.inviteRewardsClaimed && typeof user.inviteRewardsClaimed === 'object' ? user.inviteRewardsClaimed : {},
+    inviteEventEndsAt: INVITE_EVENT_ENDS_AT,
     attemptResetVersion: user.attemptResetVersion || 0,
     taskChannelRewardClaimed: user.taskChannelRewardClaimed === true,
     withdrawChannelTaskRewardClaimed: user.withdrawChannelTaskRewardClaimed === true,
@@ -1282,6 +1285,9 @@ app.post('/api/referrals/invite-claim', requireUserFromBody, (req, res) => {
   const threshold = Number(req.body && req.body.threshold);
   if (!Object.prototype.hasOwnProperty.call(milestones, threshold)) {
     return res.status(400).json({ error: 'invalid-invite-threshold' });
+  }
+  if (Date.now() >= INVITE_EVENT_ENDS_AT) {
+    return res.status(410).json({ error: 'invite-event-ended', endsAt: INVITE_EVENT_ENDS_AT });
   }
   const inviteCount = Number(user.referralCount || 0);
   if (inviteCount < threshold) return res.status(400).json({ error: 'invite-threshold-not-reached' });

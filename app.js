@@ -106,6 +106,7 @@
       joinWithdraw: 'Join @TaxitonWithdraw', followWithdraw: 'Follow the withdrawal news channel to complete this task.',
       inviteFriends: 'Invite friends', inviteDesc: 'Invite real Telegram users with your personal link. They only need to follow @TaxiiTon. No videos are required.',
       inviteLinkPlaceholder: 'Your invite link', shareInvite: 'Share invite link', claim: 'Claim', claimed: '✓ Claimed',
+      inviteEndsIn: 'Campaign ends in', inviteEnded: 'Campaign ended', inviteClaimClosed: 'This campaign has ended.',
       watchVideos: 'Watch 10 videos', watchVideosDesc: 'Complete 10 rewarded videos and receive 0.03 TON in total.', watchVideo: 'Watch video',
       gameLobby: 'Game Lobby', lobbyPlayers: 'All players in the room can see and join together.', openLobby: 'Open lobby', waitingPlayers: 'Waiting for players...',
       online: 'online', lobbyRefresh: 'The player list updates automatically.', game: 'Game', fourPlayer: 'Four-player knockout tournament. Losers are eliminated each round.',
@@ -218,6 +219,7 @@
       joinWithdraw: 'عضویت در @TaxitonWithdraw', followWithdraw: 'برای انجام این وظیفه در کانال اخبار برداشت عضو شوید.',
       inviteFriends: 'دعوت از دوستان', inviteDesc: 'کاربران واقعی تلگرام را با لینک شخصی خود دعوت کنید. آن‌ها فقط باید در @TaxiiTon عضو شوند؛ تماشای ویدیو لازم نیست.',
       inviteLinkPlaceholder: 'لینک دعوت شما', shareInvite: 'اشتراک‌گذاری لینک دعوت', claim: 'دریافت', claimed: '✓ دریافت شد',
+      inviteEndsIn: 'پایان کمپین تا', inviteEnded: 'کمپین پایان یافت', inviteClaimClosed: 'این کمپین به پایان رسیده است.',
       watchVideos: 'تماشای ۱۰ ویدیو', watchVideosDesc: '۱۰ ویدیوی پاداشی را کامل کنید و در مجموع ۰٫۰۳ تون بگیرید.', watchVideo: 'تماشای ویدیو',
       gameLobby: 'لابی بازی', lobbyPlayers: 'همه بازیکنان اتاق می‌توانند یکدیگر را ببینند و وارد شوند.', openLobby: 'لابی باز', waitingPlayers: 'در انتظار بازیکنان...',
       online: 'آنلاین', lobbyRefresh: 'فهرست بازیکنان خودکار به‌روزرسانی می‌شود.', game: 'بازی', fourPlayer: 'مسابقه حذفی چهار نفره. بازنده‌ها در هر دور حذف می‌شوند.',
@@ -249,6 +251,7 @@
     updateCoinCountUI(true);
     renderWithdrawUI();
     updateExchangeRateUI();
+    updateInviteCountdown();
     if (window.__lastOnlineCount !== undefined) renderOnlineCount(window.__lastOnlineCount);
   }
   document.querySelectorAll('.lang-flag').forEach(f => {
@@ -926,6 +929,32 @@
     ? ''
     : "https://taxitron-production.up.railway.app";
   const serverSession = { token: null, online: false };
+  const INVITE_EVENT_ENDS_AT = Date.parse('2026-09-22T21:59:00.000Z');
+  let inviteEventEndsAt = INVITE_EVENT_ENDS_AT;
+
+  function isInviteEventEnded(){
+    return Date.now() >= inviteEventEndsAt;
+  }
+
+  function updateInviteCountdown(){
+    const countdown = document.getElementById('inviteCountdown');
+    const value = document.getElementById('inviteCountdownValue');
+    if (!countdown || !value) return;
+    const remaining = Math.max(0, inviteEventEndsAt - Date.now());
+    if (remaining === 0) {
+      countdown.classList.add('expired');
+      countdown.firstElementChild.textContent = t('inviteEnded');
+      value.textContent = '00d 00h 00m 00s';
+      return;
+    }
+    countdown.classList.remove('expired');
+    countdown.firstElementChild.textContent = t('inviteEndsIn');
+    const days = Math.floor(remaining / 86400000);
+    const hours = Math.floor((remaining % 86400000) / 3600000);
+    const minutes = Math.floor((remaining % 3600000) / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    value.textContent = days + 'd ' + String(hours).padStart(2, '0') + 'h ' + String(minutes).padStart(2, '0') + 'm ' + String(seconds).padStart(2, '0') + 's';
+  }
 
   function renderReferralUI(state){
     const linkEl = document.getElementById('referralLink');
@@ -962,18 +991,25 @@
       : window.location.origin + window.location.pathname + '?ref=' + encodeURIComponent(referralCode);
   }
 
+  let lastInviteState = null;
   function renderInviteUI(state){
+    if (state) lastInviteState = state;
+    state = state || lastInviteState;
     const linkEl = document.getElementById('taskReferralLink');
     const count = Number(state && state.referralCount || 0);
     const claimed = state && state.inviteRewardsClaimed || {};
+    const serverEndsAt = Number(state && state.inviteEventEndsAt);
+    if (Number.isFinite(serverEndsAt) && serverEndsAt > 0) inviteEventEndsAt = serverEndsAt;
+    const eventEnded = isInviteEventEnded();
     if (linkEl) linkEl.value = getReferralLink(state) || 'Open the game in Telegram to get your link';
     document.querySelectorAll('.invite-claim-btn').forEach(button => {
       const threshold = button.dataset.inviteThreshold;
       const isClaimed = claimed[String(threshold)] === true;
       const eligible = count >= Number(threshold);
-      button.disabled = isClaimed || !eligible || !serverSession.online || !serverSession.token;
-      button.textContent = isClaimed ? '✓ Claimed' : eligible ? 'Claim' : count + '/' + threshold;
+      button.disabled = eventEnded || isClaimed || !eligible || !serverSession.online || !serverSession.token;
+      button.textContent = isClaimed ? t('claimed') : eventEnded ? t('inviteEnded') : eligible ? t('claim') : count + '/' + threshold;
     });
+    updateInviteCountdown();
   }
 
   let referralSyncInFlight = false;
@@ -996,6 +1032,7 @@
   }
   setInterval(syncReferralStatus, 5000);
   renderReferralUI();
+  setInterval(() => renderInviteUI(), 1000);
 
   // ---- Online player count shown under "How it works" on Home ----
   function renderOnlineCount(count){
@@ -1397,6 +1434,8 @@
         renderReferralUI(data.state);
         refreshTopUI();
       } catch (error) {
+        const status = document.getElementById('inviteTaskStatus');
+        if (status) status.textContent = error.message === 'invite-event-ended' ? t('inviteClaimClosed') : error.message;
         renderInviteUI();
       }
     });
