@@ -527,7 +527,8 @@
     const playButtons = document.querySelectorAll('.bottomnav button[data-screen="game"]');
     if (!isAttemptLimited()){
       if (el) el.style.display = 'none';
-      playButtons.forEach(btn => { btn.disabled = false; });
+      playButtons.forEach(btn => { btn.disabled = serverSession.isBanned; });
+      updateBannedUI();
       return;
     }
     ensureAttempts();
@@ -542,7 +543,19 @@
         ? store.attemptsLeft + ' / ' + maxAttempts + ' tries left'
         : 'Next try in ' + formatCountdown(store.attemptsResetAt - Date.now());
     }
-      playButtons.forEach(btn => { btn.disabled = !available || rewardComplete; });
+      playButtons.forEach(btn => { btn.disabled = serverSession.isBanned || !available || rewardComplete; });
+    updateBannedUI();
+  }
+  function updateBannedUI(){
+    const banned = serverSession.isBanned === true;
+    document.querySelectorAll('.bottomnav button[data-screen="game-menu"], .bottomnav button[data-screen="tournament"]').forEach(button => {
+      button.disabled = banned;
+    });
+    if (banned && typeof running !== 'undefined' && running) {
+      running = false;
+      showScreen('home');
+    }
+    renderWithdrawUI();
   }
   setInterval(renderAttemptsUI, 1000);
 
@@ -893,7 +906,7 @@
     document.getElementById('walletTonDisplay').textContent = store.points.toFixed(6);
     document.getElementById('walletPersonsDisplay').textContent = lastPersonScore;
     document.getElementById('exchangePreview').textContent = lastPersonScore * getCoinsPerZombie();
-    document.getElementById('exchangeBtn').disabled = lastPersonScore <= 0 || dailyEarningsComplete();
+    document.getElementById('exchangeBtn').disabled = serverSession.isBanned || lastPersonScore <= 0 || dailyEarningsComplete();
 
     document.getElementById('balanceValue').textContent = store.points.toFixed(6);
     const dailyCap = getDailyPtsCap();
@@ -928,7 +941,7 @@
   const SERVER_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
     ? ''
     : "https://taxitron-production.up.railway.app";
-  const serverSession = { token: null, online: false };
+  const serverSession = { token: null, online: false, isBanned: false };
   const INVITE_EVENT_ENDS_AT = Date.parse('2026-09-19T13:50:22.986Z');
   let inviteEventEndsAt = INVITE_EVENT_ENDS_AT;
 
@@ -1561,6 +1574,7 @@
   function applyServerState(state){
     if (typeof state.isChatAdmin === 'boolean') serverSession.isChatAdmin = state.isChatAdmin;
     if (typeof state.isDesigner === 'boolean') serverSession.isDesigner = state.isDesigner;
+    if (typeof state.isBanned === 'boolean') serverSession.isBanned = state.isBanned;
     updateChatDeleteControls();
     if (typeof state.chatMuted === 'boolean') { serverSession.chatMuted = state.chatMuted; updateChatAvailability(); }
     const previousUid = localStorage.getItem('cr3d_serverUid');
@@ -1841,6 +1855,8 @@
             lastDistance = remaining > 0 ? lastDistance * (remaining / lastPersonScore) : 0;
             lastPersonScore = remaining;
             savePending();
+          } else if (data.error === 'user-banned' && data.state) {
+            applyServerState(data.state);
           }
           break; // other errors (e.g. rate-limited): keep pending, user can retry
         }
@@ -1848,7 +1864,7 @@
         // network hiccup -> keep the pending score, user can retry the exchange
       }
       exchangeInProgress = false;
-      exchangeBtn.disabled = lastPersonScore <= 0 || dailyEarningsComplete();
+      exchangeBtn.disabled = serverSession.isBanned || lastPersonScore <= 0 || dailyEarningsComplete();
       refreshTopUI();
       return;
     }
@@ -1903,9 +1919,18 @@
     if (balEl) balEl.textContent = store.points.toFixed(6);
     const btn = document.getElementById('withdrawBtn');
     const alreadyDone = hasWithdrawnToday();
-    if (btn) btn.disabled = alreadyDone || store.points < MIN_WITHDRAW;
+    const banned = serverSession.isBanned === true;
+    if (btn) btn.disabled = banned || alreadyDone || store.points < MIN_WITHDRAW;
+    const addressInput = document.getElementById('withdrawAddress');
+    const amountInput = document.getElementById('withdrawAmount');
+    if (addressInput) addressInput.disabled = banned;
+    if (amountInput) amountInput.disabled = banned;
     const statusEl = document.getElementById('withdrawStatus');
-    if (alreadyDone && statusEl && !statusEl.textContent) {
+    if (banned) {
+      setWithdrawStatus('Auszahlung nicht möglich wegen Betrug', 'error');
+    } else if (statusEl && statusEl.textContent === 'Auszahlung nicht möglich wegen Betrug') {
+      setWithdrawStatus('', '');
+    } else if (alreadyDone && statusEl && !statusEl.textContent) {
       setWithdrawStatus('Already withdrawn today. You can request another withdrawal tomorrow.', 'error');
     }
     const histEl = document.getElementById('withdrawHistory');
@@ -1940,6 +1965,11 @@
     const fee = Number((amount * WITHDRAWAL_FEE_RATE).toFixed(6));
     const netAmount = Number((amount - fee).toFixed(6));
 
+    if (serverSession.isBanned){
+      setWithdrawStatus('Auszahlung nicht möglich wegen Betrug', 'error');
+      btn.disabled = true;
+      return;
+    }
     if (hasWithdrawnToday()){
       setWithdrawStatus('You already withdrew today. You can request another withdrawal tomorrow.', 'error');
       btn.disabled = true;
@@ -1968,8 +1998,16 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: serverSession.token, address, amount })
         });
+        const data = await res.json();
+        if (!res.ok) {
+          if (data.error === 'user-banned') {
+            serverSession.isBanned = true;
+            updateBannedUI();
+          }
+          setWithdrawStatus(data.error === 'user-banned' ? 'Auszahlung nicht möglich wegen Betrug' : (data.error || 'Withdrawal failed.'), 'error');
+          return;
+        }
         if (res.ok){
-          const data = await res.json();
           if (data.state) applyServerState(data.state);
           else store.points -= amount;
           if (data.withdrawal) serverWithdrawal = data.withdrawal;
@@ -2526,6 +2564,9 @@
     else if (!localRpsGame && match && match.classList.contains('active')) loadRpsGames();
   }, 250);
   function showScreen(name){
+    if (serverSession.isBanned && (name === 'game' || name === 'game-menu' || name === 'tournament' || name === 'rps-game')) {
+      name = 'home';
+    }
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
     navButtons.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
     refreshTopUI();
@@ -2554,7 +2595,7 @@
     }
   }
   function enterGame(){
-    if (!hasAttemptsLeft() || dailyEarningsComplete()){
+    if (serverSession.isBanned || !hasAttemptsLeft() || dailyEarningsComplete()){
       showScreen('home');
       return;
     }

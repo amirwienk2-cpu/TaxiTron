@@ -331,6 +331,7 @@ function newUser(id, name) {
     isChatAdmin: false,
     isDesigner: false,
     chatMuted: false,
+    isBanned: false,
   };
 }
 
@@ -550,6 +551,7 @@ function publicState(user) {
     isChatAdmin: user.isChatAdmin === true,
     isDesigner: user.isDesigner === true,
     chatMuted: user.chatMuted === true,
+    isBanned: user.isBanned === true,
   };
 }
 
@@ -914,6 +916,12 @@ function requireUser(getToken) {
 }
 const requireUserFromBody = requireUser((req) => req.body && req.body.token);
 const requireUserFromQuery = requireUser((req) => req.query && req.query.token);
+function rejectBannedUser(req, res, next) {
+  if (req.user && req.user.isBanned === true) {
+    return res.status(403).json({ error: 'user-banned', state: publicState(req.user) });
+  }
+  next();
+}
 
 function requireAdmin(req, res, next) {
   if (!ADMIN_SECRET) return res.status(503).json({ error: 'admin-not-configured' });
@@ -973,7 +981,7 @@ updateSoundButton();
 let knownDepositKeys=null;
 let knownPurchaseKeys=null;
 async function pollMoneyEvents(){const s=secret();if(!s)return;try{const [dr,pr]=await Promise.all([fetch('/admin/deposits',{headers:{'x-admin-secret':s}}),fetch('/admin/purchases',{headers:{'x-admin-secret':s}})]);let newEvent=false;if(dr.ok){const dd=await dr.json();const keys=new Set((dd.deposits||[]).map(x=>x.uid+'_'+x.ts));if(knownDepositKeys===null){knownDepositKeys=keys}else{if((dd.deposits||[]).some(x=>!knownDepositKeys.has(x.uid+'_'+x.ts)))newEvent=true;knownDepositKeys=keys}}if(pr.ok){const pd=await pr.json();const keys=new Set((pd.purchases||[]).map(x=>x.uid+'_'+x.ts));if(knownPurchaseKeys===null){knownPurchaseKeys=keys}else{if((pd.purchases||[]).some(x=>!knownPurchaseKeys.has(x.uid+'_'+x.ts)))newEvent=true;knownPurchaseKeys=keys}}if(newEvent){playPurchaseSound();startTitleBlink('🛒 Neuer Kauf!')}}catch(error){console.warn('poll money events failed',error)}}
-async function load(){currentView='players';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Spieler werden geladen...');const r=await fetch('/admin/players',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}document.getElementById('stats').innerHTML='<div class="stat"><span>Registrierte Spieler</span><b>'+d.totalUsers+'</b></div><div class="stat"><span>Spieler mit Einzahlung</span><b>'+d.depositUsers+'</b></div><div class="stat"><span>TON gesamt</span><b>'+Number(d.totalTon).toFixed(6)+'</b></div><div class="stat"><span>Einladungen gesamt</span><b>'+d.totalReferrals+'</b></div><div class="stat"><span>Referral-Belohnungen</span><b>'+d.totalReferralRewards+' x 300</b></div><div class="stat"><span>Referral-Zombies</span><b>'+d.totalReferralRewardZombies+'</b></div>';const list=document.getElementById('list');list.innerHTML='<div class="toolbar"><input id="playerSearch" class="player-search" type="search" placeholder="Username oder Telegram-UID suchen..." autocomplete="off"><span id="playerSearchCount" class="search-result-count"></span></div><div class="row"><b>Spieler</b><b>TON-Guthaben</b><b>Coins</b><b>Level</b><b>Einzahlungen</b><b>Runs</b><b>Referral</b><b>Aktion</b></div>';d.players.forEach(p=>{const row=document.createElement('div');row.className='row player-row';row.dataset.search=(p.name+' '+p.uid).toLocaleLowerCase();const joinedAt=p.createdAt?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'medium',timeZone:'Europe/Berlin'}).format(new Date(p.createdAt)):'Nicht erfasst';row.innerHTML='<span>'+p.name+'<br><span class="muted">UID '+p.uid+'</span><br><span class="muted">Beigetreten: '+joinedAt+'</span></span><span>'+Number(p.ton).toFixed(6)+' TON</span><span>'+p.coins+'</span><span>'+p.level+'</span><span>'+p.depositCount+'</span><span>'+p.runs+'</span><span>'+p.referralCount+' eingeladen<br>'+p.referralRewardCount+' Belohnungen · '+p.referralRewardZombies+' Zombies<br>'+p.referralLink+'</span><span></span>';const actionCell=row.lastElementChild;const resetBtn=document.createElement('button');resetBtn.textContent='🔄 Reset attempts';resetBtn.className='reset-attempts';resetBtn.onclick=async()=>{if(!confirm('Versuche für '+p.name+' (UID '+p.uid+') auf 15/15 zurücksetzen?'))return;resetBtn.disabled=true;resetBtn.textContent='...';try{const rr=await fetch('/admin/users/'+encodeURIComponent(p.uid)+'/reset-attempts',{method:'POST',headers:{'x-admin-secret':s}});const dd=await rr.json();if(rr.ok){resetBtn.textContent='✓ Reset';status('Versuche für '+p.name+' zurückgesetzt.');setTimeout(()=>{resetBtn.textContent='🔄 Reset attempts';resetBtn.disabled=false},1500)}else{status(dd.error||'Reset failed');resetBtn.textContent='🔄 Reset attempts';resetBtn.disabled=false}}catch(error){status('Reset failed');resetBtn.textContent='🔄 Reset attempts';resetBtn.disabled=false}};actionCell.appendChild(resetBtn);const recordBtn=document.createElement('button');recordBtn.textContent='🏆 Turnier-Rekord ('+p.tournamentBest+')';recordBtn.className='reset-attempts';recordBtn.style.marginLeft='6px';recordBtn.onclick=async()=>{const val=prompt('Neuer Turnier-Rekord (Zombies) für '+p.name+':',p.tournamentBest);if(val===null)return;const best=parseInt(val,10);if(!Number.isFinite(best)||best<0){alert('Ungültiger Wert.');return}recordBtn.disabled=true;recordBtn.textContent='...';try{const rr=await fetch('/admin/users/'+encodeURIComponent(p.uid)+'/set-tournament-best',{method:'POST',headers:{'x-admin-secret':s,'Content-Type':'application/json'},body:JSON.stringify({best})});const dd=await rr.json();if(rr.ok){recordBtn.textContent='🏆 Turnier-Rekord ('+dd.tournamentBest+')';status('Turnier-Rekord für '+p.name+' auf '+dd.tournamentBest+' gesetzt.');recordBtn.disabled=false}else{status(dd.error||'Update failed');recordBtn.textContent='🏆 Turnier-Rekord ('+p.tournamentBest+')';recordBtn.disabled=false}}catch(error){status('Update failed');recordBtn.textContent='🏆 Turnier-Rekord ('+p.tournamentBest+')';recordBtn.disabled=false}};actionCell.appendChild(recordBtn);list.appendChild(row)});const search=document.getElementById('playerSearch');const count=document.getElementById('playerSearchCount');const filterPlayers=()=>{const query=search.value.trim().toLocaleLowerCase();let visible=0;list.querySelectorAll('.player-row').forEach(row=>{const match=!query||row.dataset.search.includes(query);row.style.display=match?'':'none';if(match)visible++});count.textContent=visible+' von '+d.totalUsers+' Spielern'};search.addEventListener('input',filterPlayers);filterPlayers();status(d.totalUsers+' Spieler geladen.')}
+async function load(){currentView='players';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Spieler werden geladen...');const r=await fetch('/admin/players',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}document.getElementById('stats').innerHTML='<div class="stat"><span>Registrierte Spieler</span><b>'+d.totalUsers+'</b></div><div class="stat"><span>Spieler mit Einzahlung</span><b>'+d.depositUsers+'</b></div><div class="stat"><span>TON gesamt</span><b>'+Number(d.totalTon).toFixed(6)+'</b></div><div class="stat"><span>Einladungen gesamt</span><b>'+d.totalReferrals+'</b></div><div class="stat"><span>Referral-Belohnungen</span><b>'+d.totalReferralRewards+' x 300</b></div><div class="stat"><span>Referral-Zombies</span><b>'+d.totalReferralRewardZombies+'</b></div>';const list=document.getElementById('list');list.innerHTML='<div class="toolbar"><input id="playerSearch" class="player-search" type="search" placeholder="Username oder Telegram-UID suchen..." autocomplete="off"><span id="playerSearchCount" class="search-result-count"></span></div><div class="row"><b>Spieler</b><b>TON-Guthaben</b><b>Coins</b><b>Level</b><b>Einzahlungen</b><b>Runs</b><b>Referral</b><b>Aktion</b></div>';d.players.forEach(p=>{const row=document.createElement('div');row.className='row player-row';row.dataset.search=(p.name+' '+p.uid).toLocaleLowerCase();const joinedAt=p.createdAt?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'medium',timeZone:'Europe/Berlin'}).format(new Date(p.createdAt)):'Nicht erfasst';row.innerHTML='<span>'+p.name+(p.isBanned?' <span class="tag muted">GESPERRT</span>':'')+'<br><span class="muted">UID '+p.uid+'</span><br><span class="muted">Beigetreten: '+joinedAt+'</span></span><span>'+Number(p.ton).toFixed(6)+' TON</span><span>'+p.coins+'</span><span>'+p.level+'</span><span>'+p.depositCount+'</span><span>'+p.runs+'</span><span>'+p.referralCount+' eingeladen<br>'+p.referralRewardCount+' Belohnungen · '+p.referralRewardZombies+' Zombies<br>'+p.referralLink+'</span><span></span>';const actionCell=row.lastElementChild;const banBtn=document.createElement('button');banBtn.textContent=p.isBanned?'✅ Entbannen':'⛔ Bannen';banBtn.className=p.isBanned?'reset-attempts':'danger small-btn';banBtn.onclick=async()=>{const action=p.isBanned?'entbannen':'bannen';if(!confirm(p.name+' wirklich '+action+'?'))return;banBtn.disabled=true;try{const rr=await fetch('/admin/users/'+encodeURIComponent(p.uid)+'/set-banned',{method:'POST',headers:{'x-admin-secret':s,'Content-Type':'application/json'},body:JSON.stringify({banned:!p.isBanned})});const dd=await rr.json();if(!rr.ok)throw new Error(dd.error||'Update failed');status(p.name+(dd.isBanned?' wurde gesperrt.':' wurde entsperrt.'));load()}catch(error){status(error.message);banBtn.disabled=false}};actionCell.appendChild(banBtn);const resetBtn=document.createElement('button');resetBtn.textContent='🔄 Reset attempts';resetBtn.className='reset-attempts';resetBtn.onclick=async()=>{if(!confirm('Versuche für '+p.name+' (UID '+p.uid+') auf 15/15 zurücksetzen?'))return;resetBtn.disabled=true;resetBtn.textContent='...';try{const rr=await fetch('/admin/users/'+encodeURIComponent(p.uid)+'/reset-attempts',{method:'POST',headers:{'x-admin-secret':s}});const dd=await rr.json();if(rr.ok){resetBtn.textContent='✓ Reset';status('Versuche für '+p.name+' zurückgesetzt.');setTimeout(()=>{resetBtn.textContent='🔄 Reset attempts';resetBtn.disabled=false},1500)}else{status(dd.error||'Reset failed');resetBtn.textContent='🔄 Reset attempts';resetBtn.disabled=false}}catch(error){status('Reset failed');resetBtn.textContent='🔄 Reset attempts';resetBtn.disabled=false}};actionCell.appendChild(resetBtn);const recordBtn=document.createElement('button');recordBtn.textContent='🏆 Turnier-Rekord ('+p.tournamentBest+')';recordBtn.className='reset-attempts';recordBtn.style.marginLeft='6px';recordBtn.onclick=async()=>{const val=prompt('Neuer Turnier-Rekord (Zombies) für '+p.name+':',p.tournamentBest);if(val===null)return;const best=parseInt(val,10);if(!Number.isFinite(best)||best<0){alert('Ungültiger Wert.');return}recordBtn.disabled=true;recordBtn.textContent='...';try{const rr=await fetch('/admin/users/'+encodeURIComponent(p.uid)+'/set-tournament-best',{method:'POST',headers:{'x-admin-secret':s,'Content-Type':'application/json'},body:JSON.stringify({best})});const dd=await rr.json();if(rr.ok){recordBtn.textContent='🏆 Turnier-Rekord ('+dd.tournamentBest+')';status('Turnier-Rekord für '+p.name+' auf '+dd.tournamentBest+' gesetzt.');recordBtn.disabled=false}else{status(dd.error||'Update failed');recordBtn.textContent='🏆 Turnier-Rekord ('+p.tournamentBest+')';recordBtn.disabled=false}}catch(error){status('Update failed');recordBtn.textContent='🏆 Turnier-Rekord ('+p.tournamentBest+')';recordBtn.disabled=false}};actionCell.appendChild(recordBtn);list.appendChild(row)});const search=document.getElementById('playerSearch');const count=document.getElementById('playerSearchCount');const filterPlayers=()=>{const query=search.value.trim().toLocaleLowerCase();let visible=0;list.querySelectorAll('.player-row').forEach(row=>{const match=!query||row.dataset.search.includes(query);row.style.display=match?'':'none';if(match)visible++});count.textContent=visible+' von '+d.totalUsers+' Spielern'};search.addEventListener('input',filterPlayers);filterPlayers();status(d.totalUsers+' Spieler geladen.')}
 async function loadWithdrawals(opts){const silent=opts&&opts.silent;const s=secret();if(!s){if(!silent)status('ADMIN_SECRET eingeben.');return}if(!silent)status('Auszahlungen werden geladen...');let r,d;try{r=await fetch('/admin/withdrawals?status=pending',{headers:{'x-admin-secret':s}});d=await r.json()}catch(error){if(!silent)status('Request failed');return}if(!r.ok){if(!silent)status(d.error||'Request failed');return}
 const currentKeys=new Set(d.withdrawals.map(w=>w.uid+'_'+w.ts));
 let newlyArrived=[];
@@ -1470,13 +1478,13 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
 
 // ---- Marks the server-side start of a run so /api/submit-score can later
 //      verify how long the round realistically took (anti-cheat, see below) ----
-app.post('/api/run/start', requireUserFromBody, (req, res) => {
+app.post('/api/run/start', requireUserFromBody, rejectBannedUser, (req, res) => {
   req.user.runStartedAt = Date.now();
   res.json({ ok: true });
 });
 
 // ---- Exchange a run's zombies for coins + (capped) TON ----
-app.post('/api/run', requireUserFromBody, (req, res) => {
+app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user;
   let { distance, zombies } = req.body || {};
   zombies = Math.max(0, Math.min(MAX_ZOMBIES_PER_CALL, Math.floor(Number(zombies) || 0)));
@@ -1535,7 +1543,7 @@ app.get('/api/rps/games', requireUserFromQuery, (req, res) => {
   res.json({ games, mine: mine.length ? mine : finished });
 });
 
-app.post('/api/rps/create', requireUserFromBody, (req, res) => {
+app.post('/api/rps/create', requireUserFromBody, rejectBannedUser, (req, res) => {
   expireRpsGames();
   const stake = Number(req.body && req.body.stake);
   if (!Number.isFinite(stake) || stake < RPS_MIN_STAKE || stake > 1000) return res.status(400).json({ error: 'invalid-stake' });
@@ -1549,7 +1557,7 @@ app.post('/api/rps/create', requireUserFromBody, (req, res) => {
   res.json({ state: publicState(user), game: rpsPublicGame(rpsGames[id], user.id) });
 });
 
-app.post('/api/rps/join', requireUserFromBody, (req, res) => {
+app.post('/api/rps/join', requireUserFromBody, rejectBannedUser, (req, res) => {
   expireRpsGames();
   const game = rpsGames[String(req.body && req.body.gameId)];
   if (!game || game.status !== 'open') return res.status(404).json({ error: 'game-not-open' });
@@ -1565,7 +1573,7 @@ app.post('/api/rps/join', requireUserFromBody, (req, res) => {
   res.json({ state: publicState(user), game: rpsPublicGame(game, user.id) });
 });
 
-app.post('/api/rps/play', requireUserFromBody, (req, res) => {
+app.post('/api/rps/play', requireUserFromBody, rejectBannedUser, (req, res) => {
   const game = rpsGames[String(req.body && req.body.gameId)];
   const choice = String(req.body && req.body.choice || '');
   if (!game || game.status !== 'playing') return res.status(404).json({ error: 'game-not-playing' });
@@ -1621,7 +1629,7 @@ app.get('/api/game/rooms', requireUserFromQuery, (req, res) => {
   res.json({ rooms: [gameRoomPublic(rpsGames[gameRoomId(GAME_ROOM_STAKE)], req.uid)] });
 });
 
-app.post('/api/game/rooms/join', requireUserFromBody, (req, res) => {
+app.post('/api/game/rooms/join', requireUserFromBody, rejectBannedUser, (req, res) => {
   ensureGameRooms();
   const room = rpsGames[String(req.body && req.body.roomId)];
   if (room && Array.isArray(room.players) && room.players.length < 4) room.status = 'open';
@@ -1638,7 +1646,7 @@ app.post('/api/game/rooms/join', requireUserFromBody, (req, res) => {
   res.json({ state: publicState(user), room: gameRoomPublic(room, user.id) });
 });
 
-app.post('/api/game/rooms/choose', requireUserFromBody, (req, res) => {
+app.post('/api/game/rooms/choose', requireUserFromBody, rejectBannedUser, (req, res) => {
   ensureGameRooms();
   const room = rpsGames[String(req.body && req.body.roomId)];
   const choice = String(req.body && req.body.choice || '');
@@ -1656,7 +1664,7 @@ app.post('/api/game/rooms/choose', requireUserFromBody, (req, res) => {
   res.json({ state: publicState(req.user), room: gameRoomPublic(room, uid) });
 });
 
-app.post('/api/rps/tournaments/create', requireUserFromBody, (req, res) => {
+app.post('/api/rps/tournaments/create', requireUserFromBody, rejectBannedUser, (req, res) => {
   const stake = Number(req.body && req.body.stake);
   if (!Number.isFinite(stake) || stake < RPS_MIN_STAKE || stake > 1000) return res.status(400).json({ error: 'invalid-stake' });
   const user = req.user;
@@ -1668,7 +1676,7 @@ app.post('/api/rps/tournaments/create', requireUserFromBody, (req, res) => {
   res.json({ state: publicState(user), game: rpsTournamentPublic(rpsGames[id], user.id) });
 });
 
-app.post('/api/rps/tournaments/join', requireUserFromBody, (req, res) => {
+app.post('/api/rps/tournaments/join', requireUserFromBody, rejectBannedUser, (req, res) => {
   const game = rpsGames[String(req.body && req.body.gameId)];
   if (!game || game.mode !== 'four-player' || game.status !== 'open') return res.status(404).json({ error:'tournament-not-open' });
   const user = req.user;
@@ -1681,7 +1689,7 @@ app.post('/api/rps/tournaments/join', requireUserFromBody, (req, res) => {
   res.json({ state: publicState(user), game: rpsTournamentPublic(game, user.id) });
 });
 
-app.post('/api/rps/tournaments/play', requireUserFromBody, (req, res) => {
+app.post('/api/rps/tournaments/play', requireUserFromBody, rejectBannedUser, (req, res) => {
   const game = rpsGames[String(req.body && req.body.gameId)];
   const choice = String(req.body && req.body.choice || '');
   if (!game || game.mode !== 'four-player' || game.status !== 'playing') return res.status(404).json({ error:'tournament-not-playing' });
@@ -1708,7 +1716,7 @@ app.post('/api/rps/tournaments/play', requireUserFromBody, (req, res) => {
 function isPlausibleTonAddress(addr) {
   return typeof addr === 'string' && addr.trim().length >= 10 && !/\s/.test(addr.trim());
 }
-app.post('/api/withdraw', requireUserFromBody, (req, res) => {
+app.post('/api/withdraw', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user;
   const { address, amount } = req.body || {};
   const amt = Number(amount);
@@ -1836,7 +1844,7 @@ app.post('/api/referrals/exchange', requireUserFromBody, (req, res) => {
 });
 
 // ---- Tournament score submission (separate from the coin economy) ----
-app.post('/api/submit-score', requireUserFromBody, (req, res) => {
+app.post('/api/submit-score', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user;
   let { distance, zombies } = req.body || {};
   zombies = Math.max(0, Math.min(MAX_ZOMBIES_PER_CALL, Math.floor(Number(zombies) || 0)));
@@ -1928,6 +1936,7 @@ app.get('/admin/players', requireAdmin, (req, res) => {
     referralLink: 'https://t.me/TaxiTronBot?start=' + encodeURIComponent(referralCodeFor(user.id)),
     tournamentBest: Number(user.tournamentBest) || 0,
     createdAt: Number(user.createdAt) || 0,
+    isBanned: user.isBanned === true,
   })).sort((a, b) => b.ton - a.ton);
   res.json({
     totalUsers: players.length,
@@ -2067,6 +2076,15 @@ app.post('/admin/users/:uid/set-tournament-best', requireAdmin, (req, res) => {
   res.json({ ok: true, uid: user.id, tournamentBest: user.tournamentBest, tournamentDistance: user.tournamentDistance });
 });
 
+app.post('/admin/users/:uid/set-banned', requireAdmin, (req, res) => {
+  const user = users[String(req.params.uid)];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  user.isBanned = req.body && req.body.banned === true;
+  if (user.isBanned) user.runStartedAt = 0;
+  persist();
+  res.json({ ok: true, uid: user.id, isBanned: user.isBanned });
+});
+
 app.post('/admin/reset-users', requireAdmin, async (req, res) => {
   const resetUsers = Object.values(users);
   rpsGames = {};
@@ -2139,19 +2157,21 @@ function verifyMonsterCrashUser(initData) {
     const id = String(parts[1] || 'test');
     const name = parts[2] || ('Test ' + id);
     if (!users[id]) { users[id] = newUser(id, name); persist(); }
+    if (users[id].isBanned === true) return null;
     return { id, name: users[id].name || name };
   }
   const result = verifyInitData(initData);
   if (!result.ok) return null;
   const id = String(result.id);
   if (!users[id]) { users[id] = newUser(id, result.name); persist(); }
+  if (users[id].isBanned === true) return null;
   return { id, name: users[id].name || result.name };
 }
 
 const monsterCrashEconomy = {
   async charge(userId, nano, reason) {
     const user = users[userId];
-    if (!user) return false;
+    if (!user || user.isBanned === true) return false;
     const amount = nanoToTon(nano);
     if (Number(user.ton || 0) < amount - 1e-9) return false;
     user.ton = Number((Number(user.ton || 0) - amount).toFixed(9));
