@@ -23,6 +23,17 @@
       chatMute: 'Mute',
       chatUnmute: 'Unmute',
       onlineUsersSearchPlaceholder: 'Search players...',
+      boxEventTitle: '🎁 Number Event',
+      boxEventDesc: 'Draw a number from 1 to 400. When a box is opened, the player holding the matching number wins 1 TON!',
+      boxEventYourNumberLabel: 'Your number:',
+      boxEventDraw: 'Draw a number',
+      boxEventAlreadyDrawn: 'Number drawn',
+      boxEventVote: 'Vote',
+      boxEventVoted: '✓ Voted',
+      boxEventVotesLabel: 'votes',
+      boxEventOpen: 'Open box',
+      boxEventCongrats: 'Congratulations',
+      boxEventBoxLabel: 'Box',
       chatDisabledHint: 'Chat has been turned off by an admin. Sending is temporarily disabled.',
       chatGlobalTurnOff: '🚫 Turn chat off for everyone',
       chatGlobalTurnOn: '💬 Turn chat back on',
@@ -140,6 +151,17 @@
       chatMute: 'بی‌صدا',
       chatUnmute: 'رفع بی‌صدایی',
       onlineUsersSearchPlaceholder: 'جستجوی بازیکنان...',
+      boxEventTitle: '🎁 رویداد اعداد',
+      boxEventDesc: 'عددی بین ۱ تا ۴۰۰ بکش. وقتی جعبه‌ای باز شود، کسی که عدد مطابق را دارد ۱ TON برنده می‌شود!',
+      boxEventYourNumberLabel: 'عدد شما:',
+      boxEventDraw: 'کشیدن عدد',
+      boxEventAlreadyDrawn: 'عدد کشیده شد',
+      boxEventVote: 'رأی',
+      boxEventVoted: '✓ رأی داده شد',
+      boxEventVotesLabel: 'رأی',
+      boxEventOpen: 'باز کردن جعبه',
+      boxEventCongrats: 'تبریک',
+      boxEventBoxLabel: 'جعبه',
       chatDisabledHint: 'گفتگو توسط یک مدیر خاموش شده است. ارسال پیام موقتاً غیرفعال است.',
       chatGlobalTurnOff: '🚫 خاموش کردن گفتگو برای همه',
       chatGlobalTurnOn: '💬 روشن کردن دوباره گفتگو',
@@ -1203,6 +1225,12 @@
         nameEl.appendChild(designerBadge);
       }
       nameEl.appendChild(document.createTextNode((u.chatMuted ? '🔇 ' : '') + u.name));
+      if (u.boxNumber) {
+        const numEl = document.createElement('span');
+        numEl.className = 'online-user-drawn-number';
+        numEl.textContent = ' #' + u.boxNumber;
+        nameEl.appendChild(numEl);
+      }
       const balEl = document.createElement('span');
       balEl.className = 'online-user-balance';
       balEl.textContent = formatTonShort(u.ton) + ' GRAM';
@@ -1233,6 +1261,135 @@
   }
   syncOnlineUsers();
   setInterval(syncOnlineUsers, 15000);
+
+  // ---- Box event (draw a number, vote on a box, admin opens the winning box) ----
+  function renderBoxEvent(data){
+    const card = document.getElementById('boxEventCard');
+    if (!card) return;
+    if (!data || !data.enabled) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = '';
+    const you = data.you || {};
+    const yourNumberEl = document.getElementById('boxEventYourNumber');
+    if (yourNumberEl) {
+      yourNumberEl.textContent = you.number ? (t('boxEventYourNumberLabel') + ' #' + you.number) : '';
+    }
+    const drawBtn = document.getElementById('boxEventDrawBtn');
+    if (drawBtn) {
+      const canDraw = serverSession.online && !!serverSession.token && !you.number;
+      drawBtn.disabled = !canDraw;
+      drawBtn.textContent = you.number ? t('boxEventAlreadyDrawn') : t('boxEventDraw');
+    }
+    const boxesEl = document.getElementById('boxEventBoxes');
+    if (!boxesEl || !Array.isArray(data.boxes)) return;
+    const openBoxesVotes = data.boxes.filter(b => !b.opened).map(b => b.votes);
+    const maxVotes = openBoxesVotes.length ? Math.max(...openBoxesVotes) : 0;
+    boxesEl.innerHTML = '';
+    data.boxes.forEach((box) => {
+      const el = document.createElement('div');
+      el.className = 'box-event-box' + (box.opened ? ' opened' : '');
+      const titleEl = document.createElement('div');
+      titleEl.className = 'box-event-box-title';
+      const img = document.createElement('img');
+      img.src = box.opened ? 'sprites/boxauf.png' : 'sprites/boxzu.png';
+      img.alt = 'Box';
+      img.className = 'box-event-box-img';
+      titleEl.appendChild(img);
+      el.appendChild(titleEl);
+      const labelEl = document.createElement('div');
+      labelEl.className = 'box-event-box-label';
+      labelEl.textContent = t('boxEventBoxLabel') + ' ' + box.id;
+      el.appendChild(labelEl);
+      if (box.opened) {
+        const winEl = document.createElement('div');
+        winEl.className = 'box-event-winner';
+        winEl.textContent = '🎉 ' + t('boxEventCongrats') + ' ' + box.winnerName + ' — 1 TON #' + box.winnerNumber;
+        el.appendChild(winEl);
+      } else {
+        const votesEl = document.createElement('div');
+        votesEl.className = 'box-event-box-votes';
+        votesEl.textContent = box.votes + ' ' + t('boxEventVotesLabel');
+        el.appendChild(votesEl);
+        const votedForThis = you.votedBoxId === box.id;
+        const voteBtn = document.createElement('button');
+        voteBtn.type = 'button';
+        voteBtn.className = 'box-event-vote-btn' + (votedForThis ? ' voted' : '');
+        voteBtn.textContent = votedForThis ? t('boxEventVoted') : t('boxEventVote');
+        voteBtn.disabled = !serverSession.online || !serverSession.token;
+        voteBtn.addEventListener('click', () => voteBoxEvent(box.id));
+        el.appendChild(voteBtn);
+        if (serverSession.isChatAdmin === true) {
+          const openBtn = document.createElement('button');
+          openBtn.type = 'button';
+          openBtn.className = 'box-event-open-btn';
+          openBtn.textContent = t('boxEventOpen');
+          openBtn.disabled = maxVotes === 0 || box.votes < maxVotes;
+          openBtn.addEventListener('click', () => openBoxEvent(box.id));
+          el.appendChild(openBtn);
+        }
+      }
+      boxesEl.appendChild(el);
+    });
+  }
+  async function syncBoxEvent(){
+    if (!SERVER_URL) return;
+    try {
+      const tokenPart = serverSession.token ? ('?token=' + encodeURIComponent(serverSession.token)) : '';
+      const response = await fetch(SERVER_URL + '/api/box-event/status' + tokenPart);
+      if (response.ok) renderBoxEvent(await response.json());
+    } catch (error) {
+      // silently retry on the next interval
+    }
+  }
+  async function drawBoxEventNumber(){
+    if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/box-event/draw', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'draw-failed');
+      syncBoxEvent();
+      syncOnlineUsers();
+    } catch (error) {
+      console.error('[box-event] draw failed', error);
+    }
+  }
+  async function voteBoxEvent(boxId){
+    if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/box-event/vote', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, boxId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'vote-failed');
+      syncBoxEvent();
+    } catch (error) {
+      console.error('[box-event] vote failed', error);
+    }
+  }
+  async function openBoxEvent(boxId){
+    if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
+    try {
+      const response = await fetch(SERVER_URL + '/api/box-event/open', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, boxId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'open-failed');
+      syncBoxEvent();
+    } catch (error) {
+      console.error('[box-event] open failed', error);
+    }
+  }
+  const boxEventDrawBtnEl = document.getElementById('boxEventDrawBtn');
+  if (boxEventDrawBtnEl) boxEventDrawBtnEl.addEventListener('click', drawBoxEventNumber);
+  syncBoxEvent();
+  setInterval(syncBoxEvent, 6000);
   const onlineUsersSearchInput = document.getElementById('onlineUsersSearch');
   if (onlineUsersSearchInput) onlineUsersSearchInput.addEventListener('input', filterOnlineUsers);
 

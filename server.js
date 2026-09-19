@@ -92,6 +92,10 @@ const DATA_FILE = path.join(DATA_DIR, 'users.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
 const RPS_FILE = path.join(DATA_DIR, 'rps-games.json');
 const INVITE_CAMPAIGN_FILE = path.join(DATA_DIR, 'invite-campaign.json');
+const BOX_EVENT_FILE = path.join(DATA_DIR, 'box-event.json');
+const BOX_EVENT_MAX_NUMBER = 400;
+const BOX_EVENT_COUNT = 5;
+const BOX_EVENT_WIN_TON = 1;
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
 const STORAGE_PERSISTENT = !ON_RAILWAY || (
@@ -249,6 +253,58 @@ try {
 function persistInviteCampaignState() {
   try { fs.writeFileSync(INVITE_CAMPAIGN_FILE, JSON.stringify(inviteCampaignState)); }
   catch (e) { console.error('[invite-campaign] could not write settings: ' + e.message); }
+}
+
+// ---- "Draw a number, vote on a box" live chat event (test feature) ----
+function newBoxEventState() {
+  return {
+    enabled: true,
+    drawnNumbers: {}, // uid -> drawn number (1..BOX_EVENT_MAX_NUMBER), unique across all users
+    usedWinnerUids: [], // uids that already won a box, excluded from future box winners
+    votes: {}, // uid -> boxId currently voted for (one vote per user total)
+    boxes: Array.from({ length: BOX_EVENT_COUNT }, (_, i) => ({
+      id: i + 1, opened: false, winnerUid: null, winnerName: null, winnerNumber: null,
+    })),
+  };
+}
+let boxEventState = newBoxEventState();
+try {
+  if (fs.existsSync(BOX_EVENT_FILE)) {
+    const loaded = JSON.parse(fs.readFileSync(BOX_EVENT_FILE, 'utf8'));
+    if (loaded && typeof loaded === 'object' && Array.isArray(loaded.boxes) && loaded.boxes.length === BOX_EVENT_COUNT) {
+      boxEventState = {
+        enabled: loaded.enabled !== false,
+        drawnNumbers: loaded.drawnNumbers && typeof loaded.drawnNumbers === 'object' ? loaded.drawnNumbers : {},
+        usedWinnerUids: Array.isArray(loaded.usedWinnerUids) ? loaded.usedWinnerUids : [],
+        votes: loaded.votes && typeof loaded.votes === 'object' ? loaded.votes : {},
+        boxes: loaded.boxes,
+      };
+    }
+  }
+} catch (e) {
+  console.error('[box-event] settings file unreadable: ' + e.message);
+}
+function persistBoxEventState() {
+  try { fs.writeFileSync(BOX_EVENT_FILE, JSON.stringify(boxEventState)); }
+  catch (e) { console.error('[box-event] could not write settings: ' + e.message); }
+}
+function boxEventVoteCounts() {
+  const counts = {};
+  boxEventState.boxes.forEach((b) => { counts[b.id] = 0; });
+  Object.values(boxEventState.votes).forEach((boxId) => {
+    if (counts[boxId] !== undefined) counts[boxId] += 1;
+  });
+  return counts;
+}
+function boxEventPublicBoxes() {
+  const counts = boxEventVoteCounts();
+  return boxEventState.boxes.map((b) => ({
+    id: b.id,
+    opened: b.opened,
+    votes: counts[b.id] || 0,
+    winnerName: b.winnerName,
+    winnerNumber: b.winnerNumber,
+  }));
 }
 
 // Keep a copy of the last good state from startup as a safety net
@@ -1179,8 +1235,94 @@ app.get('/api/online-users', (req, res) => {
       isChatAdmin: user.isChatAdmin === true,
       isDesigner: user.isDesigner === true,
       chatMuted: user.chatMuted === true,
+      boxNumber: boxEventState.enabled ? (boxEventState.drawnNumbers[String(user.id)] || null) : null,
     }));
   res.json({ users: list });
+});
+
+// ---- "Draw a number, vote on a box" live event (test feature, under chat) ----
+app.get('/api/box-event/status', (req, res) => {
+  const token = req.query && req.query.token;
+  const payload = token ? verifyToken(token) : null;
+  let you = null;
+  if (payload && users[String(payload.uid)]) {
+    const uid = String(payload.uid);
+    you = {
+      number: boxEventState.drawnNumbers[uid] || null,
+      votedBoxId: boxEventState.votes[uid] || null,
+      isAdmin: users[uid].isChatAdmin === true,
+    };
+  }
+  res.json({ enabled: boxEventState.enabled, boxes: boxEventPublicBoxes(), you });
+});
+
+app.post('/api/box-event/draw', requireUserFromBody, rejectBannedUser, (req, res) => {
+  if (!boxEventState.enabled) return res.status(403).json({ error: 'event-disabled' });
+  const uid = req.uid;
+  if (boxEventState.drawnNumbers[uid]) {
+    return res.json({ number: boxEventState.drawnNumbers[uid], alreadyDrawn: true });
+  }
+  const used = new Set(Object.values(boxEventState.drawnNumbers).map(Number));
+  if (used.size >= BOX_EVENT_MAX_NUMBER) return res.status(409).json({ error: 'all-numbers-taken' });
+  let number;
+  do { number = 1 + Math.floor(Math.random() * BOX_EVENT_MAX_NUMBER); } while (used.has(number));
+  boxEventState.drawnNumbers[uid] = number;
+  persistBoxEventState();
+  res.json({ number, alreadyDrawn: false });
+});
+
+app.post('/api/box-event/vote', requireUserFromBody, rejectBannedUser, (req, res) => {
+  if (!boxEventState.enabled) return res.status(403).json({ error: 'event-disabled' });
+  const boxId = Number(req.body && req.body.boxId);
+  const box = boxEventState.boxes.find((b) => b.id === boxId);
+  if (!box) return res.status(400).json({ error: 'invalid-box' });
+  if (box.opened) return res.status(400).json({ error: 'box-already-opened' });
+  boxEventState.votes[req.uid] = boxId;
+  persistBoxEventState();
+  res.json({ ok: true, boxes: boxEventPublicBoxes() });
+});
+
+app.post('/api/box-event/open', requireUserFromBody, (req, res) => {
+  if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-admin' });
+  if (!boxEventState.enabled) return res.status(403).json({ error: 'event-disabled' });
+  const boxId = Number(req.body && req.body.boxId);
+  const box = boxEventState.boxes.find((b) => b.id === boxId);
+  if (!box) return res.status(400).json({ error: 'invalid-box' });
+  if (box.opened) return res.status(400).json({ error: 'box-already-opened' });
+  const counts = boxEventVoteCounts();
+  const openBoxes = boxEventState.boxes.filter((b) => !b.opened);
+  const maxVotes = Math.max(0, ...openBoxes.map((b) => counts[b.id] || 0));
+  if ((counts[boxId] || 0) < maxVotes) return res.status(400).json({ error: 'not-highest-voted' });
+  const eligibleUids = Object.keys(boxEventState.drawnNumbers).filter((uid) => !boxEventState.usedWinnerUids.includes(uid));
+  if (!eligibleUids.length) return res.status(409).json({ error: 'no-eligible-winners' });
+  const winnerUid = eligibleUids[Math.floor(Math.random() * eligibleUids.length)];
+  const winnerUser = users[winnerUid];
+  const winnerNumber = boxEventState.drawnNumbers[winnerUid];
+  if (winnerUser) winnerUser.ton = Number(winnerUser.ton || 0) + BOX_EVENT_WIN_TON;
+  box.opened = true;
+  box.winnerUid = winnerUid;
+  box.winnerName = winnerUser ? winnerUser.name : ('Player ' + winnerUid);
+  box.winnerNumber = winnerNumber;
+  boxEventState.usedWinnerUids.push(winnerUid);
+  persistBoxEventState();
+  persist();
+  res.json({ ok: true, boxes: boxEventPublicBoxes() });
+});
+
+app.post('/admin/box-event/set-enabled', requireAdmin, (req, res) => {
+  boxEventState.enabled = req.body && req.body.enabled === true;
+  persistBoxEventState();
+  res.json({ ok: true, enabled: boxEventState.enabled });
+});
+
+app.post('/admin/box-event/reset', requireAdmin, (req, res) => {
+  boxEventState = newBoxEventState();
+  persistBoxEventState();
+  res.json({ ok: true });
+});
+
+app.get('/admin/box-event/state', requireAdmin, (req, res) => {
+  res.json(boxEventState);
 });
 
 // ---- Global chat (shown on Home, under the online-player count) ----
