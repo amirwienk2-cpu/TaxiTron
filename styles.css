@@ -105,6 +105,7 @@
   .withdraw-hist-item .hist-status{ font-weight:800; padding:2px 8px; border-radius:999px; font-size:0.66rem; }
   .withdraw-hist-item .hist-status.pending{ background:rgba(255,217,61,.12); color:#ffd93d; }
   .withdraw-hist-item .hist-status.completed{ background:rgba(124,255,107,.12); color:#7cff6b; }
+  .withdraw-hist-item .hist-status.rejected{ background:rgba(255,92,108,.12); color:#ff7a88; }
   .deposit-address{
     background:#1c1c2a; border:1px solid #2c2a3a; border-radius:12px; padding:12px 14px;
     color:#ffd93d; font-size:0.78rem; font-family:monospace; word-break:break-all; margin-bottom:12px;

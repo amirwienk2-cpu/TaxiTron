@@ -17,6 +17,7 @@
  *   GET  /admin/stats
  *   GET  /admin/withdrawals?status=pending
  *   POST /admin/withdrawals/complete   { uid, ts }
+ *   POST /admin/withdrawals/reject     { uid, ts }
  *   GET  /admin/deposits
  *   GET  /admin/purchases
  *
@@ -988,7 +989,7 @@ let newlyArrived=[];
 if(knownWithdrawalKeys===null){knownWithdrawalKeys=currentKeys}else{newlyArrived=d.withdrawals.filter(w=>!knownWithdrawalKeys.has(w.uid+'_'+w.ts));knownWithdrawalKeys=currentKeys}
 if(!silent)currentView='withdrawals';
 if(silent&&currentView!=='withdrawals'){if(newlyArrived.length){playAlertSound();startTitleBlink()}return}
-const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'Keine offenen Auszahlungen.';d.withdrawals.forEach(w=>{const row=document.createElement('div');const isNew=newlyArrived.some(nw=>nw.uid===w.uid&&nw.ts===w.ts);row.className='row'+(isNew?' new-withdrawal':'');const gross=Number(w.grossAmount!=null?w.grossAmount:w.amount);const fee=Number(w.fee!=null?w.fee:0);const net=Number(w.amount);row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span><b>Send: '+net.toFixed(6)+' TON</b><br><span class="muted">Requested '+gross.toFixed(6)+' TON − 1% fee ('+fee.toFixed(6)+' TON)</span></span><span>'+w.address+' <button class="copy-address" type="button">Copy</button></span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><button>Erledigt</button>';const copyButton=row.querySelector('.copy-address');copyButton.onclick=async()=>{try{await navigator.clipboard.writeText(w.address);copyButton.textContent='Copied';setTimeout(()=>{copyButton.textContent='Copy'},1200)}catch(error){const input=document.createElement('textarea');input.value=w.address;document.body.appendChild(input);input.select();document.execCommand('copy');input.remove();copyButton.textContent='Copied';setTimeout(()=>{copyButton.textContent='Copy'},1200)}};row.querySelector('button:not(.copy-address)').onclick=async()=>{const txId=prompt('Echte TON-Transaktions-ID eingeben:');if(!txId||!txId.trim()){status('Nicht abgeschlossen: echte TxID erforderlich.');return}const rr=await fetch('/admin/withdrawals/complete',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts,txId:txId.trim(),currency:'TON'})});if(rr.ok)loadWithdrawals();else status((await rr.json()).error||'Request failed')};list.appendChild(row)});
+const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'Keine offenen Auszahlungen.';d.withdrawals.forEach(w=>{const row=document.createElement('div');const isNew=newlyArrived.some(nw=>nw.uid===w.uid&&nw.ts===w.ts);row.className='row'+(isNew?' new-withdrawal':'');const gross=Number(w.grossAmount!=null?w.grossAmount:w.amount);const fee=Number(w.fee!=null?w.fee:0);const net=Number(w.amount);row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span><b>Send: '+net.toFixed(6)+' TON</b><br><span class="muted">Requested '+gross.toFixed(6)+' TON − 1% fee ('+fee.toFixed(6)+' TON)</span></span><span>'+w.address+' <button class="copy-address" type="button">Copy</button></span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><span><button class="complete-withdrawal">Erledigt</button><button class="danger reject-withdrawal">Reject</button></span>';const copyButton=row.querySelector('.copy-address');copyButton.onclick=async()=>{try{await navigator.clipboard.writeText(w.address);copyButton.textContent='Copied';setTimeout(()=>{copyButton.textContent='Copy'},1200)}catch(error){const input=document.createElement('textarea');input.value=w.address;document.body.appendChild(input);input.select();document.execCommand('copy');input.remove();copyButton.textContent='Copied';setTimeout(()=>{copyButton.textContent='Copy'},1200)}};row.querySelector('.complete-withdrawal').onclick=async()=>{const txId=prompt('Echte TON-Transaktions-ID eingeben:');if(!txId||!txId.trim()){status('Nicht abgeschlossen: echte TxID erforderlich.');return}const rr=await fetch('/admin/withdrawals/complete',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts,txId:txId.trim(),currency:'TON'})});if(rr.ok)loadWithdrawals();else status((await rr.json()).error||'Request failed')};row.querySelector('.reject-withdrawal').onclick=async()=>{if(!confirm('Auszahlung wegen Betrug ablehnen? Der Betrag wird nicht zurückgezahlt.'))return;const rr=await fetch('/admin/withdrawals/reject',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts})});if(rr.ok){status('Auszahlung abgelehnt: Auszahlung nicht möglich wegen Betrug.');loadWithdrawals()}else status((await rr.json()).error||'Request failed')};list.appendChild(row)});
 if(!silent)status(d.withdrawals.length+' offene Auszahlung(en) geladen.');
 if(newlyArrived.length){playAlertSound();startTitleBlink();if(!silent)status(newlyArrived.length+' neue Auszahlung(en) eingegangen!')}
 }
@@ -2040,7 +2041,7 @@ app.post('/admin/withdrawals/complete', requireAdmin, (req, res) => {
   if (!user) return res.status(404).json({ error: 'unknown-user' });
   const w = user.withdrawals.find((w) => w.ts === ts);
   if (!w) return res.status(404).json({ error: 'unknown-withdrawal' });
-  if (w.status === 'completed') return res.status(409).json({ error: 'withdrawal-already-completed' });
+  if (w.status !== 'pending') return res.status(409).json({ error: 'withdrawal-already-resolved' });
   w.status = 'completed';
   w.currency = String(currency || w.currency || 'TON').toUpperCase();
   w.txId = normalizedTxId;
@@ -2050,6 +2051,20 @@ app.post('/admin/withdrawals/complete', requireAdmin, (req, res) => {
     console.error('[telegram] withdrawal announcement failed: ' + error.message);
   });
   res.json({ ok: true, withdrawal: w, announcementQueued: !!BOT_TOKEN });
+});
+
+app.post('/admin/withdrawals/reject', requireAdmin, (req, res) => {
+  const { uid, ts } = req.body || {};
+  const user = users[String(uid)];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const withdrawal = user.withdrawals.find((item) => item.ts === ts);
+  if (!withdrawal) return res.status(404).json({ error: 'unknown-withdrawal' });
+  if (withdrawal.status !== 'pending') return res.status(409).json({ error: 'withdrawal-already-resolved' });
+  withdrawal.status = 'rejected';
+  withdrawal.rejectionReason = 'fraud';
+  withdrawal.rejectedAt = Date.now();
+  persist();
+  res.json({ ok: true, withdrawal });
 });
 
 app.post('/admin/users/:uid/reset-attempts', requireAdmin, (req, res) => {

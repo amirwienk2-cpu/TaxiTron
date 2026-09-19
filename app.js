@@ -69,7 +69,7 @@
       withdrawErrMin: 'Minimum withdrawal is 1 TON.',
       withdrawErrFunds: 'Not enough TON balance.',
       withdrawSuccess: 'Withdrawal requested — funds will arrive at your wallet soon.',
-      withdrawPendingStatus: 'Pending', withdrawCompletedStatus: 'Completed',
+      withdrawPendingStatus: 'Pending', withdrawCompletedStatus: 'Completed', withdrawRejectedStatus: 'Rejected — withdrawal not possible due to fraud',
       depositTitle: 'Deposit TON', depositDesc: 'Send TON to this address to top up your in-game balance.',
       depositCopyBtn: '📋 Copy Address', depositCopied: '✅ Address copied to clipboard',
       depositMemoLabel: 'Important: include this code as the transfer comment/memo, or your deposit can\'t be matched to your account automatically.',
@@ -182,7 +182,7 @@
       withdrawErrMin: 'حداقل مبلغ برداشت ۱ تون است.',
       withdrawErrFunds: 'موجودی تون کافی نیست.',
       withdrawSuccess: 'درخواست برداشت ثبت شد — به‌زودی به کیف پول شما واریز می‌شود.',
-      withdrawPendingStatus: 'در انتظار', withdrawCompletedStatus: 'انجام شد',
+      withdrawPendingStatus: 'در انتظار', withdrawCompletedStatus: 'انجام شد', withdrawRejectedStatus: 'رد شد — برداشت به دلیل تقلب امکان‌پذیر نیست',
       depositTitle: 'واریز تون', depositDesc: 'برای افزایش موجودی درون‌بازی، تون را به این آدرس ارسال کنید.',
       depositCopyBtn: '📋 کپی آدرس', depositCopied: '✅ آدرس کپی شد',
       depositMemoLabel: 'مهم: این کد را به‌عنوان توضیح/یادداشت (memo) انتقال وارد کنید، در غیر این صورت واریز شما به‌طور خودکار به حساب شما تطبیق داده نمی‌شود.',
@@ -1926,7 +1926,9 @@
     if (addressInput) addressInput.disabled = banned;
     if (amountInput) amountInput.disabled = banned;
     const statusEl = document.getElementById('withdrawStatus');
-    if (banned) {
+    const latestWithdrawal = store.withdrawals.length ? store.withdrawals[store.withdrawals.length - 1] : null;
+    const latestRejected = latestWithdrawal && latestWithdrawal.status === 'rejected';
+    if (banned || latestRejected) {
       setWithdrawStatus('Auszahlung nicht möglich wegen Betrug', 'error');
     } else if (statusEl && statusEl.textContent === 'Auszahlung nicht möglich wegen Betrug') {
       setWithdrawStatus('', '');
@@ -1939,7 +1941,11 @@
     store.withdrawals.slice().reverse().slice(0, 5).forEach(w => {
       const row = document.createElement('div');
       row.className = 'withdraw-hist-item';
-      const statusKey = w.status === 'completed' ? 'withdrawCompletedStatus' : 'withdrawPendingStatus';
+      const statusKey = w.status === 'completed'
+        ? 'withdrawCompletedStatus'
+        : w.status === 'rejected'
+          ? 'withdrawRejectedStatus'
+          : 'withdrawPendingStatus';
       row.innerHTML =
         '<span class="hist-amount">' + w.amount.toFixed(2) + ' TON</span>' +
         '<span>' + w.address.slice(0, 4) + '…' + w.address.slice(-4) + '</span>' +
