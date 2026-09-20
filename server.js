@@ -344,6 +344,7 @@ function newUser(id, name) {
     attemptResetVersion: 0,
     taskChannelRewardClaimed: false,
     withdrawChannelTaskRewardClaimed: false,
+    thirdChannelTaskRewardClaimed: false,
     adVideosWatched: 0,
     adRewardClaimed: false,
     createdAt: Date.now(),
@@ -605,6 +606,7 @@ function publicState(user) {
     attemptResetVersion: user.attemptResetVersion || 0,
     taskChannelRewardClaimed: user.taskChannelRewardClaimed === true,
     withdrawChannelTaskRewardClaimed: user.withdrawChannelTaskRewardClaimed === true,
+    thirdChannelTaskRewardClaimed: user.thirdChannelTaskRewardClaimed === true,
     adVideosWatched: Math.min(10, Math.max(0, Number(user.adVideosWatched) || 0)),
     adRewardClaimed: user.adRewardClaimed === true,
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
@@ -1414,6 +1416,33 @@ app.post('/api/tasks/withdraw-channel-claim', requireUserFromBody, async (req, r
     );
     if (!joined) return res.status(403).json({ error: 'withdraw-channel-membership-required', joined: false });
     user.withdrawChannelTaskRewardClaimed = true;
+    persist();
+    res.json({ claimed: true, joined: true, rewardZombies: 500, state: publicState(user) });
+  } catch (e) {
+    res.status(502).json({ error: 'telegram-membership-check-failed' });
+  }
+});
+
+app.post('/api/tasks/third-channel-claim', requireUserFromBody, async (req, res) => {
+  const user = req.user;
+  if (user.thirdChannelTaskRewardClaimed === true) {
+    return res.json({ claimed: true, joined: true, rewardZombies: 0, state: publicState(user) });
+  }
+  if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
+
+  try {
+    const apiUrl = 'https://api.telegram.org/bot' + BOT_TOKEN + '/getChatMember?chat_id=%40taxiiiton&user_id=' + encodeURIComponent(user.id);
+    const telegramResponse = await fetch(apiUrl);
+    const telegramData = await telegramResponse.json();
+    const member = telegramData && telegramData.ok ? telegramData.result : null;
+    const joined = !!member && (
+      member.status === 'creator' ||
+      member.status === 'administrator' ||
+      member.status === 'member' ||
+      (member.status === 'restricted' && member.is_member === true)
+    );
+    if (!joined) return res.status(403).json({ error: 'third-channel-membership-required', joined: false });
+    user.thirdChannelTaskRewardClaimed = true;
     persist();
     res.json({ claimed: true, joined: true, rewardZombies: 500, state: publicState(user) });
   } catch (e) {
@@ -2281,6 +2310,7 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.withdrawals = [];
     user.taskChannelRewardClaimed = false;
     user.withdrawChannelTaskRewardClaimed = false;
+    user.thirdChannelTaskRewardClaimed = false;
     user.depositTxs = depositTxs;
   });
 
