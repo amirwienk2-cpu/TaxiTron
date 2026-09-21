@@ -436,7 +436,7 @@
     reward.lastEarnedDate = todayStr();
   }
 
-  /* ---- Level 1 / 2 ride attempts with level-specific cooldowns ---- */
+  /* ---- Level-specific ride attempts (local fallback and server-state cache) ---- */
   const MAX_ATTEMPTS_LEVEL_ONE = 10;
   const MAX_ATTEMPTS_LEVEL_TWO = 15;
   const ATTEMPT_COOLDOWN_LEVEL_ONE_MS = 2 * 60 * 60 * 1000;
@@ -1745,6 +1745,9 @@
       store.skinRewards = JSON.parse(JSON.stringify(state.skinRewards));
     }
     enforceOwnedSkinSelection();
+    if (state.attemptsByLevel && typeof state.attemptsByLevel === 'object') {
+      store.attemptsByLevel = JSON.parse(JSON.stringify(state.attemptsByLevel));
+    }
     if (!store.pointsTodayByLevel || typeof store.pointsTodayByLevel !== 'object') store.pointsTodayByLevel = {};
     const activeLevelForProgressFinal = activeAttemptLevel();
     ensureLevelTodayState(activeLevelForProgressFinal);
@@ -2688,23 +2691,46 @@
   }));
   document.getElementById('toHomeBtn').addEventListener('click', () => showScreen('home'));
 
-  function notifyServerRunStart(){
-    // Lets the server time this run from its own clock, so the tournament
-    // score submitted at the end can be checked for plausibility.
-    if (SERVER_URL && serverSession.online && serverSession.token){
-      fetch(SERVER_URL + '/api/run/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: serverSession.token })
-      }).catch(() => {});
-    }
+  let runStartPending = false;
+  function usesServerAttempts(){
+    return !!(SERVER_URL && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
   }
-  function enterGame(){
-    if (serverSession.isBanned || !hasAttemptsLeft() || dailyEarningsComplete()){
+  async function consumeRunStartAttempt(){
+    if (SERVER_URL && (!serverSession.online || !serverSession.token)) {
+      await initServerSession();
+    }
+    if (SERVER_URL && serverSession.online && serverSession.token) {
+      try {
+        const response = await fetch(SERVER_URL + '/api/run/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: serverSession.token, level: activeAttemptLevel() })
+        });
+        const data = await response.json();
+        if (data.state) applyServerState(data.state);
+        return response.ok && data.ok === true;
+      } catch (error) {
+        return false;
+      }
+    }
+    const telegramInitData = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+    if (telegramInitData) return false;
+    return consumeAttempt();
+  }
+  async function enterGame(){
+    if (runStartPending) return;
+    if (serverSession.isBanned || (!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
       showScreen('home');
       return;
     }
-    consumeAttempt();
+    runStartPending = true;
+    const started = await consumeRunStartAttempt();
+    runStartPending = false;
+    if (!started) {
+      renderAttemptsUI();
+      showScreen('home');
+      return;
+    }
     renderAttemptsUI();
     document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.remove('active'));
     screens.forEach(s => s.classList.toggle('active', s.id === 'screen-game'));
@@ -2712,7 +2738,6 @@
     reset();
     running = true;
     startRenderLoop();
-    notifyServerRunStart();
   }
   function leaveGameToHome(){
     showScreen('home');
@@ -4093,18 +4118,27 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     document.getElementById('gameOverScreen').style.display = 'flex';
     document.getElementById('retryBtn').disabled = !hasAttemptsLeft();
   }
-  document.getElementById('retryBtn').addEventListener('click', () => {
-    if (!hasAttemptsLeft() || dailyEarningsComplete()){
+  document.getElementById('retryBtn').addEventListener('click', async () => {
+    if (runStartPending) return;
+    if ((!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
       leaveGameToHome();
       return;
     }
-    consumeAttempt();
+    runStartPending = true;
+    const retryBtn = document.getElementById('retryBtn');
+    retryBtn.disabled = true;
+    const started = await consumeRunStartAttempt();
+    runStartPending = false;
+    if (!started) {
+      renderAttemptsUI();
+      leaveGameToHome();
+      return;
+    }
     renderAttemptsUI();
     document.getElementById('gameOverScreen').style.display = 'none';
     reset();
     running = true;
     startRenderLoop();
-    notifyServerRunStart();
   });
 
   function update(dt){

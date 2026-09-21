@@ -67,6 +67,8 @@
       ? state.tonTodayByLevel[level]
       : (typeof state.tonToday === 'number' ? state.tonToday : 0);
     var progress = dailyCap > 0 ? Math.max(0, Math.min(100, Math.round((tonToday / dailyCap) * 100))) : 0;
+    var attempts = state.attemptsByLevel && state.attemptsByLevel[level];
+    var triesMax = level >= 2 ? 15 : 10;
 
     if (typeof TT.setStats === 'function') {
       TT.setStats({
@@ -76,11 +78,9 @@
         levelNo: level,
         gram: tonToday,                     // TON earned today at the current level
         tonLeft: Math.max(0, dailyCap - tonToday),
-        progress: progress
-        // "tries"/"triesMax" intentionally left untouched: they belong to the actual
-        // driving-game attempt system (client-side attemptsLeft + attemptResetVersion in the
-        // root app.js) which has no equivalent here since #play has no game canvas. Still
-        // local/demo - flagged in the final report.
+        progress: progress,
+        tries: attempts ? Number(attempts.left) : triesMax,
+        triesMax: triesMax
       });
     }
     if (typeof TT.setWallet === 'function') {
