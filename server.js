@@ -1401,7 +1401,7 @@ app.post('/api/chat/set-enabled', requireUserFromBody, (req, res) => {
   chatEnabled = req.body.enabled === true;
   persistChatSettings();
   res.json({ ok: true, chatEnabled });
-  broadcastChatEvent('settings');
+  broadcastChatEvent('settings', { chatEnabled });
 });
 
 // Chat admins and designers can mute/unmute chat users.
@@ -2266,7 +2266,7 @@ app.post('/admin/chat/set-enabled', requireAdmin, (req, res) => {
   chatEnabled = req.body.enabled === true;
   persistChatSettings();
   res.json({ ok: true, chatEnabled });
-  broadcastChatEvent('settings');
+  broadcastChatEvent('settings', { chatEnabled });
 });
 
 app.post('/admin/chat/set-admin', requireAdmin, (req, res) => {

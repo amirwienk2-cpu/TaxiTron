@@ -389,6 +389,7 @@
     api(url).then(function (r) {
       if (!r.ok) return;
       var messages = r.data.messages || [];
+      if (typeof TT.setChatEnabled === 'function') TT.setChatEnabled(r.data.enabled !== false);
       if (!messages.length) return;
       if (!chatBootstrapped) {
         var chatList = document.getElementById('chatList');
@@ -417,8 +418,9 @@
           if (el) el.remove();
         } else if (payload.type === 'moderation' && typeof TT.setUserMod === 'function') {
           TT.setUserMod({ id: payload.uid }, { muted: payload.chatMuted === true });
+        } else if (payload.type === 'settings' && typeof TT.setChatEnabled === 'function') {
+          TT.setChatEnabled(payload.chatEnabled !== false);
         }
-        // 'settings' events (chat enabled/disabled) have no dedicated TT hook - not wired.
       });
       chatEventSource.onerror = function () { /* browser auto-reconnects EventSource */ };
     } catch (e) {}
@@ -438,6 +440,15 @@
         if (r.data.message.id > lastChatMessageId) lastChatMessageId = r.data.message.id;
       }
       return r.ok;
+    }).catch(function () { return false; });
+  };
+  TT.isChatAdmin = function () { return SESSION.isChatAdmin === true; };
+  TT.setChatEnabledServer = function (enabled) {
+    if (!SESSION.token || SESSION.isChatAdmin !== true) return Promise.resolve(false);
+    return postJSON('/api/chat/set-enabled', { token: SESSION.token, enabled: enabled === true }).then(function (r) {
+      if (!r.ok) return false;
+      if (typeof TT.setChatEnabled === 'function') TT.setChatEnabled(r.data.chatEnabled !== false);
+      return true;
     }).catch(function () { return false; });
   };
   // TT.editMessage has no server-side driver: server.js supports send/delete only, no edit

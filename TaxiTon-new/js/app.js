@@ -605,6 +605,9 @@ Object.assign(I18N.de,{aMute:'Stumm schalten',aTalk:'Sprechen lassen',aChatOff:'
 Object.assign(I18N.en,{aMute:'Mute',aTalk:'Unmute',aChatOff:'Block chat',aChatOn:'Allow chat',aDel:'Delete message',aClose:'Close',
   aDelQ:'Delete this message?',aDone:'Done ✔',aFail:'Error – try again',aMutedFor:'muted until {t}',aMutedTag:'muted',aBannedTag:'blocked',
   youMuted:'An admin has muted you 🔇',youBanned:'An admin has blocked your chat 🚫'});
+Object.assign(I18N.fa,{chatClose:'بستن چت',chatOpen:'باز کردن چت',chatClosed:'چت توسط ادمین بسته شده'});
+Object.assign(I18N.de,{chatClose:'Chat schließen',chatOpen:'Chat öffnen',chatClosed:'Der Chat wurde vom Admin geschlossen'});
+Object.assign(I18N.en,{chatClose:'Close chat',chatOpen:'Open chat',chatClosed:'The chat was closed by an admin'});
 Object.assign(I18N.fa,{lvInfoTitle:'راننده لول {n}',lvInfoSoon:'اطلاعات این راننده به‌زودی اضافه می‌شود.'});
 Object.assign(I18N.de,{lvInfoTitle:'Fahrer Level {n}',lvInfoSoon:'Infos zu diesem Fahrer folgen in Kürze.'});
 Object.assign(I18N.en,{lvInfoTitle:'Level {n} driver',lvInfoSoon:'Details about this driver are coming soon.'});
@@ -792,18 +795,34 @@ renderOnline=function(){ _renderOnline2(); filterOnline(); };
 
 // own state (the user who got muted / banned)
 const MY={muted:false,banned:false};
+let CHAT_ENABLED=true;
+const chatToggle=document.getElementById('chatToggle');
+const canManageChat=()=>typeof TT.isChatAdmin==='function'?!!TT.isChatAdmin():isAdmin();
 TT.setMyChatState=o=>{ o=o||{}; if('muted' in o) MY.muted=o.muted; if('banned' in o) MY.banned=!!o.banned; renderMyState(); };
+TT.setChatEnabled=enabled=>{ CHAT_ENABLED=enabled!==false; renderMyState(); };
 function myMuted(){ return MY.muted===true || (typeof MY.muted==='number' && MY.muted>Date.now()); }
 function chatBlocked(){
+  if(!CHAT_ENABLED&&!canManageChat()){ toast(T().chatClosed); return true; }
   if(MY.banned){ toast(T().youBanned); return true; }
   if(myMuted()){ toast(T().youMuted); return true; }
   return false;
 }
 function renderMyState(){
-  const off=MY.banned||myMuted();
+  const manager=canManageChat(), closed=!CHAT_ENABLED&&!manager, off=closed||MY.banned||myMuted();
   chatText.disabled=off; document.getElementById('chatSend').disabled=off;
-  chatText.placeholder=MY.banned?T().youBanned:off?T().youMuted:T().chatPh;
+  chatText.placeholder=closed?T().chatClosed:MY.banned?T().youBanned:off?T().youMuted:T().chatPh;
+  chatToggle.hidden=!manager;
+  chatToggle.textContent=CHAT_ENABLED?T().chatClose:T().chatOpen;
+  chatToggle.classList.toggle('open',!CHAT_ENABLED);
 }
+chatToggle.addEventListener('click',async()=>{
+  if(!canManageChat()||typeof TT.setChatEnabledServer!=='function') return;
+  chatToggle.disabled=true;
+  let ok=false;
+  try{ ok=await TT.setChatEnabledServer(!CHAT_ENABLED); }catch(e){ console.error('[chat] global toggle failed',e); }
+  chatToggle.disabled=false;
+  if(!ok) toast(T().aFail);
+});
 // hooks for your server / refresh
 TT.setUserMod=(u,st)=>{
   st=st||{}; u=typeof u==='string'?{name:u}:u;
