@@ -1000,6 +1000,7 @@ tabs.forEach(t=>{
     t.classList.add('active');t.setAttribute('aria-selected','true');
     document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===t.dataset.s));
     document.body.classList.toggle('chat-open',t.dataset.s==='chat');
+    if(t.dataset.s==='chat') requestAnimationFrame(()=>scrollChatToEnd(false));
     window.scrollTo(0,0);
     try{window.Telegram&&Telegram.WebApp.HapticFeedback.selectionChanged()}catch(e){}
   });
