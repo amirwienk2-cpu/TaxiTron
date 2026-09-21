@@ -165,10 +165,11 @@ body.en .page,body.en .countdown{direction:ltr}
   overflow-wrap:anywhere;word-break:break-word}
 .msg b{display:flex;align-items:center;color:var(--gold);font-size:13px}
 .msg.me{align-self:flex-end}
-.chat-input{display:flex;gap:8px;margin-top:16px}
-.chat-input input{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(224,161,0,.55);
+.chat-input{display:flex;gap:8px;margin-top:16px;align-items:flex-end}
+.chat-input input,.chat-input textarea{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(224,161,0,.55);
   background:rgba(10,8,30,.8);color:#fff;font:600 15px "Vazirmatn",Tahoma,sans-serif;outline:none}
-.chat-input input:focus{border-color:var(--gold)}
+.chat-input textarea{resize:none;overflow-y:auto;max-height:140px;line-height:1.4;font-family:inherit}
+.chat-input input:focus,.chat-input textarea:focus{border-color:var(--gold)}
 .btn.send{margin-top:0;padding:12px 20px}
 body.en .tab{font-size:11.5px}
 
@@ -486,7 +487,7 @@ body.en .as-cap{display:block}
 .lv-info-soon-lock{width:74px;height:74px}
 .lv-info-soon-lock svg{width:100%;height:100%}
 .lv-info-soon-txt{font:800 16px "Vazirmatn",Tahoma,sans-serif;color:var(--gold)}
-.chat-input input:disabled{opacity:.7;border-color:rgba(255,80,80,.6)}
+.chat-input input:disabled,.chat-input textarea:disabled{opacity:.7;border-color:rgba(255,80,80,.6)}
 .chat-input .btn.send:disabled{filter:grayscale(1);opacity:.6}
 
 .tt-toast{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));z-index:70;transform:translate(-50%,-12px);max-width:calc(100% - 32px);
@@ -543,12 +544,13 @@ body:not(.en) .rp svg,body:not(.en) .rb-ic svg{transform:scaleX(-1)}
 .on-none[hidden]{display:none}
 
 /* Chat: smaller input + send button */
-.chat-input{gap:6px;margin-top:10px;align-items:center}
-.chat-input input{height:36px;padding:0 11px;border-radius:10px;font-size:13.5px}
-.chat-input .btn.send{height:36px;padding:0 14px;border-radius:10px;font-size:13.5px;line-height:36px;box-shadow:0 2px 0 #9b5a00}
+.chat-input{gap:6px;margin-top:10px;align-items:flex-end}
+.chat-input input,.chat-input textarea{min-height:36px;padding:8px 11px;border-radius:10px;font-size:13.5px}
+.chat-input textarea{height:36px;max-height:110px}
+.chat-input .btn.send{height:36px;padding:0 14px;border-radius:10px;font-size:13.5px;line-height:36px;box-shadow:0 2px 0 #9b5a00;flex-shrink:0}
 .reply-bar:not([hidden]) + .chat-input{margin-top:6px}
 @media (max-width:600px){
-  .chat-input input{font-size:16px}
+  .chat-input input,.chat-input textarea{font-size:16px}
 }
 
 /* Chat: edit own messages */

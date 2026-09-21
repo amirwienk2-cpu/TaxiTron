@@ -90,6 +90,18 @@ if(window.visualViewport){
   });
 }
 chatText.addEventListener('focus',()=>requestAnimationFrame(()=>scrollChatToEnd(false)));
+// chatText is a <textarea> (not a single-line <input>) so a long message wraps onto multiple
+// visible lines instead of scrolling its own content sideways/forward and hiding what was
+// already typed. It grows with the content up to CHAT_INPUT_MAX_HEIGHT, then scrolls
+// internally like a normal textarea. Growing it also shrinks the message list (flex:1)
+// above it, so we re-pin the last message into view every time it grows.
+const CHAT_INPUT_MAX_HEIGHT=140;
+function autoGrowChatInput(){
+  chatText.style.height='auto';
+  chatText.style.height=Math.min(chatText.scrollHeight,CHAT_INPUT_MAX_HEIGHT)+'px';
+  if(document.body.classList.contains('chat-open')) scrollChatToEnd(false);
+}
+chatText.addEventListener('input',autoGrowChatInput);
 // When TT.onSendMessage is wired to a real server (see server-bridge.js), the message is only
 // rendered (via TT.addMessage) after the server confirms it - no local-only fabricated bubble.
 // Without a server hook (pure demo/offline), it still renders immediately as before.
@@ -99,17 +111,19 @@ function sendMsg(){
   if(editing){ finishEdit(v); return; }                              // editing an own message
   const rep=replyTo;
   if(typeof TT.onSendMessage==='function'){
-    chatText.value=''; cancelReply();
+    chatText.value=''; autoGrowChatInput(); cancelReply();
     try{ Promise.resolve(TT.onSendMessage({text:v, replyTo:rep})).catch(()=>{}); }catch(e){}
     return;
   }
   const d=document.createElement('div'); d.className='msg me skin-'+skin;
   const b=document.createElement('b'); b.textContent=T().me; const s=document.createElement('span'); s.textContent=v;
   d.append(b); if(rep) d.append(buildQuote(rep)); d.append(s);
-  chatList.append(d); decorateMsg(d); cancelReply(); scrollChatToEnd();
+  chatList.append(d); decorateMsg(d); chatText.value=''; autoGrowChatInput(); cancelReply(); scrollChatToEnd();
 }
 document.getElementById('chatSend').addEventListener('click',sendMsg);
-chatText.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
+// Enter sends the message (matches the old single-line input's behavior); Shift+Enter
+// still inserts a newline, like Telegram/WhatsApp, now that this is a growable textarea.
+chatText.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } });
 
 // Shop – real car skins/levels from the server (POST /api/buy-skin: red=1 TON->lvl2,
 // white=3 TON->lvl3, green=10 TON->lvl4). 'yellow' is the free default everyone owns.
@@ -480,12 +494,12 @@ function startEdit(m){
   replyTo=null;
   editing={m, old:msgBody(m)};
   m.classList.add('editing');
-  chatText.value=editing.old; renderReplyBar(); replyBar.hidden=false;
+  chatText.value=editing.old; renderReplyBar(); replyBar.hidden=false; autoGrowChatInput();
   chatText.focus(); try{ chatText.setSelectionRange(chatText.value.length,chatText.value.length); }catch(e){}
 }
 function cancelEdit(keepText){
   if(!editing) return; editing.m.classList.remove('editing'); editing=null;
-  if(!keepText) chatText.value=''; replyBar.hidden=true; renderReplyBar();
+  if(!keepText) chatText.value=''; replyBar.hidden=true; renderReplyBar(); autoGrowChatInput();
 }
 function setMsgText(m,text){
   const sp=m.querySelector(':scope > span:last-of-type'); if(sp){ sp.textContent=text; sp.removeAttribute('data-i'); }
