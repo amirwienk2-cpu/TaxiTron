@@ -109,7 +109,7 @@ function renderShop(){
   document.getElementById('levelList').innerHTML=SKINS.map(s=>{
     const has=owns(s.id);
     const lock=s.soon?`<div class="lock">${LOCK}<span>${T().soon}</span></div>`:'';
-    const pic=`<div class="lvpic"><img src="${SKIN_IMG[s.id]||''}" alt="${T().level} ${num(s.level)}" loading="lazy">${lock}<span class="lv-badge">${T().level} ${num(s.level)}</span><button type="button" class="lv-info" data-info-lv="${s.level}" data-info-sk="${s.id}" aria-label="Info">?</button></div>`;
+    const pic=`<div class="lvpic"><img src="${SKIN_IMG[s.id]||''}" alt="${T().level} ${num(s.level)}" loading="lazy">${lock}<button type="button" class="lv-info" data-info-lv="${s.level}" data-info-sk="${s.id}" aria-label="Info">?</button></div>`;
     const isActive=has&&s.level===active;
     const btn=s.soon?`<button class="btn buy" disabled>${T().soon}</button>`
       :has?`<button class="btn buy" data-select-lv="${s.level}" ${isActive?'disabled':''}>${isActive?T().inUse:T().use}</button>`
