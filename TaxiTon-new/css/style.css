@@ -49,11 +49,11 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   position:absolute;left:21.1%;width:32.2%;top:39.29%;height:5.38%;
   background:linear-gradient(180deg,transparent 75%,rgba(40,28,30,.8)),linear-gradient(90deg,#08070a 0%,#050418 45%,#040d3c 85%,#061158 100%);
   -webkit-mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
-  display:flex;align-items:center;justify-content:center;gap:1.4cqw;direction:rtl;
-  font-weight:900;font-size:6cqw;line-height:1;color:#ffe81a;
+  display:flex;align-items:center;justify-content:center;gap:1cqw;direction:rtl;
+  font-weight:900;font-size:4.2cqw;line-height:1;color:#ffe81a;
   text-shadow:0 0 1.2cqw rgba(255,220,0,.5);white-space:nowrap;
 }
-.countdown small{font-size:4.6cqw;font-weight:900}
+.countdown small{font-size:3.2cqw;font-weight:900}
 
 /* Tournament: live leaderboard list below the artwork */
 .lb-list{padding:0 20px 6px;display:flex;flex-direction:column;gap:8px}
@@ -465,6 +465,10 @@ body.en .as-cap{display:block}
 .lv-info-body{padding:2px;font:600 14px/1.6 "Vazirmatn",Tahoma,sans-serif;color:#e6e0ff;text-align:start;white-space:pre-line}
 .lv-info-sheet .as-panel{max-height:88vh;overflow-y:auto}
 .lv-info-body img{display:block;width:100%;border-radius:12px}
+.lv-info-soon{display:flex;flex-direction:column;align-items:center;gap:14px;padding:34px 10px;text-align:center}
+.lv-info-soon-lock{width:74px;height:74px}
+.lv-info-soon-lock svg{width:100%;height:100%}
+.lv-info-soon-txt{font:800 16px "Vazirmatn",Tahoma,sans-serif;color:var(--gold)}
 .chat-input input:disabled{opacity:.7;border-color:rgba(255,80,80,.6)}
 .chat-input .btn.send:disabled{filter:grayscale(1);opacity:.6}
 

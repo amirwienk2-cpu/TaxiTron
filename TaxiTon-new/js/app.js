@@ -199,7 +199,9 @@ function openLvInfo(level,skinId){
   const imgSet=LV_INFO_IMG[skinId];
   const img=imgSet&&(imgSet[lang]||imgSet.en||imgSet.fa);
   const title=lvInfoSheet.querySelector('#lvInfoName');
+  const sk=SKINS.find(s=>s.id===skinId);
   if(img){ title.textContent=''; body.innerHTML=`<img src="${img}" alt="">`; }
+  else if(sk&&sk.soon){ title.textContent=''; body.innerHTML=`<div class="lv-info-soon"><div class="lv-info-soon-lock">${LOCK}</div><div class="lv-info-soon-txt">${T().soon}</div></div>`; }
   else{ title.textContent=T().lvInfoTitle.replace('{n}',num(level)); body.textContent=(LV_INFO[lang]&&LV_INFO[lang][skinId])||T().lvInfoSoon; }
   lvInfoSheet.hidden=false;
   requestAnimationFrame(()=>lvInfoSheet.classList.add('on'));
