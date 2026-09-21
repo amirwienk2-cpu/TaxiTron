@@ -63,6 +63,7 @@
   @keyframes nitroPulse { from{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 8px rgba(255,180,40,.7));} to{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 20px rgba(255,180,40,1));} }
 
   .slow-btn { bottom:196px; }
+  .slow-btn img { width:78px; height:78px; }
   .slow-btn.active img { animation:slowPulse 0.5s infinite alternate; }
   @keyframes slowPulse { from{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 8px rgba(190,60,255,.7));} to{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 20px rgba(190,60,255,1));} }
 
