@@ -4080,7 +4080,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     document.getElementById('bestScoreText').textContent = t('bestScoreText').replace('{best}', best);
     const artEl = document.getElementById('gameOverArt');
     const lvl = activeAttemptLevel();
-    const artByLevel = { 2: 'sprites/crash22.png', 3: 'sprites/crash33.png', 4: 'sprites/crash44.png' };
+    const artByLevel = { 1: 'sprites/crash11.png', 2: 'sprites/crash22.png', 3: 'sprites/crash33.png', 4: 'sprites/crash44.png' };
     const artSrc = artByLevel[lvl];
     const hasArt = !!artSrc;
     if (artEl){
