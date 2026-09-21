@@ -16,7 +16,7 @@ body{
   color:#fff;font-family:"Vazirmatn",Tahoma,"Segoe UI",sans-serif;
   -webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;
 }
-body.chat-open{height:100dvh;min-height:0;overflow:hidden}
+body.chat-open{height:var(--app-vh,100dvh);min-height:0;overflow:hidden}
 
 /* App background image (fixed, dimmed a bit so text stays readable) */
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
@@ -161,7 +161,8 @@ body.en .page,body.en .countdown{direction:ltr}
 .chat-toggle[hidden]{display:none}
 .chat-list{display:flex;flex-direction:column;gap:10px;min-height:40vh}
 .msg{align-self:flex-start;max-width:85%;padding:10px 14px;border-radius:14px;
-  background:rgba(40,20,90,.6);box-shadow:0 0 0 1px rgba(224,161,0,.35);line-height:1.7;font-size:15px}
+  background:rgba(40,20,90,.6);box-shadow:0 0 0 1px rgba(224,161,0,.35);line-height:1.7;font-size:15px;
+  overflow-wrap:anywhere;word-break:break-word}
 .msg b{display:flex;align-items:center;color:var(--gold);font-size:13px}
 .msg.me{align-self:flex-end}
 .chat-input{display:flex;gap:8px;margin-top:16px}

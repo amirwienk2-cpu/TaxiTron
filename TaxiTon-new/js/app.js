@@ -72,6 +72,24 @@ const chatList=document.getElementById('chatList'), chatText=document.getElement
 function scrollChatToEnd(smooth=true){
   chatList.scrollTo({top:chatList.scrollHeight,behavior:smooth?'smooth':'auto'});
 }
+// Keep the chat pinned to the REAL visible area (visualViewport), not just 100dvh:
+// on some mobile WebViews (incl. Telegram's), the on-screen keyboard overlays the page
+// instead of shrinking the layout viewport, so 100dvh alone can leave the input box + the
+// message right above it hidden behind the keyboard while the user is typing. Tracking
+// visualViewport.height keeps the chat column sized to what's actually visible, and
+// re-scrolling to the bottom whenever the keyboard opens/closes keeps the last message in view.
+function applyChatViewportHeight(){
+  if(!window.visualViewport) return;
+  document.documentElement.style.setProperty('--app-vh', window.visualViewport.height+'px');
+}
+if(window.visualViewport){
+  applyChatViewportHeight();
+  window.visualViewport.addEventListener('resize',()=>{
+    applyChatViewportHeight();
+    if(document.body.classList.contains('chat-open')) requestAnimationFrame(()=>scrollChatToEnd(false));
+  });
+}
+chatText.addEventListener('focus',()=>requestAnimationFrame(()=>scrollChatToEnd(false)));
 // When TT.onSendMessage is wired to a real server (see server-bridge.js), the message is only
 // rendered (via TT.addMessage) after the server confirms it - no local-only fabricated bubble.
 // Without a server hook (pure demo/offline), it still renders immediately as before.
