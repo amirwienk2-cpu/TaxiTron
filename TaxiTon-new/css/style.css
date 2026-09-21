@@ -20,7 +20,10 @@ body.chat-open{height:100dvh;min-height:0;overflow:hidden}
 
 /* App background image (fixed, dimmed a bit so text stays readable) */
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,rgba(8,5,26,.55),rgba(8,5,26,.72)),url(../assets/images/bg-app.jpg) center top/cover no-repeat}
+  background:linear-gradient(180deg,rgba(8,5,26,.55),rgba(8,5,26,.72)),url(../assets/images/bg-app.jpg) center top/cover no-repeat;
+  filter:blur(0);transition:filter .2s ease}
+/* Chat screen only: blur the app background behind the chat UI */
+body.chat-open::before{filter:blur(14px);transform:scale(1.08)}
 .app{max-width:480px;margin:0 auto;padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom,0px) + 8px)}
 .screen{display:none}
 .screen.active{display:block;animation:in .25s ease}
