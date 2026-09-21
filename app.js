@@ -4037,7 +4037,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     speed = calcSpeed(distance);
 
     if (nitroActive){
-      speed *= 2.2;
+      speed *= 2.6;
       nitroTimeLeft -= dt;
       if (nitroTimeLeft <= 0){
         nitroActive = false;
