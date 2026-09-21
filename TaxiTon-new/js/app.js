@@ -584,22 +584,22 @@ document.querySelectorAll('#chatList .msg').forEach(decorateMsg);
 // ---- Chat: admin tools (tap a user in the chat or in the online list) --------------
 // ADMIN.demo:true  -> everybody is admin (for testing only!). For live: demo:false and put the
 //                     Telegram user IDs of your admins into ADMIN.ids (or set TT.isAdmin = () => true/false).
-// Buttons:  چت نکن (chat ban) <-> چت بکن (lift ban)   |   حذف چت (delete messages)
+// Buttons:  چت نکن (chat ban) <-> چت بکن (lift ban)   |   حذف پیام (delete selected message)
 // Server:   TT.adminAction = async (action, user) => true/false   is called for every action
-//           action: 'chatOff' | 'chatOn' | 'delete',  user: {name, id}
+//           action: 'chatOff' | 'chatOn' | 'delete',  user: {name, id, mid}
 //           Your server must check that the sender really is an admin (Telegram initData) and enforce it.
 // The punished user's app: TT.setMyChatState({muted:true | untilTimestamp, banned:true})  -> input is locked.
 // demo:false because server-bridge.js wires TT.isAdmin()/TT.adminAction() to the real
 // state.isChatAdmin/state.isDesigner flags and to /api/chat/moderate + /api/chat/delete.
 const ADMIN={demo:false, ids:[]};
-Object.assign(I18N.fa,{aMute:'خفشو',aTalk:'زر بزن',aChatOff:'چت نکن',aChatOn:'چت بکن',aDel:'حذف چت',aClose:'بستن',
-  aDelQ:'همه پیام‌های {u} حذف شود؟',aDone:'انجام شد ✔',aFail:'خطا – دوباره امتحان کن',aMutedFor:'ساکت تا {t}',aMutedTag:'ساکت',aBannedTag:'بدون چت',
+Object.assign(I18N.fa,{aMute:'خفشو',aTalk:'زر بزن',aChatOff:'چت نکن',aChatOn:'چت بکن',aDel:'حذف پیام',aClose:'بستن',
+  aDelQ:'این پیام حذف شود؟',aDone:'انجام شد ✔',aFail:'خطا – دوباره امتحان کن',aMutedFor:'ساکت تا {t}',aMutedTag:'ساکت',aBannedTag:'بدون چت',
   youMuted:'ادمین تو را ساکت کرده 🔇',youBanned:'ادمین چت را برایت بسته 🚫'});
-Object.assign(I18N.de,{aMute:'Stumm schalten',aTalk:'Sprechen lassen',aChatOff:'Chat sperren',aChatOn:'Chat erlauben',aDel:'Chat löschen',aClose:'Schließen',
-  aDelQ:'Alle Nachrichten von {u} löschen?',aDone:'Erledigt ✔',aFail:'Fehler – bitte nochmal',aMutedFor:'stumm bis {t}',aMutedTag:'stumm',aBannedTag:'gesperrt',
+Object.assign(I18N.de,{aMute:'Stumm schalten',aTalk:'Sprechen lassen',aChatOff:'Chat sperren',aChatOn:'Chat erlauben',aDel:'Nachricht löschen',aClose:'Schließen',
+  aDelQ:'Diese Nachricht löschen?',aDone:'Erledigt ✔',aFail:'Fehler – bitte nochmal',aMutedFor:'stumm bis {t}',aMutedTag:'stumm',aBannedTag:'gesperrt',
   youMuted:'Ein Admin hat dich stumm geschaltet 🔇',youBanned:'Ein Admin hat dir den Chat gesperrt 🚫'});
-Object.assign(I18N.en,{aMute:'Mute',aTalk:'Unmute',aChatOff:'Block chat',aChatOn:'Allow chat',aDel:'Delete chat',aClose:'Close',
-  aDelQ:'Delete all messages from {u}?',aDone:'Done ✔',aFail:'Error – try again',aMutedFor:'muted until {t}',aMutedTag:'muted',aBannedTag:'blocked',
+Object.assign(I18N.en,{aMute:'Mute',aTalk:'Unmute',aChatOff:'Block chat',aChatOn:'Allow chat',aDel:'Delete message',aClose:'Close',
+  aDelQ:'Delete this message?',aDone:'Done ✔',aFail:'Error – try again',aMutedFor:'muted until {t}',aMutedTag:'muted',aBannedTag:'blocked',
   youMuted:'An admin has muted you 🔇',youBanned:'An admin has blocked your chat 🚫'});
 Object.assign(I18N.fa,{lvInfoTitle:'راننده لول {n}',lvInfoSoon:'اطلاعات این راننده به‌زودی اضافه می‌شود.'});
 Object.assign(I18N.de,{lvInfoTitle:'Fahrer Level {n}',lvInfoSoon:'Infos zu diesem Fahrer folgen in Kürze.'});
@@ -690,7 +690,9 @@ function renderSheet(){
   if(st.banned) tags.push('🚫 '+T().aBannedTag);
   admSheet.querySelector('.as-state').textContent=tags.join('  ·  ');
   const box=admSheet.querySelector('.as-btns'); box.textContent='';
-  [st.banned?'chatOn':'chatOff', 'delete'].forEach(a=>{
+  const actions=[st.banned?'chatOn':'chatOff'];
+  if(u.mid!==undefined) actions.push('delete');
+  actions.forEach(a=>{
     const btn=document.createElement('button'); btn.type='button'; btn.className='as-btn as-'+a; btn.dataset.a=a;
     btn.setAttribute('aria-label',T()[ADM_TXT[a]]);
     const img=document.createElement('img'); img.src=ADM_BTN[a]; img.alt='';
@@ -711,29 +713,26 @@ function closeAdmin(){
 }
 async function runAdmin(a){
   const u=admUser; if(!u) return;
-  if(a==='delete' && !(await askConfirm(T().aDelQ.replace('{u}',u.name)))) return;
+  if(a==='delete' && !(await askConfirm(T().aDelQ))) return;
   admSheet.querySelectorAll('.as-btn').forEach(b=>b.disabled=true);
   let ok=true;
-  try{ if(typeof TT.adminAction==='function') ok=(await TT.adminAction(a,{name:u.name,id:u.id}))!==false; }catch(e){ ok=false; }
+  try{ if(typeof TT.adminAction==='function') ok=(await TT.adminAction(a,{name:u.name,id:u.id,mid:u.mid}))!==false; }catch(e){ ok=false; }
   if(!ok){ toast(T().aFail); renderSheet(); return; }
   if(a==='chatOff') setMod(u,{ban:1});
   if(a==='chatOn')  setMod(u,{ban:0});
-  if(a==='delete')  deleteUserMsgs(u);
+  if(a==='delete')  deleteSelectedMsg(u.mid);
   try{ Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){}
   toast(T().aDone); closeAdmin();
 }
-function deleteUserMsgs(u){
-  document.querySelectorAll('#chatList .msg:not(.me)').forEach(m=>{
-    const mu=msgUser(m);
-    if((u.id!==undefined&&mu.id!==undefined&&String(u.id)===String(mu.id)) || mu.name===u.name){
-      m.classList.add('bye'); setTimeout(()=>m.remove(),250);
-    }
-  });
+function deleteSelectedMsg(mid){
+  if(mid===undefined) return;
+  const m=chatList.querySelector(`.msg[data-mid="${CSS.escape(String(mid))}"]`);
+  if(m){ m.classList.add('bye'); setTimeout(()=>m.remove(),250); }
 }
 // taps on messages and on online users
 chatList.addEventListener('click',e=>{
   const m=e.target.closest('.msg'); if(!m||m.classList.contains('me')) return;
-  openAdmin(msgUser(m));
+  openAdmin({...msgUser(m),mid:m.dataset.mid});
 });
 document.getElementById('onlineAvs').addEventListener('click',e=>{
   const c=e.target.closest('.ou'); if(!c||c.classList.contains('more')) return;

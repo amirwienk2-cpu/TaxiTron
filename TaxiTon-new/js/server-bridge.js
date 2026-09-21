@@ -360,21 +360,10 @@
       }).catch(function () { return false; });
     }
     if (action === 'delete') {
-      // server.js only supports deleting ONE message at a time by messageId, and there is no
-      // bulk "delete all messages from this user" endpoint. As a real (not fabricated)
-      // approximation, we delete every message from this user that is CURRENTLY rendered in
-      // the chat list (i.e. already loaded on screen) - older/unloaded ones are left alone.
-      // Documented as a caveat in the final report.
-      var nodes = document.querySelectorAll('#chatList .msg[data-uid="' + CSS.escape(String(user.id)) + '"]');
-      var ids = [];
-      nodes.forEach(function (n) { if (n.dataset.mid) ids.push(n.dataset.mid); });
-      if (!ids.length) return Promise.resolve(true);
-      return Promise.all(ids.map(function (mid) {
-        return postJSON('/api/chat/delete', { token: SESSION.token, messageId: mid }).then(function (r) {
-          if (r.ok) { var el = document.querySelector('#chatList .msg[data-mid="' + CSS.escape(mid) + '"]'); if (el) el.remove(); }
-          return r.ok;
-        }).catch(function () { return false; });
-      })).then(function (results) { return results.every(Boolean); });
+      if (user.mid === undefined) return Promise.resolve(false);
+      return postJSON('/api/chat/delete', { token: SESSION.token, messageId: user.mid }).then(function (r) {
+        return r.ok;
+      }).catch(function () { return false; });
     }
     return Promise.resolve(false);
   };
