@@ -3820,7 +3820,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
   function prefillRoad(){
     // fill the road right from the start so it never feels empty, even in the first stretch
-    const carZs = [-20, -42, -65, -90, -118, -148, -180, -215];
+    const carZs = [-45, -100, -170, -250];
     carZs.forEach(z => spawnObstacle(z));
     const zombieZs = [-12, -32, -55, -80, -110, -140, -175, -210];
     zombieZs.forEach(z => { if (Math.random() < 0.85) spawnPerson(z); });
@@ -3996,7 +3996,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     if (spawnTimer <= 0){
       spawnObstacle();
       const speedDiff = speed - baseSpeed;
-      spawnTimer = 14 - Math.min(speedDiff*220, 12) + Math.random()*6;
+      spawnTimer = 48 - Math.min(speedDiff*220, 12) + Math.random()*18;
     }
     // spawn zombies
     personTimer -= speed * dt * 60;
