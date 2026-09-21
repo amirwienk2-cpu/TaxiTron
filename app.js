@@ -3040,19 +3040,6 @@
       lightBar.position.set(side * (sideGap - 0.055), building.height * 0.82, building.z);
       buildingGroup.add(lightBar);
 
-      [-1, 1].forEach((edgeSide) => {
-        const column = new THREE.Mesh(
-          new THREE.BoxGeometry(0.1, building.height * 0.76, 0.12),
-          accentMaterial
-        );
-        column.position.set(
-          side * (sideGap - 0.06),
-          building.height * 0.43,
-          building.z + edgeSide * building.width * 0.28
-        );
-        buildingGroup.add(column);
-      });
-
       if (index % 2 === 0) {
         const mast = new THREE.Mesh(
           new THREE.CylinderGeometry(0.035, 0.05, 1.1, 6),
