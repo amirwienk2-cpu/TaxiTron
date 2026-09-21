@@ -12,8 +12,8 @@
   }
   .hud-seg { position:absolute; white-space:nowrap; text-shadow:0 2px 6px rgba(0,0,0,.9), 0 0 3px rgba(0,0,0,.8); }
   .hud-seg b { font-weight:800; }
-  .hud-zombies-val { left:24%; top:52%; transform:translate(-50%,-50%); font-size:4.6vw; color:#fff; }
-  .hud-distance-val { left:47.5%; top:67%; transform:translate(-50%,-50%); font-size:3.6vw; color:#fff; }
+  .hud-zombies-val { left:30%; top:50%; transform:translate(-50%,-50%); font-size:4.6vw; color:#fff; }
+  .hud-distance-val { left:60%; top:47%; transform:translate(-50%,-50%); font-size:3.6vw; color:#fff; }
   .hud-level { left:80%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; color:#ffd93d; gap:1px; max-width:34%; }
   .hud-level-line1 { font-size:3.9vw; }
   .hud-level-line1 small { font-size:2.6vw; opacity:.75; margin-left:2px; color:#a8a3b8; }
