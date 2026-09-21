@@ -1408,6 +1408,7 @@ app.post('/api/chat/set-enabled', requireUserFromBody, (req, res) => {
 app.post('/api/chat/moderate', requireUserFromBody, (req, res) => {
   if (!canModerateChat(req.user)) return res.status(403).json({ error: 'not-a-chat-moderator' });
   const targetUid = String((req.body && req.body.targetUid) || '');
+  if (targetUid === String(req.uid)) return res.status(400).json({ error: 'self-moderation-not-allowed' });
   const target = users[targetUid];
   if (!target) return res.status(404).json({ error: 'user-not-found' });
   target.chatMuted = req.body.muted === true;

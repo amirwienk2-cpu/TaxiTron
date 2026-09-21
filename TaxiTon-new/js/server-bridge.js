@@ -452,7 +452,13 @@
     ]).then(function (results) {
       var countRes = results[0], usersRes = results[1];
       var users = (usersRes.ok && usersRes.data.users) ? usersRes.data.users.map(function (u) {
-        return { id: u.uid, name: u.name, admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined), muted: u.chatMuted === true };
+        return {
+          id: u.uid,
+          name: u.name,
+          admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined),
+          muted: u.chatMuted === true,
+          me: SESSION.uid != null && String(u.uid) === String(SESSION.uid)
+        };
       }) : [];
       if (typeof TT.setOnline === 'function') {
         TT.setOnline({ count: countRes.ok ? countRes.data.online : users.length, users: users });

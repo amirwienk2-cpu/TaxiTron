@@ -434,10 +434,10 @@ body.en .online-bar{direction:ltr}
   color:#ffd21a;text-shadow:0 0 1px #2a1200,1px 0 0 #2a1200,-1px 0 0 #2a1200,0 1px 0 #2a1200,0 -1px 0 #2a1200,0 2px 0 rgba(0,0,0,.35)}
 
 /* Chat: admin tools (tap a user) */
-body.is-admin #chatList .msg:not(.me){cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s,box-shadow .12s}
-body.is-admin #chatList .msg:not(.me):active{transform:scale(.98);box-shadow:0 0 0 1.5px var(--gold)}
-body.is-admin #onlineAvs .ou:not(.more){cursor:pointer}
-body.is-admin #onlineAvs .ou:not(.more):focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+body.is-admin #chatList .msg{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s,box-shadow .12s}
+body.is-admin #chatList .msg:active{transform:scale(.98);box-shadow:0 0 0 1.5px var(--gold)}
+body.is-admin #onlineAvs .ou:not(.more):not([data-me="true"]){cursor:pointer}
+body.is-admin #onlineAvs .ou:not(.more):not([data-me="true"]):focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 .msg.mod-hidden{display:none}
 body.is-admin .msg.mod-hidden{display:block;opacity:.45}
 .msg.bye{opacity:0;transform:scale(.9);transition:opacity .25s,transform .25s}

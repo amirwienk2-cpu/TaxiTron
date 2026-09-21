@@ -320,6 +320,7 @@ function renderOnline(){
     const chip=document.createElement('span'); chip.className='ou'; chip.setAttribute('role','listitem'); chip.title=n;
     if(typeof u!=='string'&&u.id!==undefined) chip.dataset.uid=u.id;
     if(typeof u!=='string'&&u.muted!==undefined) chip.dataset.muted=u.muted?'true':'false';
+    if(typeof u!=='string'&&u.me===true) chip.dataset.me='true';
     const av=document.createElement('span'); av.className='av'; av.textContent=[...String(n)][0]||'?';
     let hsh=0; for(const ch of String(n)) hsh=(hsh*31+ch.charCodeAt(0))>>>0;
     const [a,b]=AV_COLORS[hsh%AV_COLORS.length]; av.style.background=`linear-gradient(180deg,${a},${b})`;
@@ -329,7 +330,7 @@ function renderOnline(){
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
 }
-const _u=u=>typeof u==='string'?u:{id:u&&(u.id!==undefined?u.id:u.uid),name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin),muted:!!(u&&u.muted)};
+const _u=u=>typeof u==='string'?u:{id:u&&(u.id!==undefined?u.id:u.uid),name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin),muted:!!(u&&u.muted),me:!!(u&&u.me)};
 TT.setOnline=x=>{
   const o=CHAT.online;
   if(typeof x==='number') o.count=Math.max(0,Math.round(x));
@@ -693,7 +694,8 @@ function renderSheet(){
   if(st.banned) tags.push('🚫 '+T().aBannedTag);
   admSheet.querySelector('.as-state').textContent=tags.join('  ·  ');
   const box=admSheet.querySelector('.as-btns'); box.textContent='';
-  const actions=[st.muted?'chatOn':'chatOff'];
+  const actions=[];
+  if(!u.me) actions.push(st.muted?'chatOn':'chatOff');
   if(u.mid!==undefined) actions.push('delete');
   actions.forEach(a=>{
     const btn=document.createElement('button'); btn.type='button'; btn.className='as-btn as-'+a; btn.dataset.a=a;
@@ -733,19 +735,24 @@ function deleteSelectedMsg(mid){
 }
 // taps on messages and on online users
 chatList.addEventListener('click',e=>{
-  const m=e.target.closest('.msg'); if(!m||m.classList.contains('me')) return;
-  openAdmin({...msgUser(m),mid:m.dataset.mid});
+  const m=e.target.closest('.msg'); if(!m) return;
+  openAdmin({...msgUser(m),mid:m.dataset.mid,me:m.classList.contains('me')});
 });
 document.getElementById('onlineAvs').addEventListener('click',e=>{
   const c=e.target.closest('.ou'); if(!c||c.classList.contains('more')) return;
+  if(c.dataset.me==='true') return;
   openAdmin({name:c.title,id:c.dataset.uid,muted:c.dataset.muted==='true'});
 });
 function markClickable(){
   const a=isAdmin(); document.body.classList.toggle('is-admin',a);
-  document.querySelectorAll('#onlineAvs .ou:not(.more)').forEach(c=>{ if(a){c.tabIndex=0;c.setAttribute('role','button');} });
+  document.querySelectorAll('#onlineAvs .ou:not(.more)').forEach(c=>{
+    const clickable=a&&c.dataset.me!=='true';
+    if(clickable){c.tabIndex=0;c.setAttribute('role','button');}
+    else{c.removeAttribute('tabindex');c.setAttribute('role','listitem');}
+  });
 }
 document.getElementById('onlineAvs').addEventListener('keydown',e=>{
-  if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('ou')){ e.preventDefault(); e.target.click(); }
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('ou')&&e.target.dataset.me!=='true'){ e.preventDefault(); e.target.click(); }
 });
 
 // ---- Chat: search in the online list -------------------------------------------------
