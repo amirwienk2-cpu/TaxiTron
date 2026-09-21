@@ -2721,6 +2721,8 @@
     leaveGameToHome();
   });
   document.getElementById('goHomeBtn').addEventListener('click', leaveGameToHome);
+  const nitroBtnEl = document.getElementById('nitroBtn');
+  if (nitroBtnEl) nitroBtnEl.addEventListener('click', () => activateNitro());
 
   /* ================= THREE.JS SETUP ================= */
   const canvas = document.getElementById('game3d');
@@ -3608,6 +3610,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
   /* ================= GAME STATE ================= */
   let player, obstacles, people, particles, bloodSplats, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft;
+  let nitroActive, nitroTimeLeft, nitroUsed;
   best = store.best;
   reviveUsed = false;
 
@@ -3651,6 +3654,36 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     }
   }
 
+  function updateNitroHud(){
+    const btn = document.getElementById('nitroBtn');
+    if (!btn) return;
+    const timerEl = document.getElementById('nitroTimerVal');
+    if (nitroActive){
+      btn.classList.add('active');
+      btn.classList.remove('used');
+      btn.disabled = true;
+      if (timerEl) timerEl.textContent = Math.ceil(nitroTimeLeft) + 's';
+    } else if (nitroUsed){
+      btn.classList.remove('active');
+      btn.classList.add('used');
+      btn.disabled = true;
+      if (timerEl) timerEl.textContent = '';
+    } else {
+      btn.classList.remove('active');
+      btn.classList.remove('used');
+      btn.disabled = false;
+      if (timerEl) timerEl.textContent = '';
+    }
+  }
+
+  function activateNitro(){
+    if (!running || nitroUsed || nitroActive) return;
+    nitroActive = true;
+    nitroUsed = true;
+    nitroTimeLeft = 30;
+    updateNitroHud();
+  }
+
   function reset(){
     player = { lane: 1, x: laneX(1), targetX: laneX(1), z: 0, tilt: 0 };
     playerCar.position.set(player.x, 0, player.z);
@@ -3678,6 +3711,10 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     weaponActive = false;
     weaponTimeLeft = 0;
     updateWeaponHud();
+    nitroActive = false;
+    nitroTimeLeft = 0;
+    nitroUsed = false;
+    updateNitroHud();
     baseSpeed = 0.175 + (store.upgrades.nitro ? 0.045 : 0);
     speed = baseSpeed;
     personScore = 0;
@@ -3873,6 +3910,16 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
     distance += speed * dt * 60 * 0.9;
     speed = calcSpeed(distance);
+
+    if (nitroActive){
+      speed *= 1.8;
+      nitroTimeLeft -= dt;
+      if (nitroTimeLeft <= 0){
+        nitroActive = false;
+        nitroTimeLeft = 0;
+      }
+      updateNitroHud();
+    }
 
     // player smoothing
     player.x += (player.targetX - player.x) * 0.18;

@@ -29,6 +29,20 @@
   }
   @keyframes weaponPulse { from{ box-shadow:0 0 6px rgba(255,40,40,.5);} to{ box-shadow:0 0 16px rgba(255,40,40,.9);} }
 
+  .nitro-btn {
+    position:absolute; right:18px; bottom:90px; z-index:6;
+    width:64px; height:64px; border-radius:50%; border:2px solid rgba(255,255,255,.35);
+    background:linear-gradient(180deg,#ff9d3d,#ff5c1a); color:#fff; font-size:26px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    box-shadow:0 6px 0 #a8360a, 0 8px 16px rgba(0,0,0,.4);
+    touch-action:manipulation; cursor:pointer; transition: transform .08s, opacity .2s;
+  }
+  .nitro-btn:active:not(:disabled) { transform: translateY(4px); box-shadow:0 2px 0 #a8360a; }
+  .nitro-btn span { font-size:11px; font-weight:800; }
+  .nitro-btn.active { background:linear-gradient(180deg,#ffe93d,#ff9500); animation:nitroPulse 0.5s infinite alternate; }
+  .nitro-btn.used, .nitro-btn:disabled:not(.active) { opacity:.35; filter:grayscale(1); cursor:default; }
+  @keyframes nitroPulse { from{ box-shadow:0 6px 0 #a8360a, 0 0 10px rgba(255,180,40,.6);} to{ box-shadow:0 6px 0 #a8360a, 0 0 26px rgba(255,180,40,1);} }
+
   #startScreen, #gameOverScreen {
     position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:linear-gradient(180deg, rgba(10,10,20,.92), rgba(20,10,30,.96)); color:#fff; text-align:center; z-index:10; padding:20px;
