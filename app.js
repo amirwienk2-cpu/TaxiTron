@@ -4078,6 +4078,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     commitRun();
     document.getElementById('finalScore').textContent = personScore;
     document.getElementById('bestScoreText').textContent = t('bestScoreText').replace('{best}', best);
+    const artEl = document.getElementById('gameOverArt');
+    if (artEl) artEl.style.display = (activeAttemptLevel() === 4) ? 'block' : 'none';
     document.getElementById('gameOverScreen').style.display = 'flex';
     document.getElementById('retryBtn').disabled = !hasAttemptsLeft();
   }

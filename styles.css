@@ -92,6 +92,10 @@
   }
   #gameOverScreen { display:none; }
   h1 { font-size:38px; margin-bottom:8px; letter-spacing:1px; background:linear-gradient(90deg,#ffd93d,#ff6b6b); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  #gameOverArt {
+    width:100%; max-width:320px; height:190px; object-fit:cover; object-position:top center;
+    border-radius:16px; margin-bottom:14px; box-shadow:0 10px 28px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.08);
+  }
   .subtitle { color:#aaa; margin-bottom:26px; font-size:15px; }
   .btn {
     background:linear-gradient(180deg,#ffd93d,#ffb703); color:#3a2a00; border:none; padding:14px 40px;
