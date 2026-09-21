@@ -1012,7 +1012,7 @@ app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', '
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'),
 }));
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/', (req, res) => res.redirect('/TaxiTon-new/index-new.html'));
 
 app.get('/admin', (req, res) => {
   if (!ADMIN_SECRET) return res.status(503).send('Admin panel is disabled: ADMIN_SECRET is not configured.');

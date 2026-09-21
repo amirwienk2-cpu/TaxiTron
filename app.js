@@ -3436,6 +3436,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     if (!d || d.type !== 'tt-select-skin') return;
     const def = SKIN_LEVELS.find(item => item.key === d.skin);
     if (!def) return;
+    const ownsPremiumSkin = store.ownedSkins.some(key => SKIN_LEVELS.some(item => item.key === key && item.level >= 2));
+    if (def.level === 1 && ownsPremiumSkin) return;
     if (store.ownedSkins.indexOf(def.key) === -1) store.ownedSkins.push(def.key);
     store.skin = def.key;
     store.level = def.level;

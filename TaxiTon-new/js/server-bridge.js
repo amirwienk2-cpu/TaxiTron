@@ -135,7 +135,11 @@
   var LEVEL_TO_SKIN = { 1: 'yellow', 2: 'red', 3: 'white', 4: 'green' };
   TT.selectLevel = function (level) {
     var key = LEVEL_TO_SKIN[Number(level)];
-    if (!key) return;
+    if (!key || SESSION.ownedSkins.indexOf(key) === -1) return;
+    var ownsPremium = SESSION.ownedSkins.some(function (ownedKey) {
+      return ownedKey === 'red' || ownedKey === 'white' || ownedKey === 'green';
+    });
+    if (Number(level) === 1 && ownsPremium) return;
     var frame = document.getElementById('realGameFrame');
     if (frame && frame.contentWindow) {
       try { frame.contentWindow.postMessage({ type: 'tt-select-skin', skin: key, level: Number(level) }, '*'); } catch (e) {}

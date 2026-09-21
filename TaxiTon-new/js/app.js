@@ -11,11 +11,24 @@ const I18N={
  en:{h1t:'Steer your taxi',h1:'Arrow keys, A/D or swipe to change lanes',h2t:'Collect zombies',h2:'The more zombies ride with you, the faster your car gets.',h3t:"Don't crash!",h3:'Avoid other cars – one crash ends the run.',h4t:'Swap for coins',h4:'Exchange your zombies for coins in the wallet',h4b:'(100 coins per zombie)',pw:'There are power-up items on the route that activate when the taxi hits them.',invDesc:'Invite real Telegram users with your personal link. The top 3 inviters win TON! 🥇 20 TON · 🥈 10 TON · 🥉 5 TON',invTime:'Campaign ends in',invEnded:'Campaign ended',ivYourRank:'Your rank',ivInvites:'invites',ivNoInvites:'No invites yet. Be the first!',ivSettled:'Campaign ended · winners have been paid out.',invBtn:'Invite with your link',invShare:'Join me in TaxiTron! 🚕🧟',tkDesc2:'Join the official TaxiTon channel to complete this task.',designer:'Designer',m3:'New colors and icons are coming tomorrow 🎨',admin:'Admin',onlineShort:'Online',onlineUsers:'Users online:',howT:'How to play',sBest:'Best score',sRoutes:'Routes',sLevel:'Level',tonLeft:'TON left',lvlWord:'Level',triesLeft:'Tries left',tkJoinAll:'Join channels',tkDescAll:'Join the channels below to complete this task.',tkRewardAll:'Reward per channel: +{n} zombies',tkJoin:'Join',tkDesc:'Join the withdrawal news channel to complete this task.',tkReward:'Reward: +{n} zombies',tkOpen:'Open Telegram channel',tkCheck:'Check membership',tkDone:'Completed. +{n} Zombies added to your wallet.',tkNo:'You have not joined the channel yet.',bal:'Balance',daily:'Daily limit',soon:'Coming soon',buyLv:'Buy levels',skins:'Chat skins',level:'Level',coinsShort:'coins',buy:'Buy',owned:'Owned',use:'Use',inUse:'Active',free:'Free',hi:'Hi!',sk_yellow:'Yellow',sk_red:'Red',sk_white:'White',sk_green:'Green',sk_black:'Black',sk_platinum:'Platinum',youTag:'You',lbEmpty:'No scores yet',langs:'Languages',chat:'Chat',chatT:'Drivers chat',m1:'Who hit more than 500 zombies today?',m2:'Me! Only 10 points left to first place 🔥',chatPh:'Write a message…',send:'Send',me:'Me',game:'Game',tasks:'Tasks',home:'Home',shop:'Shop',play:'Play',tour:'Tournament',wallet:'Wallet',homeT:'TaxiTron',homeP:'Welcome, driver! Collect coins, hit zombies and win TON in the weekly tournament.',coins:'Coins',zweek:'Zombies this week',shopP:'Taxis and upgrades are coming here soon.',gameP:'Game modes and levels.',playP:'Hop in your taxi and collect as many zombies as you can.',start:'Start game',walletP:'Connect your TON wallet to receive prizes.',connect:'Connect wallet',t1:'Join the channel',t2:'Invite friends',t3:'Daily login',t4:'Watch 10 videos',adsDesc:'Watch 10 rewarded videos and receive 0.03 TON in total.',watchVideo:'Watch video',adsCompleted:'Completed',adsDone:'Completed. 0.03 TON was added to your balance.',adsNotReady:'Open the game in Telegram to watch rewarded videos.',adsFailed:'Video was not completed. No reward was added.',d:'d',h:'h',m:'m',
   skinPerDay:'day',skinPerDayFor:'per day for',skinDays:'days',skinDaysLeft:'days left',skinRewardActive:'Daily reward active',skinTodayLeft:'Today: {amount} TON left',skinRewardOffer:'Earn a daily TON reward',skinNeedMore:'Need {amount} TON more to unlock'}
 };
+Object.assign(I18N.fa,{levelLocked:'قفل شده'});
+Object.assign(I18N.de,{levelLocked:'Gesperrt'});
+Object.assign(I18N.en,{levelLocked:'Locked'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
+const TOURNAMENT_ART={
+  fa:{src:'../sprites/turnier-fa.jpg',alt:'مسابقه زامبی'},
+  de:{src:'../sprites/turnier-de.jpg',alt:'Zombie-Wettbewerb'},
+  en:{src:'../sprites/turnier-en.jpg',alt:'Zombie Competition'}
+};
 function applyLang(){
   document.body.classList.toggle('en',lang!=='fa');document.documentElement.lang=lang;
+  const tournamentArt=document.getElementById('tournamentArt');
+  if(tournamentArt){
+    const art=TOURNAMENT_ART[lang]||TOURNAMENT_ART.en;
+    tournamentArt.src=art.src;tournamentArt.alt=art.alt;
+  }
   document.querySelectorAll('[data-i]').forEach(el=>{const v=T()[el.dataset.i]; if(v) el.textContent=v;});
   document.querySelectorAll('[data-i-html]').forEach(el=>{const v=T()[el.dataset.iHtml]; if(v) el.innerHTML=v;});
   document.querySelectorAll('[data-ph]').forEach(el=>{el.placeholder=T()[el.dataset.ph]});
@@ -103,17 +116,22 @@ const fmtTon=n=>(Math.round(n*100)/100).toString().replace(/\.0+$/,'').replace(/
 function currentActiveLevel(){
   const stored=Number(store('tt_active_level'))||0;
   const storedDef=SKINS.find(s=>s.level===stored);
-  return (storedDef && SHOP.ownedSkins.includes(storedDef.id)) ? stored : SHOP.level;
+  const ownsPremium=SHOP.ownedSkins.some(id=>SKINS.some(s=>s.id===id&&s.level>=2&&!s.soon));
+  if(storedDef&&SHOP.ownedSkins.includes(storedDef.id)&&!(stored===1&&ownsPremium)) return stored;
+  return SKINS.reduce((highest,s)=>SHOP.ownedSkins.includes(s.id)&&!s.soon&&s.level>highest?s.level:highest,1);
 }
 function renderShop(){
   const owns=id=>SHOP.ownedSkins.includes(id);
   const active=currentActiveLevel();
+  const ownsPremium=SHOP.ownedSkins.some(id=>SKINS.some(s=>s.id===id&&s.level>=2&&!s.soon));
   document.getElementById('levelList').innerHTML=SKINS.map(s=>{
     const has=owns(s.id);
     const lock=s.soon?`<div class="lock">${LOCK}<span>${T().soon}</span></div>`:'';
     const pic=`<div class="lvpic"><img src="${SKIN_IMG[s.id]||''}" alt="${T().level} ${num(s.level)}" loading="lazy">${lock}<button type="button" class="lv-info" data-info-lv="${s.level}" data-info-sk="${s.id}" aria-label="Info">?</button></div>`;
     const isActive=has&&s.level===active;
+    const isLocked=has&&s.level===1&&ownsPremium;
     const btn=s.soon?`<button class="btn buy" disabled>${T().soon}</button>`
+      :isLocked?`<button class="btn buy" disabled>${T().levelLocked}</button>`
       :has?`<button class="btn buy" data-select-lv="${s.level}" ${isActive?'disabled':''}>${isActive?T().inUse:T().use}</button>`
       :`<button class="btn buy" data-lv="${s.id}">${T().buy}</button>`;
     const rewardTag=(!s.soon&&s.dailyReward>0)?`<span class="lv-reward-tag">⚡ +${fmtTon(s.dailyReward)} TON/${T().skinPerDay}</span>`:'';
@@ -152,6 +170,7 @@ document.getElementById('shop').addEventListener('click',e=>{
   if(b.dataset.sk){ skin=b.dataset.sk; store('tt_skin',skin); renderShop(); return; }
   if(b.dataset.selectLv){
     const lvl=Number(b.dataset.selectLv);
+    if(lvl===1&&SHOP.ownedSkins.some(id=>SKINS.some(s=>s.id===id&&s.level>=2&&!s.soon))) return;
     if(typeof TT.selectLevel==='function') TT.selectLevel(lvl);
     store('tt_active_level',lvl);
     renderShop();
@@ -210,6 +229,9 @@ TT.setShop=o=>{ o=o||{}; SHOP.ton=Number(o.ton)||0; SHOP.level=Number(o.level)||
   SHOP.skinRewards=(o.skinRewards&&typeof o.skinRewards==='object')?o.skinRewards:{};
   SHOP.tonTodayByLevel=(o.tonTodayByLevel&&typeof o.tonTodayByLevel==='object')?o.tonTodayByLevel:{1:0,2:0,3:0,4:0};
   if(!SHOP.ownedSkins.includes(skin)){ skin=SHOP.ownedSkins[0]; store('tt_skin',skin); }
+  const active=currentActiveLevel();
+  if(Number(store('tt_active_level'))!==active) store('tt_active_level',active);
+  if(typeof TT.selectLevel==='function') TT.selectLevel(active);
   renderShop(); };
 renderShop(); // render with defaults immediately; TT.setShop() refreshes it once real server data arrives
 
@@ -259,10 +281,10 @@ renderHome();
 // Demo data. Set real data with TT.setOnline(128)  |  TT.setOnline(['Ali','Sara'])  |  TT.setOnline({count:342, users:['Ali','Sara','Max']})
 const CHAT={online:{count:128,users:[{name:'TaxiBoss',admin:'boy'},{name:'ZombieHunter',admin:'girl'},{name:'Designer',badge:'designer'},'NightRider','TonMaster','SuperTaxiDriver99','Sara','Max','Kian','Nima','Dara','Roya','Ali']}};
 const AV_COLORS=[['#ffe36a','#f0a000'],['#9dff8a','#2aa84a'],['#8fd0ff','#1e6bff'],['#ffa08a','#d8341a'],['#d9a8ff','#8a3cff']];
-const ADM_IMG={boy:'assets/images/adm-boy.png',girl:'assets/images/adm-girl.png',designer:'assets/images/badge-designer.png'};
+const ADM_IMG={boy:'assets/images/adm-boy.png',girl:'assets/images/adm-girl.png',designer:'../sprites/alipro.png'};
 // Admin badge: kind = 'boy' | 'girl'
 function admBadge(kind,h){
-  const s=document.createElement('span'); s.className='adm'; if(h) s.style.setProperty('--ah',h+'px');
+  const s=document.createElement('span'); s.className='adm adm-'+kind; if(h) s.style.setProperty('--ah',h+'px');
   const i=document.createElement('img'); i.src=ADM_IMG[kind]||ADM_IMG.boy; i.alt='';
   s.title=kind==='designer'?T().designer:T().admin; s.append(i);
   if(kind!=='designer'){ const t=document.createElement('em'); t.className='adm-t'; t.textContent=T().admin; s.append(t); }
@@ -273,7 +295,9 @@ function renderChatBadges(){
   document.querySelectorAll('#chatList .msg[data-badge],#chatList .msg[data-admin]').forEach(m=>{
     const nameEl=m.querySelector(':scope > b'); if(!nameEl) return;
     nameEl.querySelectorAll('.adm').forEach(x=>x.remove());
-    nameEl.append(admBadge(m.dataset.badge||m.dataset.admin,34));
+    const kind=m.dataset.badge||m.dataset.admin;
+    const badge=admBadge(kind,34);
+    if(kind==='designer') nameEl.prepend(badge); else nameEl.append(badge);
   });
 }
 function renderOnline(){
@@ -289,7 +313,7 @@ function renderOnline(){
     const [a,b]=AV_COLORS[hsh%AV_COLORS.length]; av.style.background=`linear-gradient(180deg,${a},${b})`;
     const dot=document.createElement('i'); av.append(dot);
     const nm=document.createElement('span'); nm.className='ou-name'; nm.textContent=n;
-    chip.append(av,nm); if(adm) chip.append(admBadge(adm,20)); box.append(chip);
+    chip.append(av); if(adm==='designer') chip.append(admBadge(adm,20)); chip.append(nm); if(adm&&adm!=='designer') chip.append(admBadge(adm,20)); box.append(chip);
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
 }

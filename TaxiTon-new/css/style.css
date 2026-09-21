@@ -43,10 +43,10 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 @media (prefers-reduced-motion:reduce){.screen.active{animation:none}}
 
 /* Tournament: original artwork with live countdown on top */
-.tour{position:relative;width:100%;aspect-ratio:853/1146;container-type:inline-size}
+.tour{position:relative;width:100%;aspect-ratio:1096/1435;container-type:inline-size}
 .tour img{width:100%;height:100%;display:block;-webkit-mask:linear-gradient(#000 97.5%,transparent);mask:linear-gradient(#000 97.5%,transparent)}
 .countdown{
-  position:absolute;left:21.1%;width:32.2%;top:39.29%;height:5.38%;
+  position:absolute;left:18%;width:40%;top:39%;height:8%;
   background:linear-gradient(180deg,transparent 75%,rgba(40,28,30,.8)),linear-gradient(90deg,#08070a 0%,#050418 45%,#040d3c 85%,#061158 100%);
   -webkit-mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
   display:flex;align-items:center;justify-content:center;gap:1cqw;direction:rtl;
@@ -423,6 +423,7 @@ body.en .online-bar{direction:ltr}
 /* Admin badge (boy / girl sticker) */
 .adm{--ah:26px;position:relative;display:inline-block;height:var(--ah);flex:none;margin-inline-start:8px;vertical-align:middle}
 .adm img{height:100%;width:auto;display:block}
+.adm-designer{margin-inline-start:0;margin-inline-end:8px}
 .adm .adm-t{position:absolute;left:47%;top:27%;width:49%;height:60%;display:flex;align-items:center;justify-content:center;
   font-family:"Vazirmatn",Tahoma,sans-serif;font-weight:900;font-style:normal;font-size:calc(var(--ah)*.36);line-height:1;white-space:nowrap;direction:ltr;
   color:#ffd21a;text-shadow:0 0 1px #2a1200,1px 0 0 #2a1200,-1px 0 0 #2a1200,0 1px 0 #2a1200,0 -1px 0 #2a1200,0 2px 0 rgba(0,0,0,.35)}
