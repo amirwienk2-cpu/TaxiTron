@@ -77,6 +77,13 @@
   .slow-btn.active img { animation:slowPulse 0.5s infinite alternate; }
   @keyframes slowPulse { from{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 8px rgba(190,60,255,.7));} to{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 20px rgba(190,60,255,1));} }
 
+  .lvl4-btn { bottom:196px; width:70px; }
+  .lvl4-btn img { width:70px; height:70px; }
+  .lvl4-left { right:96px; }
+  .lvl4-right { right:18px; }
+  .lvl4-btn.active img { animation:multPulse 0.5s infinite alternate; }
+  @keyframes multPulse { from{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 8px rgba(255,210,60,.7));} to{ filter:drop-shadow(0 6px 4px rgba(0,0,0,.55)) drop-shadow(0 0 20px rgba(255,210,60,1));} }
+
   #startScreen, #gameOverScreen {
     position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:linear-gradient(180deg, rgba(10,10,20,.92), rgba(20,10,30,.96)); color:#fff; text-align:center; z-index:10; padding:20px;

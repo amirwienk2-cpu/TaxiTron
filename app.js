@@ -2728,6 +2728,10 @@
   if (slowBtnEl) slowBtnEl.addEventListener('click', () => activateSlow());
   const hackBtnEl = document.getElementById('hackBtn');
   if (hackBtnEl) hackBtnEl.addEventListener('click', () => activateHack());
+  const mult2BtnEl = document.getElementById('mult2Btn');
+  if (mult2BtnEl) mult2BtnEl.addEventListener('click', () => activateMult2());
+  const mult4BtnEl = document.getElementById('mult4Btn');
+  if (mult4BtnEl) mult4BtnEl.addEventListener('click', () => activateMult4());
 
   /* ================= THREE.JS SETUP ================= */
   const canvas = document.getElementById('game3d');
@@ -3618,6 +3622,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   let nitroActive, nitroTimeLeft, nitroUsed;
   let slowActive, slowTimeLeft, slowUsed;
   let hackActive, hackTimeLeft, hackUsed, hackMult;
+  let mult2Active, mult2TimeLeft, mult2Used;
+  let mult4Active, mult4TimeLeft, mult4Used;
   let ghostActive, ghostTimeLeft, ghostUsed;
   best = store.best;
   reviveUsed = false;
@@ -3769,6 +3775,58 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     updateHackHud();
   }
 
+  function updateMultBtns(){
+    const show = activeAttemptLevel() === 4;
+    const btn2 = document.getElementById('mult2Btn');
+    const btn4 = document.getElementById('mult4Btn');
+    if (btn2){
+      btn2.style.display = show ? 'flex' : 'none';
+      const timerEl = document.getElementById('mult2TimerVal');
+      if (mult2Active){
+        btn2.classList.add('active'); btn2.classList.remove('used'); btn2.disabled = true;
+        if (timerEl) timerEl.textContent = Math.ceil(mult2TimeLeft) + 's';
+      } else if (mult2Used){
+        btn2.classList.remove('active'); btn2.classList.add('used'); btn2.disabled = true;
+        if (timerEl) timerEl.textContent = '';
+      } else {
+        btn2.classList.remove('active'); btn2.classList.remove('used');
+        btn2.disabled = mult4Active;
+        if (timerEl) timerEl.textContent = '';
+      }
+    }
+    if (btn4){
+      btn4.style.display = show ? 'flex' : 'none';
+      const timerEl = document.getElementById('mult4TimerVal');
+      if (mult4Active){
+        btn4.classList.add('active'); btn4.classList.remove('used'); btn4.disabled = true;
+        if (timerEl) timerEl.textContent = Math.ceil(mult4TimeLeft) + 's';
+      } else if (mult4Used){
+        btn4.classList.remove('active'); btn4.classList.add('used'); btn4.disabled = true;
+        if (timerEl) timerEl.textContent = '';
+      } else {
+        btn4.classList.remove('active'); btn4.classList.remove('used');
+        btn4.disabled = mult2Active;
+        if (timerEl) timerEl.textContent = '';
+      }
+    }
+  }
+
+  function activateMult2(){
+    if (!running || mult2Used || mult2Active || mult4Active || activeAttemptLevel() !== 4) return;
+    mult2Active = true;
+    mult2Used = true;
+    mult2TimeLeft = 10;
+    updateMultBtns();
+  }
+
+  function activateMult4(){
+    if (!running || mult4Used || mult4Active || mult2Active || activeAttemptLevel() !== 4) return;
+    mult4Active = true;
+    mult4Used = true;
+    mult4TimeLeft = 10;
+    updateMultBtns();
+  }
+
   function updateGhostHud(){
     const hud = document.getElementById('ghostHud');
     if (!hud) return;
@@ -3835,6 +3893,13 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     hackUsed = false;
     hackMult = 0;
     updateHackHud();
+    mult2Active = false;
+    mult2TimeLeft = 0;
+    mult2Used = false;
+    mult4Active = false;
+    mult4TimeLeft = 0;
+    mult4Used = false;
+    updateMultBtns();
     ghostActive = false;
     ghostTimeLeft = 0;
     ghostUsed = false;
@@ -4067,6 +4132,24 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       updateHackHud();
     }
 
+    if (mult2Active){
+      mult2TimeLeft -= dt;
+      if (mult2TimeLeft <= 0){
+        mult2Active = false;
+        mult2TimeLeft = 0;
+      }
+      updateMultBtns();
+    }
+
+    if (mult4Active){
+      mult4TimeLeft -= dt;
+      if (mult4TimeLeft <= 0){
+        mult4Active = false;
+        mult4TimeLeft = 0;
+      }
+      updateMultBtns();
+    }
+
     if (!ghostUsed && personScore >= 1000){
       ghostUsed = true;
       activateGhost();
@@ -4208,7 +4291,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
         people.splice(i,1);
         const baseGain = weaponActive ? 2 : 1;
         const hackNumericMult = (hackActive && typeof hackMult === 'number') ? hackMult : 1;
-        personScore += baseGain * hackNumericMult;
+        const lvl4Mult = mult2Active ? 2 : mult4Active ? 4 : 1;
+        personScore += baseGain * hackNumericMult * lvl4Mult;
         updateCoinCountUI();
       }
     }
