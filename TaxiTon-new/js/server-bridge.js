@@ -379,6 +379,7 @@
       me: SESSION.uid != null && m.uid === SESSION.uid,
       admin: m.isAdmin ? 'boy' : undefined,
       badge: !m.isAdmin && m.isDesigner ? 'designer' : undefined,
+      muted: m.chatMuted === true,
       reply: m.replyTo ? { mid: m.replyTo.id, name: m.replyTo.name, text: m.replyTo.text } : undefined
     };
   }
@@ -414,6 +415,8 @@
           var mid = payload.messageId;
           var el = mid != null ? document.querySelector('#chatList .msg[data-mid="' + CSS.escape(String(mid)) + '"]') : null;
           if (el) el.remove();
+        } else if (payload.type === 'moderation' && typeof TT.setUserMod === 'function') {
+          TT.setUserMod({ id: payload.uid }, { muted: payload.chatMuted === true });
         }
         // 'settings' events (chat enabled/disabled) have no dedicated TT hook - not wired.
       });
@@ -449,7 +452,7 @@
     ]).then(function (results) {
       var countRes = results[0], usersRes = results[1];
       var users = (usersRes.ok && usersRes.data.users) ? usersRes.data.users.map(function (u) {
-        return { id: u.uid, name: u.name, admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined) };
+        return { id: u.uid, name: u.name, admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined), muted: u.chatMuted === true };
       }) : [];
       if (typeof TT.setOnline === 'function') {
         TT.setOnline({ count: countRes.ok ? countRes.data.online : users.length, users: users });

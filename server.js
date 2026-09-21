@@ -1314,6 +1314,7 @@ app.get('/api/chat/messages', (req, res) => {
       ...message,
       isAdmin: user ? user.isChatAdmin === true : message.isAdmin === true,
       isDesigner: user ? user.isDesigner === true : message.isDesigner === true,
+      chatMuted: user ? user.chatMuted === true : message.chatMuted === true,
     };
   });
   res.json({ messages, enabled: chatEnabled });
@@ -1412,6 +1413,7 @@ app.post('/api/chat/moderate', requireUserFromBody, (req, res) => {
   target.chatMuted = req.body.muted === true;
   persist();
   res.json({ ok: true, uid: targetUid, chatMuted: target.chatMuted });
+  broadcastChatEvent('moderation', { uid: targetUid, chatMuted: target.chatMuted });
 });
 
 // ---- Deposit info ----
@@ -2291,6 +2293,7 @@ app.post('/admin/chat/set-mute', requireAdmin, (req, res) => {
   user.chatMuted = req.body.muted === true;
   persist();
   res.json({ ok: true, uid, chatMuted: user.chatMuted });
+  broadcastChatEvent('moderation', { uid, chatMuted: user.chatMuted });
 });
 
 app.get('/admin/withdrawals', requireAdmin, (req, res) => {

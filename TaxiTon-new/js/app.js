@@ -319,6 +319,7 @@ function renderOnline(){
     const n=typeof u==='string'?u:u.name, adm=typeof u==='string'?null:(u.badge||u.admin);
     const chip=document.createElement('span'); chip.className='ou'; chip.setAttribute('role','listitem'); chip.title=n;
     if(typeof u!=='string'&&u.id!==undefined) chip.dataset.uid=u.id;
+    if(typeof u!=='string'&&u.muted!==undefined) chip.dataset.muted=u.muted?'true':'false';
     const av=document.createElement('span'); av.className='av'; av.textContent=[...String(n)][0]||'?';
     let hsh=0; for(const ch of String(n)) hsh=(hsh*31+ch.charCodeAt(0))>>>0;
     const [a,b]=AV_COLORS[hsh%AV_COLORS.length]; av.style.background=`linear-gradient(180deg,${a},${b})`;
@@ -328,7 +329,7 @@ function renderOnline(){
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
 }
-const _u=u=>typeof u==='string'?u:{id:u&&(u.id!==undefined?u.id:u.uid),name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin)};
+const _u=u=>typeof u==='string'?u:{id:u&&(u.id!==undefined?u.id:u.uid),name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin),muted:!!(u&&u.muted)};
 TT.setOnline=x=>{
   const o=CHAT.online;
   if(typeof x==='number') o.count=Math.max(0,Math.round(x));
@@ -344,6 +345,7 @@ TT.addMessage=(m)=>{
   const d=document.createElement('div'); d.className='msg'+(m.me?' me':''); if(m.badge||m.admin) d.dataset.badge=m.badge||m.admin;
   if(m.id!==undefined) d.dataset.uid=m.id;
   if(m.mid!==undefined) d.dataset.mid=m.mid;
+  if(m.muted!==undefined) d.dataset.muted=m.muted?'true':'false';
   if(m.time!==undefined){ const t=new Date(m.time).getTime(); if(!isNaN(t)) d.dataset.ts=t; }
   const b=document.createElement('b'); b.textContent=m.name||'?'; const s=document.createElement('span'); s.textContent=m.text||'';
   d.append(b); if(m.reply) d.append(buildQuote(m.reply)); d.append(s);
@@ -622,7 +624,7 @@ const modKey=u=>u&&u.id!==undefined&&u.id!==''?'id:'+u.id:'n:'+(u&&u.name||typeo
 function modState(u){
   if(typeof u==='string') u={name:u};
   const st=MOD[modKey(u)]||{}, now=Date.now();
-  const muted=st.mute===-1 || (st.mute>now);
+  const muted=u&&u.muted===true || st.mute===-1 || (st.mute>now);
   return {muted, until:st.mute>0?st.mute:0, banned:!!st.ban};
 }
 function setMod(u,patch){
@@ -643,7 +645,7 @@ function renderModMarks(){
   });
   document.querySelectorAll('#onlineAvs .ou:not(.more)').forEach(c=>{
     c.querySelectorAll('.modmark').forEach(x=>x.remove());
-    const st=modState({name:c.title,id:c.dataset.uid});
+    const st=modState({name:c.title,id:c.dataset.uid,muted:c.dataset.muted==='true'});
     const mk=st.banned?'🚫':st.muted?'🔇':''; if(!mk) return;
     const i=document.createElement('i'); i.className='modmark'; i.textContent=mk; c.querySelector('.av').append(i);
   });
@@ -651,7 +653,7 @@ function renderModMarks(){
 function msgUser(m){
   const b=m.querySelector(':scope > b'); let n='';
   if(b) b.childNodes.forEach(x=>{ if(x.nodeType===3) n+=x.textContent; });
-  return {name:n.trim(), id:m.dataset.uid};
+  return {name:n.trim(), id:m.dataset.uid, muted:m.dataset.muted==='true'};
 }
 // toast
 function toast(msg){
@@ -691,7 +693,7 @@ function renderSheet(){
   if(st.banned) tags.push('🚫 '+T().aBannedTag);
   admSheet.querySelector('.as-state').textContent=tags.join('  ·  ');
   const box=admSheet.querySelector('.as-btns'); box.textContent='';
-  const actions=[st.banned?'chatOn':'chatOff'];
+  const actions=[st.muted?'chatOn':'chatOff'];
   if(u.mid!==undefined) actions.push('delete');
   actions.forEach(a=>{
     const btn=document.createElement('button'); btn.type='button'; btn.className='as-btn as-'+a; btn.dataset.a=a;
@@ -719,8 +721,7 @@ async function runAdmin(a){
   let ok=true;
   try{ if(typeof TT.adminAction==='function') ok=(await TT.adminAction(a,{name:u.name,id:u.id,mid:u.mid}))!==false; }catch(e){ ok=false; }
   if(!ok){ toast(T().aFail); renderSheet(); return; }
-  if(a==='chatOff') setMod(u,{ban:1});
-  if(a==='chatOn')  setMod(u,{ban:0});
+  if(a==='chatOff'||a==='chatOn') TT.setUserMod(u,{muted:a==='chatOff'});
   if(a==='delete')  deleteSelectedMsg(u.mid);
   try{ Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){}
   toast(T().aDone); closeAdmin();
@@ -737,7 +738,7 @@ chatList.addEventListener('click',e=>{
 });
 document.getElementById('onlineAvs').addEventListener('click',e=>{
   const c=e.target.closest('.ou'); if(!c||c.classList.contains('more')) return;
-  openAdmin({name:c.title,id:c.dataset.uid});
+  openAdmin({name:c.title,id:c.dataset.uid,muted:c.dataset.muted==='true'});
 });
 function markClickable(){
   const a=isAdmin(); document.body.classList.toggle('is-admin',a);
@@ -797,8 +798,14 @@ function renderMyState(){
   chatText.placeholder=MY.banned?T().youBanned:off?T().youMuted:T().chatPh;
 }
 // hooks for your server / refresh
-TT.setUserMod=(u,st)=>{ st=st||{}; setMod(typeof u==='string'?{name:u}:u,{mute:st.muted===true?-1:(+st.muted||0),ban:st.banned?1:0}); };
-TT.deleteUserMessages=u=>deleteUserMsgs(typeof u==='string'?{name:u}:u);
+TT.setUserMod=(u,st)=>{
+  st=st||{}; u=typeof u==='string'?{name:u}:u;
+  if(u&&u.id!==undefined){
+    const id=CSS.escape(String(u.id)), muted=st.muted===true?'true':'false';
+    document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{el.dataset.muted=muted});
+  }
+  setMod(u,{mute:st.muted===true?-1:(+st.muted||0),ban:st.banned?1:0});
+};
 const _renderOnline=renderOnline;
 renderOnline=function(){ _renderOnline(); markClickable(); renderModMarks(); };
 const _applyLang=applyLang;
