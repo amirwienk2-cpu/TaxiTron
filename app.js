@@ -3308,6 +3308,13 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   const GAME_TAXI_LEVEL_TWO_FRAMES = Array.from({ length: GAME_TAXI_LEVEL_TWO_FRAME_COUNT }, (_, i) =>
     `sprites/gif2-frames/frame_${String(i + 1).padStart(3, '0')}.png?v=red1`
   );
+  // Level-3 ("white") taxi: same animated-frame-sequence approach, extracted
+  // from the gif3.mov green-screen clip (all 23 frames are clean).
+  const GAME_TAXI_LEVEL_THREE_FRAME_COUNT = 23;
+  const GAME_TAXI_LEVEL_THREE_FRAME_FPS = 12;
+  const GAME_TAXI_LEVEL_THREE_FRAMES = Array.from({ length: GAME_TAXI_LEVEL_THREE_FRAME_COUNT }, (_, i) =>
+    `sprites/gif3-frames/frame_${String(i + 1).padStart(3, '0')}.png?v=white1`
+  );
   const skinTextureCache = {};
   function configureSkinTexture(tex){
     tex.encoding = THREE.sRGBEncoding;
@@ -3385,6 +3392,10 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
         skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_TWO_FRAMES, GAME_TAXI_LEVEL_TWO_FRAME_FPS);
         return skinTextureCache[key];
       }
+      if (key === 'white' && GAME_TAXI_LEVEL_THREE_FRAMES.length){
+        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_THREE_FRAMES, GAME_TAXI_LEVEL_THREE_FRAME_FPS);
+        return skinTextureCache[key];
+      }
       const uri = GAME_SKIN_OVERRIDES[key] ||
         ((typeof SKIN_IMAGES !== 'undefined' && SKIN_IMAGES[key]) ? SKIN_IMAGES[key] : TAXI_SKIN_URI);
       const tex = new THREE.TextureLoader().load(uri);
@@ -3401,7 +3412,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   const PLAYER_SKIN_SIZE = {
     yellow: { w: 2.2 * (411/352), h: 2.2, sink: 0.03 },
     red: { w: 1.85 * (404/294), h: 1.85, sink: 0.03 },
-    white: { w: 2.2 * (365/410), h: 2.2, sink: 0.03 },
+    white: { w: 2.2 * (386/357), h: 2.2, sink: 0.03 },
     green: { w: 3.1 * (356/507), h: 3.1, sink: 0.03 }
   };
   const DEFAULT_PLAYER_SIZE = { w: 1.7 * (390/380), h: 1.7, sink: 0.12 };

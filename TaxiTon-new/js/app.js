@@ -160,7 +160,14 @@ document.getElementById('shop').addEventListener('click',e=>{
     if(typeof TT.buySkin!=='function') return;
     b.disabled=true;
     TT.buySkin(b.dataset.lv).then(r=>{
-      if(!r||!r.ok) toast(r&&r.error==='insufficient-funds'?T().wdNoFunds:T().buyErr);
+      if(!r||!r.ok){ toast(r&&r.error==='insufficient-funds'?T().wdNoFunds:T().buyErr); }
+      else{
+        // Newly bought level becomes the active one, exactly like the old
+        // design's shop (buying always also equips) - so also tell the
+        // embedded game to switch immediately, not just update this UI.
+        const def=SKINS.find(s=>s.id===b.dataset.lv);
+        if(def){ store('tt_active_level',def.level); if(typeof TT.selectLevel==='function') TT.selectLevel(def.level); }
+      }
       renderShop();
     });
   }
