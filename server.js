@@ -5,6 +5,7 @@
  *
  *   POST /api/auth                 { initData }
  *   GET  /api/deposit-info         ?token=
+ *   POST /api/run/start            { token, level }
  *   POST /api/run                  { token, distance, zombies }
  *   POST /api/withdraw             { token, address, amount }
  *   GET  /api/withdrawals          ?token=
@@ -341,9 +342,11 @@ function newUser(id, name) {
     skinRewards: {},
     attemptsLeft: 10,
     attemptsResetAt: null,
+    attemptsByLevel: {},
     attemptResetVersion: 0,
     taskChannelRewardClaimed: false,
     withdrawChannelTaskRewardClaimed: false,
+    thirdChannelTaskRewardClaimed: false,
     adVideosWatched: 0,
     adRewardClaimed: false,
     createdAt: Date.now(),
@@ -551,6 +554,120 @@ function ensureTournamentReset(user) {
   }
 }
 
+const ATTEMPT_LIMIT_LEVEL_ONE = 10;
+const ATTEMPT_LIMIT_PREMIUM = 15;
+const ATTEMPT_COOLDOWN_LEVEL_ONE_MS = 2 * 60 * 60 * 1000;
+function attemptLimitForLevel(level) {
+  return Number(level) >= 2 ? ATTEMPT_LIMIT_PREMIUM : ATTEMPT_LIMIT_LEVEL_ONE;
+}
+function nextBerlinMidnightTimestamp() {
+  const now = new Date();
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now).map((part) => [part.type, part.value]));
+  const wallMidnightUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + 1);
+  let target = wallMidnightUtc;
+  for (let i = 0; i < 2; i += 1) {
+    const targetParts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Berlin',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(target)).map((part) => [part.type, part.value]));
+    const berlinWallTime = Date.UTC(
+      Number(targetParts.year),
+      Number(targetParts.month) - 1,
+      Number(targetParts.day),
+      Number(targetParts.hour),
+      Number(targetParts.minute),
+      Number(targetParts.second)
+    );
+    const offset = berlinWallTime - target;
+    target = wallMidnightUtc - offset;
+  }
+  return target;
+}
+function ensureAttemptState(user, level) {
+  const normalizedLevel = Math.max(1, Math.min(4, Number(level) || 1));
+  const max = attemptLimitForLevel(normalizedLevel);
+  const today = berlinDayKey();
+  if (!user.attemptsByLevel || typeof user.attemptsByLevel !== 'object') user.attemptsByLevel = {};
+  let state = user.attemptsByLevel[normalizedLevel];
+  if (!state || typeof state !== 'object') {
+    const legacyLeft = normalizedLevel === 1 ? Number(user.attemptsLeft) : NaN;
+    state = {
+      left: Number.isFinite(legacyLeft) ? Math.max(0, Math.min(max, legacyLeft)) : max,
+      resetAt: normalizedLevel === 1 ? Number(user.attemptsResetAt) || null : nextBerlinMidnightTimestamp(),
+      resetDay: today,
+    };
+    user.attemptsByLevel[normalizedLevel] = state;
+  }
+  state.left = Math.max(0, Math.min(max, Number.isFinite(Number(state.left)) ? Number(state.left) : max));
+  if (normalizedLevel >= 2) {
+    if (state.resetDay !== today) state.left = max;
+    state.resetDay = today;
+    state.resetAt = nextBerlinMidnightTimestamp();
+  } else {
+    state.resetDay = '';
+    state.resetAt = Number(state.resetAt) || null;
+    if (state.left === 0 && state.resetAt && Date.now() >= state.resetAt) {
+      state.left = max;
+      state.resetAt = null;
+    } else if (state.left > 0) {
+      state.resetAt = null;
+    }
+  }
+  if (normalizedLevel === 1) {
+    user.attemptsLeft = state.left;
+    user.attemptsResetAt = state.resetAt;
+  }
+  return state;
+}
+function publicAttemptsByLevel(user) {
+  const result = {};
+  [1, 2, 3, 4].forEach((level) => {
+    const state = ensureAttemptState(user, level);
+    result[level] = { left: state.left, resetAt: state.resetAt, resetDay: state.resetDay };
+  });
+  return result;
+}
+function highestOwnedLevel(user) {
+  const owned = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
+  return owned.includes('green') ? 4 : owned.includes('white') ? 3 : owned.includes('red') ? 2 : 1;
+}
+function resolvePlayableLevel(user, requestedLevel) {
+  const requested = Math.max(1, Math.min(4, Number(requestedLevel) || highestOwnedLevel(user)));
+  const skin = requested >= 4 ? 'green' : requested >= 3 ? 'white' : requested >= 2 ? 'red' : 'yellow';
+  const owned = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
+  if (!owned.includes(skin)) return highestOwnedLevel(user);
+  if (requested === 1 && highestOwnedLevel(user) >= 2) return highestOwnedLevel(user);
+  return requested;
+}
+function consumeServerAttempt(user, level) {
+  const state = ensureAttemptState(user, level);
+  if (state.left <= 0) return false;
+  state.left -= 1;
+  if (Number(level) === 1 && state.left === 0) {
+    state.resetAt = Date.now() + ATTEMPT_COOLDOWN_LEVEL_ONE_MS;
+  }
+  if (Number(level) === 1) {
+    user.attemptsLeft = state.left;
+    user.attemptsResetAt = state.resetAt;
+  }
+  return true;
+}
+
 function publicState(user) {
   ensureDailyReset(user);
   const ownedSkins = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
@@ -602,9 +719,11 @@ function publicState(user) {
     inviteRewardsClaimed: user.inviteRewardsClaimed && typeof user.inviteRewardsClaimed === 'object' ? user.inviteRewardsClaimed : {},
     inviteEventEndsAt: INVITE_EVENT_ENDS_AT,
     campaignInvites: Number(user.campaignInvites || 0),
+    attemptsByLevel: publicAttemptsByLevel(user),
     attemptResetVersion: user.attemptResetVersion || 0,
     taskChannelRewardClaimed: user.taskChannelRewardClaimed === true,
     withdrawChannelTaskRewardClaimed: user.withdrawChannelTaskRewardClaimed === true,
+    thirdChannelTaskRewardClaimed: user.thirdChannelTaskRewardClaimed === true,
     adVideosWatched: Math.min(10, Math.max(0, Number(user.adVideosWatched) || 0)),
     adRewardClaimed: user.adRewardClaimed === true,
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
@@ -1010,7 +1129,7 @@ app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', '
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'),
 }));
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/', (req, res) => res.redirect('/TaxiTon-new/index-new.html'));
 
 app.get('/admin', (req, res) => {
   if (!ADMIN_SECRET) return res.status(503).send('Admin panel is disabled: ADMIN_SECRET is not configured.');
@@ -1421,6 +1540,33 @@ app.post('/api/tasks/withdraw-channel-claim', requireUserFromBody, async (req, r
   }
 });
 
+app.post('/api/tasks/third-channel-claim', requireUserFromBody, async (req, res) => {
+  const user = req.user;
+  if (user.thirdChannelTaskRewardClaimed === true) {
+    return res.json({ claimed: true, joined: true, rewardZombies: 0, state: publicState(user) });
+  }
+  if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
+
+  try {
+    const apiUrl = 'https://api.telegram.org/bot' + BOT_TOKEN + '/getChatMember?chat_id=%40taxiiiton&user_id=' + encodeURIComponent(user.id);
+    const telegramResponse = await fetch(apiUrl);
+    const telegramData = await telegramResponse.json();
+    const member = telegramData && telegramData.ok ? telegramData.result : null;
+    const joined = !!member && (
+      member.status === 'creator' ||
+      member.status === 'administrator' ||
+      member.status === 'member' ||
+      (member.status === 'restricted' && member.is_member === true)
+    );
+    if (!joined) return res.status(403).json({ error: 'third-channel-membership-required', joined: false });
+    user.thirdChannelTaskRewardClaimed = true;
+    persist();
+    res.json({ claimed: true, joined: true, rewardZombies: 500, state: publicState(user) });
+  } catch (e) {
+    res.status(502).json({ error: 'telegram-membership-check-failed' });
+  }
+});
+
 app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   const user = req.user;
   ensureDailyReset(user);
@@ -1559,11 +1705,18 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
   }
 });
 
-// ---- Marks the server-side start of a run so /api/submit-score can later
-//      verify how long the round realistically took (anti-cheat, see below) ----
+// ---- Atomically consumes this Telegram account's level-specific attempt and
+//      marks the run start for tournament anti-cheat timing. -------------------
 app.post('/api/run/start', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const level = resolvePlayableLevel(req.user, req.body && req.body.level);
+  if (!consumeServerAttempt(req.user, level)) {
+    persist();
+    return res.status(409).json({ error: 'no-attempts-left', level, state: publicState(req.user) });
+  }
   req.user.runStartedAt = Date.now();
-  res.json({ ok: true });
+  req.user.runStartedLevel = level;
+  persist();
+  res.json({ ok: true, level, state: publicState(req.user) });
 });
 
 // ---- Exchange a run's zombies for coins + (capped) TON ----
@@ -1585,11 +1738,7 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
 
   ensureDailyReset(user);
 
-  const requestedLevel = Number(req.body && req.body.level);
-  const requestedSkin = requestedLevel >= 4 ? 'green' : requestedLevel >= 3 ? 'white' : requestedLevel >= 2 ? 'red' : 'yellow';
-  const level = requestedLevel >= 1 && requestedLevel <= 4 && Array.isArray(user.ownedSkins) && user.ownedSkins.includes(requestedSkin)
-    ? requestedLevel
-    : user.level || 1;
+  const level = resolvePlayableLevel(user, req.body && req.body.level);
   const coinsPerZombie = level >= 4 ? LEVEL_FOUR_COINS_PER_ZOMBIE : level >= 3 ? LEVEL_THREE_COINS_PER_ZOMBIE : level >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
   const dailyCap = level >= 4 ? LEVEL_FOUR_DAILY_PTS_CAP : level >= 3 ? LEVEL_THREE_DAILY_PTS_CAP : level >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
   const levelToday = Number(user.tonTodayByLevel[level] || 0);
@@ -2227,11 +2376,13 @@ app.post('/admin/withdrawals/restore', requireAdmin, (req, res) => {
 app.post('/admin/users/:uid/reset-attempts', requireAdmin, (req, res) => {
   const user = users[String(req.params.uid)];
   if (!user) return res.status(404).json({ error: 'unknown-user' });
-  user.attemptsLeft = 10;
+  user.attemptsLeft = ATTEMPT_LIMIT_LEVEL_ONE;
   user.attemptsResetAt = null;
+  user.attemptsByLevel = {};
+  [1, 2, 3, 4].forEach((level) => ensureAttemptState(user, level));
   user.attemptResetVersion = Date.now();
   persist();
-  res.json({ ok: true, uid: user.id, attemptResetVersion: user.attemptResetVersion });
+  res.json({ ok: true, uid: user.id, attemptsByLevel: publicAttemptsByLevel(user), attemptResetVersion: user.attemptResetVersion });
 });
 
 app.post('/admin/users/:uid/set-tournament-best', requireAdmin, (req, res) => {
@@ -2273,6 +2424,7 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.ownedSkins = ['yellow'];
     user.attemptsLeft = 10;
     user.attemptsResetAt = null;
+    user.attemptsByLevel = {};
     user.attemptResetVersion = Date.now();
     user.skinRewards = {};
     user.tournamentBest = 0;
@@ -2281,6 +2433,7 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.withdrawals = [];
     user.taskChannelRewardClaimed = false;
     user.withdrawChannelTaskRewardClaimed = false;
+    user.thirdChannelTaskRewardClaimed = false;
     user.depositTxs = depositTxs;
   });
 

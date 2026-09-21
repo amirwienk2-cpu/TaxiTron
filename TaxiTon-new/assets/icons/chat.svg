@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff07a"/><stop offset=".55" stop-color="#ffc21a"/><stop offset="1" stop-color="#e08a00"/>
+    </linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d8bff"/><stop offset="1" stop-color="#1647c9"/>
+    </linearGradient>
+    <clipPath id="c"><path d="M18 14h64a12 12 0 0 1 12 12v34a12 12 0 0 1-12 12H46L28 88V72H18A12 12 0 0 1 6 60V26a12 12 0 0 1 12-12z"/></clipPath>
+  </defs>
+  <path d="M18 14h64a12 12 0 0 1 12 12v34a12 12 0 0 1-12 12H46L28 88V72H18A12 12 0 0 1 6 60V26a12 12 0 0 1 12-12z" fill="url(#g)"/>
+  <g clip-path="url(#c)" fill="#1a1206">
+    <rect x="6" y="58" width="92" height="16" fill="#1a1206"/>
+    <g fill="#ffc21a">
+      <rect x="6" y="58" width="8" height="8"/><rect x="22" y="58" width="8" height="8"/><rect x="38" y="58" width="8" height="8"/><rect x="54" y="58" width="8" height="8"/><rect x="70" y="58" width="8" height="8"/><rect x="86" y="58" width="8" height="8"/>
+      <rect x="14" y="66" width="8" height="8"/><rect x="30" y="66" width="8" height="8"/><rect x="46" y="66" width="8" height="8"/><rect x="62" y="66" width="8" height="8"/><rect x="78" y="66" width="8" height="8"/>
+    </g>
+    <path d="M14 20h56a6 6 0 0 1 0 0" stroke="#fff9c4" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  </g>
+  <path d="M18 14h64a12 12 0 0 1 12 12v34a12 12 0 0 1-12 12H46L28 88V72H18A12 12 0 0 1 6 60V26a12 12 0 0 1 12-12z" fill="none" stroke="#1a1206" stroke-width="5" stroke-linejoin="round"/>
+  <g stroke="#1a1206" stroke-width="3" fill="url(#b)">
+    <circle cx="32" cy="38" r="7"/><circle cx="50" cy="38" r="7"/><circle cx="68" cy="38" r="7"/>
+  </g>
+  <g fill="#fff" opacity=".75"><circle cx="30" cy="35.5" r="2"/><circle cx="48" cy="35.5" r="2"/><circle cx="66" cy="35.5" r="2"/></g>
+</svg>

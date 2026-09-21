@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TaxiTron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+<div class="app">
+
+  <section class="screen" id="home">
+    <div class="art home-art">
+      <img src="assets/images/home-top.jpg" alt="">
+      <svg class="h-frame" viewBox="0 0 1280 546" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hfGold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff2a0"/><stop offset=".5" stop-color="#ffd21a"/><stop offset="1" stop-color="#f19a00"/>
+          </linearGradient>
+          <filter id="hfGlow" filterUnits="userSpaceOnUse" x="-30" y="-30" width="1340" height="606"><feGaussianBlur stdDeviation="5"/></filter>
+        </defs>
+        <path d="M54 8 L1226 8 L1272 54 L1272 492 L1226 538 L54 538 L8 492 L8 54 Z" fill="none" stroke="#ffae00" stroke-opacity=".85" stroke-width="10" stroke-linejoin="round" filter="url(#hfGlow)"/>
+        <path d="M54 8 L1226 8 L1272 54 L1272 492 L1226 538 L54 538 L8 492 L8 54 Z" fill="none" stroke="url(#hfGold)" stroke-width="5" stroke-linejoin="miter"/>
+        <path d="M8 54 L54 8" fill="none" stroke="#ffe680" stroke-width="10"/>
+        <path d="M1272 492 L1226 538" fill="none" stroke="#ffe680" stroke-width="10"/>
+      </svg>
+      <div class="h-panel">
+        <div class="h-title"><span data-i="bal">موجودی</span><span class="dot">·</span><span>GRAM</span></div>
+        <div class="h-bal" id="hBal"></div>
+        <div class="h-left" id="hLeft"></div>
+      </div>
+      <div class="h-track"><i id="hBar"></i></div>
+      <div class="h-pct" id="hPct"><span>0</span></div>
+    </div>
+    <div class="art stats-art">
+      <img src="assets/images/home-stats.jpg" alt="">
+      <div class="h-lab l-best" data-i="sBest"></div>
+      <div class="h-lab l-route" data-i="sRoutes"></div>
+      <div class="h-lab l-lvl" data-i="sLevel"></div>
+      <div class="h-stat s-best" id="hBest"><span>0</span></div>
+      <div class="h-stat s-route" id="hRoute"><span>0</span></div>
+      <div class="h-stat s-lvl" id="hLvl"><span>1-1</span></div>
+      <div class="h-tries" id="hTries"></div>
+    </div>
+    <div class="art how-art">
+      <img src="assets/images/how-bg.jpg" alt="">
+      <svg class="h-frame" viewBox="0 0 1080 1385" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="hfGold2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff2a0"/><stop offset=".5" stop-color="#ffd21a"/><stop offset="1" stop-color="#f19a00"/>
+          </linearGradient>
+          <filter id="hfGlow2" filterUnits="userSpaceOnUse" x="-30" y="-30" width="1140" height="1445"><feGaussianBlur stdDeviation="4.5"/></filter>
+        </defs>
+        <path d="M812 60 L1010 60 L1050 100 L1050 1298 L1010 1338 L70 1338 L30 1298 L30 100 L70 60 L272 60" fill="none" stroke="#ffae00" stroke-opacity=".85" stroke-width="8.5" stroke-linejoin="round" filter="url(#hfGlow2)"/>
+        <path d="M812 60 L1010 60 L1050 100 L1050 1298 L1010 1338 L70 1338 L30 1298 L30 100 L70 60 L272 60" fill="none" stroke="url(#hfGold2)" stroke-width="4.5" stroke-linejoin="miter"/>
+        <path d="M30 100 L70 60" fill="none" stroke="#ffe680" stroke-width="8.5"/>
+        <path d="M1050 1298 L1010 1338" fill="none" stroke="#ffe680" stroke-width="8.5"/>
+      </svg>
+      <div class="howtitle" data-i="howT"></div>
+      <div class="howtxt t-ctl"><span data-i="h1">کلید های جهت نما، A/D یا کشیدن انگشت برای تغییر مسیر</span></div>
+      <div class="howtxt t-zom"><b data-i="h2t">زامبی ها را جمع کن</b><span data-i="h2">هرچی بیشتر سوار باشند، ماشینت سریع تر میشود.</span></div>
+      <div class="howtxt t-crash"><span data-i="h3">از برخورد با ماشین های دیگر خودداری کن - یک برخورد به مسیر پایان میدهد.</span></div>
+      <div class="howtxt t-coin"><span data-i="h4">زامبی های جمع شده را در کیف پول با سکه معاوضه کن</span><em data-i="h4b">(۲۰ سکه به ازای هر زامبی)</em></div>
+      <div class="howtxt t-power"><span data-i="pw">در مسیر بازی، آیتم‌های قدرتی قرار دارند که با برخورد تاکسی، فعال می‌شوند.</span></div>
+    </div>
+  </section>
+
+  <section class="screen" id="shop">
+    <div class="seg" role="tablist">
+      <button class="seg-btn on" data-sub="lv" role="tab" aria-selected="true"><img src="assets/icons/level.svg" alt=""><span data-i="buyLv">خرید لول</span></button>
+      <button class="seg-btn" data-sub="sk" role="tab" aria-selected="false"><img src="assets/icons/chat.svg" alt=""><span data-i="skins">اسکین چت</span></button>
+    </div>
+
+    <div class="page sub on" id="sub-lv">
+      <div class="shop-list" id="levelList"></div>
+    </div>
+
+    <div class="page sub" id="sub-sk">
+      <div class="shop-list" id="skinList"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="game">
+    <div class="page">
+      <img class="big free" src="assets/icons/game.png" alt="">
+      <h1 data-i="game">بازی‌ها</h1>
+      <p data-i="gameP">حالت‌های بازی و مراحل.</p>
+    </div>
+  </section>
+
+  <section class="screen" id="play">
+    <div class="page" id="playPlaceholder">
+      <img class="big free" src="assets/icons/zombie.png" alt="">
+      <h1 data-i="play">بازی</h1>
+      <p data-i="playP">سوار تاکسی شو و تا می‌تونی زامبی جمع کن.</p>
+      <button class="btn" type="button" id="startBtn" data-i="start">شروع بازی</button>
+    </div>
+    <!-- TEST-ONLY embed of the real game (root index.html) inside an iframe.
+         The real driving/zombie game engine only exists in the root app, this
+         design has no canvas/game code of its own. Hidden until "startBtn" is
+         pressed, so the placeholder above is what's shown by default. -->
+    <div class="game-embed-wrap" id="gameEmbedWrap" hidden>
+      <button class="game-embed-back" id="gameEmbedBack" type="button" aria-label="Back">←</button>
+      <div class="game-embed-loader" id="gameEmbedLoader">
+        <span class="game-embed-spinner"></span>
+        <p>در حال آماده‌سازی بازی…</p>
+      </div>
+      <iframe id="realGameFrame" class="game-embed-frame" title="TaxiTron game" allow="autoplay"></iframe>
+    </div>
+  </section>
+
+  <section class="screen active" id="tournament">
+    <div class="tour">
+      <img id="tournamentArt" src="../sprites/turnier-fa.jpg" alt="مسابقه زامبی">
+      <div class="countdown" id="countdown" aria-live="polite"></div>
+    </div>
+    <div class="lb-list" id="lbList"></div>
+  </section>
+
+  <section class="screen" id="wallet">
+    <div class="seg" role="tablist">
+      <button class="seg-btn on" data-sub="w" role="tab" aria-selected="true"><img src="assets/icons/wallet.png" alt=""><span data-i="wallet">کیف پول</span></button>
+      <button class="seg-btn" data-sub="t" role="tab" aria-selected="false"><img src="assets/icons/tasks.png" alt=""><span data-i="tasks">تسک‌ها</span></button>
+    </div>
+
+    <div class="page sub on" id="sub-w">
+      <div class="tk-glow w-box"><div class="tk-frame"><div class="tk-inner">
+      <div class="ex-card">
+        <img class="ex-art" src="assets/images/ex-art.jpg" alt="">
+        <div class="ex-glow"><div class="ex-frame"><div class="ex-inner">
+          <div class="ex-row">
+            <div class="ex-col">
+              <img class="ex-ic" src="assets/images/ex-zombie.png" alt="">
+              <b class="ex-num" id="exZ">0</b>
+              <small data-i="exZcap">جمع‌آوری شده – هنوز معاوضه نشده</small>
+            </div>
+            <svg class="ex-arrow" viewBox="0 0 48 32" aria-hidden="true"><path d="M4 16h30M24 5l12 11-12 11" fill="none" stroke="#ffc21a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="ex-col">
+              <img class="ex-ic" src="assets/images/ex-coin.png" alt="">
+              <b class="ex-num light" id="exC">0</b>
+              <small id="exRate"></small>
+            </div>
+          </div>
+          <button class="ex-btn" id="exBtn" type="button"></button>
+          <div class="ex-bal"><span data-i="exBal">موجودی سکه</span> <img src="assets/images/ex-coin.png" alt=""> <b id="exBalN">0</b></div>
+        </div></div></div>
+      </div>
+      </div></div></div>
+      <div class="tk-glow w-box"><div class="tk-frame"><div class="tk-inner">
+      <div class="dw-seg" role="tablist">
+        <button class="dw-tab on" type="button" role="tab" aria-selected="true" data-dw="dep">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 3h2v11.2l4.6-4.6 1.4 1.4-7 7-7-7 1.4-1.4 4.6 4.6V3zM4 19h16v2H4z"/></svg><span data-i="dwDep">واریز</span></button>
+        <button class="dw-tab" type="button" role="tab" aria-selected="false" data-dw="wd">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 21h2V9.8l4.6 4.6 1.4-1.4-7-7-7 7 1.4 1.4L11 9.8V21zM4 3h16v2H4z"/></svg><span data-i="dwWd">برداشت</span></button>
+      </div>
+      <div class="dep-card" id="depCard">
+        <img class="ex-art" src="assets/images/dep-art.jpg" alt="">
+        <div class="ex-glow dep-glow"><div class="ex-frame"><div class="ex-inner dep-inner">
+          <div class="dep-head">
+            <img class="dep-coin" src="assets/images/ex-coin.png" alt="">
+            <div>
+              <h2 class="dep-title" data-i="depT">واریز تون</h2>
+              <p class="dep-sub" data-i="depSub">برای افزایش موجودی درون‌بازی، تون را به این آدرس ارسال کنید.</p>
+            </div>
+          </div>
+          <div class="dep-addr">
+            <code id="depAddr" dir="ltr"></code>
+            <button class="dep-icbtn" id="depCopyIc" type="button" data-al="depCopy" aria-label="Copy">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 3h9a3 3 0 0 1 3 3v11h-2V6a1 1 0 0 0-1-1H8V3zM5 7h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h9V9H5z"/></svg>
+            </button>
+          </div>
+          <button class="dep-btn" id="depCopy" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1zm0 2v2h6V4H9zm-1 6v2h8v-2H8zm0 4v2h6v-2H8z"/></svg>
+            <span data-i="depCopy">کپی آدرس</span>
+          </button>
+          <div class="dep-box dep-memo">
+            <svg class="dep-bic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M11 10h2v7h-2zM11 6.5h2v2h-2z"/></svg>
+            <div>
+              <p data-i="depMemoTxt">مهم: این کد را به‌عنوان توضیح/یادداشت (memo) انتقال وارد کنید، در غیر این صورت واریز شما به‌طور خودکار به حساب شما تطبیق داده نمی‌شود.</p>
+              <button class="dep-memo-code" id="depMemo" type="button" dir="ltr"></button>
+            </div>
+          </div>
+          <div class="dep-box dep-ok">
+            <svg class="dep-bic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <p data-i="depNote">فقط از شبکه TON استفاده کنید. واریزها چند دقیقه پس از تأیید شبکه به حساب شما اضافه می‌شوند.</p>
+          </div>
+        </div></div></div>
+      </div>
+      <div class="dep-card wd-card" id="wdCard" hidden>
+        <img class="ex-art" src="assets/images/wd-art.jpg" alt="">
+        <div class="ex-glow dep-glow"><div class="ex-frame"><div class="ex-inner dep-inner">
+          <div class="dep-head">
+            <svg class="wd-gem" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="28" fill="#0098EA"/><path fill="#fff" d="M37.56 15.63H18.44c-3.52 0-5.75 3.8-3.98 6.86l11.8 20.45c.77 1.34 2.7 1.34 3.47 0l11.8-20.45c1.77-3.06-.46-6.86-3.97-6.86zM26.26 36.8l-2.57-4.98-6.2-11.09c-.41-.71.1-1.63.95-1.63h7.82v17.7zm12.24-16.08l-6.2 11.1-2.57 4.97V19.1h7.82c.85 0 1.36.92.95 1.63z"/></svg>
+            <div>
+              <h2 class="dep-title" data-i="wdT">برداشت TON</h2>
+              <p class="dep-sub wd-bal"><b id="wdBal" dir="ltr">0</b> <span data-i="wdAvail">قابل برداشت</span></p>
+            </div>
+          </div>
+          <label class="wd-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6a3 3 0 0 1 3-3h11v3h1a2 2 0 0 1 2 2v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6zm3-1a1 1 0 0 0 0 2h9V5H7zm-1 4v9a1 1 0 0 0 1 1h12v-3h-3a2 2 0 0 1 0-4h3V9H6zm10 5h3v-1h-3v1z"/></svg>
+            <input id="wdAddr" type="text" dir="ltr" autocomplete="off" spellcheck="false" data-ph="wdAddrPh" placeholder="UQ… TON wallet address">
+          </label>
+          <label class="wd-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2c4.4 0 8 1.3 8 3v3c0 1.7-3.6 3-8 3S4 9.7 4 8V5c0-1.7 3.6-3 8-3zm0 2C8.3 4 6 5 6 5.5S8.3 7 12 7s6-1 6-1.5S15.7 4 12 4zM4 11c1.5 1.2 4.5 2 8 2s6.5-.8 8-2v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3zm0 6c1.5 1.2 4.5 2 8 2s6.5-.8 8-2v2c0 1.7-3.6 3-8 3s-8-1.3-8-3v-2z"/></svg>
+            <input id="wdAmt" type="text" inputmode="decimal" dir="ltr" autocomplete="off" data-ph="wdAmtPh" placeholder="Amount (min 1 TON)">
+            <button class="wd-max" id="wdMax" type="button">MAX</button>
+          </label>
+          <label class="wd-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4.3 3.6c-.6.5-1.7.1-1.7-.7V6a2 2 0 0 1 2-2zm2 4v2h10V8H7zm0 4v2h7v-2H7z"/></svg>
+            <input id="wdMemo" type="text" dir="ltr" autocomplete="off" spellcheck="false" data-ph="wdMemoPh" placeholder="Memo (if required)">
+          </label>
+          <div class="wd-recv" id="wdRecv" aria-live="polite"></div>
+          <button class="ex-btn wd-btn" id="wdBtn" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.7 3.3 2.9 10.6c-1 .4-1 1.8 0 2.1l4.6 1.5 1.8 5.6c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.6.1 1.8-.7l3-15.3c.2-.9-.7-1.6-1.7-1.3zM9.6 14.2l8-6.6-6.3 7.8-.3 3-1.4-4.2z"/></svg>
+            <span data-i="wdReq">درخواست برداشت</span>
+          </button>
+          <div class="wd-stats">
+            <div><b id="wdMin" dir="ltr"></b><small data-i="wdMinL">حداقل برداشت</small></div>
+            <div><b id="wdMyAddr" dir="ltr">—</b><small data-i="wdMyAddrL">آدرس کیف پول شما</small></div>
+            <div><span class="wd-status" id="wdStatus"></span></div>
+          </div>
+          <div class="dep-box dep-ok wd-notes">
+            <div class="wd-note"><svg class="dep-bic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><p id="wdNote1"></p></div>
+            <div class="wd-note"><svg class="dep-bic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 16 16 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="9" r="1.6" fill="currentColor"/><circle cx="15" cy="15" r="1.6" fill="currentColor"/></svg><p id="wdNote2"></p></div>
+          </div>
+        </div></div></div>
+      </div>
+      </div></div></div>
+    </div>
+
+    <div class="page sub" id="sub-t">
+      <div class="tk-glow"><div class="tk-frame"><div class="tk-inner">
+      <div id="taskCards"></div>
+      <div class="art invite-art" id="inviteArt">
+        <img src="assets/images/task-invite.jpg" alt="">
+        <div class="iv-title" data-i="t2">دعوت از دوستان</div>
+        <div class="iv-desc" data-i="invDesc">کاربران واقعی تلگرام را با لینک شخصی خود دعوت کنید. ۳ بازیکنی که بیشترین دعوت را داشته باشند، TON می‌برند!</div>
+        <div class="iv-time"><span data-i="invTime">زمان کمپین تا</span><b id="ivCount" dir="ltr">--</b></div>
+        <div class="iv-btnlabel" data-i="invBtn">از طریق لینک خود دعوت کنید</div>
+        <button class="iv-btn" id="ivBtn" type="button" data-al="invBtn" aria-label="Invite"></button>
+      </div>
+      <div class="panel tk-lb" id="inviteLbPanel">
+        <div class="tk-lb-you" id="ivYou"></div>
+        <div class="tk-lb-list" id="ivList"></div>
+      </div>
+      <div class="panel tk-ads" id="adsTaskPanel">
+        <div class="row"><span data-i="t4"></span><span id="adsProgress" dir="ltr">0 / 10</span></div>
+        <p class="tk-ads-desc" data-i="adsDesc"></p>
+        <button class="btn tk-ads-btn" id="adsWatchBtn" type="button" data-i="watchVideo"></button>
+        <div class="tk-ads-status" id="adsStatus"></div>
+      </div>
+      </div></div></div>
+    </div>
+  </section>
+  <section class="screen" id="chat">
+    <div class="page chat-page">
+      <h1 data-i="chatT">چت راننده‌ها</h1>
+      <div class="chat-body">
+        <div class="chat-list" id="chatList">
+          <div class="msg" data-admin="boy"><b>TaxiBoss</b><span data-i="m1">کی امروز بیشتر از ۵۰۰ تا زامبی زده؟</span></div>
+          <div class="msg" data-admin="girl"><b>ZombieHunter</b><span data-i="m2">من! فقط ۱۰ امتیاز تا مقام اول مونده 🔥</span></div>
+          <div class="msg" data-badge="designer"><b>Designer</b><span data-i="m3"></span></div>
+        </div>
+        <aside class="online-bar" id="onlineBar" aria-live="polite">
+          <div class="on-head">
+            <span class="on-dot" aria-hidden="true"></span>
+            <span class="on-txt"><span data-i="onlineShort">آنلاین</span> <b id="onlineCount">0</b></span>
+          </div>
+          <label class="on-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 3a7 7 0 0 1 5.6 11.2l4.6 4.6-1.4 1.4-4.6-4.6A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>
+            <input id="onlineSearch" type="search" autocomplete="off" enterkeyhint="search" data-ph="searchPh" placeholder="جستجو" aria-label="جستجو">
+          </label>
+          <div class="on-users" id="onlineAvs" role="list"></div>
+          <div class="on-none" id="onlineNone" hidden data-i="noUsers">کسی پیدا نشد</div>
+        </aside>
+      </div>
+      <div class="chat-input">
+        <input id="chatText" type="text" autocomplete="off" data-ph="chatPh" placeholder="پیام بنویس…">
+        <button class="btn send" type="button" id="chatSend" data-i="send">ارسال</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav>
+  <div class="flags">
+    <button class="flag" data-lang="de" aria-label="Deutsch"><img src="assets/icons/flag-de.svg" alt=""></button>
+    <button class="flag on" data-lang="fa" aria-label="فارسی"><img src="assets/icons/flag-iran.png" alt=""></button>
+    <button class="flag" data-lang="en" aria-label="English"><img src="assets/icons/flag-uk.png" alt=""></button>
+    <span class="flag-label" data-i="langs">زبان‌ها</span>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab" data-s="home" role="tab"><img class="free" src="assets/icons/home.png" alt=""><span data-i="home">خانه</span></button>
+    <button class="tab" data-s="shop" role="tab"><img class="free" src="assets/icons/shop.png" alt=""><span data-i="shop">فروشگاه</span></button>
+    <button class="tab" data-s="game" role="tab"><img class="free" src="assets/icons/game.png" alt=""><span data-i="game">بازی‌ها</span></button>
+    <button class="tab center" data-s="play" role="tab"><img class="zb" src="assets/icons/zombie.png" alt=""><span data-i="play">بازی</span></button>
+    <button class="tab active" data-s="tournament" role="tab"><img class="free" src="assets/icons/tournament.png" alt=""><span data-i="tour">مسابقه</span></button>
+    <button class="tab" data-s="wallet" role="tab"><img class="free" src="assets/icons/wallet.png" alt=""><span data-i="wallet">کیف پول</span></button>
+    <button class="tab" data-s="chat" role="tab"><img class="free" src="assets/icons/chat.svg" alt=""><span data-i="chat">چت</span></button>
+  </div>
+</nav>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<script src="js/app.js"></script>
+<script src="js/server-bridge.js"></script>
+<script src="js/game-embed.js"></script>
+</body>
+</html>
