@@ -26,7 +26,7 @@
     .hud-level-line2 { font-size:9px; }
   }
   #weaponHud {
-    position:absolute; top:24vh; left:50%; transform:translateX(-50%);
+    position:absolute; top:calc(9vh - 25px); left:50%; transform:translateX(-50%);
     background:rgba(60,0,0,0.6); color:#ff5c5c; font-weight:800; font-size:16px;
     padding:5px 14px; border-radius:999px; border:1px solid rgba(255,60,60,.6);
     text-shadow:0 0 8px rgba(255,40,40,.9); z-index:6; animation:weaponPulse 0.6s infinite alternate;

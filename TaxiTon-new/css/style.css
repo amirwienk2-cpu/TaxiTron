@@ -283,7 +283,7 @@ body.en .h-bal .cap{direction:ltr}
 .s-route span{background-image:linear-gradient(180deg,#ff8a70,#ff3a2a 50%,#c4001a)}
 .s-lvl{left:79.49%;top:27.81%;width:14.36%;height:26.02%}
 .s-lvl span{background-image:linear-gradient(180deg,#bfe6ff,#4fb0ff 50%,#1e6bff)}
-.h-tries{left:72.27%;top:77.04%;width:20.51%;height:9.18%;font-size:2.6cqw;font-weight:700;color:#fff;text-shadow:0 .2cqw .4cqw #000}
+.h-tries{left:69%;top:77.04%;width:20.51%;height:9.18%;font-size:2.6cqw;font-weight:700;color:#fff;text-shadow:0 .2cqw .4cqw #000}
 
 /* How to play – artwork with live text */
 .how-art{aspect-ratio:1080/1385;margin-top:2px}
