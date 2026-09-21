@@ -2726,6 +2726,8 @@
   if (nitroBtnEl) nitroBtnEl.addEventListener('click', () => activateNitro());
   const slowBtnEl = document.getElementById('slowBtn');
   if (slowBtnEl) slowBtnEl.addEventListener('click', () => activateSlow());
+  const hackBtnEl = document.getElementById('hackBtn');
+  if (hackBtnEl) hackBtnEl.addEventListener('click', () => activateHack());
 
   /* ================= THREE.JS SETUP ================= */
   const canvas = document.getElementById('game3d');
@@ -3615,6 +3617,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   let player, obstacles, people, particles, bloodSplats, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft;
   let nitroActive, nitroTimeLeft, nitroUsed;
   let slowActive, slowTimeLeft, slowUsed;
+  let hackActive, hackTimeLeft, hackUsed, hackMult;
   let ghostActive, ghostTimeLeft, ghostUsed;
   best = store.best;
   reviveUsed = false;
@@ -3720,6 +3723,52 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     updateSlowHud();
   }
 
+  function updateHackHud(){
+    const btn = document.getElementById('hackBtn');
+    if (!btn) return;
+    btn.style.display = (activeAttemptLevel() === 3) ? 'flex' : 'none';
+    const timerEl = document.getElementById('hackTimerVal');
+    if (hackActive){
+      btn.classList.add('active');
+      btn.classList.remove('used');
+      btn.disabled = true;
+      if (timerEl) timerEl.textContent = Math.ceil(hackTimeLeft) + 's';
+    } else if (hackUsed){
+      btn.classList.remove('active');
+      btn.classList.add('used');
+      btn.disabled = true;
+      if (timerEl) timerEl.textContent = '';
+    } else {
+      btn.classList.remove('active');
+      btn.classList.remove('used');
+      btn.disabled = false;
+      if (timerEl) timerEl.textContent = '';
+    }
+    const hud = document.getElementById('hackHud');
+    if (hud){
+      if (hackActive){
+        hud.style.display = 'flex';
+        const img = document.getElementById('hackHudImg');
+        if (img) img.src = 'sprites/' + (hackMult === 'ghost' ? 'ghost.png' : hackMult === 4 ? 'xx4.png' : 'xx2.png');
+        const val = document.getElementById('hackHudTimerVal');
+        if (val) val.textContent = Math.ceil(hackTimeLeft) + 's';
+      } else {
+        hud.style.display = 'none';
+      }
+    }
+  }
+
+  function activateHack(){
+    if (!running || hackUsed || hackActive || activeAttemptLevel() !== 3) return;
+    hackActive = true;
+    hackUsed = true;
+    hackTimeLeft = 10;
+    const roll = Math.random();
+    hackMult = roll < 1/3 ? 2 : roll < 2/3 ? 4 : 'ghost';
+    if (hackMult === 'ghost' && playerCar) playerCar.traverse(o => { if (o.material){ o.material.transparent = true; o.material.opacity = 0.45; } });
+    updateHackHud();
+  }
+
   function updateGhostHud(){
     const hud = document.getElementById('ghostHud');
     if (!hud) return;
@@ -3781,6 +3830,11 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     slowTimeLeft = 0;
     slowUsed = false;
     updateSlowHud();
+    hackActive = false;
+    hackTimeLeft = 0;
+    hackUsed = false;
+    hackMult = 0;
+    updateHackHud();
     ghostActive = false;
     ghostTimeLeft = 0;
     ghostUsed = false;
@@ -4002,6 +4056,17 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       updateSlowHud();
     }
 
+    if (hackActive){
+      hackTimeLeft -= dt;
+      if (hackTimeLeft <= 0){
+        if (hackMult === 'ghost' && !ghostActive && playerCar) playerCar.traverse(o => { if (o.material){ o.material.opacity = 1; o.material.transparent = false; } });
+        hackActive = false;
+        hackTimeLeft = 0;
+        hackMult = 0;
+      }
+      updateHackHud();
+    }
+
     if (!ghostUsed && personScore >= 1000){
       ghostUsed = true;
       activateGhost();
@@ -4068,7 +4133,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       }
       const dx = Math.abs(o.mesh.position.x - player.x);
       if (dx < 1.9 && overlapZ(o.mesh.position.z, playerCar.position.z, 1.7)){
-        if (ghostActive){
+        if (ghostActive || (hackActive && hackMult === 'ghost')){
           scene.remove(o.mesh);
           obstacles.splice(i,1);
           continue;
@@ -4141,7 +4206,9 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
         spawnBlood(p.mesh.position.x, 0.5, p.mesh.position.z);
         scene.remove(p.mesh);
         people.splice(i,1);
-        personScore += weaponActive ? 2 : 1;
+        const baseGain = weaponActive ? 2 : 1;
+        const hackNumericMult = (hackActive && typeof hackMult === 'number') ? hackMult : 1;
+        personScore += baseGain * hackNumericMult;
         updateCoinCountUI();
       }
     }
