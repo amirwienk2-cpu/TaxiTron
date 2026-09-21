@@ -468,7 +468,8 @@
           name: u.name,
           admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined),
           muted: u.chatMuted === true,
-          me: SESSION.uid != null && String(u.uid) === String(SESSION.uid)
+          me: SESSION.uid != null && String(u.uid) === String(SESSION.uid),
+          ton: Number(u.ton) || 0
         };
       }) : [];
       if (typeof TT.setOnline === 'function') {
