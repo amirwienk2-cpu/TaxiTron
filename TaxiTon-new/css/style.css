@@ -16,6 +16,7 @@ body{
   color:#fff;font-family:"Vazirmatn",Tahoma,"Segoe UI",sans-serif;
   -webkit-tap-highlight-color:transparent;
 }
+body.chat-open{height:100dvh;min-height:0;overflow:hidden}
 
 /* App background image (fixed, dimmed a bit so text stays readable) */
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
@@ -399,6 +400,10 @@ body.en .h-left{direction:ltr}
 /* Chat: big chat area (left) + slim online-users column (right, users one below another) */
 .chat-body{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:8px;align-items:stretch;direction:ltr;
   height:clamp(300px,calc(100vh - 300px),680px);height:clamp(300px,calc(100dvh - 300px),680px)}
+body.chat-open .app{height:100%;padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom,0px) + 8px)}
+body.chat-open #chat{height:100%}
+body.chat-open .chat-page{height:100%;display:flex;flex-direction:column}
+body.chat-open .chat-body{flex:1;height:auto;min-height:0}
 .chat-body .chat-list{direction:rtl;min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;padding:2px 2px 4px;scrollbar-width:thin;scrollbar-color:rgba(224,161,0,.5) transparent}
 body.en .chat-body .chat-list{direction:ltr}
 .chat-body .msg{max-width:92%}

@@ -62,6 +62,9 @@ document.querySelectorAll('.seg-btn').forEach(b=>b.addEventListener('click',()=>
 
 // Chat (local demo – connect to your server later)
 const chatList=document.getElementById('chatList'), chatText=document.getElementById('chatText');
+function scrollChatToEnd(smooth=true){
+  chatList.scrollTo({top:chatList.scrollHeight,behavior:smooth?'smooth':'auto'});
+}
 // When TT.onSendMessage is wired to a real server (see server-bridge.js), the message is only
 // rendered (via TT.addMessage) after the server confirms it - no local-only fabricated bubble.
 // Without a server hook (pure demo/offline), it still renders immediately as before.
@@ -78,7 +81,7 @@ function sendMsg(){
   const d=document.createElement('div'); d.className='msg me skin-'+skin;
   const b=document.createElement('b'); b.textContent=T().me; const s=document.createElement('span'); s.textContent=v;
   d.append(b); if(rep) d.append(buildQuote(rep)); d.append(s);
-  chatList.append(d); decorateMsg(d); cancelReply(); d.scrollIntoView({behavior:'smooth',block:'end'});
+  chatList.append(d); decorateMsg(d); cancelReply(); scrollChatToEnd();
 }
 document.getElementById('chatSend').addEventListener('click',sendMsg);
 chatText.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
@@ -336,7 +339,7 @@ TT.addMessage=(m)=>{
   if(m.time!==undefined){ const t=new Date(m.time).getTime(); if(!isNaN(t)) d.dataset.ts=t; }
   const b=document.createElement('b'); b.textContent=m.name||'?'; const s=document.createElement('span'); s.textContent=m.text||'';
   d.append(b); if(m.reply) d.append(buildQuote(m.reply)); d.append(s);
-  chatList.append(d); decorateMsg(d); renderChatBadges(); renderModMarks(); d.scrollIntoView({behavior:'smooth',block:'end'});
+  chatList.append(d); decorateMsg(d); renderChatBadges(); renderModMarks(); scrollChatToEnd();
 };
 
 // ---- Chat: reply ---------------------------------------------------------------------
@@ -979,6 +982,7 @@ TT.setInviteLeaderboard=renderInviteLeaderboard;
 
 // Tabs
 const tabs=document.querySelectorAll('.tab');
+document.body.classList.toggle('chat-open',document.querySelector('#chat').classList.contains('active'));
 tabs.forEach(t=>{
   t.setAttribute('aria-selected',t.classList.contains('active'));
   t.addEventListener('click',()=>{
@@ -988,6 +992,7 @@ tabs.forEach(t=>{
     tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
     t.classList.add('active');t.setAttribute('aria-selected','true');
     document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===t.dataset.s));
+    document.body.classList.toggle('chat-open',t.dataset.s==='chat');
     window.scrollTo(0,0);
     try{window.Telegram&&Telegram.WebApp.HapticFeedback.selectionChanged()}catch(e){}
   });
