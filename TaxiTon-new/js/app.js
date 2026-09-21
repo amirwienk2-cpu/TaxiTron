@@ -219,7 +219,8 @@ window.addEventListener('message',e=>{
   const d=e.data; if(!d||d.type!=='tt-level') return;
   const lvl=Number(d.level)||1;
   TT.setStats({ levelNo:lvl, level:lvl+'-1', best:Number(d.best)||HOME.best, routes:Number(d.runs)||HOME.routes,
-    tonLeft:(typeof d.tonLeft==='number')?d.tonLeft:HOME.tonLeft, gram:(typeof d.gramToday==='number')?d.gramToday:HOME.gram });
+    tonLeft:(typeof d.tonLeft==='number')?d.tonLeft:HOME.tonLeft, gram:(typeof d.gramToday==='number')?d.gramToday:HOME.gram,
+    progress:(typeof d.progress==='number')?d.progress:undefined });
 });
 renderHome();
 

@@ -947,7 +947,8 @@
           coins: store.coins,
           ton: store.points,
           tonLeft: remainingTon,
-          gramToday: currentLevelToday
+          gramToday: currentLevelToday,
+          progress: pctProgress
         }, '*');
       } catch (e) {}
     }
