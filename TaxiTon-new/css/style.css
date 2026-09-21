@@ -531,6 +531,9 @@ body:not(.en) .rp svg,body:not(.en) .rb-ic svg{transform:scaleX(-1)}
 .chat-input input{height:36px;padding:0 11px;border-radius:10px;font-size:13.5px}
 .chat-input .btn.send{height:36px;padding:0 14px;border-radius:10px;font-size:13.5px;line-height:36px;box-shadow:0 2px 0 #9b5a00}
 .reply-bar:not([hidden]) + .chat-input{margin-top:6px}
+@media (max-width:600px){
+  .chat-input input{font-size:16px}
+}
 
 /* Chat: edit own messages */
 #chatList .msg.me > b{padding-inline-end:84px}
