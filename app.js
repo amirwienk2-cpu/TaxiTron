@@ -3397,7 +3397,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   let playerSprite = null;
   // per-skin on-screen size (images are cropped tight, so the bottom edge = the tires)
   const PLAYER_SKIN_SIZE = {
-    yellow: { w: 2.2 * (411/352), h: 2.2, sink: 0.03 },
+    yellow: { w: 2.2 * (411/352), h: 2.8, sink: 0.03 },
     red: { w: 1.85 * (404/294), h: 1.85, sink: 0.03 },
     white: { w: 2.2 * (386/357), h: 2.2, sink: 0.03 },
     green: { w: 3.1 * (356/507), h: 3.1, sink: 0.03 }
