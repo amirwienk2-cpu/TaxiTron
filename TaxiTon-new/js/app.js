@@ -88,6 +88,9 @@ let SHOP={ton:0,level:1,ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{1:
 let skin=store('tt_skin')||'yellow';
 const num=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
 const SKIN_IMG={yellow:'assets/images/level1.jpg',red:'assets/images/level2.jpg',white:'assets/images/level3.jpg',green:'assets/images/level4.jpg',black:'assets/images/level5.jpg'};
+// Per-level driver ability info shown in the "?" popup on each level card.
+// Fill in real texts/images per skin id once available (fa/de/en); falls back to a "coming soon" note.
+const LV_INFO={fa:{},de:{},en:{}};
 const LOCK='<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff07a"/><stop offset=".55" stop-color="#ffc21a"/><stop offset="1" stop-color="#d97f00"/></linearGradient></defs><path d="M20 28v-8a12 12 0 0 1 24 0v8" fill="none" stroke="#1a1206" stroke-width="10" stroke-linecap="round"/><path d="M20 28v-8a12 12 0 0 1 24 0v8" fill="none" stroke="url(#lk)" stroke-width="5" stroke-linecap="round"/><rect x="11" y="27" width="42" height="31" rx="7" fill="url(#lk)" stroke="#1a1206" stroke-width="4"/><circle cx="32" cy="40" r="4.5" fill="#1a1206"/><rect x="30" y="41" width="4" height="9" rx="2" fill="#1a1206"/></svg>';
 // Mirrors the server's real daily TON-earning caps per level (server.js: DAILY_PTS_CAP and
 // LEVEL_TWO/THREE/FOUR_DAILY_PTS_CAP) - not exposed via any endpoint, so duplicated here only
@@ -105,7 +108,7 @@ function renderShop(){
   document.getElementById('levelList').innerHTML=SKINS.map(s=>{
     const has=owns(s.id);
     const lock=s.soon?`<div class="lock">${LOCK}<span>${T().soon}</span></div>`:'';
-    const pic=`<div class="lvpic"><img src="${SKIN_IMG[s.id]||''}" alt="${T().level} ${num(s.level)}" loading="lazy">${lock}<span class="lv-badge">${T().level} ${num(s.level)}</span></div>`;
+    const pic=`<div class="lvpic"><img src="${SKIN_IMG[s.id]||''}" alt="${T().level} ${num(s.level)}" loading="lazy">${lock}<span class="lv-badge">${T().level} ${num(s.level)}</span><button type="button" class="lv-info" data-info-lv="${s.level}" data-info-sk="${s.id}" aria-label="Info">?</button></div>`;
     const isActive=has&&s.level===active;
     const btn=s.soon?`<button class="btn buy" disabled>${T().soon}</button>`
       :has?`<button class="btn buy" data-select-lv="${s.level}" ${isActive?'disabled':''}>${isActive?T().inUse:T().use}</button>`
@@ -147,6 +150,8 @@ function renderShop(){
       <button class="btn buy" data-sk="${s.id}" ${used?'disabled':''}>${used?T().inUse:T().use}</button></div>`;}).join('');
 }
 document.getElementById('shop').addEventListener('click',e=>{
+  const info=e.target.closest('.lv-info');
+  if(info){ openLvInfo(Number(info.dataset.infoLv),info.dataset.infoSk); return; }
   const b=e.target.closest('.buy'); if(!b||b.disabled) return;
   if(b.dataset.sk){ skin=b.dataset.sk; store('tt_skin',skin); renderShop(); return; }
   if(b.dataset.selectLv){
@@ -172,6 +177,31 @@ document.getElementById('shop').addEventListener('click',e=>{
     });
   }
 });
+// "?" popup with per-level driver info (fa/de/en text, filled in via LV_INFO once available)
+let lvInfoSheet=null;
+function buildLvInfoSheet(){
+  lvInfoSheet=document.createElement('div'); lvInfoSheet.className='adm-sheet lv-info-sheet'; lvInfoSheet.hidden=true;
+  lvInfoSheet.innerHTML='<div class="as-back"></div><div class="as-panel" role="dialog" aria-modal="true" aria-labelledby="lvInfoName">'+
+    '<div class="as-head"><b id="lvInfoName"></b><button type="button" class="as-x" aria-label="close">✕</button></div>'+
+    '<div class="lv-info-body"></div></div>';
+  document.body.append(lvInfoSheet);
+  lvInfoSheet.querySelector('.as-back').addEventListener('click',closeLvInfo);
+  lvInfoSheet.querySelector('.as-x').addEventListener('click',closeLvInfo);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!lvInfoSheet.hidden) closeLvInfo(); });
+}
+function openLvInfo(level,skinId){
+  if(!lvInfoSheet) buildLvInfoSheet();
+  lvInfoSheet.querySelector('#lvInfoName').textContent=T().lvInfoTitle.replace('{n}',num(level));
+  lvInfoSheet.querySelector('.as-x').setAttribute('aria-label',T().aClose);
+  const text=(LV_INFO[lang]&&LV_INFO[lang][skinId])||T().lvInfoSoon;
+  lvInfoSheet.querySelector('.lv-info-body').textContent=text;
+  lvInfoSheet.hidden=false;
+  requestAnimationFrame(()=>lvInfoSheet.classList.add('on'));
+}
+function closeLvInfo(){
+  if(!lvInfoSheet) return; lvInfoSheet.classList.remove('on');
+  setTimeout(()=>{ lvInfoSheet.hidden=true; },200);
+}
 // Live real data from the server: TT.setShop({ton:2.5, level:2, ownedSkins:['yellow','red']})
 window.TT=window.TT||{};
 TT.setShop=o=>{ o=o||{}; SHOP.ton=Number(o.ton)||0; SHOP.level=Number(o.level)||1;
@@ -535,6 +565,9 @@ Object.assign(I18N.de,{aMute:'Stumm schalten',aTalk:'Sprechen lassen',aChatOff:'
 Object.assign(I18N.en,{aMute:'Mute',aTalk:'Unmute',aChatOff:'Block chat',aChatOn:'Allow chat',aDel:'Delete chat',aClose:'Close',
   aDelQ:'Delete all messages from {u}?',aDone:'Done ✔',aFail:'Error – try again',aMutedFor:'muted until {t}',aMutedTag:'muted',aBannedTag:'blocked',
   youMuted:'An admin has muted you 🔇',youBanned:'An admin has blocked your chat 🚫'});
+Object.assign(I18N.fa,{lvInfoTitle:'راننده لول {n}',lvInfoSoon:'اطلاعات این راننده به‌زودی اضافه می‌شود.'});
+Object.assign(I18N.de,{lvInfoTitle:'Fahrer Level {n}',lvInfoSoon:'Infos zu diesem Fahrer folgen in Kürze.'});
+Object.assign(I18N.en,{lvInfoTitle:'Level {n} driver',lvInfoSoon:'Details about this driver are coming soon.'});
 const ADM_BTN={chatOff:'assets/images/adm-chat-off.png',chatOn:'assets/images/adm-chat-on.png',delete:'assets/images/adm-del.png'};
 const ADM_TXT={chatOff:'aChatOff',chatOn:'aChatOn',delete:'aDel'};
 Object.values(ADM_BTN).forEach(src=>{const i=new Image(); i.src=src;});   // preload
