@@ -329,6 +329,7 @@ TT.setOnline=x=>{
 // As a reply:             TT.addMessage({name:'Sara', text:'Yes!', mid:'42', reply:{mid:'41', name:'Ali', text:'Anyone here?'}})
 TT.addMessage=(m)=>{
   m=m||{};
+  if(m.mid!==undefined&&Array.from(chatList.querySelectorAll('.msg[data-mid]')).some(el=>el.dataset.mid===String(m.mid))) return;
   const d=document.createElement('div'); d.className='msg'+(m.me?' me':''); if(m.badge||m.admin) d.dataset.badge=m.badge||m.admin;
   if(m.id!==undefined) d.dataset.uid=m.id;
   if(m.mid!==undefined) d.dataset.mid=m.mid;
