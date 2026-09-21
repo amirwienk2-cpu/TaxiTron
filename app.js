@@ -2838,7 +2838,7 @@
   scene.add(roadDirtGroup);
 
   // Curbs
-  const curbMat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.6 });
+  const curbMat = new THREE.MeshStandardMaterial({ color:0x686b70, roughness:0.6 });
   [-1,1].forEach(side=>{
     const curb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, ROAD_LEN), curbMat);
     curb.position.set(side*(ROAD_W/2+0.15), 0.1, -ROAD_LEN/2 + 20);
