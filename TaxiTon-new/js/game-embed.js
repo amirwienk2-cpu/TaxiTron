@@ -35,6 +35,18 @@
     const uid = localStorage.getItem('cr3d_serverUid');
     return uid ? name + '_' + uid : name;
   }
+  function dailyEarningsComplete(){
+    try {
+      const skin = localStorage.getItem(accountKey('cr3d_skin')) || localStorage.getItem('cr3d_skin') || 'yellow';
+      const level = skin === 'green' ? 4 : skin === 'white' ? 3 : skin === 'red' ? 2 : 1;
+      if (level < 2) return false;
+      const byLevel = JSON.parse(localStorage.getItem(accountKey('cr3d_pointsTodayByLevel')) || '{}') || {};
+      return Number(byLevel[level] || 0) >= DAILY_PTS_CAP_BY_LEVEL[level] - 1e-9;
+    } catch (e) {
+      console.warn('[game-embed] Could not read daily earning progress', e);
+      return false;
+    }
+  }
   function pollGameProgress(){
     try {
       const level = parseInt(localStorage.getItem(accountKey('cr3d_level')) || '1', 10) || 1;
@@ -162,6 +174,10 @@
 
   function openRealGame(){
     if (launching) return;
+    if (dailyEarningsComplete()) {
+      if (homeTab) homeTab.click();
+      return;
+    }
     launching = true;
     wrap.hidden = false;
     if (placeholder) placeholder.style.display = 'none';
@@ -180,6 +196,7 @@
   }
 
   function pollForGameScreen(attempt){
+    if (!launching) return;
     let doc = null;
     try { doc = frame.contentWindow && frame.contentWindow.document; } catch (e) { /* same-origin, shouldn't throw */ }
     if (!doc) {
@@ -223,11 +240,8 @@
   }
 
   function giveUp(){
-    // Couldn't confirm the game screen started (e.g. no attempts left, or
-    // banned) — reveal whatever the real app is showing instead of leaving
-    // a spinner forever, so the user can see what's blocking it.
-    wrap.classList.remove('loading');
-    launching = false;
+    // Never expose the embedded legacy screens when starting the game fails.
+    closeRealGame();
   }
 
   // Once the real game is running, watch its own screen element: if the
@@ -262,6 +276,11 @@
     // fast again too, without blocking anything the user is doing now.
     setTimeout(preload, 400);
   }
+
+  window.addEventListener('message', event => {
+    if (event.source !== frame.contentWindow || !event.data || event.data.type !== 'tt-game-start-rejected') return;
+    closeRealGame();
+  });
 
   if (startBtn) startBtn.addEventListener('click', openRealGame);
   if (playTab) playTab.addEventListener('click', openRealGame);

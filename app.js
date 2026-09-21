@@ -2695,6 +2695,11 @@
   function usesServerAttempts(){
     return !!(SERVER_URL && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
   }
+  function notifyEmbeddedStartRejected(reason){
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type:'tt-game-start-rejected', reason }, '*');
+    }
+  }
   async function consumeRunStartAttempt(){
     if (SERVER_URL && (!serverSession.online || !serverSession.token)) {
       await initServerSession();
@@ -2720,6 +2725,8 @@
   async function enterGame(){
     if (runStartPending) return;
     if (serverSession.isBanned || (!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
+      const reason = serverSession.isBanned ? 'banned' : dailyEarningsComplete() ? 'daily-cap' : 'no-attempts';
+      notifyEmbeddedStartRejected(reason);
       showScreen('home');
       return;
     }
@@ -2728,6 +2735,7 @@
     runStartPending = false;
     if (!started) {
       renderAttemptsUI();
+      notifyEmbeddedStartRejected('start-rejected');
       showScreen('home');
       return;
     }
@@ -4116,7 +4124,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     }
     document.getElementById('gameOverScreen').classList.toggle('lvl4-art', hasArt);
     document.getElementById('gameOverScreen').style.display = 'flex';
-    document.getElementById('retryBtn').disabled = !hasAttemptsLeft();
+    document.getElementById('retryBtn').disabled = !hasAttemptsLeft() || dailyEarningsComplete();
   }
   document.getElementById('retryBtn').addEventListener('click', async () => {
     if (runStartPending) return;
