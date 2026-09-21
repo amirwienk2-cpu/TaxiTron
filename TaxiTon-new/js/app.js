@@ -141,16 +141,9 @@ function renderShop(){
     return `<div class="lvcard${has?' has':''}${s.soon?' soon':''}">${pic}
       <div class="lvbar"><span class="price">${s.soon?'':(s.price?num(s.price)+' TON':T().free)}${rewardTag}</span>
       ${btn}</div>${rewardBox}</div>`;}).join('');
-  document.getElementById('skinList').innerHTML=SKINS.filter(s=>owns(s.id)||s.soon).map(s=>{
-    const used=skin===s.id;
-    if(s.soon){
-      return `<div class="item soon"><div class="preview"><div class="msg skin-${s.id}"><b>${T().me}</b><span>${T().hi}</span></div><div class="lock skin-lock">${LOCK}</div></div>
-        <div class="info"><b>${T()['sk_'+s.id]}</b><small class="price">${T().soon}</small></div>
-        <button class="btn buy" disabled>${T().soon}</button></div>`;
-    }
-    return `<div class="item"><div class="preview"><div class="msg skin-${s.id}"><b>${T().me}</b><span>${T().hi}</span></div></div>
-      <div class="info"><b>${T()['sk_'+s.id]}</b><small class="price">${T().owned}</small></div>
-      <button class="btn buy" data-sk="${s.id}" ${used?'disabled':''}>${used?T().inUse:T().use}</button></div>`;}).join('');
+  // Chat skins aren't for sale yet - just show a single locked "coming soon" placeholder.
+  document.getElementById('skinList').innerHTML=`<div class="lv-info-soon skins-soon"><div class="lv-info-soon-lock">${LOCK}</div>
+    <div class="lv-info-soon-txt">${T().soon}</div></div>`;
 }
 document.getElementById('shop').addEventListener('click',e=>{
   const info=e.target.closest('.lv-info');
