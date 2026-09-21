@@ -3611,6 +3611,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   /* ================= GAME STATE ================= */
   let player, obstacles, people, particles, bloodSplats, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft;
   let nitroActive, nitroTimeLeft, nitroUsed;
+  let ghostActive, ghostTimeLeft, ghostUsed;
   best = store.best;
   reviveUsed = false;
 
@@ -3684,6 +3685,32 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     updateNitroHud();
   }
 
+  function updateGhostHud(){
+    const hud = document.getElementById('ghostHud');
+    if (!hud) return;
+    if (ghostActive){
+      hud.style.display = 'flex';
+      const val = document.getElementById('ghostTimerVal');
+      if (val) val.textContent = Math.ceil(ghostTimeLeft) + 's';
+    } else {
+      hud.style.display = 'none';
+    }
+  }
+
+  function activateGhost(){
+    ghostActive = true;
+    ghostTimeLeft = 5;
+    if (playerCar) playerCar.traverse(o => { if (o.material){ o.material.transparent = true; o.material.opacity = 0.45; } });
+    updateGhostHud();
+  }
+
+  function deactivateGhost(){
+    ghostActive = false;
+    ghostTimeLeft = 0;
+    if (playerCar) playerCar.traverse(o => { if (o.material){ o.material.opacity = 1; o.material.transparent = false; } });
+    updateGhostHud();
+  }
+
   function reset(){
     player = { lane: 1, x: laneX(1), targetX: laneX(1), z: 0, tilt: 0 };
     playerCar.position.set(player.x, 0, player.z);
@@ -3715,6 +3742,11 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     nitroTimeLeft = 0;
     nitroUsed = false;
     updateNitroHud();
+    ghostActive = false;
+    ghostTimeLeft = 0;
+    ghostUsed = false;
+    if (playerCar) playerCar.traverse(o => { if (o.material){ o.material.opacity = 1; o.material.transparent = false; } });
+    updateGhostHud();
     baseSpeed = 0.175 + (store.upgrades.nitro ? 0.045 : 0);
     speed = baseSpeed;
     personScore = 0;
@@ -3921,6 +3953,19 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       updateNitroHud();
     }
 
+    if (!ghostUsed && personScore >= 1000){
+      ghostUsed = true;
+      activateGhost();
+    }
+    if (ghostActive){
+      ghostTimeLeft -= dt;
+      if (ghostTimeLeft <= 0){
+        deactivateGhost();
+      } else {
+        updateGhostHud();
+      }
+    }
+
     // player smoothing
     player.x += (player.targetX - player.x) * 0.18;
     player.tilt *= 0.85;
@@ -3974,6 +4019,11 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       }
       const dx = Math.abs(o.mesh.position.x - player.x);
       if (dx < 1.9 && overlapZ(o.mesh.position.z, playerCar.position.z, 1.7)){
+        if (ghostActive){
+          scene.remove(o.mesh);
+          obstacles.splice(i,1);
+          continue;
+        }
         if (store.upgrades.revive && !reviveUsed){
           reviveUsed = true;
           spawnParticles(o.mesh.position.x, 0.7, o.mesh.position.z, 0x7cff6b);

@@ -29,6 +29,16 @@
   }
   @keyframes weaponPulse { from{ box-shadow:0 0 6px rgba(255,40,40,.5);} to{ box-shadow:0 0 16px rgba(255,40,40,.9);} }
 
+  #ghostHud {
+    position:absolute; top:32vh; left:50%; transform:translateX(-50%);
+    background:rgba(90,60,180,0.55); color:#d8c6ff; font-weight:800; font-size:15px;
+    padding:5px 14px 5px 8px; border-radius:999px; border:1px solid rgba(200,150,255,.7);
+    text-shadow:0 0 8px rgba(200,150,255,.9); z-index:6; display:flex; align-items:center; gap:6px;
+    animation:ghostPulse 0.6s infinite alternate;
+  }
+  #ghostHud img { width:22px; height:22px; object-fit:contain; filter:drop-shadow(0 0 4px rgba(200,150,255,.9)); }
+  @keyframes ghostPulse { from{ box-shadow:0 0 6px rgba(180,120,255,.5);} to{ box-shadow:0 0 18px rgba(180,120,255,.9);} }
+
   .nitro-btn {
     position:absolute; right:18px; bottom:90px; z-index:6;
     width:64px; height:64px; border-radius:50%; border:2px solid rgba(255,255,255,.35);
