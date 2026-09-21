@@ -2724,6 +2724,8 @@
   document.getElementById('goHomeBtn').addEventListener('click', leaveGameToHome);
   const nitroBtnEl = document.getElementById('nitroBtn');
   if (nitroBtnEl) nitroBtnEl.addEventListener('click', () => activateNitro());
+  const slowBtnEl = document.getElementById('slowBtn');
+  if (slowBtnEl) slowBtnEl.addEventListener('click', () => activateSlow());
 
   /* ================= THREE.JS SETUP ================= */
   const canvas = document.getElementById('game3d');
@@ -3612,6 +3614,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   /* ================= GAME STATE ================= */
   let player, obstacles, people, particles, bloodSplats, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft;
   let nitroActive, nitroTimeLeft, nitroUsed;
+  let slowActive, slowTimeLeft, slowUsed;
   let ghostActive, ghostTimeLeft, ghostUsed;
   best = store.best;
   reviveUsed = false;
@@ -3686,6 +3689,37 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     updateNitroHud();
   }
 
+  function updateSlowHud(){
+    const btn = document.getElementById('slowBtn');
+    if (!btn) return;
+    btn.style.display = (activeAttemptLevel() === 2) ? 'flex' : 'none';
+    const timerEl = document.getElementById('slowTimerVal');
+    if (slowActive){
+      btn.classList.add('active');
+      btn.classList.remove('used');
+      btn.disabled = true;
+      if (timerEl) timerEl.textContent = Math.ceil(slowTimeLeft) + 's';
+    } else if (slowUsed){
+      btn.classList.remove('active');
+      btn.classList.add('used');
+      btn.disabled = true;
+      if (timerEl) timerEl.textContent = '';
+    } else {
+      btn.classList.remove('active');
+      btn.classList.remove('used');
+      btn.disabled = false;
+      if (timerEl) timerEl.textContent = '';
+    }
+  }
+
+  function activateSlow(){
+    if (!running || slowUsed || slowActive || activeAttemptLevel() !== 2) return;
+    slowActive = true;
+    slowUsed = true;
+    slowTimeLeft = 10;
+    updateSlowHud();
+  }
+
   function updateGhostHud(){
     const hud = document.getElementById('ghostHud');
     if (!hud) return;
@@ -3743,6 +3777,10 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     nitroTimeLeft = 0;
     nitroUsed = false;
     updateNitroHud();
+    slowActive = false;
+    slowTimeLeft = 0;
+    slowUsed = false;
+    updateSlowHud();
     ghostActive = false;
     ghostTimeLeft = 0;
     ghostUsed = false;
@@ -3952,6 +3990,16 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
         nitroTimeLeft = 0;
       }
       updateNitroHud();
+    }
+
+    if (slowActive){
+      speed *= 0.5;
+      slowTimeLeft -= dt;
+      if (slowTimeLeft <= 0){
+        slowActive = false;
+        slowTimeLeft = 0;
+      }
+      updateSlowHud();
     }
 
     if (!ghostUsed && personScore >= 1000){
