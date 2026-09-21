@@ -3607,7 +3607,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   }
 
   /* ================= GAME STATE ================= */
-  let player, obstacles, people, particles, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft;
+  let player, obstacles, people, particles, bloodSplats, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft;
   best = store.best;
   reviveUsed = false;
 
@@ -3659,10 +3659,12 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     obstacles.forEach(o => scene.remove(o.mesh));
     people && people.forEach(p => scene.remove(p.mesh));
     particles && particles.forEach(p => scene.remove(p.mesh));
+    bloodSplats && bloodSplats.forEach(b => scene.remove(b.mesh));
 
     obstacles = [];
     people = [];
     particles = [];
+    bloodSplats = [];
     sidewalkGroup.position.z = 0;
     buildingGroup.position.z = 0;
     buildingShadows.position.z = 0;
@@ -3686,7 +3688,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     prefillRoad();
     updateCoinCountUI();
   }
-  obstacles = []; people = []; particles = []; weapons = [];
+  obstacles = []; people = []; particles = []; bloodSplats = []; weapons = [];
   reset();
   running = false;
 
@@ -3764,6 +3766,38 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
         vx:(Math.random()-0.5)*0.25, vy: Math.random()*0.25+0.05, vz:(Math.random()-0.5)*0.25,
         life: 28
       });
+    }
+  }
+
+  // Red gore burst + a flat blood splat decal left behind on the road when a zombie gets run over.
+  const BLOOD_COLORS = [0x8a0303, 0x6e0202, 0xa30404];
+  function spawnBlood(x, y, z){
+    for (let i=0;i<12;i++){
+      const color = BLOOD_COLORS[i % BLOOD_COLORS.length];
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.07,6,6), new THREE.MeshBasicMaterial({ color }));
+      mesh.position.set(x, y, z);
+      scene.add(mesh);
+      particles.push({
+        mesh,
+        vx:(Math.random()-0.5)*0.3, vy: Math.random()*0.3+0.08, vz:(Math.random()-0.5)*0.3,
+        life: 22
+      });
+    }
+    for (let i=0;i<3;i++){
+      const size = 0.5 + Math.random()*0.6;
+      const splatMat = new THREE.MeshBasicMaterial({
+        color: BLOOD_COLORS[i % BLOOD_COLORS.length],
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const mesh = new THREE.Mesh(new THREE.CircleGeometry(size, 10), splatMat);
+      mesh.rotation.x = -Math.PI/2;
+      mesh.rotation.z = Math.random() * Math.PI;
+      mesh.position.set(x + (Math.random()-0.5)*0.8, 0.021, z + (Math.random()-0.5)*0.8);
+      scene.add(mesh);
+      bloodSplats.push({ mesh, life: 220, maxLife: 220 });
     }
   }
 
@@ -3958,6 +3992,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       const laneOk = weaponActive || (p.lane === player.lane);
       const radius = weaponActive ? rampageRadius : pickupRadius;
       if (!dailyEarningsComplete() && laneOk && overlapZ(p.mesh.position.z, playerCar.position.z, radius)){
+        spawnBlood(p.mesh.position.x, 0.5, p.mesh.position.z);
         scene.remove(p.mesh);
         people.splice(i,1);
         personScore += weaponActive ? 2 : 1;
@@ -3978,6 +4013,18 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       if (pt.life <= 0){
         scene.remove(pt.mesh);
         particles.splice(i,1);
+      }
+    }
+
+    // blood splats left on the road: move with traffic and slowly fade away
+    for (let i=bloodSplats.length-1;i>=0;i--){
+      const b = bloodSplats[i];
+      b.mesh.position.z += speed * dt * 60;
+      b.life--;
+      b.mesh.material.opacity = Math.max((b.life / b.maxLife) * 0.85, 0);
+      if (b.life <= 0 || b.mesh.position.z > END_Z + 3){
+        scene.remove(b.mesh);
+        bloodSplats.splice(i,1);
       }
     }
 
