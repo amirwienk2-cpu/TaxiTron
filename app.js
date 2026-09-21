@@ -933,6 +933,24 @@
     renderAttemptsUI();
     renderWithdrawUI();
     updateExchangeRateUI();
+
+    // Tell the parent TaxiTon-new UI (if this page is embedded in its iframe) which
+    // level/skin is currently active, so its Home screen stays in sync even when no
+    // Telegram auth is available to refresh it via server-bridge.js.
+    if (window.parent && window.parent !== window) {
+      try {
+        window.parent.postMessage({
+          type: 'tt-level',
+          level: selectedLevel,
+          best: store.best,
+          runs: store.runs,
+          coins: store.coins,
+          ton: store.points,
+          tonLeft: remainingTon,
+          gramToday: currentLevelToday
+        }, '*');
+      } catch (e) {}
+    }
   }
 
   // zombies collected but not yet exchanged -> saved so they survive closing the app
@@ -3283,6 +3301,13 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   const GAME_TAXI_LEVEL_ONE_FRAMES = Array.from({ length: GAME_TAXI_LEVEL_ONE_FRAME_COUNT }, (_, i) =>
     `sprites/gif1-frames/frame_${String(i + 1).padStart(3, '0')}.png?v=yellow2`
   );
+  // Level-2 ("red") taxi: same animated-frame-sequence approach, extracted
+  // from the gif2.mov green-screen clip (all 24 frames are clean).
+  const GAME_TAXI_LEVEL_TWO_FRAME_COUNT = 24;
+  const GAME_TAXI_LEVEL_TWO_FRAME_FPS = 12;
+  const GAME_TAXI_LEVEL_TWO_FRAMES = Array.from({ length: GAME_TAXI_LEVEL_TWO_FRAME_COUNT }, (_, i) =>
+    `sprites/gif2-frames/frame_${String(i + 1).padStart(3, '0')}.png?v=red1`
+  );
   const skinTextureCache = {};
   function configureSkinTexture(tex){
     tex.encoding = THREE.sRGBEncoding;
@@ -3356,6 +3381,10 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
         skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_ONE_FRAMES, GAME_TAXI_LEVEL_ONE_FRAME_FPS);
         return skinTextureCache[key];
       }
+      if (key === 'red' && GAME_TAXI_LEVEL_TWO_FRAMES.length){
+        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_TWO_FRAMES, GAME_TAXI_LEVEL_TWO_FRAME_FPS);
+        return skinTextureCache[key];
+      }
       const uri = GAME_SKIN_OVERRIDES[key] ||
         ((typeof SKIN_IMAGES !== 'undefined' && SKIN_IMAGES[key]) ? SKIN_IMAGES[key] : TAXI_SKIN_URI);
       const tex = new THREE.TextureLoader().load(uri);
@@ -3371,7 +3400,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   // per-skin on-screen size (images are cropped tight, so the bottom edge = the tires)
   const PLAYER_SKIN_SIZE = {
     yellow: { w: 2.2 * (411/352), h: 2.2, sink: 0.03 },
-    red: { w: 2.2 * (452/489), h: 2.2, sink: 0.03 },
+    red: { w: 1.85 * (404/294), h: 1.85, sink: 0.03 },
     white: { w: 2.2 * (365/410), h: 2.2, sink: 0.03 },
     green: { w: 3.1 * (356/507), h: 3.1, sink: 0.03 }
   };
@@ -3388,6 +3417,23 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     playerSkinMat.needsUpdate = true;
     applyPlayerSize(key);
   }
+
+  // Lets the parent TaxiTon-new UI (if this page is embedded in its #play iframe) switch
+  // between already-owned skins/levels, mirroring the shop's own local-only "Select" button
+  // (server.js has no "active skin" concept - level only ever goes up when buying, see
+  // /api/buy-skin - so switching between owned tiers is always a purely client-side choice).
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d || d.type !== 'tt-select-skin') return;
+    const def = SKIN_LEVELS.find(item => item.key === d.skin);
+    if (!def) return;
+    if (store.ownedSkins.indexOf(def.key) === -1) store.ownedSkins.push(def.key);
+    store.skin = def.key;
+    store.level = def.level;
+    saveStore();
+    setPlayerSkin(store.skin);
+    refreshTopUI();
+  });
 
   function buildPlayerCar(scale){
     const g = new THREE.Group();

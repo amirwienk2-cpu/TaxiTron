@@ -94,14 +94,22 @@ const LOCK='<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id
 // to render the reward progress bar, same approach as server-bridge.js's own copy.
 const DAILY_CAP_BY_LEVEL={1:1,2:0.067,3:0.2,4:0.66};
 const fmtTon=n=>(Math.round(n*100)/100).toString().replace(/\.0+$/,'').replace(/(\.\d*[1-9])0+$/,'$1');
+function currentActiveLevel(){
+  const stored=Number(store('tt_active_level'))||0;
+  const storedDef=SKINS.find(s=>s.level===stored);
+  return (storedDef && SHOP.ownedSkins.includes(storedDef.id)) ? stored : SHOP.level;
+}
 function renderShop(){
   const owns=id=>SHOP.ownedSkins.includes(id);
+  const active=currentActiveLevel();
   document.getElementById('levelList').innerHTML=SKINS.map(s=>{
     const has=owns(s.id);
     const lock=s.soon?`<div class="lock">${LOCK}<span>${T().soon}</span></div>`:'';
     const pic=`<div class="lvpic"><img src="${SKIN_IMG[s.id]||''}" alt="${T().level} ${num(s.level)}" loading="lazy">${lock}<span class="lv-badge">${T().level} ${num(s.level)}</span></div>`;
+    const isActive=has&&s.level===active;
     const btn=s.soon?`<button class="btn buy" disabled>${T().soon}</button>`
-      :`<button class="btn buy" data-lv="${s.id}" ${has?'disabled':''}>${has?T().owned:T().buy}</button>`;
+      :has?`<button class="btn buy" data-select-lv="${s.level}" ${isActive?'disabled':''}>${isActive?T().inUse:T().use}</button>`
+      :`<button class="btn buy" data-lv="${s.id}">${T().buy}</button>`;
     const rewardTag=(!s.soon&&s.dailyReward>0)?`<span class="lv-reward-tag">⚡ +${fmtTon(s.dailyReward)} TON/${T().skinPerDay}</span>`:'';
     let rewardBox='';
     if(!s.soon&&s.dailyReward>0){
@@ -141,6 +149,13 @@ function renderShop(){
 document.getElementById('shop').addEventListener('click',e=>{
   const b=e.target.closest('.buy'); if(!b||b.disabled) return;
   if(b.dataset.sk){ skin=b.dataset.sk; store('tt_skin',skin); renderShop(); return; }
+  if(b.dataset.selectLv){
+    const lvl=Number(b.dataset.selectLv);
+    if(typeof TT.selectLevel==='function') TT.selectLevel(lvl);
+    store('tt_active_level',lvl);
+    renderShop();
+    return;
+  }
   if(b.dataset.lv){
     if(typeof TT.buySkin!=='function') return;
     b.disabled=true;
@@ -189,6 +204,16 @@ TT.getProgress=()=>HOME.progress;
 // Change the numbers shown on Home, e.g. TT.setStats({best:1200, routes:8, level:'2-3', levelNo:2, gram:0.0012, tonLeft:1, tries:5, triesMax:10, progress:40})
 TT.setStats=o=>{ o=o||{}; const {progress,...rest}=o; Object.assign(HOME,rest); renderHome(); if(progress!==undefined) setProgress(progress); };
 window.addEventListener('message',e=>{const d=e.data; if(d&&d.type==='tt-progress') setProgress(d.value);});   // game iframe: parent.postMessage({type:'tt-progress',value:42},'*')
+// Live sync from the real driving game (root app.js/index.html running in the #play iframe):
+// it posts {type:'tt-level', level, best, runs, coins, ton} whenever the active skin/level or
+// stats change, so Home stays correct even without Telegram auth (server-bridge.js only runs
+// with real Telegram initData).
+window.addEventListener('message',e=>{
+  const d=e.data; if(!d||d.type!=='tt-level') return;
+  const lvl=Number(d.level)||1;
+  TT.setStats({ levelNo:lvl, level:lvl+'-1', best:Number(d.best)||HOME.best, routes:Number(d.runs)||HOME.routes,
+    tonLeft:(typeof d.tonLeft==='number')?d.tonLeft:HOME.tonLeft, gram:(typeof d.gramToday==='number')?d.gramToday:HOME.gram });
+});
 renderHome();
 
 // ---- Chat: online users --------------------------------------------------------

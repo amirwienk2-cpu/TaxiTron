@@ -126,9 +126,68 @@
     }
   }
 
+  // ---- select which OWNED level/skin is actually driven in the embedded game -----------------
+  // There is no server concept of "active skin" (server.js's user.level is monotonic: it only
+  // ever increases when a higher skin is bought - see /api/buy-skin). Switching between already
+  // owned skins is purely local, exactly like the root app.js's shop "Select" button (which only
+  // updates its own client-side store.skin/store.level, never talks to the server). We relay the
+  // choice into the game iframe (same-origin, #play screen) via postMessage so it updates live.
+  var LEVEL_TO_SKIN = { 1: 'yellow', 2: 'red', 3: 'white', 4: 'green' };
+  TT.selectLevel = function (level) {
+    var key = LEVEL_TO_SKIN[Number(level)];
+    if (!key) return;
+    var frame = document.getElementById('realGameFrame');
+    if (frame && frame.contentWindow) {
+      try { frame.contentWindow.postMessage({ type: 'tt-select-skin', skin: key, level: Number(level) }, '*'); } catch (e) {}
+    }
+  };
+
+  // ---- local demo purchase fallback (no Telegram auth available) --------------------------
+  // Only used when there is no real server session/token (i.e. testing this UI in a plain
+  // browser outside Telegram). Mirrors the root app.js's local skin-buy logic + pricing table
+  // so the shop can be exercised end-to-end without a live Telegram login. Never runs once a
+  // real /api/auth token exists.
+  var DEMO_STATE_KEY = 'ttnew_demo_state';
+  var DEMO_SKIN_DEFS = {
+    red: { level: 2, price: 1, dailyReward: 0.07, rewardDays: 30 },
+    white: { level: 3, price: 3, dailyReward: 0.2, rewardDays: 30 },
+    green: { level: 4, price: 10, dailyReward: 0.66, rewardDays: 30 }
+  };
+  function loadDemoState() {
+    try {
+      var raw = localStorage.getItem(DEMO_STATE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return {
+      uid: 'demo-local', level: 1, best: 0, runs: 0, coins: 0, ton: 20,
+      ownedSkins: ['yellow'], skinRewards: {}, tonTodayByLevel: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      adVideosWatched: 0, adRewardClaimed: false, taskChannelRewardClaimed: false,
+      withdrawChannelTaskRewardClaimed: false, thirdChannelTaskRewardClaimed: false,
+      referralPendingZombies: 0, chatMuted: false, isBanned: false
+    };
+  }
+  function saveDemoState(state) {
+    try { localStorage.setItem(DEMO_STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function demoBuySkin(key) {
+    var def = DEMO_SKIN_DEFS[key];
+    if (!def) return { ok: false, error: 'unknown-skin' };
+    var state = loadDemoState();
+    if (state.ownedSkins.indexOf(key) === -1) {
+      if (state.ton < def.price) return { ok: false, error: 'insufficient-funds' };
+      state.ton -= def.price;
+      state.ownedSkins.push(key);
+      state.skinRewards[key] = { remainingDays: def.rewardDays, expiresAt: Date.now() + def.rewardDays * 86400000, lastCreditDate: '', lastEarnedDate: '' };
+    }
+    state.level = def.level;
+    saveDemoState(state);
+    applyState(state);
+    return { ok: true };
+  }
+
   // ---- shop: buy a real car skin/level (red/white/green) via TON --------------------------
   TT.buySkin = function (key) {
-    if (!SESSION.token) return Promise.resolve({ ok: false, error: 'not-authenticated' });
+    if (!SESSION.token) return Promise.resolve(SESSION.demo ? demoBuySkin(key) : { ok: false, error: 'not-authenticated' });
     return postJSON('/api/buy-skin', { token: SESSION.token, key: key }).then(function (r) {
       if (r.ok && r.data.state) {
         applyState(r.data.state);
@@ -155,9 +214,13 @@
     var ctx = getInitData();
     if (!ctx.initData) {
       // Not running inside Telegram (e.g. plain desktop browser test) - nothing we can
-      // authenticate with; the UI simply stays in its local/demo state for these bits.
-      console.warn('[server-bridge] no Telegram initData available; skipping real auth (demo/local UI only).');
-      return Promise.resolve(null);
+      // authenticate with. Fall back to a local-only demo account (no server involved) so
+      // the shop/purchases can still be tested end-to-end in a plain browser.
+      console.warn('[server-bridge] no Telegram initData available; using local demo account (no server auth).');
+      SESSION.demo = true;
+      var demoState = loadDemoState();
+      applyState(demoState);
+      return Promise.resolve(demoState);
     }
     return postJSON('/api/auth', { initData: ctx.initData, referralCode: ctx.referralCode }).then(function (r) {
       if (!r.ok || !r.data || !r.data.token) {
