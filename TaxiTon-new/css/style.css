@@ -193,6 +193,7 @@ body.en .flag-label{right:-4px;transform:none}
   border-bottom:6px solid;border-image:repeating-linear-gradient(90deg,#1a1206 0 6px,#fff 6px 12px) 6}
 .skin-yellow b{color:#1a0f00!important}
 .skin-black{background:linear-gradient(180deg,rgba(70,60,110,.4),rgba(10,8,20,.6));box-shadow:0 0 0 1px rgba(255,194,26,.4)}
+.skin-platinum{background:linear-gradient(180deg,rgba(210,215,225,.35),rgba(60,65,80,.55));box-shadow:0 0 0 1px rgba(200,210,230,.55)}
 .item.soon .preview .msg{filter:grayscale(.7) brightness(.45)}
 .item.soon .lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:10px}
 .item.soon .lock svg{width:38%}
