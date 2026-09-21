@@ -14,16 +14,16 @@
   .hud-seg b { font-weight:800; }
   .hud-zombies-val { left:30%; top:50%; transform:translate(-50%,-50%); font-size:4.6vw; color:#fff; }
   .hud-distance-val { left:60%; top:47%; transform:translate(-50%,-50%); font-size:3.6vw; color:#fff; }
-  .hud-level { left:80%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; color:#ffd93d; gap:1px; max-width:34%; }
-  .hud-level-line1 { font-size:3.9vw; }
-  .hud-level-line1 small { font-size:2.6vw; opacity:.75; margin-left:2px; color:#a8a3b8; }
-  .hud-level-line2 { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:2.6vw; color:#fff1b0; }
+  .hud-level { left:89%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; color:#ffd93d; gap:0; max-width:24%; }
+  .hud-level-line1 { font-size:3vw; }
+  .hud-level-line1 small { font-size:2vw; opacity:.75; margin-left:2px; color:#a8a3b8; }
+  .hud-level-line2 { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:2vw; color:#fff1b0; }
   @media (min-width:520px){
     .hud-zombies-val { font-size:22px; }
     .hud-distance-val { font-size:17px; }
-    .hud-level-line1 { font-size:19px; }
-    .hud-level-line1 small { font-size:13px; }
-    .hud-level-line2 { font-size:13px; }
+    .hud-level-line1 { font-size:14px; }
+    .hud-level-line1 small { font-size:9px; }
+    .hud-level-line2 { font-size:9px; }
   }
   #weaponHud {
     position:absolute; top:24vh; left:50%; transform:translateX(-50%);
