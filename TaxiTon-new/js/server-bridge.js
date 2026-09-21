@@ -449,7 +449,7 @@
     ]).then(function (results) {
       var countRes = results[0], usersRes = results[1];
       var users = (usersRes.ok && usersRes.data.users) ? usersRes.data.users.map(function (u) {
-        return { name: u.name, admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined) };
+        return { id: u.uid, name: u.name, admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined) };
       }) : [];
       if (typeof TT.setOnline === 'function') {
         TT.setOnline({ count: countRes.ok ? countRes.data.online : users.length, users: users });

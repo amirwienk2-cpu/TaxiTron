@@ -318,6 +318,7 @@ function renderOnline(){
   o.users.forEach(u=>{
     const n=typeof u==='string'?u:u.name, adm=typeof u==='string'?null:(u.badge||u.admin);
     const chip=document.createElement('span'); chip.className='ou'; chip.setAttribute('role','listitem'); chip.title=n;
+    if(typeof u!=='string'&&u.id!==undefined) chip.dataset.uid=u.id;
     const av=document.createElement('span'); av.className='av'; av.textContent=[...String(n)][0]||'?';
     let hsh=0; for(const ch of String(n)) hsh=(hsh*31+ch.charCodeAt(0))>>>0;
     const [a,b]=AV_COLORS[hsh%AV_COLORS.length]; av.style.background=`linear-gradient(180deg,${a},${b})`;
@@ -327,7 +328,7 @@ function renderOnline(){
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
 }
-const _u=u=>typeof u==='string'?u:{name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin)};
+const _u=u=>typeof u==='string'?u:{id:u&&(u.id!==undefined?u.id:u.uid),name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin)};
 TT.setOnline=x=>{
   const o=CHAT.online;
   if(typeof x==='number') o.count=Math.max(0,Math.round(x));
