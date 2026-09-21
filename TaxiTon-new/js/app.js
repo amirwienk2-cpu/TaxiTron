@@ -326,7 +326,7 @@ function renderOnline(){
     const [a,b]=AV_COLORS[hsh%AV_COLORS.length]; av.style.background=`linear-gradient(180deg,${a},${b})`;
     const dot=document.createElement('i'); av.append(dot);
     const nm=document.createElement('span'); nm.className='ou-name'; nm.textContent=n;
-    const bal=document.createElement('span'); bal.className='ou-bal'; bal.textContent=nf(typeof u==='string'?0:u.ton)+' TON';
+    const bal=document.createElement('span'); bal.className='ou-bal'; bal.textContent=nf(fmtTon(typeof u==='string'?0:u.ton))+' TON';
     chip.append(av); if(adm==='designer') chip.append(admBadge(adm,20)); chip.append(nm,bal); if(adm&&adm!=='designer') chip.append(admBadge(adm,20)); box.append(chip);
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
