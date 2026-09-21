@@ -463,6 +463,8 @@ body.is-admin .msg.mod-hidden{display:block;opacity:.45}
 .as-cap{display:none;font:800 12px "Vazirmatn",Tahoma,sans-serif;color:#fff}
 body.en .as-cap{display:block}
 .lv-info-body{padding:2px;font:600 14px/1.6 "Vazirmatn",Tahoma,sans-serif;color:#e6e0ff;text-align:start;white-space:pre-line}
+.lv-info-sheet .as-panel{max-height:88vh;overflow-y:auto}
+.lv-info-body img{display:block;width:100%;border-radius:12px}
 .chat-input input:disabled{opacity:.7;border-color:rgba(255,80,80,.6)}
 .chat-input .btn.send:disabled{filter:grayscale(1);opacity:.6}
 

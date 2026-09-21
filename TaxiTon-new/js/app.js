@@ -90,8 +90,10 @@ let skin=store('tt_skin')||'yellow';
 const num=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
 const SKIN_IMG={yellow:'assets/images/level1.jpg',red:'assets/images/level2.jpg',white:'assets/images/level3.jpg',green:'assets/images/level4.jpg',black:'assets/images/level5.jpg',platinum:'assets/images/level6.jpg'};
 // Per-level driver ability info shown in the "?" popup on each level card.
-// Fill in real texts/images per skin id once available (fa/de/en); falls back to a "coming soon" note.
+// Fill in real texts per skin id once available (fa/de/en); falls back to a "coming soon" note.
 const LV_INFO={fa:{},de:{},en:{}};
+// If a skin id has an image here, the popup shows that image instead of the text above.
+const LV_INFO_IMG={yellow:'assets/images/ability/ability1.jpg'};
 const LOCK='<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff07a"/><stop offset=".55" stop-color="#ffc21a"/><stop offset="1" stop-color="#d97f00"/></linearGradient></defs><path d="M20 28v-8a12 12 0 0 1 24 0v8" fill="none" stroke="#1a1206" stroke-width="10" stroke-linecap="round"/><path d="M20 28v-8a12 12 0 0 1 24 0v8" fill="none" stroke="url(#lk)" stroke-width="5" stroke-linecap="round"/><rect x="11" y="27" width="42" height="31" rx="7" fill="url(#lk)" stroke="#1a1206" stroke-width="4"/><circle cx="32" cy="40" r="4.5" fill="#1a1206"/><rect x="30" y="41" width="4" height="9" rx="2" fill="#1a1206"/></svg>';
 // Mirrors the server's real daily TON-earning caps per level (server.js: DAILY_PTS_CAP and
 // LEVEL_TWO/THREE/FOUR_DAILY_PTS_CAP) - not exposed via any endpoint, so duplicated here only
@@ -194,8 +196,10 @@ function openLvInfo(level,skinId){
   if(!lvInfoSheet) buildLvInfoSheet();
   lvInfoSheet.querySelector('#lvInfoName').textContent=T().lvInfoTitle.replace('{n}',num(level));
   lvInfoSheet.querySelector('.as-x').setAttribute('aria-label',T().aClose);
-  const text=(LV_INFO[lang]&&LV_INFO[lang][skinId])||T().lvInfoSoon;
-  lvInfoSheet.querySelector('.lv-info-body').textContent=text;
+  const body=lvInfoSheet.querySelector('.lv-info-body');
+  const img=LV_INFO_IMG[skinId];
+  if(img){ body.innerHTML=`<img src="${img}" alt="">`; }
+  else{ body.textContent=(LV_INFO[lang]&&LV_INFO[lang][skinId])||T().lvInfoSoon; }
   lvInfoSheet.hidden=false;
   requestAnimationFrame(()=>lvInfoSheet.classList.add('on'));
 }
