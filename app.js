@@ -4079,7 +4079,9 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     document.getElementById('finalScore').textContent = personScore;
     document.getElementById('bestScoreText').textContent = t('bestScoreText').replace('{best}', best);
     const artEl = document.getElementById('gameOverArt');
-    if (artEl) artEl.style.display = (activeAttemptLevel() === 4) ? 'block' : 'none';
+    const isLvl4 = activeAttemptLevel() === 4;
+    if (artEl) artEl.style.display = isLvl4 ? 'block' : 'none';
+    document.getElementById('gameOverScreen').classList.toggle('lvl4-art', isLvl4);
     document.getElementById('gameOverScreen').style.display = 'flex';
     document.getElementById('retryBtn').disabled = !hasAttemptsLeft();
   }
