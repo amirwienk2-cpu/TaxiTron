@@ -1,5 +1,12 @@
 // Telegram Mini App hooks (only active inside Telegram)
-try{ const tg=window.Telegram&&window.Telegram.WebApp; if(tg){tg.ready();tg.expand();} }catch(e){}
+try{
+  const tg=window.Telegram&&window.Telegram.WebApp;
+  if(tg){
+    tg.ready();
+    tg.expand();
+    if(typeof tg.disableVerticalSwipes==='function'&&(!tg.isVersionAtLeast||tg.isVersionAtLeast('7.7'))) tg.disableVerticalSwipes();
+  }
+}catch(e){console.warn('[TaxiTron] Telegram WebApp initialization failed',e)}
 
 
 // Language (flags above the play button)

@@ -10,11 +10,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0c0421}}
 :root[data-theme="dark"]{--bg:#0c0421}
 *,*::before,*::after{box-sizing:inherit;margin:0;padding:0}
-html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);overscroll-behavior-y:none}
 body{
   min-height:100%;background:var(--bg);
   color:#fff;font-family:"Vazirmatn",Tahoma,"Segoe UI",sans-serif;
-  -webkit-tap-highlight-color:transparent;
+  -webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;
 }
 body.chat-open{height:100dvh;min-height:0;overflow:hidden}
 
@@ -404,7 +404,7 @@ body.chat-open .app{height:100%;padding-bottom:calc(var(--navh) + env(safe-area-
 body.chat-open #chat{height:100%}
 body.chat-open .chat-page{height:100%;display:flex;flex-direction:column}
 body.chat-open .chat-body{flex:1;height:auto;min-height:0}
-.chat-body .chat-list{direction:rtl;min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;padding:2px 2px 4px;scrollbar-width:thin;scrollbar-color:rgba(224,161,0,.5) transparent}
+.chat-body .chat-list{direction:rtl;min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;padding:2px 2px 4px;overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:rgba(224,161,0,.5) transparent}
 body.en .chat-body .chat-list{direction:ltr}
 .chat-body .msg{max-width:92%}
 .online-bar{direction:rtl;display:flex;flex-direction:column;min-height:0;padding:8px 6px 8px;border-radius:14px;
