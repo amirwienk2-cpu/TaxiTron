@@ -330,7 +330,7 @@ const ADM_IMG={boy:'assets/images/adm-boy.png',girl:'assets/images/adm-girl.png'
 // Admin badge: kind = 'boy' | 'girl'
 function admBadge(kind,h){
   const s=document.createElement('span'); s.className='adm adm-'+kind; if(h) s.style.setProperty('--ah',h+'px');
-  if(kind==='designer' && h) s.style.setProperty('--ah',(h+8)+'px');
+  if(kind==='designer' && h) s.style.setProperty('--ah',(h+20)+'px');
   const i=document.createElement('img');
   i.src=ADM_IMG[kind]||ADM_IMG.boy; i.alt='';
   s.title=kind==='designer'?T().designer:T().admin; s.append(i);
