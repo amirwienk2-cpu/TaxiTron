@@ -1153,6 +1153,8 @@ Object.assign(I18N.en,{exZcap:'Collected – not yet exchanged',exRate:'{n} coin
 const bigN=n=>Math.round(n).toLocaleString(LOCALE[lang]||'en-GB');
 function currentGameExchangeRate(){
   try{
+    const activeLevel=Number(store('tt_active_level'));
+    if(activeLevel>=1 && activeLevel<=4) return activeLevel>=4?100:activeLevel>=3?20:activeLevel>=2?7:1;
     if(Number.isFinite(Number(window.__TT_GAME_EXCHANGE_RATE))) return Number(window.__TT_GAME_EXCHANGE_RATE);
     const savedRate=Number(localStorage.getItem('tt_game_exchange_rate'));
     if(Number.isFinite(savedRate) && savedRate>0) return savedRate;
