@@ -96,6 +96,12 @@
     const level = skin === 'green' ? 4 : skin === 'white' ? 3 : skin === 'red' ? 2 : 1;
     return level >= 4 ? 100 : level >= 3 ? 20 : level >= 2 ? 7 : 1;
   }
+  function syncGameExchangeRate(){
+    const skin = localStorage.getItem(accountKey('cr3d_skin')) || localStorage.getItem('cr3d_skin') || 'yellow';
+    const rate = coinsPerZombieForSkin(skin);
+    window.__TT_GAME_EXCHANGE_RATE = rate;
+    if (typeof TT !== 'undefined' && typeof TT.setWallet === 'function') TT.setWallet({ rate });
+  }
   function pollWalletProgress(){
     try {
       const zombies = readPendingZombies();
@@ -271,6 +277,7 @@
   function closeRealGame(){
     if (watcher) { watcher.disconnect(); watcher = null; }
     stopProgressPoll();
+    syncGameExchangeRate();
     wrap.hidden = true;
     wrap.classList.remove('loading');
     // Never show the old placeholder text again — going back/exiting the
