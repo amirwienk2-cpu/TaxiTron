@@ -3597,7 +3597,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     // so both are sized by width instead of height to keep proportions correct
     const treeAspect = 1480 / 1016;
     const imgAspect = isTree ? treeAspect : (1000 / 603);
-    const width = isTree ? 3.6 : 4.6;
+    const width = isTree ? 3.6 : 3.8;
     const height = width / imgAspect;
     const skinMat = new THREE.MeshBasicMaterial({
       map: tex,
