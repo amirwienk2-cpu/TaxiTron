@@ -87,7 +87,13 @@
       // The wallet "exchange" widget is repurposed to show the ONE real zombie-exchange
       // path the backend actually supports: referralPendingZombies -> coins/TON via
       // POST /api/referrals/exchange (see TT.exchange below). Rate 1 = 1:1 as done server-side.
-      TT.setWallet({ zombies: Number(state.referralPendingZombies) || 0, coins: Number(state.coins) || 0, rate: 1 });
+      TT.setWallet({
+        zombies: Number(state.referralPendingZombies) || 0,
+        coins: Number(state.coins) || 0,
+        rate: 1,
+        points: Number(state.ton) || 0,
+        tt: Number(state.ttBalance) || 0
+      });
     }
     if (typeof TT.setWithdraw === 'function') {
       // MIN_WITHDRAW / WITHDRAWAL_FEE_RATE are server constants not exposed via any endpoint;

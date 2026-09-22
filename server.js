@@ -340,6 +340,7 @@ function newUser(id, name) {
     name: name || ('Player ' + id),
     coins: 0,
     ton: 0,
+    ttBalance: 0,
     tonToday: 0,
     tonTodayByLevel: { 1: 0, 2: 0, 3: 0, 4: 0 },
     tonDate: '',
@@ -712,6 +713,7 @@ function publicState(user) {
     uid: String(user.id),
     coins: user.coins,
     ton: user.ton,
+    ttBalance: Number(user.ttBalance || 0),
     tonToday: user.tonToday,
     tonTodayByLevel: user.tonTodayByLevel,
     lastWithdrawalDay: user.lastWithdrawalDay || '',
@@ -1504,7 +1506,7 @@ app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
 app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
   const user = req.user;
   if (user.taskChannelRewardClaimed === true) {
-    return res.json({ claimed: true, joined: true, rewardZombies: 0, state: publicState(user) });
+    return res.json({ claimed: true, joined: true, rewardTT: 0, state: publicState(user) });
   }
   if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
 
@@ -1522,6 +1524,7 @@ app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
     if (!joined) return res.status(403).json({ error: 'channel-membership-required', joined: false });
 
     user.taskChannelRewardClaimed = true;
+    user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
     let referralReward = 0;
     if (user.referredBy && !user.referralRewardClaimed) {
       const inviter = users[String(user.referredBy)];
@@ -1541,7 +1544,7 @@ app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
       user.referralRewardClaimed = true;
     }
     persist();
-    res.json({ claimed: true, joined: true, rewardZombies: 500, referralReward, state: publicState(user) });
+    res.json({ claimed: true, joined: true, rewardTT: 5, referralReward, state: publicState(user) });
   } catch (e) {
     res.status(502).json({ error: 'telegram-membership-check-failed' });
   }
@@ -1573,7 +1576,7 @@ app.post('/api/referrals/invite-claim', requireUserFromBody, (req, res) => {
 app.post('/api/tasks/withdraw-channel-claim', requireUserFromBody, async (req, res) => {
   const user = req.user;
   if (user.withdrawChannelTaskRewardClaimed === true) {
-    return res.json({ claimed: true, joined: true, rewardZombies: 0, state: publicState(user) });
+    return res.json({ claimed: true, joined: true, rewardTT: 0, state: publicState(user) });
   }
   if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
 
@@ -1590,8 +1593,9 @@ app.post('/api/tasks/withdraw-channel-claim', requireUserFromBody, async (req, r
     );
     if (!joined) return res.status(403).json({ error: 'withdraw-channel-membership-required', joined: false });
     user.withdrawChannelTaskRewardClaimed = true;
+    user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
     persist();
-    res.json({ claimed: true, joined: true, rewardZombies: 500, state: publicState(user) });
+    res.json({ claimed: true, joined: true, rewardTT: 5, state: publicState(user) });
   } catch (e) {
     res.status(502).json({ error: 'telegram-membership-check-failed' });
   }
@@ -1600,7 +1604,7 @@ app.post('/api/tasks/withdraw-channel-claim', requireUserFromBody, async (req, r
 app.post('/api/tasks/third-channel-claim', requireUserFromBody, async (req, res) => {
   const user = req.user;
   if (user.thirdChannelTaskRewardClaimed === true) {
-    return res.json({ claimed: true, joined: true, rewardZombies: 0, state: publicState(user) });
+    return res.json({ claimed: true, joined: true, rewardTT: 0, state: publicState(user) });
   }
   if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
 
@@ -1617,8 +1621,9 @@ app.post('/api/tasks/third-channel-claim', requireUserFromBody, async (req, res)
     );
     if (!joined) return res.status(403).json({ error: 'third-channel-membership-required', joined: false });
     user.thirdChannelTaskRewardClaimed = true;
+    user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
     persist();
-    res.json({ claimed: true, joined: true, rewardZombies: 500, state: publicState(user) });
+    res.json({ claimed: true, joined: true, rewardTT: 5, state: publicState(user) });
   } catch (e) {
     res.status(502).json({ error: 'telegram-membership-check-failed' });
   }

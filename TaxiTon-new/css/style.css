@@ -660,6 +660,10 @@ body.en .ex-col small{direction:ltr}
 .ex-bal img{width:20px;height:20px}
 .ex-bal b{color:var(--gold);font-size:16px;direction:ltr}
 .ex-bal.pop b{animation:rxpop .5s ease-out}
+.ton-logo{width:18px;height:18px;padding:2px;border-radius:50%;background:#32aee8;color:#fff;vertical-align:middle}
+.tt-bal{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:5px;font:800 12px "Vazirmatn",Tahoma,sans-serif;color:#fff}
+.tt-bal img{width:18px;height:18px}
+.tt-bal b{color:var(--gold);font-size:14px;direction:ltr}
 
 /* Wallet exchange card: smaller */
 .ex-card{max-width:330px;margin-bottom:12px}

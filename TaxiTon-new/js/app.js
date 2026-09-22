@@ -895,12 +895,11 @@ renderOnline(); renderMyState();
 // /api/tasks/channel-claim, /api/tasks/withdraw-channel-claim & /api/tasks/third-channel-claim
 // endpoints for all 3 channels below.
 const TASK={demo:false};
-// Reward is 500 zombies per channel (matches server.js: channel-claim, withdraw-channel-claim
-// and third-channel-claim all return rewardZombies:500).
+// Reward is 5 TT per channel (the server persists each claim exactly once).
 const TASKS=[
-  {id:'withdraw', channel:'TaxitonWithdraw', reward:500, desc:'tkDesc',  key:'tt_task_channel'},
-  {id:'main',     channel:'TaxiiTon',        reward:500, desc:'tkDesc2', key:'tt_task_main'},
-  {id:'third',    channel:'taxiiiton',       reward:500, desc:'tkDesc2', key:'tt_task_third'}
+  {id:'withdraw', channel:'TaxitonWithdraw', reward:5, desc:'tkDesc',  key:'tt_task_channel'},
+  {id:'main',     channel:'TaxiiTon',        reward:5, desc:'tkDesc2', key:'tt_task_main'},
+  {id:'third',    channel:'taxiiiton',       reward:5, desc:'tkDesc2', key:'tt_task_third'}
 ];
 const tkRow=t=>`<div class="tk-ch" data-task="${t.id}">
     <div class="tk-row">
@@ -937,11 +936,6 @@ function renderTask(){
 }
 function completeTask(t){
   t.done=true; store(t.key,true); t.msg='done'; renderTask();
-  // NOTE: the task reward ("t.reward" zombies) is NOT credited locally anymore.
-  // The real /api/tasks/*-claim endpoints return a "rewardZombies" value, but the server
-  // does not persist it anywhere in the user's state (only a claimed:true/false flag is
-  // stored) - crediting it to the wallet here would be exactly the kind of fabricated
-  // client-side economy the server can't back up. See final report for details.
   try{ TT.onTaskComplete && TT.onTaskComplete(t.id,t.reward,t.channel); }catch(e){}
 }
 const tasksBox=document.getElementById('taskCards');
@@ -1148,13 +1142,14 @@ ivTick(); setInterval(ivTick,1000);
 //       TT.exchange = async (zombies) => ({zombies:0, coins:newBalance})   -> your server does the exchange (return false = error)
 //       TT.addZombies(n)   e.g. after a run or a task
 const tonFmt=(n,d)=>{ const s=(+n).toLocaleString('en-US',{minimumFractionDigits:d===undefined?2:d,maximumFractionDigits:d===undefined?6:d,useGrouping:false}); return lang==='fa'?s.replace(/\d/g,x=>'۰۱۲۳۴۵۶۷۸۹'[x]):s; };
-const EX={rate:100, zombies:store('tt_zombies'), coins:store('tt_coins'), points:store('tt_wd_bal')};
+const EX={rate:100, zombies:store('tt_zombies'), coins:store('tt_coins'), points:store('tt_wd_bal'), tt:store('tt_balance')};
 if(typeof EX.zombies!=='number') EX.zombies=10000;   // demo start value
 if(typeof EX.coins!=='number') EX.coins=0;
 if(typeof EX.points!=='number') EX.points=0;
-Object.assign(I18N.fa,{exZcap:'جمع‌آوری شده – هنوز معاوضه نشده',exRate:'{n} سکه به ازای هر زامبی',exBtn:'معاوضه ({n} {c} به ازای هر زامبی)',exBal:'موجودی TON:',exDone:'+{n} سکه به کیف پول اضافه شد 🎉',exNone:'زامبی برای معاوضه نداری',exFail:'معاوضه انجام نشد – دوباره امتحان کن'});
-Object.assign(I18N.de,{exZcap:'Gesammelt – noch nicht getauscht',exRate:'{n} Münzen pro Zombie',exBtn:'Tauschen ({n} {c} pro Zombie)',exBal:'TON-Guthaben:',exDone:'+{n} Münzen gutgeschrieben 🎉',exNone:'Du hast keine Zombies zum Tauschen',exFail:'Tausch fehlgeschlagen – bitte nochmal'});
-Object.assign(I18N.en,{exZcap:'Collected – not yet exchanged',exRate:'{n} coins per zombie',exBtn:'Exchange ({n} {c} per zombie)',exBal:'TON balance:',exDone:'+{n} coins added to your wallet 🎉',exNone:'You have no zombies to exchange',exFail:'Exchange failed – try again'});
+if(typeof EX.tt!=='number') EX.tt=0;
+Object.assign(I18N.fa,{exZcap:'جمع‌آوری شده – هنوز معاوضه نشده',exRate:'{n} سکه به ازای هر زامبی',exBtn:'معاوضه ({n} {c} به ازای هر زامبی)',exBal:'موجودی TON:',ttBal:'موجودی TT:',tkRewardAll:'پاداش: {n} TT',tkDone:'+{n} TT دریافت شد',exDone:'+{n} سکه به کیف پول اضافه شد 🎉',exNone:'زامبی برای معاوضه نداری',exFail:'معاوضه انجام نشد – دوباره امتحان کن'});
+Object.assign(I18N.de,{exZcap:'Gesammelt – noch nicht getauscht',exRate:'{n} Münzen pro Zombie',exBtn:'Tauschen ({n} {c} pro Zombie)',exBal:'TON-Guthaben:',ttBal:'TT-Guthaben:',tkRewardAll:'Belohnung: {n} TT',tkDone:'+{n} TT erhalten',exDone:'+{n} Münzen gutgeschrieben 🎉',exNone:'Du hast keine Zombies zum Tauschen',exFail:'Tausch fehlgeschlagen – bitte nochmal'});
+Object.assign(I18N.en,{exZcap:'Collected – not yet exchanged',exRate:'{n} coins per zombie',exBtn:'Exchange ({n} {c} per zombie)',exBal:'TON balance:',ttBal:'TT balance:',tkRewardAll:'Reward: {n} TT',tkDone:'+{n} TT received',exDone:'+{n} coins added to your wallet 🎉',exNone:'You have no zombies to exchange',exFail:'Exchange failed – try again'});
 const bigN=n=>Math.round(n).toLocaleString(LOCALE[lang]||'en-GB');
 function renderWallet(){
   const $=id=>document.getElementById(id);
@@ -1162,12 +1157,13 @@ function renderWallet(){
   $('exC').textContent=bigN(EX.zombies*EX.rate);
   $('exRate').textContent=T().exRate.replace('{n}',bigN(EX.rate));
   $('exBalN').textContent=tonFmt(EX.points,6);
+  $('ttBalN').textContent=tonFmt(EX.tt,0);
   const [a,b]=T().exBtn.split('{c}'), btn=$('exBtn'); btn.textContent='';
   const coin=document.createElement('img'); coin.src='assets/images/ex-coin.png'; coin.alt=T().coinsShort; coin.className='ex-bcoin';
   btn.append(a.replace('{n}',bigN(EX.rate)),coin,b);
   btn.classList.toggle('empty',EX.zombies<=0);
 }
-function saveWallet(){ store('tt_zombies',EX.zombies); store('tt_coins',EX.coins); store('tt_wd_bal',EX.points); }
+function saveWallet(){ store('tt_zombies',EX.zombies); store('tt_coins',EX.coins); store('tt_wd_bal',EX.points); store('tt_balance',EX.tt); }
 function countUp(el,from,to,ms){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){ el.textContent=bigN(to); return; }
   const t0=performance.now();
@@ -1195,9 +1191,9 @@ document.getElementById('exBtn').addEventListener('click',async()=>{
   toast(T().exDone.replace('{n}',bigN(res.coins-oldCoins)));
   setTimeout(()=>{ exBusy=false; btn.disabled=false; renderWallet(); },950);
 });
-TT.setWallet=o=>{ o=o||{}; if(o.zombies!==undefined) EX.zombies=Math.max(0,+o.zombies||0); if(o.coins!==undefined) EX.coins=Math.max(0,+o.coins||0); if(o.rate) EX.rate=+o.rate; if(o.points!==undefined) EX.points=Math.max(0,+o.points||0); saveWallet(); renderWallet(); };
+TT.setWallet=o=>{ o=o||{}; if(o.zombies!==undefined) EX.zombies=Math.max(0,+o.zombies||0); if(o.coins!==undefined) EX.coins=Math.max(0,+o.coins||0); if(o.rate) EX.rate=+o.rate; if(o.points!==undefined) EX.points=Math.max(0,+o.points||0); if(o.tt!==undefined) EX.tt=Math.max(0,+o.tt||0); saveWallet(); renderWallet(); };
 TT.addZombies=n=>{ EX.zombies=Math.max(0,EX.zombies+(+n||0)); saveWallet(); renderWallet(); };
-TT.getWallet=()=>({zombies:EX.zombies, coins:EX.coins, rate:EX.rate, points:EX.points});
+TT.getWallet=()=>({zombies:EX.zombies, coins:EX.coins, rate:EX.rate, points:EX.points, tt:EX.tt});
 const _applyLangW=applyLang;
 applyLang=function(){ _applyLangW(); renderWallet(); };
 renderWallet();
