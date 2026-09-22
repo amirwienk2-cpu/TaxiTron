@@ -270,9 +270,12 @@
   }
   TT.requestWithdraw = function (req) {
     if (!SESSION.token) return Promise.resolve({ ok: false });
-    // NOTE: server.js's /api/withdraw only accepts {token, address, amount} - it has no
-    // "memo" field for withdrawals (unlike deposits), so req.memo is intentionally not sent.
-    return postJSON('/api/withdraw', { token: SESSION.token, address: req.address, amount: req.amount }).then(function (r) {
+    return postJSON('/api/withdraw', {
+      token: SESSION.token,
+      address: req.address,
+      amount: req.amount,
+      memo: req.memo || ''
+    }).then(function (r) {
       if (!r.ok) return { ok: false };
       applyState(r.data.state);
       loadWithdrawals();

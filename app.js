@@ -2135,7 +2135,7 @@
         const res = await fetch(SERVER_URL + '/api/withdraw', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: serverSession.token, address, amount })
+          body: JSON.stringify({ token: serverSession.token, address, amount, memo: (document.getElementById('withdrawMemo') && document.getElementById('withdrawMemo').value || '').trim() })
         });
         const data = await res.json();
         if (!res.ok) {
