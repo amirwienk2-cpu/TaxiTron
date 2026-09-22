@@ -1257,17 +1257,17 @@ Object.assign(I18N.fa,{dwDep:'واریز',dwWd:'برداشت',wdT:'برداشت 
   wdReq:'درخواست برداشت',wdMinL:'حداقل برداشت',wdMyAddrL:'آدرس کیف پول شما',wdRecv:'دریافتی شما: {n} TON (کارمزد {f} TON)',
   wdNote1:'حداقل برداشت {n} TON است. درخواست‌ها بررسی و به آدرس کیف پول شما ارسال می‌شوند.',wdNote2:'{p}٪ کارمزد برداشت کسر می‌شود. شما {r}٪ مبلغ درخواستی را دریافت می‌کنید.',
   wdBadAddr:'آدرس کیف پول TON معتبر نیست',wdBadAmt:'مقدار را وارد کن',wdLow:'حداقل برداشت {n} TON است',wdNoFunds:'موجودی کافی نیست',buyErr:'خرید انجام نشد. دوباره تلاش کنید.',
-  wdSent:'درخواست برداشت ثبت شد ✔',wdFail:'درخواست ثبت نشد – دوباره امتحان کن',stNone:'بدون درخواست',stPending:'در حال بررسی',stDone:'انجام شد',stRejected:'رد شد'});
+  wdSent:'درخواست برداشت ثبت شد ✔',wdFail:'درخواست ثبت نشد – دوباره امتحان کن',stNone:'بدون درخواست',stPending:'در حال بررسی: {n} TON',stDone:'انجام شد',stRejected:'رد شد'});
 Object.assign(I18N.de,{dwDep:'Einzahlen',dwWd:'Auszahlen',wdT:'TON auszahlen',wdAvail:'verfügbar',wdAddrPh:'UQ… TON-Wallet-Adresse',wdAmtPh:'Betrag (min. {n} TON)',wdMemoPh:'Memo (falls nötig)',
   wdReq:'Auszahlung anfordern',wdMinL:'Mindestauszahlung',wdMyAddrL:'Deine Wallet-Adresse',wdRecv:'Du erhältst: {n} TON (Gebühr {f} TON)',
   wdNote1:'Mindestauszahlung ist {n} TON. Anfragen werden geprüft und an deine Wallet-Adresse gesendet.',wdNote2:'Es wird {p} % Auszahlungsgebühr abgezogen. Du erhältst {r} % des Betrags.',
   wdBadAddr:'Keine gültige TON-Wallet-Adresse',wdBadAmt:'Bitte Betrag eingeben',wdLow:'Mindestauszahlung ist {n} TON',wdNoFunds:'Nicht genug Guthaben',buyErr:'Kauf fehlgeschlagen. Bitte erneut versuchen.',
-  wdSent:'Auszahlung angefordert ✔',wdFail:'Anfrage fehlgeschlagen – bitte nochmal',stNone:'Keine Anfrage',stPending:'Wird geprüft',stDone:'Erledigt',stRejected:'Abgelehnt'});
+  wdSent:'Auszahlung angefordert ✔',wdFail:'Anfrage fehlgeschlagen – bitte nochmal',stNone:'Keine Anfrage',stPending:'Wird geprüft: {n} TON',stDone:'Erledigt',stRejected:'Abgelehnt'});
 Object.assign(I18N.en,{dwDep:'Deposit',dwWd:'Withdraw',wdT:'Withdraw TON',wdAvail:'available',wdAddrPh:'UQ… TON wallet address',wdAmtPh:'Amount (min {n} TON)',wdMemoPh:'Memo (if required)',
   wdReq:'Request withdrawal',wdMinL:'Minimum withdrawal',wdMyAddrL:'Your wallet address',wdRecv:'You receive: {n} TON (fee {f} TON)',
   wdNote1:'Minimum withdrawal is {n} TON. Requests are reviewed and sent to your wallet address.',wdNote2:'A {p}% withdrawal fee is deducted. You receive {r}% of the requested amount.',
   wdBadAddr:'Not a valid TON wallet address',wdBadAmt:'Enter an amount',wdLow:'Minimum withdrawal is {n} TON',wdNoFunds:'Not enough balance',buyErr:'Purchase failed. Please try again.',
-  wdSent:'Withdrawal requested ✔',wdFail:'Request failed – try again',stNone:'No request',stPending:'Under review',stDone:'Completed',stRejected:'Rejected'});
+  wdSent:'Withdrawal requested ✔',wdFail:'Request failed – try again',stNone:'No request',stPending:'Under review: {n} TON',stDone:'Completed',stRejected:'Rejected'});
 const TON_ADDR=/^(?:[EUk0]Q[A-Za-z0-9_-]{46}|-?[0-9]:[0-9a-fA-F]{64})$/;
 const toLatin=t=>String(t||'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٫,]/g,'.').replace(/\s/g,'');
 const shortAddr=a=>a&&a.length>12?a.slice(0,4)+'…'+a.slice(-4):(a||'—');
@@ -1285,7 +1285,10 @@ function renderWithdraw(){
   const a=wdAmount(); $('wdRecv').textContent=a>0?T_.wdRecv.replace('{n}',tonFmt(a*(1-WD.fee),4)).replace('{f}',tonFmt(a*WD.fee,4)):'';
   const L=WD.last; $('wdMyAddr').textContent=shortAddr((L&&L.address)||store('tt_wd_addr')||'');
   const st=L?L.status:'none', map={none:'stNone',pending:'stPending',completed:'stDone',rejected:'stRejected'};
-  const el=$('wdStatus'); el.className='wd-status st-'+st; el.textContent=T_[map[st]||'stNone'];
+  const el=$('wdStatus'); el.className='wd-status st-'+st;
+  el.textContent=st==='pending' && L && Number.isFinite(Number(L.amount))
+    ? T_[map[st]].replace('{n}',tonFmt(Number(L.amount),6))
+    : T_[map[st]||'stNone'];
 }
 // tabs
 document.querySelectorAll('.dw-tab').forEach(b=>b.addEventListener('click',()=>{
