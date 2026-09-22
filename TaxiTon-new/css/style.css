@@ -444,8 +444,9 @@ body.en .online-bar{direction:ltr}
 
 /* Admin badge (boy / girl sticker) */
 .adm{--ah:26px;position:relative;display:inline-block;height:var(--ah);flex:none;margin-inline-start:8px;vertical-align:middle}
-.adm img{height:100%;width:auto;display:block}
+.adm img,.adm video{height:100%;width:auto;display:block;object-fit:contain}
 .adm-designer{margin-inline-start:0;margin-inline-end:8px}
+.ou:has(.adm-designer) .av i{display:none}
 .adm .adm-t{position:absolute;left:47%;top:27%;width:49%;height:60%;display:flex;align-items:center;justify-content:center;
   font-family:"Vazirmatn",Tahoma,sans-serif;font-weight:900;font-style:normal;font-size:calc(var(--ah)*.36);line-height:1;white-space:nowrap;direction:ltr;
   color:#ffd21a;text-shadow:0 0 1px #2a1200,1px 0 0 #2a1200,-1px 0 0 #2a1200,0 1px 0 #2a1200,0 -1px 0 #2a1200,0 2px 0 rgba(0,0,0,.35)}

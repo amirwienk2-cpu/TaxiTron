@@ -326,11 +326,15 @@ renderHome();
 // Demo data. Set real data with TT.setOnline(128)  |  TT.setOnline(['Ali','Sara'])  |  TT.setOnline({count:342, users:['Ali','Sara','Max']})
 const CHAT={online:{count:128,users:[{name:'TaxiBoss',admin:'boy'},{name:'ZombieHunter',admin:'girl'},{name:'Designer',badge:'designer'},'NightRider','TonMaster','SuperTaxiDriver99','Sara','Max','Kian','Nima','Dara','Roya','Ali']}};
 const AV_COLORS=[['#ffe36a','#f0a000'],['#9dff8a','#2aa84a'],['#8fd0ff','#1e6bff'],['#ffa08a','#d8341a'],['#d9a8ff','#8a3cff']];
-const ADM_IMG={boy:'assets/images/adm-boy.png',girl:'assets/images/adm-girl.png',designer:'../sprites/alipro.png'};
+const ADM_IMG={boy:'assets/images/adm-boy.png',girl:'assets/images/adm-girl.png',designer:'../sprites/designer22.mov'};
 // Admin badge: kind = 'boy' | 'girl'
 function admBadge(kind,h){
   const s=document.createElement('span'); s.className='adm adm-'+kind; if(h) s.style.setProperty('--ah',h+'px');
-  const i=document.createElement('img'); i.src=ADM_IMG[kind]||ADM_IMG.boy; i.alt='';
+  const i=document.createElement(kind==='designer'?'video':'img');
+  i.src=ADM_IMG[kind]||ADM_IMG.boy; i.alt='';
+  if(kind==='designer'){
+    i.autoplay=true; i.loop=true; i.muted=true; i.playsInline=true;
+  }
   s.title=kind==='designer'?T().designer:T().admin; s.append(i);
   if(kind!=='designer'){ const t=document.createElement('em'); t.className='adm-t'; t.textContent=T().admin; s.append(t); }
   return s;
