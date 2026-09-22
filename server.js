@@ -439,6 +439,26 @@ async function sendTelegramStartMessage(chatId) {
   }
 }
 
+async function setTelegramMenuButton(chatId) {
+  if (!BOT_TOKEN) return;
+  const menuButton = {
+    type: 'web_app',
+    text: '🎮 Game',
+    web_app: { url: TELEGRAM_MINI_APP_URL },
+  };
+  const body = { menu_button: menuButton };
+  if (chatId !== undefined && chatId !== null) body.chat_id = chatId;
+  const response = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/setChatMenuButton', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const result = await response.json();
+  if (!response.ok || result.ok !== true) {
+    throw new Error(result.description || 'setChatMenuButton fehlgeschlagen');
+  }
+}
+
 // Sends a private Telegram DM to the admin (ADMIN_CHAT_ID) whenever a
 // deposit is credited, so payments aren't missed even away from the
 // admin panel. Best-effort: failures are logged, never thrown.
@@ -491,21 +511,7 @@ async function startTelegramBot() {
     if (!response.ok || result.ok !== true) {
       throw new Error(result.description || 'setWebhook fehlgeschlagen');
     }
-    const menuResponse = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/setChatMenuButton', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        menu_button: {
-          type: 'web_app',
-          text: '🎮 Game',
-          web_app: { url: miniAppUrl.toString() },
-        },
-      }),
-    });
-    const menuResult = await menuResponse.json();
-    if (!menuResponse.ok || menuResult.ok !== true) {
-      throw new Error(menuResult.description || 'setChatMenuButton fehlgeschlagen');
-    }
+    await setTelegramMenuButton();
     console.log('[bot] started (webhook)');
     console.log('[bot] webhook configured: ' + webhookUrl.toString());
     console.log('[bot] menu button configured: ' + miniAppUrl.toString());
@@ -1300,6 +1306,7 @@ app.post('/telegram/webhook', async (req, res) => {
   user.lastSeenAt = Date.now();
   persist();
   try {
+    await setTelegramMenuButton(message.chat && message.chat.id ? message.chat.id : userId);
     await sendTelegramStartMessage(message.chat && message.chat.id ? message.chat.id : userId);
   } catch (error) {
     console.error('[telegram] /start welcome failed: ' + error.message);
