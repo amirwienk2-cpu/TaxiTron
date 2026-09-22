@@ -2120,7 +2120,7 @@ async function postWithdrawalSuccessToTelegram(withdrawal) {
   if (!BOT_TOKEN || !WITHDRAWAL_CHANNEL_ID) return false;
   const configuredChatId = String(WITHDRAWAL_CHANNEL_ID).trim();
   const chatId = /^-?\d+$/.test(configuredChatId) ? Number(configuredChatId) : configuredChatId;
-  const playGameUrl = new URL(PLAY_GAME_URL);
+  const playGameUrl = new URL(MINI_APP_URL);
   const newsChannelUrl = new URL(NEWS_CHANNEL_URL);
   if (!['http:', 'https:'].includes(playGameUrl.protocol) || !['http:', 'https:'].includes(newsChannelUrl.protocol)) {
     throw new Error('telegram-invalid-inline-button-url');
