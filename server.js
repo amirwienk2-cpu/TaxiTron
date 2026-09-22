@@ -1127,8 +1127,14 @@ app.use(express.json());
 // The public entry point must always be the redesigned shell. The legacy game is
 // still available below through /legacy-game.html for the embedded game iframe.
 app.get(['/','/index.html'], (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.redirect('/TaxiTon-new/index-new.html');
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+    Pragma: 'no-cache',
+    Expires: '0'
+  });
+  const query = req.originalUrl.split('?')[1];
+  const target = '/TaxiTon-new/index-new.html?v=20260922' + (query ? '&' + query : '');
+  res.redirect(302, target);
 });
 app.get('/legacy-game.html', (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');

@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script>
+  // Direct visits to the historical entry file must open the redesigned shell.
+  // /legacy-game.html intentionally remains available for the embedded game iframe.
+  if (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
+    window.location.replace('/TaxiTon-new/index-new.html?v=20260922' + window.location.search);
+  }
+</script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <title>Coin Runner 3D</title>
