@@ -547,7 +547,7 @@ body:not(.en) .rp svg,body:not(.en) .rb-ic svg{transform:scaleX(-1)}
 
 /* Chat: smaller input + send button */
 .chat-input{gap:6px;margin-top:10px;align-items:flex-end}
-.chat-input input,.chat-input textarea{min-height:36px;max-width:220px;padding:8px 11px;border-radius:10px;font-size:13.5px}
+.chat-input input,.chat-input textarea{flex:0 1 150px;min-height:36px;max-width:150px;padding:8px 11px;border-radius:10px;font-size:13.5px}
 .chat-input textarea{height:36px;max-height:110px}
 .chat-input{direction:ltr}
 .chat-input input,.chat-input textarea{direction:rtl;text-align:right}
