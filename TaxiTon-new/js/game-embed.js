@@ -100,6 +100,7 @@
     const skin = localStorage.getItem(accountKey('cr3d_skin')) || localStorage.getItem('cr3d_skin') || 'yellow';
     const rate = coinsPerZombieForSkin(skin);
     window.__TT_GAME_EXCHANGE_RATE = rate;
+    localStorage.setItem('tt_game_exchange_rate', String(rate));
     if (typeof TT !== 'undefined' && typeof TT.setWallet === 'function') TT.setWallet({ rate });
   }
   function pollWalletProgress(){
@@ -109,6 +110,7 @@
       const skin = localStorage.getItem(accountKey('cr3d_skin')) || 'yellow';
       const rate = coinsPerZombieForSkin(skin);
       window.__TT_GAME_EXCHANGE_RATE = rate;
+      localStorage.setItem('tt_game_exchange_rate', String(rate));
       // Withdrawable TON balance ("قابل برداشت") in the old design is the same
       // store.points (cr3d_points) the exchange feeds via addPointsFromCoins() -
       // every coin exchange raises it (subject to the same daily cap), so mirror
