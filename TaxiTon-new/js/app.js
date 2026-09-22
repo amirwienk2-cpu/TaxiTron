@@ -18,9 +18,9 @@ const I18N={
  en:{h1t:'Steer your taxi',h1:'Arrow keys, A/D or swipe to change lanes',h2t:'Collect zombies',h2:'The more zombies ride with you, the faster your car gets.',h3t:"Don't crash!",h3:'Avoid other cars – one crash ends the run.',h4t:'Swap for coins',h4:'Exchange your zombies for coins in the wallet',h4b:'(100 coins per zombie)',pw:'There are power-up items on the route that activate when the taxi hits them.',invDesc:'Invite real Telegram users with your personal link. The top 3 inviters win TON! 🥇 20 TON · 🥈 10 TON · 🥉 5 TON',invTime:'Campaign ends in',invEnded:'Campaign ended',ivYourRank:'Your rank',ivInvites:'invites',ivNoInvites:'No invites yet. Be the first!',ivSettled:'Campaign ended · winners have been paid out.',invBtn:'Invite with your link',invShare:'Join me in TaxiTron! 🚕🧟',tkDesc2:'Join the official TaxiTon channel to complete this task.',designer:'Designer',m3:'New colors and icons are coming tomorrow 🎨',admin:'Admin',onlineShort:'Online',onlineUsers:'Users online:',howT:'How to play',sBest:'Best score',sRoutes:'Routes',sLevel:'Level',tonLeft:'TON left',lvlWord:'Level',triesLeft:'Tries left',tkJoinAll:'Join channels',tkDescAll:'Join the channels below to complete this task.',tkRewardAll:'Reward per channel: +{n} zombies',tkJoin:'Join',tkDesc:'Join the withdrawal news channel to complete this task.',tkReward:'Reward: +{n} zombies',tkOpen:'Open Telegram channel',tkCheck:'Check membership',tkDone:'Completed. +{n} Zombies added to your wallet.',tkNo:'You have not joined the channel yet.',bal:'Balance',daily:'Daily limit',soon:'Coming soon',buyLv:'Buy levels',skins:'Chat skins',level:'Level',coinsShort:'coins',buy:'Buy',owned:'Owned',use:'Use',inUse:'Active',free:'Free',hi:'Hi!',sk_yellow:'Yellow',sk_red:'Red',sk_white:'White',sk_green:'Green',sk_black:'Black',sk_platinum:'Platinum',youTag:'You',lbEmpty:'No scores yet',langs:'Languages',chat:'Chat',chatT:'Drivers chat',m1:'Who hit more than 500 zombies today?',m2:'Me! Only 10 points left to first place 🔥',chatPh:'Write a message…',send:'Send',me:'Me',game:'Game',tasks:'Tasks',home:'Home',shop:'Shop',play:'Play',tour:'Tournament',wallet:'Wallet',homeT:'TaxiTron',homeP:'Welcome, driver! Collect coins, hit zombies and win TON in the weekly tournament.',coins:'Coins',zweek:'Zombies this week',shopP:'Taxis and upgrades are coming here soon.',gameP:'Game modes and levels.',playP:'Hop in your taxi and collect as many zombies as you can.',start:'Start game',walletP:'Connect your TON wallet to receive prizes.',connect:'Connect wallet',t1:'Join the channel',t2:'Invite friends',t3:'Daily login',t4:'Watch 10 videos',adsDesc:'Watch 10 rewarded videos and receive 0.03 TON in total.',watchVideo:'Watch video',adsCompleted:'Completed',adsDone:'Completed. 0.03 TON was added to your balance.',adsNotReady:'Open the game in Telegram to watch rewarded videos.',adsFailed:'Video was not completed. No reward was added.',d:'d',h:'h',m:'m',
   skinPerDay:'day',skinPerDayFor:'per day for',skinDays:'days',skinDaysLeft:'days left',skinRewardActive:'Daily reward active',skinTodayLeft:'Today: {amount} TON left',skinRewardOffer:'Earn a daily TON reward',skinNeedMore:'Need {amount} TON more to unlock'}
 };
-Object.assign(I18N.fa,{levelLocked:'قفل شده'});
-Object.assign(I18N.de,{levelLocked:'Gesperrt'});
-Object.assign(I18N.en,{levelLocked:'Locked'});
+Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برنده رندوم شد: ۰.۰۰۱ TON 🎉'});
+Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: 0.001 TON 🎉'});
+Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: 0.001 TON 🎉'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
@@ -45,6 +45,7 @@ function applyLang(){
   if(typeof renderHome==='function' && typeof HOME!=='undefined') renderHome();
   if(typeof renderOnline==='function') renderOnline();
   if(typeof renderChatBadges==='function') renderChatBadges();
+  if(typeof renderRandomWinnerMessages==='function') renderRandomWinnerMessages();
   if(typeof renderTask==='function') renderTask();
   if(typeof renderAdsTask==='function') renderAdsTask();
   if(typeof renderInviteLeaderboard==='function') renderInviteLeaderboard(IV_LAST_DATA);
@@ -377,15 +378,27 @@ TT.setOnline=x=>{
 TT.addMessage=(m)=>{
   m=m||{};
   if(m.mid!==undefined&&Array.from(chatList.querySelectorAll('.msg[data-mid]')).some(el=>el.dataset.mid===String(m.mid))) return;
-  const d=document.createElement('div'); d.className='msg'+(m.me?' me':''); if(m.badge||m.admin) d.dataset.badge=m.badge||m.admin;
+  const d=document.createElement('div'); d.className='msg'+(m.me?' me':'')+(m.randomWinner?' random-winner':''); if(m.badge||m.admin) d.dataset.badge=m.badge||m.admin;
   if(m.id!==undefined) d.dataset.uid=m.id;
   if(m.mid!==undefined) d.dataset.mid=m.mid;
   if(m.muted!==undefined) d.dataset.muted=m.muted?'true':'false';
+  if(m.randomWinner){
+    d.dataset.randomWinnerName=m.randomWinnerName||'';
+    d.dataset.randomWinnerText=m.text||'';
+  }
   if(m.time!==undefined){ const t=new Date(m.time).getTime(); if(!isNaN(t)) d.dataset.ts=t; }
   const b=document.createElement('b'); b.textContent=m.name||'?'; const s=document.createElement('span'); s.textContent=m.text||'';
   d.append(b); if(m.reply) d.append(buildQuote(m.reply)); d.append(s);
   chatList.append(d); decorateMsg(d); renderChatBadges(); renderModMarks(); scrollChatToEnd();
 };
+function renderRandomWinnerMessages(){
+  document.querySelectorAll('#chatList .msg.random-winner').forEach((message)=>{
+    const name=message.dataset.randomWinnerName;
+    const text=name && T().randomWinner ? T().randomWinner.replace('{name}',name) : message.dataset.randomWinnerText;
+    const body=message.querySelector(':scope > span:last-of-type');
+    if(body && text) body.textContent=text;
+  });
+}
 
 // ---- Chat: reply ---------------------------------------------------------------------
 // Reply = tap the ↩ button on a message, or swipe the message sideways.

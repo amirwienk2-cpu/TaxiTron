@@ -380,6 +380,8 @@
       admin: m.isAdmin ? 'boy' : undefined,
       badge: !m.isAdmin && m.isDesigner ? 'designer' : undefined,
       muted: m.chatMuted === true,
+      randomWinner: m.randomWinner === true,
+      randomWinnerName: m.randomWinnerName,
       reply: m.replyTo ? { mid: m.replyTo.id, name: m.replyTo.name, text: m.replyTo.text } : undefined
     };
   }

@@ -1400,6 +1400,8 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
       isDesigner: req.user.isDesigner === true,
       chatMuted: false,
       replyTo: null,
+      randomWinner: true,
+      randomWinnerName: winner.name || ('Player ' + winner.id),
     };
     chatMessages.push(message);
     if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
