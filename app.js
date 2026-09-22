@@ -661,7 +661,7 @@
   initializeOwnedPremiumAttempts();
   loadActiveAttemptState();
   saveStore();
-  function getCoinsPerZombie(){ const level = activeAttemptLevel(); return level >= 4 ? 100 : level >= 3 ? 20 : level >= 2 ? 7 : 1; }
+  function getCoinsPerZombie(level){ level = level===undefined ? activeAttemptLevel() : Number(level); return level >= 4 ? 100 : level >= 3 ? 20 : level >= 2 ? 7 : 1; }
   function getLevelName(level){
     const nameKeys = { 1:'skinNameYellow', 2:'skinNameRed', 3:'skinNameWhite', 4:'skinNameGreen', 5:'skinNameBlack' };
     return t(nameKeys[Number(level)] || nameKeys[1]);
@@ -912,9 +912,12 @@
     }
     document.getElementById('walletCoinsDisplay').textContent = store.coins;
     document.getElementById('walletTonDisplay').textContent = store.points.toFixed(6);
-    document.getElementById('walletPersonsDisplay').textContent = lastPersonScore;
-    document.getElementById('exchangePreview').textContent = lastPersonScore * getCoinsPerZombie();
-    document.getElementById('exchangeBtn').disabled = serverSession.isBanned || lastPersonScore <= 0 || dailyEarningsComplete();
+    document.getElementById('walletPersonsDisplay').textContent = totalPendingZombies();
+    // Preview reflects each level's own stash at its own rate (never one flat rate for
+    // everything), matching exactly what exchangePersons() actually pays out.
+    const exchangePreviewCoins = [1,2,3,4].reduce((sum,l) => sum + (pendingZombiesByLevel[l]||0) * getCoinsPerZombie(l), 0);
+    document.getElementById('exchangePreview').textContent = exchangePreviewCoins;
+    document.getElementById('exchangeBtn').disabled = serverSession.isBanned || totalPendingZombies() <= 0 || dailyEarningsComplete();
 
     document.getElementById('balanceValue').textContent = store.points.toFixed(6);
     const dailyCap = getDailyPtsCap();
@@ -954,11 +957,28 @@
     }
   }
 
-  // zombies collected but not yet exchanged -> saved so they survive closing the app
-  let lastPersonScore = parseInt(localStorage.getItem(accountStorageKey('cr3d_pendingZombies')) || '0', 10);
+  // Zombies collected but not yet exchanged -> saved so they survive closing the app.
+  // Tracked SEPARATELY per level they were actually earned at (not one flat total) - this
+  // is what stops a real exploit: collecting zombies while playing a cheap level, then
+  // switching the shop's "active" level to a premium one before exchanging, which used to
+  // cash out that whole stash at the premium level's much higher coins-per-zombie rate.
+  // Each level's own stash can now only ever be exchanged at that same level's own rate.
+  let pendingZombiesByLevel = {};
+  try { pendingZombiesByLevel = JSON.parse(localStorage.getItem(accountStorageKey('cr3d_pendingZombiesByLevel')) || '{}') || {}; } catch (e) { pendingZombiesByLevel = {}; }
+  if (!pendingZombiesByLevel || typeof pendingZombiesByLevel !== 'object') pendingZombiesByLevel = {};
+  [1,2,3,4].forEach(l => { if (!Number.isFinite(pendingZombiesByLevel[l])) pendingZombiesByLevel[l] = 0; });
+  // One-time migration: any pre-existing flat pending total (from before this fix) gets
+  // credited to whatever level was active back then, same as it always behaved before.
+  const legacyPendingZombies = parseInt(localStorage.getItem(accountStorageKey('cr3d_pendingZombies')) || '0', 10);
+  if (legacyPendingZombies > 0){
+    const legacyLevel = activeAttemptLevel();
+    pendingZombiesByLevel[legacyLevel] = (pendingZombiesByLevel[legacyLevel] || 0) + legacyPendingZombies;
+    localStorage.removeItem(accountStorageKey('cr3d_pendingZombies'));
+  }
+  function totalPendingZombies(){ return [1,2,3,4].reduce((sum,l) => sum + (Number(pendingZombiesByLevel[l]) || 0), 0); }
   let lastDistance = parseFloat(localStorage.getItem(accountStorageKey('cr3d_pendingDistance')) || '0');
   function savePending(){
-    localStorage.setItem(accountStorageKey('cr3d_pendingZombies'), lastPersonScore);
+    localStorage.setItem(accountStorageKey('cr3d_pendingZombiesByLevel'), JSON.stringify(pendingZombiesByLevel));
     localStorage.setItem(accountStorageKey('cr3d_pendingDistance'), lastDistance);
   }
 
@@ -1681,7 +1701,9 @@
     if (accountChanged){
       localStorage.setItem('cr3d_serverUid', String(state.uid));
       loadAccountAttempts();
-      lastPersonScore = parseInt(localStorage.getItem(accountStorageKey('cr3d_pendingZombies')) || '0', 10);
+      try { pendingZombiesByLevel = JSON.parse(localStorage.getItem(accountStorageKey('cr3d_pendingZombiesByLevel')) || '{}') || {}; } catch (e) { pendingZombiesByLevel = {}; }
+      if (!pendingZombiesByLevel || typeof pendingZombiesByLevel !== 'object') pendingZombiesByLevel = {};
+      [1,2,3,4].forEach(l => { if (!Number.isFinite(pendingZombiesByLevel[l])) pendingZombiesByLevel[l] = 0; });
       lastDistance = parseFloat(localStorage.getItem(accountStorageKey('cr3d_pendingDistance')) || '0');
       store.skinRewards = {};
       const accountSkins = Array.isArray(state.ownedSkins) ? state.ownedSkins : ['yellow'];
@@ -1786,7 +1808,7 @@
       applyServerState(data.state);
       const reward = Number(data.rewardZombies) || 0;
       if (reward > 0){
-        lastPersonScore += reward;
+        pendingZombiesByLevel[activeAttemptLevel()] = (pendingZombiesByLevel[activeAttemptLevel()] || 0) + reward;
         savePending();
         refreshTopUI();
         statusEl.textContent = 'Completed. +500 Zombies added to your wallet.';
@@ -1841,7 +1863,7 @@
       applyServerState(data.state);
       const reward = Number(data.rewardZombies) || 0;
       if (reward > 0) {
-        lastPersonScore += reward;
+        pendingZombiesByLevel[activeAttemptLevel()] = (pendingZombiesByLevel[activeAttemptLevel()] || 0) + reward;
         savePending();
         refreshTopUI();
       }
@@ -1917,7 +1939,7 @@
 
   let exchangeInProgress = false;
   async function exchangePersons(){
-    if (lastPersonScore <= 0 || exchangeInProgress || dailyEarningsComplete()) return;
+    if (totalPendingZombies() <= 0 || exchangeInProgress || dailyEarningsComplete()) return;
 
     if (SERVER_URL){
       // Server economy: coins/TON only ever change on the server, so nothing gets
@@ -1926,56 +1948,65 @@
       const exchangeBtn = document.getElementById('exchangeBtn');
       exchangeBtn.disabled = true;
       try {
-        for (let attempt = 0; attempt < 2 && lastPersonScore > 0; attempt++){
-          if (!serverSession.online || !serverSession.token){
-            await initServerSession(); // e.g. server was waking up when the app opened
-            if (!serverSession.online || !serverSession.token) break;
+        // Exchange each level's stash SEPARATELY, tagged with its own real level, so a
+        // batch collected at a cheap level can never be cashed out at a premium level's
+        // rate just because that premium level happens to be "active" in the shop now.
+        const levelsWithStock = [1,2,3,4].filter(l => (pendingZombiesByLevel[l]||0) > 0);
+        for (const level of levelsWithStock){
+          for (let attempt = 0; attempt < 2 && pendingZombiesByLevel[level] > 0; attempt++){
+            if (!serverSession.online || !serverSession.token){
+              await initServerSession(); // e.g. server was waking up when the app opened
+              if (!serverSession.online || !serverSession.token) break;
+            }
+            const sentZombies = pendingZombiesByLevel[level];
+            const res = await fetch(SERVER_URL + '/api/run', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: serverSession.token,
+                distance: level === activeAttemptLevel() ? lastDistance : 0,
+                zombies: sentZombies,
+                level
+              })
+            });
+            if (res.status === 401){
+              // session expired -> log in again and retry once
+              serverSession.online = false;
+              serverSession.token = null;
+              continue;
+            }
+            const data = await res.json();
+            if (res.ok){
+              applyServerState(data.state);
+              // only remove what the server actually credited; the rest stays pending
+              const accepted = (typeof data.acceptedZombies === 'number') ? data.acceptedZombies : sentZombies;
+              const remaining = Math.max(0, sentZombies - accepted);
+              if (level === activeAttemptLevel()) lastDistance = remaining > 0 ? lastDistance * (remaining / sentZombies) : 0;
+              pendingZombiesByLevel[level] = remaining;
+              savePending();
+            } else if (data.error === 'user-banned' && data.state) {
+              applyServerState(data.state);
+            }
+            break; // other errors (e.g. rate-limited): keep pending, user can retry
           }
-          const sentZombies = lastPersonScore;
-          const res = await fetch(SERVER_URL + '/api/run', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              token: serverSession.token,
-              distance: lastDistance,
-              zombies: sentZombies,
-              level: activeAttemptLevel()
-            })
-          });
-          if (res.status === 401){
-            // session expired -> log in again and retry once
-            serverSession.online = false;
-            serverSession.token = null;
-            continue;
-          }
-          const data = await res.json();
-          if (res.ok){
-            applyServerState(data.state);
-            // only remove what the server actually credited; the rest stays pending
-            const accepted = (typeof data.acceptedZombies === 'number') ? data.acceptedZombies : sentZombies;
-            const remaining = Math.max(0, lastPersonScore - accepted);
-            lastDistance = remaining > 0 ? lastDistance * (remaining / lastPersonScore) : 0;
-            lastPersonScore = remaining;
-            savePending();
-          } else if (data.error === 'user-banned' && data.state) {
-            applyServerState(data.state);
-          }
-          break; // other errors (e.g. rate-limited): keep pending, user can retry
         }
       } catch (e) {
         // network hiccup -> keep the pending score, user can retry the exchange
       }
       exchangeInProgress = false;
-      exchangeBtn.disabled = serverSession.isBanned || lastPersonScore <= 0 || dailyEarningsComplete();
+      exchangeBtn.disabled = serverSession.isBanned || totalPendingZombies() <= 0 || dailyEarningsComplete();
       refreshTopUI();
       return;
     }
 
-    // no server configured at all: local-only economy
-    const coinsGained = lastPersonScore * getCoinsPerZombie();
+    // no server configured at all: local-only economy - still each level at its own rate
+    let coinsGained = 0;
+    [1,2,3,4].forEach(level => {
+      coinsGained += (pendingZombiesByLevel[level]||0) * getCoinsPerZombie(level);
+      pendingZombiesByLevel[level] = 0;
+    });
     store.coins += coinsGained;
     addPointsFromCoins(coinsGained);
-    lastPersonScore = 0;
     lastDistance = 0;
     savePending();
     saveStore();
@@ -4107,7 +4138,10 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   function commitRun(){
     store.runs += 1;
     if (personScore > best){ best = personScore; store.best = best; }
-    lastPersonScore += personScore;
+    // Credit this run's zombies to the level that was ACTUALLY active while playing it -
+    // not whatever the shop's "active" level happens to be later at exchange time.
+    const runLevel = activeAttemptLevel();
+    pendingZombiesByLevel[runLevel] = (pendingZombiesByLevel[runLevel] || 0) + personScore;
     lastDistance += distance;
     savePending();
     saveStore();
