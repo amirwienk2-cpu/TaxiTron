@@ -80,19 +80,25 @@
     if (progressTimer) { clearTimeout(progressTimer); progressTimer = null; }
   }
 
-  // Wallet "معاوضه" (exchange) sync: the real game keeps the collected-but-not-yet-
-  // exchanged zombies (cr3d_pendingZombies) and the coin balance (cr3d_coins) in
-  // localStorage, and the exchange rate depends on the player's current skin/level
-  // exactly like getCoinsPerZombie() in the real app.js (1/7/20/100 coins per zombie
-  // for level 1/2/3/4). Poll continuously (not just while the game screen is open) so
-  // the new design's Wallet tab always shows the real numbers whenever it's opened.
+  // The real game stores pending zombies separately by level. Keep the new design
+  // synced with that source instead of the removed flat legacy key.
+  function readPendingZombies(){
+    try {
+      const byLevel = JSON.parse(localStorage.getItem(accountKey('cr3d_pendingZombiesByLevel')) || '{}') || {};
+      const total = [1, 2, 3, 4].reduce((sum, level) => sum + (Number(byLevel[level]) || 0), 0);
+      if (total > 0) return total;
+      return parseInt(localStorage.getItem(accountKey('cr3d_pendingZombies')) || '0', 10) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
   function coinsPerZombieForSkin(skin){
     const level = skin === 'green' ? 4 : skin === 'white' ? 3 : skin === 'red' ? 2 : 1;
     return level >= 4 ? 100 : level >= 3 ? 20 : level >= 2 ? 7 : 1;
   }
   function pollWalletProgress(){
     try {
-      const zombies = parseInt(localStorage.getItem(accountKey('cr3d_pendingZombies')) || '0', 10) || 0;
+      const zombies = readPendingZombies();
       const coins = parseInt(localStorage.getItem(accountKey('cr3d_coins')) || '0', 10) || 0;
       const skin = localStorage.getItem(accountKey('cr3d_skin')) || 'yellow';
       const rate = coinsPerZombieForSkin(skin);
@@ -127,7 +133,7 @@
         // local-only economy (no server configured) runs synchronously; this small
         // wait covers the async/server-session code path too, just in case.
         await new Promise(resolve => setTimeout(resolve, 200));
-        const zombies = parseInt(localStorage.getItem(accountKey('cr3d_pendingZombies')) || '0', 10) || 0;
+        const zombies = readPendingZombies();
         const coins = parseInt(localStorage.getItem(accountKey('cr3d_coins')) || '0', 10) || 0;
         const points = parseFloat(localStorage.getItem(accountKey('cr3d_points')) || '0') || 0;
         return { zombies, coins, points };
