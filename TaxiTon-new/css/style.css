@@ -167,6 +167,9 @@ body.en .page,body.en .countdown{direction:ltr}
   overflow-wrap:anywhere;word-break:break-word}
 .msg b{display:flex;align-items:center;color:var(--gold);font-size:13px}
 .msg.me{align-self:flex-end}
+.random-winner-art{position:relative;width:100%;margin:4px auto 2px;line-height:1.2}
+.random-winner-art img{display:block;width:100%;height:auto;object-fit:contain}
+.random-winner-text{position:absolute;top:36%;left:19%;width:65%;color:#1b1a1c;font-size:clamp(10px,2.5vw,15px);font-weight:900;line-height:1.25;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 .chat-input{display:flex;gap:8px;margin-top:16px;align-items:flex-end}
 .chat-input input,.chat-input textarea{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(224,161,0,.55);
   background:rgba(10,8,30,.8);color:#fff;font:600 15px "Vazirmatn",Tahoma,sans-serif;outline:none}

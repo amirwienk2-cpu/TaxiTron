@@ -388,14 +388,28 @@ TT.addMessage=(m)=>{
   }
   if(m.time!==undefined){ const t=new Date(m.time).getTime(); if(!isNaN(t)) d.dataset.ts=t; }
   const b=document.createElement('b'); b.textContent=m.name||'?'; const s=document.createElement('span'); s.textContent=m.text||'';
-  d.append(b); if(m.reply) d.append(buildQuote(m.reply)); d.append(s);
+  d.append(b);
+  if(m.randomWinner){
+    const winnerArt=document.createElement('div');
+    winnerArt.className='random-winner-art';
+    const winnerImage=document.createElement('img');
+    winnerImage.src='/sprites/ghore.png';
+    winnerImage.alt='';
+    winnerImage.setAttribute('aria-hidden','true');
+    s.className='random-winner-text';
+    winnerArt.append(winnerImage,s);
+    d.append(winnerArt);
+  } else {
+    d.append(s);
+  }
+  if(m.reply) d.append(buildQuote(m.reply));
   chatList.append(d); decorateMsg(d); renderChatBadges(); renderModMarks(); scrollChatToEnd();
 };
 function renderRandomWinnerMessages(){
   document.querySelectorAll('#chatList .msg.random-winner').forEach((message)=>{
     const name=message.dataset.randomWinnerName;
     const text=name && T().randomWinner ? T().randomWinner.replace('{name}',name) : message.dataset.randomWinnerText;
-    const body=message.querySelector(':scope > span:last-of-type');
+    const body=message.querySelector('.random-winner-text');
     if(body && text) body.textContent=text;
   });
 }
