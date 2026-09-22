@@ -126,6 +126,14 @@ const MAX_DISTANCE_PER_CALL = 1000000;
 // long-lasting run to not get falsely clamped.
 const MIN_MS_PER_TOURNAMENT_ZOMBIE = 40; // ceiling: 25 zombies/sec sustained
 const TOURNAMENT_PLAUSIBILITY_BUFFER = 300; // slack for bursts/high-speed late-game stretches
+// Without an upper bound, a forged client could call /api/run/start, sit idle for an
+// arbitrarily long time (no real gameplay at all), then submit a huge zombie count that
+// still passes the elapsed-time check above. Capping how much elapsed time can be
+// "cashed in" closes that gap while still comfortably covering any real, skilled run:
+// even a very long, very fast run realistically ends within a couple of minutes once a
+// crash becomes unavoidable, and legitimate top scores on this leaderboard have stayed
+// well under the ~4800 ceiling this cap still allows.
+const MAX_MS_CREDITED_PER_TOURNAMENT_RUN = 3 * 60 * 1000; // 3 minutes
 // Anti-cheat for the coin/TON economy: /api/run pays out coins and TON for a
 // finished run's zombie count. Unlike /api/submit-score it has no per-request
 // timing check, which let a script call it back-to-back to farm the daily TON
@@ -2117,11 +2125,19 @@ app.post('/api/submit-score', requireUserFromBody, rejectBannedUser, (req, res) 
   // (or if the reported zombie count is not plausible for the elapsed time),
   // the submission gets clamped down instead of blindly accepted.
   const startedAt = Number(user.runStartedAt || 0);
-  const elapsedMs = startedAt > 0 ? Math.max(0, Date.now() - startedAt) : 0;
+  const rawElapsedMs = startedAt > 0 ? Math.max(0, Date.now() - startedAt) : 0;
+  // Cap how much elapsed time counts towards the plausibility budget: waiting
+  // idle (without ever really playing) between /api/run/start and this call must
+  // not be able to buy an unlimited zombie allowance.
+  const elapsedMs = Math.min(rawElapsedMs, MAX_MS_CREDITED_PER_TOURNAMENT_RUN);
   const maxPlausibleZombies = Math.floor(elapsedMs / MIN_MS_PER_TOURNAMENT_ZOMBIE) + TOURNAMENT_PLAUSIBILITY_BUFFER;
   if (zombies > maxPlausibleZombies) {
-    console.warn(`[anti-cheat] submit-score: user ${user.id} reported ${zombies} zombies after ${elapsedMs}ms (max plausible ${maxPlausibleZombies}) - clamped`);
+    console.warn(`[anti-cheat] submit-score: user ${user.id} reported ${zombies} zombies after ${rawElapsedMs}ms real / ${elapsedMs}ms credited (max plausible ${maxPlausibleZombies}) - clamped`);
     zombies = Math.max(0, maxPlausibleZombies);
+  } else if (rawElapsedMs > MAX_MS_CREDITED_PER_TOURNAMENT_RUN) {
+    // Not clamped (score was already within the capped budget), but a run
+    // lasting this long between start and submit is unusual enough to log.
+    console.warn(`[anti-cheat] submit-score: user ${user.id} took ${rawElapsedMs}ms between run/start and submit-score (longer than the ${MAX_MS_CREDITED_PER_TOURNAMENT_RUN}ms credit cap)`);
   }
   user.runStartedAt = 0; // consumed - the next round needs a fresh /api/run/start
 
