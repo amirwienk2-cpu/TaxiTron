@@ -394,6 +394,7 @@
       muted: m.chatMuted === true,
       randomWinner: m.randomWinner === true,
       randomWinnerName: m.randomWinnerName,
+      randomPrizeTon: m.randomPrizeTon,
       reply: m.replyTo ? { mid: m.replyTo.id, name: m.replyTo.name, text: m.replyTo.text } : undefined
     };
   }

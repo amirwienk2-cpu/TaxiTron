@@ -101,7 +101,8 @@ function runRandomDraw() {
   }
 
   const winner = candidates[Math.floor(Math.random() * candidates.length)];
-  winner.ton = Number((Number(winner.ton || 0) + 0.001).toFixed(9));
+  const prizeTon = randomPrizeTon(now);
+  winner.ton = Number((Number(winner.ton || 0) + prizeTon).toFixed(9));
   persist();
 
   const winnerName = winner.name || ('Player ' + winner.id);
@@ -109,7 +110,7 @@ function runRandomDraw() {
     id: chatNextId++,
     uid: RANDOM_BOT_UID,
     name: RANDOM_BOT_NAME,
-    text: winnerName + ' hat random gewonnen: 0.001 TON 🎉',
+    text: winnerName + ' hat random gewonnen: ' + prizeTon + ' TON 🎉',
     ts: now,
     isAdmin: false,
     isDesigner: false,
@@ -117,6 +118,7 @@ function runRandomDraw() {
     replyTo: null,
     randomWinner: true,
     randomWinnerName: winnerName,
+    randomPrizeTon: prizeTon,
   };
   chatMessages.push(message);
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
@@ -1376,6 +1378,13 @@ const ONLINE_WINDOW_MS = 90000;
 const RANDOM_INTERVAL_MS = 15 * 60 * 1000;
 const RANDOM_BOT_UID = 'random-bot';
 const RANDOM_BOT_NAME = 'ZombieBot';
+const RANDOM_PROMO_START_MS = Date.parse('2026-09-22T22:30:00+02:00');
+const RANDOM_PROMO_END_MS = RANDOM_PROMO_START_MS + 72 * 60 * 60 * 1000;
+
+function randomPrizeTon(now) {
+  return now >= RANDOM_PROMO_START_MS && now < RANDOM_PROMO_END_MS ? 0.2 : 0.001;
+}
+
 app.get('/api/online-count', (req, res) => {
   const now = Date.now();
   const count = Object.values(users).filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS).length;

@@ -261,7 +261,7 @@
     <div class="page chat-page">
       <div class="chat-head">
         <h1 data-i="chatT">چت راننده‌ها</h1>
-        <button class="chat-toggle" id="chatToggle" type="button" hidden></button>
+        <div class="random-promo-timer" id="randomPromoTimer" role="status" aria-live="polite"></div>
       </div>
       <div class="chat-body">
         <div class="chat-list" id="chatList">
@@ -270,6 +270,7 @@
           <div class="msg" data-badge="designer"><b>Designer</b><span data-i="m3"></span></div>
         </div>
         <aside class="online-bar" id="onlineBar" aria-live="polite">
+          <button class="chat-toggle" id="chatToggle" type="button" hidden></button>
           <div class="on-head">
             <span class="on-dot" aria-hidden="true"></span>
             <span class="on-txt"><span data-i="onlineShort">آنلاین</span> <b id="onlineCount">0</b></span>

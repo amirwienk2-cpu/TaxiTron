@@ -18,10 +18,10 @@ const I18N={
  en:{h1t:'Steer your taxi',h1:'Arrow keys, A/D or swipe to change lanes',h2t:'Collect zombies',h2:'The more zombies ride with you, the faster your car gets.',h3t:"Don't crash!",h3:'Avoid other cars – one crash ends the run.',h4t:'Swap for coins',h4:'Exchange your zombies for coins in the wallet',h4b:'(100 coins per zombie)',pw:'There are power-up items on the route that activate when the taxi hits them.',invDesc:'Invite real Telegram users with your personal link. The top 3 inviters win TON! 🥇 20 TON · 🥈 10 TON · 🥉 5 TON',invTime:'Campaign ends in',invEnded:'Campaign ended',ivYourRank:'Your rank',ivInvites:'invites',ivNoInvites:'No invites yet. Be the first!',ivSettled:'Campaign ended · winners have been paid out.',invBtn:'Invite with your link',invShare:'Join me in TaxiTron! 🚕🧟',tkDesc2:'Join the official TaxiTon channel to complete this task.',designer:'Designer',m3:'New colors and icons are coming tomorrow 🎨',admin:'Admin',onlineShort:'Online',onlineUsers:'Users online:',howT:'How to play',sBest:'Best score',sRoutes:'Routes',sLevel:'Level',tonLeft:'TON left',lvlWord:'Level',triesLeft:'Tries left',tkJoinAll:'Join channels',tkDescAll:'Join the channels below to complete this task.',tkRewardAll:'Reward per channel: +{n} zombies',tkJoin:'Join',tkDesc:'Join the withdrawal news channel to complete this task.',tkReward:'Reward: +{n} zombies',tkOpen:'Open Telegram channel',tkCheck:'Check membership',tkDone:'Completed. +{n} Zombies added to your wallet.',tkNo:'You have not joined the channel yet.',bal:'Balance',daily:'Daily limit',soon:'Coming soon',buyLv:'Buy levels',skins:'Chat skins',level:'Level',coinsShort:'coins',buy:'Buy',owned:'Owned',use:'Use',inUse:'Active',free:'Free',hi:'Hi!',sk_yellow:'Yellow',sk_red:'Red',sk_white:'White',sk_green:'Green',sk_black:'Black',sk_platinum:'Platinum',youTag:'You',lbEmpty:'No scores yet',langs:'Languages',chat:'Chat',chatT:'Drivers chat',m1:'Who hit more than 500 zombies today?',m2:'Me! Only 10 points left to first place 🔥',chatPh:'Write a message…',send:'Send',me:'Me',game:'Game',tasks:'Tasks',home:'Home',shop:'Shop',play:'Play',tour:'Tournament',wallet:'Wallet',homeT:'TaxiTron',homeP:'Welcome, driver! Collect coins, hit zombies and win TON in the weekly tournament.',coins:'Coins',zweek:'Zombies this week',shopP:'Taxis and upgrades are coming here soon.',gameP:'Game modes and levels.',playP:'Hop in your taxi and collect as many zombies as you can.',start:'Start game',walletP:'Connect your TON wallet to receive prizes.',connect:'Connect wallet',t1:'Join the channel',t2:'Invite friends',t3:'Daily login',t4:'Watch 10 videos',adsDesc:'Watch 10 rewarded videos and receive 0.03 TON in total.',watchVideo:'Watch video',adsCompleted:'Completed',adsDone:'Completed. 0.03 TON was added to your balance.',adsNotReady:'Open the game in Telegram to watch rewarded videos.',adsFailed:'Video was not completed. No reward was added.',d:'d',h:'h',m:'m',
   skinPerDay:'day',skinPerDayFor:'per day for',skinDays:'days',skinDaysLeft:'days left',skinRewardActive:'Daily reward active',skinTodayLeft:'Today: {amount} TON left',skinRewardOffer:'Earn a daily TON reward',skinNeedMore:'Need {amount} TON more to unlock'}
 };
-Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برنده رندوم شد: ۰.۰۰۱ TON 🎉'});
+Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برنده رندوم شد: {amount} TON 🎉'});
 Object.assign(I18N.fa,{randomRemaining:'Random {n}'});
-Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: 0.001 TON 🎉',randomRemaining:'Random {n}'});
-Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: 0.001 TON 🎉',randomRemaining:'Random {n}'});
+Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: {amount} TON 🎉',randomRemaining:'Random {n}'});
+Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: {amount} TON 🎉',randomRemaining:'Random {n}'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
@@ -388,6 +388,7 @@ TT.addMessage=(m)=>{
   if(m.randomWinner){
     d.dataset.randomWinnerName=m.randomWinnerName||'';
     d.dataset.randomWinnerText=m.text||'';
+    d.dataset.randomPrizeTon=m.randomPrizeTon||'';
   }
   if(m.time!==undefined){ const t=new Date(m.time).getTime(); if(!isNaN(t)) d.dataset.ts=t; }
   const b=document.createElement('b'); b.textContent=m.name||'?'; const s=document.createElement('span'); s.textContent=m.text||'';
@@ -411,7 +412,10 @@ TT.addMessage=(m)=>{
 function renderRandomWinnerMessages(){
   document.querySelectorAll('#chatList .msg.random-winner').forEach((message)=>{
     const name=message.dataset.randomWinnerName;
-    const text=name && T().randomWinner ? T().randomWinner.replace('{name}',name) : message.dataset.randomWinnerText;
+    const amount=message.dataset.randomPrizeTon || '0.001';
+    const text=name && T().randomWinner
+      ? T().randomWinner.replace('{name}',name).replace('{amount}',amount)
+      : message.dataset.randomWinnerText;
     const body=message.querySelector('.random-winner-text');
     if(body && text) body.textContent=text;
   });
@@ -672,6 +676,9 @@ Object.assign(I18N.en,{aMute:'Mute',aTalk:'Unmute',aChatOff:'Block chat',aChatOn
 Object.assign(I18N.fa,{chatClose:'بستن چت',chatOpen:'باز کردن چت',chatClosed:'چت توسط ادمین بسته شده'});
 Object.assign(I18N.de,{chatClose:'Chat schließen',chatOpen:'Chat öffnen',chatClosed:'Der Chat wurde vom Admin geschlossen'});
 Object.assign(I18N.en,{chatClose:'Close chat',chatOpen:'Open chat',chatClosed:'The chat was closed by an admin'});
+Object.assign(I18N.fa,{randomPromoBefore:'قرعه‌کشی ZombieBot شروع می‌شود در {time}',randomPromoActive:'زمان باقی‌مانده ZombieBot: {time}',randomPromoDone:'رویداد ZombieBot تمام شد'});
+Object.assign(I18N.de,{randomPromoBefore:'ZombieBot-Ziehung startet in {time}',randomPromoActive:'ZombieBot-Aktion verbleibend: {time}',randomPromoDone:'ZombieBot-Aktion beendet'});
+Object.assign(I18N.en,{randomPromoBefore:'ZombieBot draw starts in {time}',randomPromoActive:'ZombieBot event remaining: {time}',randomPromoDone:'ZombieBot event ended'});
 Object.assign(I18N.fa,{lvInfoTitle:'راننده لول {n}',lvInfoSoon:'اطلاعات این راننده به‌زودی اضافه می‌شود.'});
 Object.assign(I18N.de,{lvInfoTitle:'Fahrer Level {n}',lvInfoSoon:'Infos zu diesem Fahrer folgen in Kürze.'});
 Object.assign(I18N.en,{lvInfoTitle:'Level {n} driver',lvInfoSoon:'Details about this driver are coming soon.'});
@@ -861,6 +868,22 @@ renderOnline=function(){ _renderOnline2(); filterOnline(); };
 // own state (the user who got muted / banned)
 const MY={muted:false,banned:false};
 let CHAT_ENABLED=true;
+const RANDOM_PROMO_START=Date.parse('2026-09-22T22:30:00+02:00');
+const RANDOM_PROMO_END=RANDOM_PROMO_START+72*60*60*1000;
+const randomPromoTimer=document.getElementById('randomPromoTimer');
+function formatPromoTime(ms){
+  const total=Math.max(0,Math.floor(ms/1000)), h=Math.floor(total/3600), m=Math.floor(total%3600/60), s=total%60;
+  return [h,m,s].map(n=>String(n).padStart(2,'0')).join(':');
+}
+function renderRandomPromoTimer(){
+  if(!randomPromoTimer) return;
+  const now=Date.now();
+  if(now<RANDOM_PROMO_START) randomPromoTimer.textContent=T().randomPromoBefore.replace('{time}',formatPromoTime(RANDOM_PROMO_START-now));
+  else if(now<RANDOM_PROMO_END) randomPromoTimer.textContent=T().randomPromoActive.replace('{time}',formatPromoTime(RANDOM_PROMO_END-now));
+  else randomPromoTimer.textContent=T().randomPromoDone;
+}
+renderRandomPromoTimer();
+setInterval(renderRandomPromoTimer,1000);
 const chatToggle=document.getElementById('chatToggle');
 const canManageChat=()=>typeof TT.isChatAdmin==='function'?!!TT.isChatAdmin():isAdmin();
 TT.setMyChatState=o=>{ o=o||{}; if('muted' in o) MY.muted=o.muted; if('banned' in o) MY.banned=!!o.banned; renderMyState(); };
@@ -900,7 +923,7 @@ TT.setUserMod=(u,st)=>{
 const _renderOnline=renderOnline;
 renderOnline=function(){ _renderOnline(); markClickable(); renderModMarks(); };
 const _applyLang=applyLang;
-applyLang=function(){ _applyLang(); onSearch.setAttribute('aria-label',T().searchPh); renderModMarks(); renderReplyBar(); document.querySelectorAll('#chatList .rp').forEach(r=>{r.setAttribute('aria-label',T().reply);r.title=T().reply;}); document.querySelectorAll('#chatList .rx-btn').forEach(r=>{r.setAttribute('aria-label',T().react);r.title=T().react;}); document.querySelectorAll('#chatList .msg').forEach(renderReactions); document.querySelectorAll('#chatList .msg').forEach(renderTime); renderMyState(); if(admSheet&&!admSheet.hidden) renderSheet(); };
+applyLang=function(){ _applyLang(); onSearch.setAttribute('aria-label',T().searchPh); renderRandomPromoTimer(); renderModMarks(); renderReplyBar(); document.querySelectorAll('#chatList .rp').forEach(r=>{r.setAttribute('aria-label',T().reply);r.title=T().reply;}); document.querySelectorAll('#chatList .rx-btn').forEach(r=>{r.setAttribute('aria-label',T().react);r.title=T().react;}); document.querySelectorAll('#chatList .msg').forEach(renderReactions); document.querySelectorAll('#chatList .msg').forEach(renderTime); renderMyState(); if(admSheet&&!admSheet.hidden) renderSheet(); };
 setInterval(()=>{ renderModMarks(); renderMyState(); if(admSheet&&!admSheet.hidden) renderSheet(); },30000);   // mutes run out
 renderOnline(); renderMyState();
 
