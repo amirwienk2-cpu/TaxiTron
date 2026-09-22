@@ -2080,7 +2080,7 @@
           ? 'withdrawRejectedStatus'
           : 'withdrawPendingStatus';
       row.innerHTML =
-        '<span class="hist-amount">' + w.amount.toFixed(2) + ' TON</span>' +
+        '<span class="hist-amount">' + w.amount.toFixed(6) + ' TON</span>' +
         '<span>' + w.address.slice(0, 4) + '…' + w.address.slice(-4) + '</span>' +
         '<span class="hist-status ' + w.status + '">' + t(statusKey) + '</span>';
       histEl.appendChild(row);
