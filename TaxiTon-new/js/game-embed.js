@@ -172,7 +172,7 @@
     if (preloaded || preloading) return; // already loaded or in flight
     preloading = true;
     frame.addEventListener('load', () => { preloaded = true; preloading = false; }, { once: true });
-    frame.src = '/legacy-game.html?embedded=1';
+    frame.src = '/legacy-game.html?embedded=1&v=20260922';
   }
   // Start preloading immediately so the real app is (usually) already
   // sitting ready in the background by the time the user presses play.
@@ -207,7 +207,7 @@
     try { doc = frame.contentWindow && frame.contentWindow.document; } catch (e) { /* same-origin, shouldn't throw */ }
     if (!doc) {
       wrap.classList.add('loading');
-      if (attempt < 80) return setTimeout(() => pollForGameScreen(attempt + 1), 50);
+      if (attempt < 400) return setTimeout(() => pollForGameScreen(attempt + 1), 50);
       return giveUp();
     }
     const gameScreen = doc.getElementById('screen-game');
@@ -238,7 +238,7 @@
       return;
     }
     wrap.classList.add('loading'); // real click didn't resolve synchronously — genuinely still loading
-    if (attempt < 80) {
+    if (attempt < 400) {
       setTimeout(() => pollForGameScreen(attempt + 1), 50);
     } else {
       giveUp();
