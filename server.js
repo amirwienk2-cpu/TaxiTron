@@ -475,6 +475,8 @@ async function startTelegramBot() {
   try {
     const webhookUrl = new URL(TELEGRAM_WEBHOOK_URL);
     if (webhookUrl.protocol !== 'https:') throw new Error('Webhook-URL muss HTTPS verwenden');
+    const miniAppUrl = new URL(MINI_APP_URL);
+    if (!['http:', 'https:'].includes(miniAppUrl.protocol)) throw new Error('Mini-App-URL muss HTTP oder HTTPS verwenden');
     const response = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/setWebhook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -488,8 +490,24 @@ async function startTelegramBot() {
     if (!response.ok || result.ok !== true) {
       throw new Error(result.description || 'setWebhook fehlgeschlagen');
     }
+    const menuResponse = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/setChatMenuButton', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        menu_button: {
+          type: 'web_app',
+          text: '🎮 Game',
+          web_app: { url: miniAppUrl.toString() },
+        },
+      }),
+    });
+    const menuResult = await menuResponse.json();
+    if (!menuResponse.ok || menuResult.ok !== true) {
+      throw new Error(menuResult.description || 'setChatMenuButton fehlgeschlagen');
+    }
     console.log('[bot] started (webhook)');
     console.log('[bot] webhook configured: ' + webhookUrl.toString());
+    console.log('[bot] menu button configured: ' + miniAppUrl.toString());
   } catch (error) {
     console.error('[bot] NICHT gestartet: ' + error.message);
   }
