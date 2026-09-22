@@ -19,9 +19,9 @@ const I18N={
   skinPerDay:'day',skinPerDayFor:'per day for',skinDays:'days',skinDaysLeft:'days left',skinRewardActive:'Daily reward active',skinTodayLeft:'Today: {amount} TON left',skinRewardOffer:'Earn a daily TON reward',skinNeedMore:'Need {amount} TON more to unlock'}
 };
 Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برنده رندوم شد: ۰.۰۰۱ TON 🎉'});
-Object.assign(I18N.fa,{randomRemaining:'تعداد رندوم باقی‌مانده امروز: {n}'});
-Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: 0.001 TON 🎉',randomRemaining:'Verbleibende Randoms heute: {n}'});
-Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: 0.001 TON 🎉',randomRemaining:'Randoms remaining today: {n}'});
+Object.assign(I18N.fa,{randomRemaining:'Random {n}'});
+Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: 0.001 TON 🎉',randomRemaining:'Random {n}'});
+Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: 0.001 TON 🎉',randomRemaining:'Random {n}'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
@@ -727,6 +727,7 @@ function toast(msg){
   if(!t){ t=document.createElement('div'); t.id='ttToast'; t.className='tt-toast'; t.setAttribute('role','status'); document.body.append(t); }
   t.textContent=msg; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200);
 }
+window.toast=toast;
 function askConfirm(msg){
   return new Promise(res=>{
     try{ const tg=window.Telegram&&Telegram.WebApp; if(tg&&tg.showConfirm&&tg.initData){ tg.showConfirm(msg,ok=>res(!!ok)); return; } }catch(e){}
