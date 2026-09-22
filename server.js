@@ -1335,6 +1335,7 @@ app.post('/api/auth', (req, res) => {
 
 // ---- Online player count (any user seen in the last 90s, i.e. app still open) ----
 const ONLINE_WINDOW_MS = 90000;
+const RANDOM_DAILY_LIMIT = 10;
 app.get('/api/online-count', (req, res) => {
   const now = Date.now();
   const count = Object.values(users).filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS).length;
@@ -1421,6 +1422,16 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   if (raw.toLowerCase() === '/random') {
     if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
     const now = Date.now();
+    const today = berlinDayKey();
+    if (req.user.randomDailyKey !== today) {
+      req.user.randomDailyKey = today;
+      req.user.randomDailyCount = 0;
+    }
+    const used = Math.max(0, Number(req.user.randomDailyCount) || 0);
+    if (used >= RANDOM_DAILY_LIMIT) {
+      persist();
+      return res.status(429).json({ error: 'random-daily-limit-reached', randomRemaining: 0 });
+    }
     const candidates = Object.values(users).filter((user) => (
       String(user.id) !== String(req.uid)
       && now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS
@@ -1429,6 +1440,8 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
 
     const winner = candidates[Math.floor(Math.random() * candidates.length)];
     winner.ton = Number((Number(winner.ton || 0) + 0.001).toFixed(9));
+    req.user.randomDailyCount = used + 1;
+    const randomRemaining = Math.max(0, RANDOM_DAILY_LIMIT - req.user.randomDailyCount);
     persist();
 
     const message = {
@@ -1447,7 +1460,11 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     chatMessages.push(message);
     if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
     persistChat();
-    res.json({ message, winner: { uid: String(winner.id), name: winner.name, ton: winner.ton } });
+    res.json({
+      message,
+      winner: { uid: String(winner.id), name: winner.name, ton: winner.ton },
+      randomRemaining,
+    });
     broadcastChatEvent('message', {
       randomWinnerUid: String(winner.id),
       randomWinnerTon: winner.ton,

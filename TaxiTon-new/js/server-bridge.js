@@ -459,6 +459,9 @@
       if (r.ok && r.data.message) {
         if (typeof TT.addMessage === 'function') TT.addMessage(mapServerMessage(r.data.message));
         if (r.data.message.id > lastChatMessageId) lastChatMessageId = r.data.message.id;
+        if (r.data.randomRemaining !== undefined && typeof window.toast === 'function' && typeof T === 'function') {
+          window.toast(T().randomRemaining.replace('{n}', String(r.data.randomRemaining)));
+        }
       }
       return r.ok;
     }).catch(function () { return false; });

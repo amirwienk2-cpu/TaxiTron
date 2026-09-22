@@ -19,8 +19,9 @@ const I18N={
   skinPerDay:'day',skinPerDayFor:'per day for',skinDays:'days',skinDaysLeft:'days left',skinRewardActive:'Daily reward active',skinTodayLeft:'Today: {amount} TON left',skinRewardOffer:'Earn a daily TON reward',skinNeedMore:'Need {amount} TON more to unlock'}
 };
 Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برنده رندوم شد: ۰.۰۰۱ TON 🎉'});
-Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: 0.001 TON 🎉'});
-Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: 0.001 TON 🎉'});
+Object.assign(I18N.fa,{randomRemaining:'تعداد رندوم باقی‌مانده امروز: {n}'});
+Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: 0.001 TON 🎉',randomRemaining:'Verbleibende Randoms heute: {n}'});
+Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: 0.001 TON 🎉',randomRemaining:'Randoms remaining today: {n}'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
