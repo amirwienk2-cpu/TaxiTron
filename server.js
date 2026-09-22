@@ -1699,11 +1699,21 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
   if (!DEPOSIT_ADDRESS) return res.status(503).json({ error: 'deposit-address-not-configured' });
   const user = req.user;
   if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
+  // Cheap early check for an exact repeat paste of the same value. The REAL duplicate
+  // check happens below once the transfer's own canonical event_id is known: TonAPI
+  // resolves several different hash values (an event's own id, its external message
+  // hash, or any of its base_transactions hashes) to the exact same event, and the
+  // automatic background scanner (scanDeposits() below) always records that canonical
+  // event_id - not necessarily whichever equivalent hash the user happened to paste
+  // here. Without re-checking against that same canonical id, the same deposit could
+  // get credited twice: once automatically, once again via this manual claim.
   if (user.depositTxs.includes(txHash)) return res.status(409).json({ error: 'deposit-already-claimed' });
 
   try {
     const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
     const event = await tonApiJson('/events/' + txHash);
+    const canonicalEventId = String(event.event_id || txHash).toLowerCase();
+    if (user.depositTxs.includes(canonicalEventId)) return res.status(409).json({ error: 'deposit-already-claimed' });
     const transferAction = getNativeTransfer(event, user.id);
     const recipient = transferAction && transferAction.TonTransfer.recipient;
     if (!transferAction || !recipient || recipient.address !== account.address) {
@@ -1711,10 +1721,10 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
     }
     const amount = transferAction.TonTransfer.amount / 1e9;
     user.ton += amount;
-    user.depositTxs.push(txHash);
+    user.depositTxs.push(canonicalEventId);
     if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
     if (!Array.isArray(user.deposits)) user.deposits = [];
-    user.deposits.push({ ts: Date.now(), amount, txId: txHash });
+    user.deposits.push({ ts: Date.now(), amount, txId: canonicalEventId });
     if (user.deposits.length > 200) user.deposits = user.deposits.slice(-200);
     persist();
     notifyAdminDeposit(user, amount);
