@@ -1375,7 +1375,7 @@ app.post('/api/auth', (req, res) => {
 const ONLINE_WINDOW_MS = 90000;
 const RANDOM_INTERVAL_MS = 15 * 60 * 1000;
 const RANDOM_BOT_UID = 'random-bot';
-const RANDOM_BOT_NAME = 'Random Bot';
+const RANDOM_BOT_NAME = 'ZombieBot';
 app.get('/api/online-count', (req, res) => {
   const now = Date.now();
   const count = Object.values(users).filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS).length;
