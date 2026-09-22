@@ -1374,10 +1374,41 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '')
     .trim();
   if (!raw) return res.status(400).json({ error: 'empty-message' });
-  const text = raw.slice(0, CHAT_MAX_LEN);
   const lastAt = chatLastSentAt[req.uid] || 0;
   if (Date.now() - lastAt < CHAT_MIN_INTERVAL_MS) return res.status(429).json({ error: 'too-fast' });
   chatLastSentAt[req.uid] = Date.now();
+  if (raw.toLowerCase() === '/random') {
+    if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
+    const now = Date.now();
+    const candidates = Object.values(users).filter((user) => (
+      String(user.id) !== String(req.uid)
+      && now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS
+    ));
+    if (!candidates.length) return res.status(409).json({ error: 'no-online-user-available' });
+
+    const winner = candidates[Math.floor(Math.random() * candidates.length)];
+    winner.ton = Number((Number(winner.ton || 0) + 0.001).toFixed(9));
+    persist();
+
+    const message = {
+      id: chatNextId++,
+      uid: req.uid,
+      name: req.user.name || ('Player ' + req.uid),
+      text: (winner.name || ('Player ' + winner.id)) + ' hat random gewonnen: 0.001 TON 🎉',
+      ts: now,
+      isAdmin: true,
+      isDesigner: req.user.isDesigner === true,
+      chatMuted: false,
+      replyTo: null,
+    };
+    chatMessages.push(message);
+    if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+    persistChat();
+    res.json({ message, winner: { uid: String(winner.id), name: winner.name, ton: winner.ton } });
+    broadcastChatEvent('message');
+    return;
+  }
+  const text = raw.slice(0, CHAT_MAX_LEN);
   const replyToId = Number(req.body && req.body.replyTo) || 0;
   let replyTo = null;
   if (replyToId > 0) {
