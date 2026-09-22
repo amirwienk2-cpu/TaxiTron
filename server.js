@@ -1699,6 +1699,16 @@ async function tonApiJson(pathname) {
   return response.json();
 }
 
+function hasRecordedDeposit(depositId) {
+  const id = String(depositId || '').toLowerCase();
+  if (!id) return false;
+  return Object.values(users).some((user) => {
+    const txs = Array.isArray(user.depositTxs) ? user.depositTxs : [];
+    if (txs.includes(id)) return true;
+    return Array.isArray(user.deposits) && user.deposits.some((deposit) => String(deposit.txId || '').toLowerCase() === id);
+  });
+}
+
 let depositScanInProgress = false;
 async function scanDeposits() {
   if (!DEPOSIT_ADDRESS || depositScanInProgress) return;
@@ -1719,7 +1729,7 @@ async function scanDeposits() {
         if (!user) continue;
         if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
         const txId = String(event.event_id || '').toLowerCase();
-        if (!txId || user.depositTxs.includes(txId)) continue;
+        if (!txId || hasRecordedDeposit(txId)) continue;
         const amountTon = Number(transfer.amount) / 1e9;
         user.ton += amountTon;
         user.depositTxs.push(txId);
@@ -1769,7 +1779,9 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
     const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
     const event = await tonApiJson('/events/' + txHash);
     const canonicalEventId = String(event.event_id || txHash).toLowerCase();
-    if (user.depositTxs.includes(canonicalEventId)) return res.status(409).json({ error: 'deposit-already-claimed' });
+    if (hasRecordedDeposit(canonicalEventId) || hasRecordedDeposit(txHash)) {
+      return res.status(409).json({ error: 'deposit-already-claimed' });
+    }
     const transferAction = getNativeTransfer(event, user.id);
     const recipient = transferAction && transferAction.TonTransfer.recipient;
     if (!transferAction || !recipient || recipient.address !== account.address) {
@@ -1778,6 +1790,7 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
     const amount = transferAction.TonTransfer.amount / 1e9;
     user.ton += amount;
     user.depositTxs.push(canonicalEventId);
+    if (txHash !== canonicalEventId) user.depositTxs.push(txHash);
     if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
     if (!Array.isArray(user.deposits)) user.deposits = [];
     user.deposits.push({ ts: Date.now(), amount, txId: canonicalEventId });
