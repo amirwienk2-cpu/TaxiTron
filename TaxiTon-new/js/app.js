@@ -1151,8 +1151,19 @@ Object.assign(I18N.fa,{exZcap:'جمع‌آوری شده – هنوز معاوض�
 Object.assign(I18N.de,{exZcap:'Gesammelt – noch nicht getauscht',exRate:'{n} Münzen pro Zombie',exBtn:'Tauschen ({n} {c} pro Zombie)',exBal:'TON-Guthaben:',ttBal:'TT-Guthaben:',tkRewardAll:'Belohnung: {n} TT',tkDone:'+{n} TT erhalten',exDone:'+{n} Münzen gutgeschrieben 🎉',exNone:'Du hast keine Zombies zum Tauschen',exFail:'Tausch fehlgeschlagen – bitte nochmal'});
 Object.assign(I18N.en,{exZcap:'Collected – not yet exchanged',exRate:'{n} coins per zombie',exBtn:'Exchange ({n} {c} per zombie)',exBal:'TON balance:',ttBal:'TT balance:',tkRewardAll:'Reward: {n} TT',tkDone:'+{n} TT received',exDone:'+{n} coins added to your wallet 🎉',exNone:'You have no zombies to exchange',exFail:'Exchange failed – try again'});
 const bigN=n=>Math.round(n).toLocaleString(LOCALE[lang]||'en-GB');
+function currentGameExchangeRate(){
+  try{
+    const uid=localStorage.getItem('cr3d_serverUid');
+    const key=uid?'cr3d_skin_'+uid:'cr3d_skin';
+    const skin=localStorage.getItem(key)||localStorage.getItem('cr3d_skin');
+    if(!skin) return null;
+    return skin==='green'?100:skin==='white'?20:skin==='red'?7:1;
+  }catch(e){ return null; }
+}
 function renderWallet(){
   const $=id=>document.getElementById(id);
+  const gameRate=currentGameExchangeRate();
+  if(gameRate!==null) EX.rate=gameRate;
   $('exZ').textContent=bigN(EX.zombies);
   $('exC').textContent=bigN(EX.zombies*EX.rate);
   $('exRate').textContent=T().exRate.replace('{n}',bigN(EX.rate));
