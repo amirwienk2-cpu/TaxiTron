@@ -426,6 +426,13 @@
         try { payload = JSON.parse(evt.data); } catch (e) {}
         if (payload.type === 'message') {
           syncChat();
+          if (payload.randomWinnerUid && String(payload.randomWinnerUid) === String(SESSION.uid)) {
+            var winnerTon = Number(payload.randomWinnerTon);
+            if (Number.isFinite(winnerTon)) {
+              if (typeof TT.setWallet === 'function') TT.setWallet({ points: winnerTon });
+              if (typeof TT.setWithdraw === 'function') TT.setWithdraw({ balance: winnerTon });
+            }
+          }
         } else if (payload.type === 'message-deleted') {
           var mid = payload.messageId;
           var el = mid != null ? document.querySelector('#chatList .msg[data-mid="' + CSS.escape(String(mid)) + '"]') : null;

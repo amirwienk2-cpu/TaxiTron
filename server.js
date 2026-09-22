@@ -1448,7 +1448,10 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
     persistChat();
     res.json({ message, winner: { uid: String(winner.id), name: winner.name, ton: winner.ton } });
-    broadcastChatEvent('message');
+    broadcastChatEvent('message', {
+      randomWinnerUid: String(winner.id),
+      randomWinnerTon: winner.ton,
+    });
     return;
   }
   const text = raw.slice(0, CHAT_MAX_LEN);
