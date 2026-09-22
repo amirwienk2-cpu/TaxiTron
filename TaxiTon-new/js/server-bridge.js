@@ -86,11 +86,14 @@
     if (typeof TT.setWallet === 'function') {
       // The wallet "exchange" widget is repurposed to show the ONE real zombie-exchange
       // path the backend actually supports: referralPendingZombies -> coins/TON via
-      // POST /api/referrals/exchange (see TT.exchange below). Rate 1 = 1:1 as done server-side.
+      // POST /api/referrals/exchange (see TT.exchange below). Game zombie exchange
+      // rates are level-specific and are refreshed by game-embed.js when the iframe
+      // is available.
+      const exchangeRate = level >= 4 ? 100 : level >= 3 ? 20 : level >= 2 ? 7 : 1;
       TT.setWallet({
         zombies: Number(state.referralPendingZombies) || 0,
         coins: Number(state.coins) || 0,
-        rate: 1,
+        rate: exchangeRate,
         points: Number(state.ton) || 0,
         tt: Number(state.ttBalance) || 0
       });

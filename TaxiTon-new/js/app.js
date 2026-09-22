@@ -1142,7 +1142,7 @@ ivTick(); setInterval(ivTick,1000);
 //       TT.exchange = async (zombies) => ({zombies:0, coins:newBalance})   -> your server does the exchange (return false = error)
 //       TT.addZombies(n)   e.g. after a run or a task
 const tonFmt=(n,d)=>{ const s=(+n).toLocaleString('en-US',{minimumFractionDigits:d===undefined?2:d,maximumFractionDigits:d===undefined?6:d,useGrouping:false}); return lang==='fa'?s.replace(/\d/g,x=>'۰۱۲۳۴۵۶۷۸۹'[x]):s; };
-const EX={rate:100, zombies:store('tt_zombies'), coins:store('tt_coins'), points:store('tt_wd_bal'), tt:store('tt_balance')};
+const EX={rate:1, zombies:store('tt_zombies'), coins:store('tt_coins'), points:store('tt_wd_bal'), tt:store('tt_balance')};
 if(typeof EX.zombies!=='number') EX.zombies=10000;   // demo start value
 if(typeof EX.coins!=='number') EX.coins=0;
 if(typeof EX.points!=='number') EX.points=0;
