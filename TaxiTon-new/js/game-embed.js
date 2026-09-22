@@ -20,7 +20,7 @@
   let launching = false;
   let watcher = null;
   let progressTimer = null; // polls the real game's own daily-cap % while it is running
-  let preloaded = false; // true once the hidden iframe has finished loading /index.html
+  let preloaded = false; // true once the hidden iframe has finished loading the legacy game
   let preloading = false; // true while a preload navigation is in flight
 
   // The real game (root index.html/app.js) tracks "today's earned TON vs. the daily cap for
@@ -172,7 +172,7 @@
     if (preloaded || preloading) return; // already loaded or in flight
     preloading = true;
     frame.addEventListener('load', () => { preloaded = true; preloading = false; }, { once: true });
-    frame.src = '/index.html';
+    frame.src = '/legacy-game.html';
   }
   // Start preloading immediately so the real app is (usually) already
   // sitting ready in the background by the time the user presses play.

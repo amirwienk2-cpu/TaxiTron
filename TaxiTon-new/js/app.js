@@ -131,7 +131,7 @@ chatText.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.pre
 // that active choice has no server field, so it stays a local (client-only) preference,
 // same as the language picker; the list itself always reflects real server ownership.
 // dailyReward/rewardDays mirror the server's real skinRewards system (server.js: rewardDays,
-// LEVEL_TWO/THREE/FOUR_DAILY_PTS_CAP) - same values the old root app.js/index.html shows.
+// LEVEL_TWO/THREE/FOUR_DAILY_PTS_CAP) - same values the legacy game shows.
 const SKINS=[
   {id:'yellow',price:0,level:1,dailyReward:0,   rewardDays:0},
   {id:'red',   price:1,level:2,dailyReward:0.067,rewardDays:30},
@@ -307,7 +307,7 @@ TT.getProgress=()=>HOME.progress;
 // Change the numbers shown on Home, e.g. TT.setStats({best:1200, routes:8, level:'2-3', levelNo:2, gram:0.0012, tonLeft:1, tries:5, triesMax:10, progress:40})
 TT.setStats=o=>{ o=o||{}; const {progress,...rest}=o; Object.assign(HOME,rest); renderHome(); if(progress!==undefined) setProgress(progress); };
 window.addEventListener('message',e=>{const d=e.data; if(d&&d.type==='tt-progress') setProgress(d.value);});   // game iframe: parent.postMessage({type:'tt-progress',value:42},'*')
-// Live sync from the real driving game (root app.js/index.html running in the #play iframe):
+// Live sync from the real driving game running in the #play iframe:
 // it posts {type:'tt-level', level, best, runs, coins, ton} whenever the active skin/level or
 // stats change, so Home stays correct even without Telegram auth (server-bridge.js only runs
 // with real Telegram initData).

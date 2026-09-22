@@ -10,7 +10,7 @@
 //
 // NOTE ON SCOPE: the "#play" screen in index-new.html has no game canvas/logic at all in
 // this redesign (only a "Start Game" button placeholder), so there is nothing real to wire
-// there - the actual taxi/zombie driving game only exists in the root app.js/index.html.
+// there - the actual taxi/zombie driving game only exists in the legacy game iframe.
 (function () {
   'use strict';
 

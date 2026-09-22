@@ -1122,6 +1122,16 @@ function requireAdmin(req, res, next) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+// The public entry point must always be the redesigned shell. The legacy game is
+// still available below through /legacy-game.html for the embedded game iframe.
+app.get(['/','/index.html'], (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.redirect('/TaxiTon-new/index-new.html');
+});
+app.get('/legacy-game.html', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 app.use(express.static(__dirname, {
   index: false,
   setHeaders: (res, filePath) => {
@@ -1142,11 +1152,6 @@ app.use('/monster-crash', express.static(path.join(__dirname, 'monster-crash', '
 // intermediate proxy or a Telegram client's own aggressive Mini App reopen cache - which
 // would otherwise occasionally send a returning user straight back to whatever URL this
 // redirect used to point to (the old design), instead of freshly resolving it every time.
-app.get('/', (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.redirect('/TaxiTon-new/index-new.html');
-});
-
 app.get('/admin', (req, res) => {
   if (!ADMIN_SECRET) return res.status(503).send('Admin panel is disabled: ADMIN_SECRET is not configured.');
   res.type('html').send(`<!doctype html>
