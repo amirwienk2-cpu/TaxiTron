@@ -1153,6 +1153,7 @@ Object.assign(I18N.en,{exZcap:'Collected – not yet exchanged',exRate:'{n} coin
 const bigN=n=>Math.round(n).toLocaleString(LOCALE[lang]||'en-GB');
 function currentGameExchangeRate(){
   try{
+    if(Number.isFinite(Number(window.__TT_GAME_EXCHANGE_RATE))) return Number(window.__TT_GAME_EXCHANGE_RATE);
     const uid=localStorage.getItem('cr3d_serverUid');
     const key=uid?'cr3d_skin_'+uid:'cr3d_skin';
     const skin=localStorage.getItem(key)||localStorage.getItem('cr3d_skin');

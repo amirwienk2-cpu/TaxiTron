@@ -102,6 +102,7 @@
       const coins = parseInt(localStorage.getItem(accountKey('cr3d_coins')) || '0', 10) || 0;
       const skin = localStorage.getItem(accountKey('cr3d_skin')) || 'yellow';
       const rate = coinsPerZombieForSkin(skin);
+      window.__TT_GAME_EXCHANGE_RATE = rate;
       // Withdrawable TON balance ("قابل برداشت") in the old design is the same
       // store.points (cr3d_points) the exchange feeds via addPointsFromCoins() -
       // every coin exchange raises it (subject to the same daily cap), so mirror
