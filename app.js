@@ -3364,12 +3364,11 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   const GAME_TAXI_LEVEL_ONE_FRAMES = Array.from({ length: GAME_TAXI_LEVEL_ONE_FRAME_COUNT }, (_, i) =>
     `sprites/gif1-frames/frame_${String(i + 1).padStart(3, '0')}.png?v=yellow2`
   );
-  // Level-2 ("red") taxi: same animated-frame-sequence approach, extracted
-  // from the gif2.mov green-screen clip (all 24 frames are clean).
-  const GAME_TAXI_LEVEL_TWO_FRAME_COUNT = 24;
-  const GAME_TAXI_LEVEL_TWO_FRAME_FPS = 12;
+  // Level-2 ("red") taxi: transparent frames extracted from neu2222.mov.
+  const GAME_TAXI_LEVEL_TWO_FRAME_COUNT = 57;
+  const GAME_TAXI_LEVEL_TWO_FRAME_FPS = 30;
   const GAME_TAXI_LEVEL_TWO_FRAMES = Array.from({ length: GAME_TAXI_LEVEL_TWO_FRAME_COUNT }, (_, i) =>
-    `sprites/gif2-frames/frame_${String(i + 1).padStart(3, '0')}.png?v=red1`
+    `sprites/neu2222-frames/frame_${String(i + 1).padStart(3, '0')}.png?v=red2`
   );
   // Level-3 ("white") taxi: same animated-frame-sequence approach, extracted
   // from the gif3.mov green-screen clip (all 23 frames are clean).
