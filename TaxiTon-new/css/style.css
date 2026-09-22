@@ -623,7 +623,6 @@ body:not(.en) .reply-bar.is-edit .rb-ic svg{transform:none}
 #chatList .ed{inset-inline-end:53px}
 #chatList .rp svg,#chatList .ed svg{width:12px;height:12px}
 #chatList .rx-btn svg{width:13px;height:13px}
-#chatList .msg .adm{--ah:26px!important}
 #chatList .rq{margin:3px 0 2px;padding:3px 8px 4px;font-size:11.5px}
 #chatList .msg .rq b{font-size:10.5px}
 #chatList .mt{font-size:9.5px;margin-top:2px}
