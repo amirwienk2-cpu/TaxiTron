@@ -2724,6 +2724,7 @@
   }
   async function enterGame(){
     if (runStartPending) return;
+    syncActiveLevelFromShop();
     if (serverSession.isBanned || (!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
       const reason = serverSession.isBanned ? 'banned' : dailyEarningsComplete() ? 'daily-cap' : 'no-attempts';
       notifyEmbeddedStartRejected(reason);
@@ -3460,6 +3461,29 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     applyPlayerSize(key);
   }
 
+  // Re-applies whatever level/skin the redesigned shop's "Use" button most recently
+  // selected (shared same-origin localStorage key 'tt_active_level'), without depending
+  // on the tt-select-skin postMessage below having actually been delivered in time. That
+  // message can be silently lost if this iframe hadn't finished loading yet when "Use"
+  // was pressed (e.g. right after opening the app), which used to mean a run could start
+  // with the wrong/stale skin and only pick up the real selection later - mid-drive - once
+  // a background resync message finally landed. Called right before every run start.
+  function syncActiveLevelFromShop(){
+    let stored;
+    try { stored = parseInt(localStorage.getItem('tt_active_level'), 10); } catch (e) { return; }
+    if (!Number.isFinite(stored)) return;
+    const def = SKIN_LEVELS.find(item => item.level === stored);
+    if (!def || store.ownedSkins.indexOf(def.key) === -1) return;
+    const ownsPremiumSkin = store.ownedSkins.some(key => SKIN_LEVELS.some(item => item.key === key && item.level >= 2));
+    if (def.level === 1 && ownsPremiumSkin) return;
+    if (store.skin === def.key) return; // already matches - nothing to do
+    store.skin = def.key;
+    store.level = def.level;
+    saveStore();
+    setPlayerSkin(store.skin);
+    refreshTopUI();
+  }
+
   // Lets the parent TaxiTon-new UI (if this page is embedded in its #play iframe) switch
   // between already-owned skins/levels, mirroring the shop's own local-only "Select" button
   // (server.js has no "active skin" concept - level only ever goes up when buying, see
@@ -3467,6 +3491,10 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   window.addEventListener('message', (e) => {
     const d = e.data;
     if (!d || d.type !== 'tt-select-skin') return;
+    // Never swap the car (or its economy: activeAttemptLevel() reads store.skin live)
+    // mid-drive - the next run already re-syncs the latest selection from localStorage
+    // for itself via syncActiveLevelFromShop(), so it's safe to just ignore this for now.
+    if (running) return;
     const def = SKIN_LEVELS.find(item => item.key === d.skin);
     if (!def) return;
     const ownsPremiumSkin = store.ownedSkins.some(key => SKIN_LEVELS.some(item => item.key === key && item.level >= 2));
@@ -4128,6 +4156,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   }
   document.getElementById('retryBtn').addEventListener('click', async () => {
     if (runStartPending) return;
+    syncActiveLevelFromShop();
     if ((!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
       leaveGameToHome();
       return;
