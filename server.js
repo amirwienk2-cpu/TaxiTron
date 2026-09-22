@@ -62,6 +62,7 @@ const PLAY_GAME_URL = process.env.PLAY_GAME_URL || 'https://t.me/TaxiiTonBot';
 const NEWS_CHANNEL_URL = process.env.NEWS_CHANNEL_URL || 'https://t.me/TaxiiTon';
 const TON_EXPLORER_URL = process.env.TON_EXPLORER_URL || 'https://tonviewer.com/transaction/';
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://taxitron-production.up.railway.app';
+const TELEGRAM_MINI_APP_URL = new URL('/TaxiTon-new/index-new.html?v=20260922', MINI_APP_URL).toString();
 const TON_USD_RATE = Number(process.env.TON_USD_RATE || 0);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
@@ -427,7 +428,7 @@ async function sendTelegramStartMessage(chatId) {
       reply_markup: {
         inline_keyboard: [[{
           text: '🎮 Start Game',
-          web_app: { url: MINI_APP_URL },
+          web_app: { url: TELEGRAM_MINI_APP_URL },
         }]],
       },
     }),
@@ -475,7 +476,7 @@ async function startTelegramBot() {
   try {
     const webhookUrl = new URL(TELEGRAM_WEBHOOK_URL);
     if (webhookUrl.protocol !== 'https:') throw new Error('Webhook-URL muss HTTPS verwenden');
-    const miniAppUrl = new URL(MINI_APP_URL);
+    const miniAppUrl = new URL(TELEGRAM_MINI_APP_URL);
     if (!['http:', 'https:'].includes(miniAppUrl.protocol)) throw new Error('Mini-App-URL muss HTTP oder HTTPS verwenden');
     const response = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/setWebhook', {
       method: 'POST',
