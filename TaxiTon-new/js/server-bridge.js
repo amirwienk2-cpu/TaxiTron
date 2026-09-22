@@ -487,7 +487,14 @@
     api(withToken('/api/leaderboard')).then(function (r) {
       if (!r.ok || !r.data) return;
       var top = Array.isArray(r.data.top) ? r.data.top : [];
-      var entries = top.map(function (e) { return { name: e.name, score: Number(e.best) || 0, me: false }; });
+      var entries = top.map(function (e) {
+        return {
+          name: e.name,
+          score: Number(e.best) || 0,
+          me: false,
+          admin: e.isChatAdmin ? 'boy' : (e.isDesigner ? 'designer' : undefined),
+        };
+      });
       var you = r.data.you;
       if (you) {
         if (you.rank >= 1 && you.rank <= entries.length) {

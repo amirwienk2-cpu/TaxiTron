@@ -71,7 +71,9 @@ body.chat-open::before{filter:blur(14px);transform:scale(1.08)}
 .lb-rank{width:22px;text-align:center;font-weight:900;color:var(--muted);font-size:.9rem;flex-shrink:0}
 .lb-av{font-size:1.05rem;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.06);
   display:flex;align-items:center;justify-content:center;border:1px solid var(--line);flex-shrink:0}
-.lb-name{flex:1;min-width:0;font-size:.86rem;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-name{flex:1;min-width:0;display:flex;align-items:center;overflow:hidden;font-size:.86rem;color:#fff;white-space:nowrap}
+.lb-user-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lb-name .adm{margin-inline-start:6px}
 .lb-you{margin-inline-start:6px;font-size:.62rem;color:var(--gold);border:1px solid rgba(255,194,26,.5);
   border-radius:6px;padding:1px 5px}
 .lb-score{font-weight:800;color:var(--gold2);font-size:.86rem;white-space:nowrap;flex-shrink:0}

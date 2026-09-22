@@ -1129,7 +1129,10 @@ TT.setLeaderboard=(entries)=>{
     row.className='lb-row'+(e.me?' me':'')+(rank<=3?' r'+rank:'');
     const rk=document.createElement('div'); rk.className='lb-rank'; rk.textContent=rank;
     const av=document.createElement('span'); av.className='lb-av'; av.textContent='🧟';
-    const nm=document.createElement('div'); nm.className='lb-name'; nm.textContent=e.name||T().youTag;
+    const nm=document.createElement('div'); nm.className='lb-name';
+    const nameText=document.createElement('span'); nameText.className='lb-user-name'; nameText.textContent=e.name||T().youTag;
+    nm.append(nameText);
+    if(e.admin) nm.append(admBadge(e.admin,26));
     if(e.me){ const tag=document.createElement('span'); tag.className='lb-you'; tag.textContent=T().youTag; nm.append(tag); }
     const sc=document.createElement('div'); sc.className='lb-score'; sc.textContent=(e.score||0)+' 🧟';
     row.append(rk,av,nm,sc);

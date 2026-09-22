@@ -2219,7 +2219,15 @@ app.get('/api/leaderboard', (req, res) => {
     .filter((e) => e.best > 0)
     .sort((a, b) => (b.best - a.best) || (b.distance - a.distance));
 
-  const top = ranked.slice(0, 50).map((e) => ({ name: e.name, best: e.best }));
+  const top = ranked.slice(0, 50).map((e) => {
+    const user = users[String(e.id)];
+    return {
+      name: e.name,
+      best: e.best,
+      isChatAdmin: user && user.isChatAdmin === true,
+      isDesigner: user && user.isDesigner === true,
+    };
+  });
 
   let you;
   const token = req.query && req.query.token;
