@@ -3953,8 +3953,16 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
     obstacles.forEach(o => scene.remove(o.mesh));
     people && people.forEach(p => scene.remove(p.mesh));
-    particles && particles.forEach(p => scene.remove(p.mesh));
-    bloodSplats && bloodSplats.forEach(b => scene.remove(b.mesh));
+    particles && particles.forEach(p => {
+      scene.remove(p.mesh);
+      p.mesh.geometry.dispose();
+      p.mesh.material.dispose();
+    });
+    bloodSplats && bloodSplats.forEach(b => {
+      scene.remove(b.mesh);
+      b.mesh.geometry.dispose();
+      b.mesh.material.dispose();
+    });
 
     obstacles = [];
     people = [];
@@ -4118,6 +4126,12 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       mesh.position.set(x + (Math.random()-0.5)*0.8, 0.021, z + (Math.random()-0.5)*0.8);
       scene.add(mesh);
       bloodSplats.push({ mesh, life: 220, maxLife: 220 });
+    }
+    while (bloodSplats.length > 180) {
+      const old = bloodSplats.shift();
+      scene.remove(old.mesh);
+      old.mesh.geometry.dispose();
+      old.mesh.material.dispose();
     }
   }
 
@@ -4426,6 +4440,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       pt.mesh.material.transparent = true;
       if (pt.life <= 0){
         scene.remove(pt.mesh);
+        pt.mesh.geometry.dispose();
+        pt.mesh.material.dispose();
         particles.splice(i,1);
       }
     }
@@ -4438,6 +4454,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       b.mesh.material.opacity = Math.max((b.life / b.maxLife) * 0.85, 0);
       if (b.life <= 0 || b.mesh.position.z > END_Z + 3){
         scene.remove(b.mesh);
+        b.mesh.geometry.dispose();
+        b.mesh.material.dispose();
         bloodSplats.splice(i,1);
       }
     }
