@@ -248,6 +248,12 @@
       }
       SESSION.token = r.data.token;
       try { localStorage.setItem('cr3d_serverToken', r.data.token); } catch (e) {}
+      var zombieLink = document.querySelector('a[href*="/zombie-tower/zombieTT.html"]');
+      if (zombieLink) {
+        var target = new URL(zombieLink.href, window.location.href);
+        target.searchParams.set('token', r.data.token);
+        zombieLink.href = target.toString();
+      }
       SESSION.online = true;
       applyState(r.data.state);
       return r.data.state;

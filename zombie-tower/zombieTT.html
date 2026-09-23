@@ -430,7 +430,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     }
     if (!initData) {
       try {
-        const savedToken = localStorage.getItem('cr3d_serverToken');
+        const savedToken = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cr3d_serverToken');
         if (!savedToken) return false;
         const response = await fetch(API_BASE + '/api/zombie-tower/lobby?token=' + encodeURIComponent(savedToken));
         if (!response.ok) return false;
