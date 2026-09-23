@@ -1940,17 +1940,17 @@ app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   if (user.adRewardClaimed || watched >= 10) {
     user.adVideosWatched = 10;
     user.adRewardClaimed = true;
-    return res.json({ watched: 10, reward: 0, completed: true, state: publicState(user) });
+    return res.json({ watched: 10, reward: 0, rewardTT: 0, completed: true, state: publicState(user) });
   }
   user.adVideosWatched = watched + 1;
-  let reward = 0;
+  let rewardTT = 0;
   if (user.adVideosWatched === 10 && user.adRewardClaimed !== true) {
-    reward = 0.03;
-    user.ton += reward;
+    rewardTT = 50;
+    user.ttBalance = Number(user.ttBalance || 0) + rewardTT;
     user.adRewardClaimed = true;
   }
   persist();
-  res.json({ watched: user.adVideosWatched, reward, completed: user.adRewardClaimed === true, state: publicState(user) });
+  res.json({ watched: user.adVideosWatched, reward: 0, rewardTT, completed: user.adRewardClaimed === true, state: publicState(user) });
 });
 
 // AdsGram calls this public callback after a rewarded video is completed.
@@ -1971,17 +1971,17 @@ app.get('/api/adsgram-reward', (req, res) => {
   let reward = 0;
   let completed = false;
   if (watched >= 10) {
-    user.adVideosWatched = 0;
+    user.adVideosWatched = 10;
     user.adRewardClaimed = true;
-    user.ton += 0.03;
-    reward = 0.03;
+    user.ttBalance = Number(user.ttBalance || 0) + 50;
+    reward = 0;
     completed = true;
   } else {
     user.adVideosWatched = watched;
   }
 
   persist();
-  return res.status(200).json({ ok: true, rewarded: reward > 0, reward, completed, watched: user.adVideosWatched });
+  return res.status(200).json({ ok: true, rewarded: completed, reward, rewardTT: completed ? 50 : 0, completed, watched: user.adVideosWatched, state: publicState(user) });
 });
 
 async function tonApiJson(pathname) {

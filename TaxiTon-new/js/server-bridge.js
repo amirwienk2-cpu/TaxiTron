@@ -116,7 +116,7 @@
       });
     }
     if (typeof TT.setAdsTask === 'function') {
-      // Matches the old design's "Watch 10 videos -> 0.03 TON" task (server.js: adVideosWatched
+      // Matches the "Watch 10 videos -> 50 TT" task (server.js: adVideosWatched
       // / adRewardClaimed via /api/tasks/ad-video-claim).
       TT.setAdsTask({ watched: Number(state.adVideosWatched) || 0, completed: state.adRewardClaimed === true });
     }
@@ -306,7 +306,7 @@
     }).catch(function () { return false; });
   };
 
-  // ---- ads task: "watch 10 videos -> 0.03 TON" (matches old design's Adsgram flow) ----------
+  // ---- ads task: "watch 10 videos -> 50 TT" (matches the current Adsgram flow) ----------
   TT.watchRewardedAd = function () {
     if (!SESSION.token) return Promise.resolve({ ok: false, notReady: true });
     if (!window.Adsgram || typeof window.Adsgram.init !== 'function') {
