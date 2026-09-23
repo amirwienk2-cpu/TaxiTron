@@ -94,6 +94,20 @@ body.chat-open::before{filter:blur(14px);transform:scale(1.08)}
   -webkit-mask:radial-gradient(circle,#000 58%,transparent 72%);mask:radial-gradient(circle,#000 58%,transparent 72%)}
 .page h1{font-size:28px;font-weight:900;color:var(--gold);text-shadow:0 0 14px rgba(255,190,0,.35)}
 .page p{color:var(--muted);margin-top:8px;line-height:1.8;font-size:15px}
+.game-coming-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:430px;margin:24px auto 0}
+.game-coming-card{display:flex;align-items:center;gap:9px;min-width:0;padding:11px 10px;border:1px solid rgba(255,194,26,.42);
+  border-radius:14px;background:linear-gradient(145deg,rgba(47,27,91,.85),rgba(12,8,35,.9));color:#fff;text-align:start;
+  box-shadow:0 5px 16px rgba(0,0,0,.22);opacity:.78;cursor:not-allowed;text-decoration:none}
+.game-coming-card:disabled{color:inherit;opacity:.78}
+.game-coming-card--available{opacity:1;border-color:rgba(255,210,30,.78);cursor:pointer;box-shadow:0 5px 18px rgba(255,180,0,.2)}
+.game-coming-card--available:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(255,180,0,.3)}
+.game-coming-icon{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:11px;
+  background:rgba(255,194,26,.12);border:1px solid rgba(255,194,26,.22)}
+.game-coming-icon img{width:29px;height:29px;object-fit:contain}
+.game-coming-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.game-coming-copy strong{overflow:hidden;color:#ffe27a;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+.game-coming-copy small{color:#b8accf;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.game-coming-lock{flex:0 0 auto;font-size:16px;filter:grayscale(.35);opacity:.9}
 .panel{margin:22px auto 0;max-width:360px;border:1.5px solid rgba(255,194,26,.5);border-radius:14px;
   background:linear-gradient(180deg,rgba(40,20,90,.55),rgba(10,6,30,.8));padding:16px;
   box-shadow:0 0 18px rgba(130,80,255,.25) inset}
