@@ -374,7 +374,7 @@ function renderOnline(){
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
 }
-const _u=u=>typeof u==='string'?u:{id:u&&(u.id!==undefined?u.id:u.uid),name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin),muted:!!(u&&u.muted),me:!!(u&&u.me),ton:Number(u&&u.ton)||0};
+const _u=u=>typeof u==='string'?u:{id:u&&(u.id!==undefined?u.id:u.uid),name:(u&&u.name)||'?',badge:u&&(u.badge||u.admin),badge4:u&&u.badge4===true,muted:!!(u&&u.muted),me:!!(u&&u.me),ton:Number(u&&u.ton)||0};
 TT.setOnline=x=>{
   const o=CHAT.online;
   if(typeof x==='number') o.count=Math.max(0,Math.round(x));
