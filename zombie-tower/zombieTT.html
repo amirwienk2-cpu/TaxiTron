@@ -621,7 +621,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   }
 
   async function createRoom(){
-    setCreateStatus('Verbinde mit dem Server …');
+    setCreateStatus('Anmeldung wird geprüft …');
     try {
       if (!serverMode) {
         const authenticated = await Promise.race([
