@@ -443,6 +443,7 @@ function newUser(id, name) {
     inviteRewardsClaimed: {},
     campaignInvites: 0,
     campaignLastInviteAt: 0,
+    campaignInviteCounted: false,
     isChatAdmin: false,
     adminBadge: 'boy',
     isDesigner: false,
@@ -481,6 +482,23 @@ function applyReferral(user, referralCode) {
   const inviter = users[inviterId];
   if (!inviter || String(inviter.id) === String(user.id)) return;
   user.referredBy = inviterId;
+}
+
+function syncCampaignInvite(user) {
+  if (!user || !user.referredBy || user.campaignInviteCounted === true) return false;
+  if (
+    user.taskChannelRewardClaimed !== true ||
+    user.withdrawChannelTaskRewardClaimed !== true ||
+    user.thirdChannelTaskRewardClaimed !== true
+  ) return false;
+  const now = Date.now();
+  if (now < INVITE_LEADERBOARD_STARTS_AT || now >= INVITE_LEADERBOARD_ENDS_AT) return false;
+  const inviter = users[String(user.referredBy)];
+  if (!inviter || String(inviter.id) === String(user.id)) return false;
+  inviter.campaignInvites = Number(inviter.campaignInvites || 0) + 1;
+  inviter.campaignLastInviteAt = now;
+  user.campaignInviteCounted = true;
+  return true;
 }
 
 async function sendTelegramStartMessage(chatId) {
@@ -1299,6 +1317,7 @@ function requireUser(getToken) {
     req.uid = String(payload.uid);
     req.user = users[req.uid];
     if (!req.user) return res.status(401).json({ error: 'unknown-user' });
+    if (syncCampaignInvite(req.user)) persist();
     next();
   };
 }
@@ -1837,13 +1856,6 @@ app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
         inviter.referralPendingZombies = Number(inviter.referralPendingZombies || 0) + 300;
         inviter.referralRewardCount = Number(inviter.referralRewardCount || 0) + 1;
         referralReward = 300;
-        // Invite leaderboard: only invites completed inside the active
-        // campaign window count towards the ranking/TON prize.
-        const now = Date.now();
-        if (now >= INVITE_LEADERBOARD_STARTS_AT && now < INVITE_LEADERBOARD_ENDS_AT) {
-          inviter.campaignInvites = Number(inviter.campaignInvites || 0) + 1;
-          inviter.campaignLastInviteAt = now;
-        }
       }
       user.referralRewardClaimed = true;
     }
