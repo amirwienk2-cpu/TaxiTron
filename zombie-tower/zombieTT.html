@@ -939,8 +939,8 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     if (cardKey !== lastCardKey) { renderCard(d.card); lastCardKey = cardKey; }
     $('round').textContent = d.sd ? T('tiebreak') : String(d.round);
     $('pot').textContent = fmt(d.stake * 2);
-    $('opName').textContent = nameOf(op);
-    $('versusName').textContent = nameOf(op);
+    $('opName').textContent = serverNameOf(d, op);
+    $('versusName').textContent = serverNameOf(d, op);
     const fm = d.floors[me] || 0, fo = d.floors[op] || 0;
     $('fillMe').style.height = Math.min(fm, TOP) / TOP * 100 + '%';
     $('fillOp').style.height = Math.min(fo, TOP) / TOP * 100 + '%';
@@ -965,7 +965,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       lastRenderedRound = d.last.round;
       const L = $('log'); delete L.dataset.i18n; L.textContent = '';
       { const cs = document.createElement('span'); cs.textContent = lbl(d.last.from) + ' → ' + lbl(d.last.to) + ':'; L.append(cs); }
-      for (const [u, who] of [[me, T('you')], [op, nameOf(op)]]) {
+      for (const [u, who] of [[me, T('you')], [op, serverNameOf(d, op)]]) {
         const r = d.last.res[u]; const sp = document.createElement('span');
         sp.className = r.ok ? 'ok' : 'bad';
         sp.textContent = who + ' ' + (r.d ? (r.d === 'hi' ? '▲' : '▼') : '⌛') + ' ' + (r.g > 0 ? '+' + r.g : '−1');
