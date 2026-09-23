@@ -887,18 +887,28 @@ function magicTowerGamePublic(game, uid) {
 }
 function settleMagicTowerGame(game, winnerId) {
   if (game.status === 'finished') return;
-  const payout = 0.18;
-  const fee = 0.02;
-  const winner = users[String(winnerId)];
-  if (!winner) throw new Error('magic-tower-winner-missing');
-  winner.ton = Number((Number(winner.ton || 0) + payout).toFixed(9));
-  if (PLATFORM_USER_ID) {
-    const platform = getOrCreateUser(PLATFORM_USER_ID, 'Platform');
-    platform.ton = Number((Number(platform.ton || 0) + fee).toFixed(9));
+  const isTie = !winnerId;
+  const payout = isTie ? MAGIC_TOWER_STAKE : 0.18;
+  const fee = isTie ? 0 : 0.02;
+  if (isTie) {
+    game.players.forEach((player) => {
+      const user = users[String(player.id)];
+      if (user) user.ton = Number((Number(user.ton || 0) + MAGIC_TOWER_STAKE).toFixed(9));
+    });
+  } else {
+    const winner = users[String(winnerId)];
+    if (!winner) throw new Error('magic-tower-winner-missing');
+    winner.ton = Number((Number(winner.ton || 0) + payout).toFixed(9));
+    if (PLATFORM_USER_ID) {
+      const platform = getOrCreateUser(PLATFORM_USER_ID, 'Platform');
+      platform.ton = Number((Number(platform.ton || 0) + fee).toFixed(9));
+    }
   }
   game.status = 'finished';
   game.finishedAt = Date.now();
-  game.result = { winnerId: String(winnerId), winnerName: winner.name, payout, platformFee: fee, pot: 0.2 };
+  game.result = isTie
+    ? { tie: true, payout, platformFee: fee, pot: 0.2 }
+    : { winnerId: String(winnerId), winnerName: users[String(winnerId)].name, payout, platformFee: fee, pot: 0.2 };
 }
 function expireMagicTowerGames() {
   let changed = false;
@@ -931,13 +941,13 @@ function resolveMagicTowerRound(game) {
   game.actions = {};
   const reached = game.players.filter((p) => p.floor >= MAGIC_TOWER_FLOORS);
   if (reached.length) {
-    const winner = reached.length === 1 ? reached[0] : reached[crypto.randomInt(reached.length)];
-    settleMagicTowerGame(game, winner.id);
+    const winner = reached.length === 1 ? reached[0] : null;
+    settleMagicTowerGame(game, winner && winner.id);
   } else if (!game.deck.length) {
     const winner = game.players[0].floor === game.players[1].floor
-      ? game.players[crypto.randomInt(2)]
+      ? null
       : game.players[0].floor > game.players[1].floor ? game.players[0] : game.players[1];
-    settleMagicTowerGame(game, winner.id);
+    settleMagicTowerGame(game, winner && winner.id);
   } else {
     game.round += 1;
     game.turnDeadlineAt = Date.now() + MAGIC_TOWER_TURN_TIMEOUT_MS;

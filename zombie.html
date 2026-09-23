@@ -661,7 +661,7 @@
       balance:'Guthaben', unavailable:'nicht verfügbar', balanceUnavailable:'Guthaben: — TON', previewNote:'Vorschau – Demo-Spiele, kein Echtgeld', backHome:'Zur Startseite',
       deckCount:'52 Karten im Stapel', opponentName:'Zombie-Gegner', joinStake:'Einsatz setzen &amp; beitreten', topUp:'Guthaben auffüllen (+1 TON)', finishedTitle:'Turm bezwungen!',
       waitingPlayer:'Warte auf einen zweiten echten Spieler.', readyStatus:'Beide Spieler müssen bereit klicken.', waitingOpponent:'Warte auf den Gegner …', choose:'Wähle höher oder tiefer.', time:'Zeit', roundEvaluated:'Runde ausgewertet.', unavailableError:'Verbindung nicht verfügbar.', authError:'Authentifizierung nicht verfügbar.', lobbyError:'Lobby nicht verfügbar.', insufficientFunds:'Nicht genug TON für den Einsatz von 0.1 TON.',
-      wonTitle:'Du hast gewonnen!', lostTitle:'Du hast verloren', wonText:'Auszahlung: +0.18 TON (Plattformgebühr: 0.02 TON).', lostText:'Dein Einsatz von 0.1 TON ist verloren.', playAgain:'Nochmal spielen'
+      wonTitle:'Du hast gewonnen!', lostTitle:'Du hast verloren', tieTitle:'Unentschieden', wonText:'Auszahlung: +0.18 TON (Plattformgebühr: 0.02 TON).', lostText:'Dein Einsatz von 0.1 TON ist verloren.', tieText:'Beide Spieler erhalten ihren Einsatz von 0.1 TON zurück.', playAgain:'Nochmal spielen'
     },
     fa: {
       title:'برج زامبی', subtitle:'پیش‌بینی کن کارت بعدی <b style="color:var(--ink)">بالاتر</b> یا <b style="color:var(--ink)">پایین‌تر</b> است. با حدس درست یک طبقه بالا می‌روی؛ هرکس زودتر به بالا برسد برنده است.',
@@ -671,7 +671,7 @@
       balance:'موجودی', unavailable:'در دسترس نیست', balanceUnavailable:'موجودی: — TON', previewNote:'پیش‌نمایش – بازی آزمایشی، بدون پول واقعی', backHome:'بازگشت به خانه',
       deckCount:'۵۲ کارت در دسته', opponentName:'حریف زامبی', joinStake:'پرداخت شرط و ورود', topUp:'افزایش موجودی (+۱ TON)', finishedTitle:'برج تسخیر شد!',
       waitingPlayer:'منتظر بازیکن دوم واقعی هستیم.', readyStatus:'هر دو بازیکن باید آماده شوند.', waitingOpponent:'منتظر حریف …', choose:'بالاتر یا پایین‌تر را انتخاب کن.', time:'زمان', roundEvaluated:'دور محاسبه شد.', unavailableError:'ارتباط برقرار نیست.', authError:'احراز هویت در دسترس نیست.', lobbyError:'لابی در دسترس نیست.', insufficientFunds:'TON کافی برای شرط ۰٫۱ TON نیست.',
-      wonTitle:'شما برنده شدید!', lostTitle:'شما باختید', wonText:'پرداخت: +۰٫۱۸ TON (کارمزد پلتفرم: ۰٫۰۲ TON).', lostText:'شرط ۰٫۱ TON شما از دست رفت.', playAgain:'بازی دوباره'
+      wonTitle:'شما برنده شدید!', lostTitle:'شما باختید', tieTitle:'مساوی', wonText:'پرداخت: +۰٫۱۸ TON (کارمزد پلتفرم: ۰٫۰۲ TON).', lostText:'شرط ۰٫۱ TON شما از دست رفت.', tieText:'هر دو بازیکن شرط ۰٫۱ TON خود را پس می‌گیرند.', playAgain:'بازی دوباره'
     },
     en: {
       title:'Zombie Tower', subtitle:'Predict whether the next card is <b style="color:var(--ink)">higher</b> or <b style="color:var(--ink)">lower</b>. A correct guess moves you up one floor; the first to the top wins.',
@@ -681,7 +681,7 @@
       balance:'Balance', unavailable:'not available', balanceUnavailable:'Balance: — TON', previewNote:'Preview – demo games, no real money', backHome:'Back to Home',
       deckCount:'52 cards in deck', opponentName:'Zombie opponent', joinStake:'Set stake &amp; join', topUp:'Top up balance (+1 TON)', finishedTitle:'Tower conquered!',
       waitingPlayer:'Waiting for a second real player.', readyStatus:'Both players must ready up.', waitingOpponent:'Waiting for opponent …', choose:'Choose higher or lower.', time:'Time', roundEvaluated:'Round evaluated.', unavailableError:'Connection unavailable.', authError:'Authentication unavailable.', lobbyError:'Lobby unavailable.', insufficientFunds:'Not enough TON for the 0.1 TON stake.',
-      wonTitle:'You won!', lostTitle:'You lost', wonText:'Payout: +0.18 TON (platform fee: 0.02 TON).', lostText:'Your 0.1 TON stake was lost.', playAgain:'Play again'
+      wonTitle:'You won!', lostTitle:'You lost', tieTitle:'It’s a tie', wonText:'Payout: +0.18 TON (platform fee: 0.02 TON).', lostText:'Your 0.1 TON stake was lost.', tieText:'Both players get their 0.1 TON stake back.', playAgain:'Play again'
     }
   };
   const T = () => LANGS[lang];
@@ -764,6 +764,11 @@
   }
   function renderFinished(g) {
     const dict = LANGS[lang];
+    if (g.result && g.result.tie) {
+      overlayTitle.textContent = dict.tieTitle;
+      overlayText.textContent = dict.tieText;
+      return;
+    }
     const won = g.result && g.me && String(g.result.winnerId) === String(g.me.id);
     overlayTitle.textContent = won ? dict.wonTitle : dict.lostTitle;
     overlayText.textContent = won ? dict.wonText : dict.lostText;
