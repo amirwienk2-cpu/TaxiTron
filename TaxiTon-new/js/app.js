@@ -22,6 +22,9 @@ Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برند
 Object.assign(I18N.fa,{randomRemaining:'Random {n}'});
 Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: {amount} TON 🎉',randomRemaining:'Random {n}'});
 Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: {amount} TON 🎉',randomRemaining:'Random {n}'});
+Object.assign(I18N.fa,{chatTestEn:'پیام آزمایشی چت انگلیسی',chatTestDe:'پیام آزمایشی چت آلمانی'});
+Object.assign(I18N.de,{chatTestEn:'English chat test message.',chatTestDe:'Deutsche Chat-Testnachricht.'});
+Object.assign(I18N.en,{chatTestEn:'English chat test message.',chatTestDe:'German chat test message.'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
@@ -41,6 +44,7 @@ function applyLang(){
   document.querySelectorAll('[data-i-html]').forEach(el=>{const v=T()[el.dataset.iHtml]; if(v) el.innerHTML=v;});
   document.querySelectorAll('[data-ph]').forEach(el=>{el.placeholder=T()[el.dataset.ph]});
   document.querySelectorAll('.flag').forEach(f=>{f.classList.toggle('on',f.dataset.lang===lang);f.setAttribute('aria-pressed',f.dataset.lang===lang)});
+  document.querySelectorAll('.chat-language-test').forEach(el=>{el.hidden=el.dataset.chatLang!==lang});
   document.querySelectorAll('[data-n]').forEach(el=>{el.textContent=lang==='fa'?el.dataset.n.replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):el.dataset.n});
   if(typeof renderShop==='function') renderShop();
   if(typeof renderHome==='function' && typeof HOME!=='undefined') renderHome();
