@@ -49,7 +49,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 28px 16px 40px;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 28px 16px 78px;
     overflow-x: hidden;
   }
 
@@ -440,6 +442,7 @@
   .tower-lang-list button,.tower-lang-toggle { flex:none; border:1px solid rgba(201,162,75,.35); border-radius:9px; padding:7px 9px; background:var(--panel-2); color:var(--ink); font:700 11px system-ui,sans-serif; cursor:pointer; }
   .tower-lang-list button.active { color:#1a1428; background:var(--gold-bright); }
   .tower-lang-toggle { border-radius:999px; padding:8px 11px; color:var(--gold-bright); }
+  .home-link { position:fixed; left:14px; bottom:14px; z-index:20; border:1px solid rgba(201,162,75,.45); border-radius:999px; padding:9px 13px; background:rgba(30,24,56,.96); color:var(--gold-bright); font:700 11px system-ui,sans-serif; text-decoration:none; box-shadow:0 8px 24px rgba(0,0,0,.35); }
   .lobby-screen { width:min(560px,100%); }
   .rooms-panel { width:100%; margin:0 auto 14px; padding:14px; border:1px solid rgba(201,162,75,.3); border-radius:16px; background:rgba(30,24,56,.72); }
   .game-screen { display:none; width:100%; }
@@ -561,6 +564,7 @@
     </div>
     <button type="button" class="tower-lang-toggle" id="towerLangToggle">文 Languages</button>
   </div>
+  <a class="home-link" id="homeLink" href="/TaxiTon-new/index-new.html" data-i="backHome">Back to Home</a>
 
 <script>
 (function () {
@@ -570,7 +574,7 @@
       you:'DU', opponent:'GEGNER', lower:'▼ Tiefer', higher:'▲ Höher', restart:'Turm neu bauen', lobby:'Lobby', secondPlayer:'Zweiter Spieler', enterGame:'Spiel betreten', backToLobby:'Zur Spiele-Lobby',
       pool:'Preispool', stakeNote:'Gewinner erhält 90 % des Pools (0.18 TON) · 10 % Gebühr. Echter Einsatz aus deinem Server-Guthaben.', ready:'Bereit',
       roomsTitle:'Spiele-Lobby', roomsEmpty:'Noch keine Spiele.', waiting:'Wartet auf Spieler', playing:'Läuft',
-      balance:'Guthaben', unavailable:'nicht verfügbar', previewNote:'Vorschau – Demo-Spiele, kein Echtgeld',
+      balance:'Guthaben', unavailable:'nicht verfügbar', previewNote:'Vorschau – Demo-Spiele, kein Echtgeld', backHome:'Zur Startseite',
       wonTitle:'Du hast gewonnen!', lostTitle:'Du hast verloren', wonText:'Auszahlung: +0.18 TON (Plattformgebühr: 0.02 TON).', lostText:'Dein Einsatz von 0.1 TON ist verloren.', playAgain:'Nochmal spielen'
     },
     fa: {
@@ -578,7 +582,7 @@
       you:'شما', opponent:'حریف', lower:'▼ پایین‌تر', higher:'▲ بالاتر', restart:'ساخت دوباره برج', lobby:'لابی', secondPlayer:'بازیکن دوم', enterGame:'ورود به بازی', backToLobby:'بازگشت به لابی',
       pool:'مجموع جایزه', stakeNote:'برنده ۹۰٪ استخر (۰٫۱۸ TON) را می‌گیرد · ۱۰٪ کارمزد است. شرط واقعی از موجودی سرور کسر می‌شود.', ready:'آماده',
       roomsTitle:'لابی بازی‌ها', roomsEmpty:'هنوز بازی‌ای نیست.', waiting:'منتظر بازیکن', playing:'در حال بازی',
-      balance:'موجودی', unavailable:'در دسترس نیست', previewNote:'پیش‌نمایش – بازی آزمایشی، بدون پول واقعی',
+      balance:'موجودی', unavailable:'در دسترس نیست', previewNote:'پیش‌نمایش – بازی آزمایشی، بدون پول واقعی', backHome:'بازگشت به خانه',
       wonTitle:'شما برنده شدید!', lostTitle:'شما باختید', wonText:'پرداخت: +۰٫۱۸ TON (کارمزد پلتفرم: ۰٫۰۲ TON).', lostText:'شرط ۰٫۱ TON شما از دست رفت.', playAgain:'بازی دوباره'
     },
     en: {
@@ -586,7 +590,7 @@
       you:'YOU', opponent:'OPPONENT', lower:'▼ Lower', higher:'▲ Higher', restart:'Rebuild tower', lobby:'Lobby', secondPlayer:'Second player', enterGame:'Enter game', backToLobby:'Back to lobby',
       pool:'Prize pool', stakeNote:'Winner receives 90% of the pool (0.18 TON) · 10% fee. Real stake from your server balance.', ready:'Ready',
       roomsTitle:'Game lobby', roomsEmpty:'No games yet.', waiting:'Waiting for player', playing:'In progress',
-      balance:'Balance', unavailable:'not available', previewNote:'Preview – demo games, no real money',
+      balance:'Balance', unavailable:'not available', previewNote:'Preview – demo games, no real money', backHome:'Back to Home',
       wonTitle:'You won!', lostTitle:'You lost', wonText:'Payout: +0.18 TON (platform fee: 0.02 TON).', lostText:'Your 0.1 TON stake was lost.', playAgain:'Play again'
     }
   };
