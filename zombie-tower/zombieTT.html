@@ -518,7 +518,20 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       rooms = serverRooms.concat(serverGame && !serverRooms.some(r => r.id === serverGame.id) ? [serverGame] : []);
       if (serverGame && serverGame.status === 'playing' && (!viewId || viewId === BOT)) viewId = serverGame.id;
       renderLobby(); afterChange();
-    } catch (e) { toast(T('t_conn')); }
+    } catch (e) {
+      const code = e && e.data && e.data.error;
+      if (code === 'invalid-or-expired-token') {
+        serverMode = false;
+        apiToken = '';
+        if (await loadTaxiTronBalance() && serverMode) {
+          await refreshServerLobby();
+          return;
+        }
+        toast(T('t_authfail'));
+        return;
+      }
+      toast(code ? T('t_conn') + ' (' + code + ')' : 'Server nicht erreichbar.');
+    }
   }
 
   function saveHouseFee(amount){
