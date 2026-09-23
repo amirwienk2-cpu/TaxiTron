@@ -598,12 +598,28 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       await loadTaxiTronBalance();
     }
     if (serverMode) {
+      const createButton = $('create');
+      createButton.disabled = true;
+      createButton.setAttribute('aria-busy', 'true');
       try {
-        const data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
+        let data;
+        try {
+          data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
+        } catch (e) {
+          const code = e.data && e.data.error;
+          if (code !== 'invalid-or-expired-token') throw e;
+          serverMode = false;
+          apiToken = '';
+          if (!await loadTaxiTronBalance() || !serverMode) throw e;
+          data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
+        }
         serverGame = normalizeServerGame(data.game); viewId = serverGame.id; await refreshServerLobby();
       } catch (e) {
         const code = e.data && e.data.error;
-        toast(code === 'insufficient-funds' ? T('t_nofunds') : code === 'invalid-or-expired-token' ? T('t_authfail') : code === 'user-banned' ? 'Account gesperrt.' : T('t_createfail') + (code ? ' (' + code + ')' : ''));
+        toast(e && e.name === 'TypeError' ? 'Netzwerkfehler. Bitte Verbindung prüfen.' : code === 'insufficient-funds' ? T('t_nofunds') : code === 'invalid-or-expired-token' ? T('t_authfail') : code === 'user-banned' ? 'Account gesperrt.' : T('t_createfail') + (code ? ' (' + code + ')' : ''));
+      } finally {
+        createButton.disabled = false;
+        createButton.removeAttribute('aria-busy');
       }
       return;
     }
