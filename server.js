@@ -2001,44 +2001,57 @@ function hasRecordedDeposit(depositId) {
 }
 
 let depositScanInProgress = false;
+let depositOperation = Promise.resolve();
+function withDepositLock(operation) {
+  const previous = depositOperation;
+  let release;
+  depositOperation = new Promise((resolve) => {
+    release = resolve;
+  });
+  return previous.then(operation).finally(() => release());
+}
+
 async function scanDeposits() {
-  if (!DEPOSIT_ADDRESS || depositScanInProgress) return;
-  depositScanInProgress = true;
-  try {
-    const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
-    const data = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS) + '/events?limit=100');
-    let changed = false;
-    for (const event of data.events || []) {
-      for (const action of event.actions || []) {
-        const transfer = action.type === 'TonTransfer' && action.TonTransfer;
-        if (!transfer || action.status !== 'ok' || transfer.recipient.address !== account.address) continue;
-        // New deposit memos omit the dash. Keep accepting the old format so
-        // transfers already sent with a legacy memo are still credited.
-        const match = /^TT-?(\d+)$/.exec(String(transfer.comment || '').trim());
-        if (!match || Number(transfer.amount) <= 0) continue;
-        const user = users[match[1]];
-        if (!user) continue;
-        if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
-        const txId = String(event.event_id || '').toLowerCase();
-        if (!txId || hasRecordedDeposit(txId)) continue;
-        const amountTon = Number(transfer.amount) / 1e9;
-        user.ton += amountTon;
-        user.depositTxs.push(txId);
-        if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
-        if (!Array.isArray(user.deposits)) user.deposits = [];
-        user.deposits.push({ ts: Date.now(), amount: amountTon, txId });
-        if (user.deposits.length > 200) user.deposits = user.deposits.slice(-200);
-        changed = true;
-        console.log('[deposit] credited ' + amountTon + ' TON to user ' + user.id);
-        notifyAdminDeposit(user, amountTon);
+  if (!DEPOSIT_ADDRESS) return;
+  return withDepositLock(async () => {
+    if (depositScanInProgress) return;
+    depositScanInProgress = true;
+    try {
+      const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
+      const data = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS) + '/events?limit=100');
+      let changed = false;
+      for (const event of data.events || []) {
+        for (const action of event.actions || []) {
+          const transfer = action.type === 'TonTransfer' && action.TonTransfer;
+          if (!transfer || action.status !== 'ok' || transfer.recipient.address !== account.address) continue;
+          // New deposit memos omit the dash. Keep accepting the old format so
+          // transfers already sent with a legacy memo are still credited.
+          const match = /^TT-?(\d+)$/.exec(String(transfer.comment || '').trim());
+          if (!match || Number(transfer.amount) <= 0) continue;
+          const user = users[match[1]];
+          if (!user) continue;
+          if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
+          const txId = String(event.event_id || '').toLowerCase();
+          if (!txId || hasRecordedDeposit(txId)) continue;
+          const amountTon = Number(transfer.amount) / 1e9;
+          user.ton += amountTon;
+          user.depositTxs.push(txId);
+          if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
+          if (!Array.isArray(user.deposits)) user.deposits = [];
+          user.deposits.push({ ts: Date.now(), amount: amountTon, txId });
+          if (user.deposits.length > 200) user.deposits = user.deposits.slice(-200);
+          changed = true;
+          console.log('[deposit] credited ' + amountTon + ' TON to user ' + user.id);
+          notifyAdminDeposit(user, amountTon);
+        }
       }
+      if (changed) persist();
+    } catch (e) {
+      console.error('[deposit] scan failed: ' + e.message);
+    } finally {
+      depositScanInProgress = false;
     }
-    if (changed) persist();
-  } catch (e) {
-    console.error('[deposit] scan failed: ' + e.message);
-  } finally {
-    depositScanInProgress = false;
-  }
+  });
 }
 
 function getNativeTransfer(event, uid) {
@@ -2055,43 +2068,50 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
   if (!/^[a-f0-9]{64}$/.test(txHash)) return res.status(400).json({ error: 'invalid-transaction-id' });
   if (!DEPOSIT_ADDRESS) return res.status(503).json({ error: 'deposit-address-not-configured' });
   const user = req.user;
-  if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
-  // Cheap early check for an exact repeat paste of the same value. The REAL duplicate
-  // check happens below once the transfer's own canonical event_id is known: TonAPI
-  // resolves several different hash values (an event's own id, its external message
-  // hash, or any of its base_transactions hashes) to the exact same event, and the
-  // automatic background scanner (scanDeposits() below) always records that canonical
-  // event_id - not necessarily whichever equivalent hash the user happened to paste
-  // here. Without re-checking against that same canonical id, the same deposit could
-  // get credited twice: once automatically, once again via this manual claim.
-  if (user.depositTxs.includes(txHash)) return res.status(409).json({ error: 'deposit-already-claimed' });
+  await withDepositLock(async () => {
+    if (!Array.isArray(user.depositTxs)) user.depositTxs = [];
+    // Cheap early check for an exact repeat paste of the same value. The REAL duplicate
+    // check happens below once the transfer's own canonical event_id is known: TonAPI
+    // resolves several different hash values (an event's own id, its external message
+    // hash, or any of its base_transactions hashes) to the exact same event, and the
+    // automatic background scanner (scanDeposits() below) always records that canonical
+    // event_id - not necessarily whichever equivalent hash the user happened to paste
+    // here. Without re-checking against that same canonical id, the same deposit could
+    // get credited twice: once automatically, once again via this manual claim.
+    if (user.depositTxs.includes(txHash)) {
+      res.status(409).json({ error: 'deposit-already-claimed' });
+      return;
+    }
 
-  try {
-    const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
-    const event = await tonApiJson('/events/' + txHash);
-    const canonicalEventId = String(event.event_id || txHash).toLowerCase();
-    if (hasRecordedDeposit(canonicalEventId) || hasRecordedDeposit(txHash)) {
-      return res.status(409).json({ error: 'deposit-already-claimed' });
+    try {
+      const account = await tonApiJson('/accounts/' + encodeURIComponent(DEPOSIT_ADDRESS));
+      const event = await tonApiJson('/events/' + txHash);
+      const canonicalEventId = String(event.event_id || txHash).toLowerCase();
+      if (hasRecordedDeposit(canonicalEventId) || hasRecordedDeposit(txHash)) {
+        res.status(409).json({ error: 'deposit-already-claimed' });
+        return;
+      }
+      const transferAction = getNativeTransfer(event, user.id);
+      const recipient = transferAction && transferAction.TonTransfer.recipient;
+      if (!transferAction || !recipient || recipient.address !== account.address) {
+        res.status(400).json({ error: 'deposit-does-not-match-account' });
+        return;
+      }
+      const amount = transferAction.TonTransfer.amount / 1e9;
+      user.ton += amount;
+      user.depositTxs.push(canonicalEventId);
+      if (txHash !== canonicalEventId) user.depositTxs.push(txHash);
+      if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
+      if (!Array.isArray(user.deposits)) user.deposits = [];
+      user.deposits.push({ ts: Date.now(), amount, txId: canonicalEventId });
+      if (user.deposits.length > 200) user.deposits = user.deposits.slice(-200);
+      persist();
+      notifyAdminDeposit(user, amount);
+      res.json({ state: publicState(user), amount });
+    } catch (e) {
+      res.status(502).json({ error: 'deposit-verification-failed' });
     }
-    const transferAction = getNativeTransfer(event, user.id);
-    const recipient = transferAction && transferAction.TonTransfer.recipient;
-    if (!transferAction || !recipient || recipient.address !== account.address) {
-      return res.status(400).json({ error: 'deposit-does-not-match-account' });
-    }
-    const amount = transferAction.TonTransfer.amount / 1e9;
-    user.ton += amount;
-    user.depositTxs.push(canonicalEventId);
-    if (txHash !== canonicalEventId) user.depositTxs.push(txHash);
-    if (user.depositTxs.length > 200) user.depositTxs = user.depositTxs.slice(-200);
-    if (!Array.isArray(user.deposits)) user.deposits = [];
-    user.deposits.push({ ts: Date.now(), amount, txId: canonicalEventId });
-    if (user.deposits.length > 200) user.deposits = user.deposits.slice(-200);
-    persist();
-    notifyAdminDeposit(user, amount);
-    res.json({ state: publicState(user), amount });
-  } catch (e) {
-    res.status(502).json({ error: 'deposit-verification-failed' });
-  }
+  });
 });
 
 // ---- Atomically consumes this Telegram account's level-specific attempt and
