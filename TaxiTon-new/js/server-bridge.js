@@ -229,8 +229,23 @@
     }
   }
 
+  function waitForInitData() {
+    return new Promise(function (resolve) {
+      var attempts = 0;
+      function check() {
+        var ctx = getInitData();
+        if (ctx.initData || attempts++ >= 20) {
+          resolve(ctx);
+          return;
+        }
+        setTimeout(check, 150);
+      }
+      check();
+    });
+  }
+
   function auth() {
-    var ctx = getInitData();
+    return waitForInitData().then(function (ctx) {
     if (!ctx.initData) {
       // Not running inside Telegram (e.g. plain desktop browser test) - nothing we can
       // authenticate with. Fall back to a local-only demo account (no server involved) so
@@ -239,7 +254,7 @@
       SESSION.demo = true;
       var demoState = loadDemoState();
       applyState(demoState);
-      return Promise.resolve(demoState);
+      return demoState;
     }
     return postJSON('/api/auth', { initData: ctx.initData, referralCode: ctx.referralCode }).then(function (r) {
       if (!r.ok || !r.data || !r.data.token) {
@@ -261,6 +276,7 @@
       console.warn('[server-bridge] /api/auth error', e);
       return null;
     });
+    });
   }
 
   function wireZombieTowerLink() {
@@ -268,22 +284,15 @@
     if (!zombieLink || zombieLink.dataset.authGuarded === '1') return;
     zombieLink.dataset.authGuarded = '1';
     zombieLink.addEventListener('click', function (event) {
-      if (SESSION.token) return;
-      var ctx = getInitData();
-      if (!ctx.initData) {
-        event.preventDefault();
-        window.alert('Bitte öffne Zombie Tower innerhalb der Telegram-Mini-App.');
-        return;
-      }
       event.preventDefault();
       zombieLink.setAttribute('aria-busy', 'true');
       auth().then(function (state) {
         zombieLink.removeAttribute('aria-busy');
         if (!state || !SESSION.token) {
-          window.alert('Telegram-Anmeldung fehlgeschlagen. Bitte die Mini-App neu öffnen.');
+          window.alert('Telegram-Anmeldung fehlt. Öffne die Mini-App über den Bot-Button neu.');
           return;
         }
-        var target = new URL(zombieLink.href, window.location.href);
+        var target = new URL('/zombie-tower/zombieTT.html?v=2026092405', window.location.origin);
         target.searchParams.set('token', SESSION.token);
         window.location.assign(target.toString());
       });
