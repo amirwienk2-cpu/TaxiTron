@@ -917,6 +917,10 @@ function zombieTowerCard() {
   return { r: crypto.randomInt(2, 15), s: ['♠', '♥', '♦', '♣'][crypto.randomInt(4)] };
 }
 function zombieTowerPublic(game, uid) {
+  const stake = Number(game.stake || ZOMBIE_TOWER_STAKE);
+  const pot = Number((stake * 2).toFixed(9));
+  const winnerPayout = Number((pot * 0.9).toFixed(9));
+  const platformFee = Number((pot - winnerPayout).toFixed(9));
   const player = game.players.find((p) => String(p.id) === String(uid));
   const visiblePicks = {};
   Object.keys(game.picks || {}).forEach((id) => {
@@ -924,8 +928,8 @@ function zombieTowerPublic(game, uid) {
     if (String(id) === String(uid)) visiblePicks[id].choice = game.picks[id].choice;
   });
   return {
-    id: game.id, status: game.status, createdAt: game.createdAt, stake: ZOMBIE_TOWER_STAKE, pot: 0.02,
-    winnerPayout: 0.018, platformFee: 0.002, round: game.round,
+    id: game.id, status: game.status, createdAt: game.createdAt, stake, pot,
+    winnerPayout, platformFee, round: game.round,
     card: game.card, deadline: game.deadline, floors: game.floors, picks: visiblePicks,
     hist: game.hist, last: game.last, sd: !!game.sd, winner: game.winner || null,
     forfeit: game.forfeit || null, ended: game.ended || null,
@@ -941,22 +945,26 @@ function settleZombieTower(game, winnerId) {
     game.result = { refunded: true };
     game.players.forEach((p) => {
       const user = users[String(p.id)];
-      if (user) user.ton = Number((Number(user.ton || 0) + ZOMBIE_TOWER_STAKE).toFixed(9));
+      if (user) user.ton = Number((Number(user.ton || 0) + Number(game.stake || ZOMBIE_TOWER_STAKE)).toFixed(9));
     });
     return;
   }
   const winner = users[String(winnerId)];
   if (!winner) return;
-  winner.ton = Number((Number(winner.ton || 0) + 0.018).toFixed(9));
+  const stake = Number(game.stake || ZOMBIE_TOWER_STAKE);
+  const pot = stake * 2;
+  const winnerPayout = Number((pot * 0.9).toFixed(9));
+  const platformFee = Number((pot - winnerPayout).toFixed(9));
+  winner.ton = Number((Number(winner.ton || 0) + winnerPayout).toFixed(9));
   const operatorId = PLATFORM_USER_ID || ADMIN_CHAT_ID;
   if (operatorId) {
     const platform = getOrCreateUser(operatorId, 'Platform');
-    platform.ton = Number((Number(platform.ton || 0) + 0.002).toFixed(9));
+    platform.ton = Number((Number(platform.ton || 0) + platformFee).toFixed(9));
   }
   game.status = 'done';
   game.winner = String(winnerId);
   game.ended = Date.now();
-  game.result = { winnerId: String(winnerId), payout: 0.018, platformFee: 0.002, pot: 0.02 };
+  game.result = { winnerId: String(winnerId), payout: winnerPayout, platformFee, pot };
 }
 function resolveZombieTower(game) {
   if (!game || game.status !== 'playing') return;
@@ -1681,13 +1689,16 @@ app.get('/api/zombie-tower/lobby', requireUserFromQuery, (req, res) => {
 app.post('/api/zombie-tower/create', requireUserFromBody, rejectBannedUser, (req, res) => {
   expireZombieTowerGames();
   const user = req.user;
-  if (Number(user.ton || 0) < ZOMBIE_TOWER_STAKE) return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
+  const stake = Number(req.body && req.body.stake);
+  const allowedStakes = new Set([0.01, 0.05, 0.1, 0.5, 1]);
+  if (!allowedStakes.has(stake)) return res.status(400).json({ error: 'invalid-stake' });
+  if (Number(user.ton || 0) < stake) return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
   const existing = Object.values(zombieTowerGames).find((g) => !['done', 'abandoned'].includes(g.status) && g.players.some((p) => String(p.id) === String(user.id)));
   if (existing) return res.json({ state: publicState(user), game: zombieTowerPublic(existing, user.id) });
   const id = crypto.randomUUID();
-  user.ton = Number((Number(user.ton || 0) - ZOMBIE_TOWER_STAKE).toFixed(9));
+  user.ton = Number((Number(user.ton || 0) - stake).toFixed(9));
   zombieTowerGames[id] = {
-    id, status: 'open', createdAt: Date.now(), players: [{ id: user.id, name: user.name }],
+    id, status: 'open', createdAt: Date.now(), stake, players: [{ id: user.id, name: user.name }],
     floors: {}, misses: {}, picks: {}, hist: [], round: 0, card: null, deadline: 0,
   };
   persist(); persistZombieTowerGames();
@@ -1699,8 +1710,9 @@ app.post('/api/zombie-tower/join', requireUserFromBody, rejectBannedUser, (req, 
   const user = req.user;
   if (!game || game.status !== 'open' || game.players.length !== 1) return res.status(409).json({ error: 'room-not-open' });
   if (String(game.players[0].id) === String(user.id)) return res.status(400).json({ error: 'cannot-join-own-game' });
-  if (Number(user.ton || 0) < ZOMBIE_TOWER_STAKE) return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
-  user.ton = Number((Number(user.ton || 0) - ZOMBIE_TOWER_STAKE).toFixed(9));
+  const stake = Number(game.stake || ZOMBIE_TOWER_STAKE);
+  if (Number(user.ton || 0) < stake) return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
+  user.ton = Number((Number(user.ton || 0) - stake).toFixed(9));
   game.players.push({ id: user.id, name: user.name });
   game.status = 'playing'; game.round = 1; game.card = zombieTowerCard();
   game.hist = [game.card]; game.deadline = Date.now() + ZOMBIE_TOWER_ROUND_MS;

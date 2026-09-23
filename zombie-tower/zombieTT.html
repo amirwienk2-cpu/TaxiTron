@@ -656,14 +656,14 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       try {
         let data;
         try {
-          data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
+          data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: { stake } });
         } catch (e) {
           const code = e.data && e.data.error;
           if (code !== 'invalid-or-expired-token') throw e;
           serverMode = false;
           apiToken = '';
           if (!await loadTaxiTronBalance() || !serverMode) throw e;
-          data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
+          data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: { stake } });
         }
         serverGame = normalizeServerGame(data && data.game);
         if (!serverGame || !serverGame.id) throw new Error('invalid-create-response');
