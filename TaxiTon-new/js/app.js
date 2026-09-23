@@ -22,6 +22,9 @@ Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برند
 Object.assign(I18N.fa,{randomRemaining:'Random {n}'});
 Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: {amount} TON 🎉',randomRemaining:'Random {n}'});
 Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: {amount} TON 🎉',randomRemaining:'Random {n}'});
+Object.assign(I18N.fa,{gameNoAttempts:'تلاش دیگری باقی نمانده',gameTryLater:'بعداً دوباره امتحان کنید'});
+Object.assign(I18N.de,{gameNoAttempts:'Keine Versuche mehr',gameTryLater:'Später erneut versuchen'});
+Object.assign(I18N.en,{gameNoAttempts:'No attempts left',gameTryLater:'Try again later'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);

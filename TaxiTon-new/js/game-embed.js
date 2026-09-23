@@ -15,6 +15,10 @@
   const startBtn = document.getElementById('startBtn');
   const playTab = document.querySelector('.tab[data-s="play"]');
   const homeTab = document.querySelector('.tab[data-s="home"]');
+  const limitNotice = document.getElementById('gameLimitNotice');
+  const limitClose = document.getElementById('gameLimitClose');
+  const limitButton = document.getElementById('gameLimitButton');
+  const limitTimer = document.getElementById('gameLimitTimer');
   if (!wrap || !frame || !backBtn) return;
 
   let launching = false;
@@ -22,6 +26,7 @@
   let progressTimer = null; // polls the real game's own daily-cap % while it is running
   let preloaded = false; // true once the hidden iframe has finished loading the legacy game
   let preloading = false; // true while a preload navigation is in flight
+  let limitTimerId = null;
 
   // The real game (root index.html/app.js) tracks "today's earned TON vs. the daily cap for
   // the player's current level" in its `store.pointsTodayByLevel`, persisted live to
@@ -78,6 +83,39 @@
   }
   function stopProgressPoll(){
     if (progressTimer) { clearTimeout(progressTimer); progressTimer = null; }
+  }
+  function accountStorageKey(name){
+    const uid = localStorage.getItem('cr3d_serverUid');
+    return uid ? name + '_' + uid : name;
+  }
+  function formatLimitCountdown(ms){
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    return String(Math.floor(total / 3600)).padStart(2,'0') + ':' +
+      String(Math.floor((total % 3600) / 60)).padStart(2,'0') + ':' +
+      String(total % 60).padStart(2,'0');
+  }
+  function getLimitResetAt(){
+    const stored = parseInt(localStorage.getItem(accountStorageKey('cr3d_attemptsResetAt')) || '', 10);
+    if (Number.isFinite(stored) && stored > Date.now()) return stored;
+    const next = new Date();
+    next.setHours(24, 0, 0, 0);
+    return next.getTime();
+  }
+  function hideLimitNotice(){
+    if (limitTimerId) { clearInterval(limitTimerId); limitTimerId = null; }
+    if (limitNotice) limitNotice.hidden = true;
+  }
+  function showLimitNotice(){
+    if (!limitNotice || !limitTimer) return;
+    limitNotice.hidden = false;
+    const update = () => {
+      const remaining = getLimitResetAt() - Date.now();
+      limitTimer.textContent = formatLimitCountdown(remaining);
+      if (remaining <= 0) hideLimitNotice();
+    };
+    update();
+    if (limitTimerId) clearInterval(limitTimerId);
+    limitTimerId = setInterval(update, 1000);
   }
 
   // The real game stores pending zombies separately by level. Keep the new design
@@ -277,6 +315,7 @@
   }
 
   function closeRealGame(goHome = true){
+    hideLimitNotice();
     if (watcher) { watcher.disconnect(); watcher = null; }
     stopProgressPoll();
     syncGameExchangeRate();
@@ -296,9 +335,16 @@
 
   window.addEventListener('message', event => {
     if (event.source !== frame.contentWindow || !event.data || event.data.type !== 'tt-game-start-rejected') return;
+    if (event.data.reason === 'no-attempts' || event.data.reason === 'start-rejected' || event.data.reason === 'daily-cap') {
+      if (watcher) { watcher.disconnect(); watcher = null; }
+      showLimitNotice();
+      return;
+    }
     closeRealGame(false);
   });
 
+  if (limitClose) limitClose.addEventListener('click', () => closeRealGame());
+  if (limitButton) limitButton.addEventListener('click', () => closeRealGame());
   if (startBtn) startBtn.addEventListener('click', openRealGame);
   if (playTab) playTab.addEventListener('click', openRealGame);
   backBtn.addEventListener('click', closeRealGame);
