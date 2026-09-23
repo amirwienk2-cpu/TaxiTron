@@ -719,7 +719,7 @@
     { players: [{ name:'CryptoTaxi' }, { name:'Zed' }], status:'finished' }
   ];
   uiReady = true;
-  let token = ''; let game = null; let busy = false; let pollTimer = null; let roomsTimer = null; let gameDismissed = false;
+  let token = ''; let game = null; let busy = false; let pollTimer = null; let roomsTimer = null; let gameDismissed = false; let resultShownForGameId = null;
   const webApp = window.Telegram && window.Telegram.WebApp;
   if (webApp) webApp.ready();
   const initData = webApp && webApp.initData;
@@ -831,7 +831,14 @@
     if (g.status === 'waiting') setStatus('Warte auf einen zweiten echten Spieler.');
     else if (g.status === 'ready') setStatus('Beide Spieler m�ssen bereit klicken.');
     else if (g.status === 'playing') { stakeOverlay.classList.remove('show'); setButtons(!(g.me && g.me.hasAction)); setStatus(g.me && g.me.hasAction ? 'Warte auf den Gegner �' : 'W�hle h�her oder tiefer.'); updateTurnTimer(); }
-    else if (g.status === 'finished') { setButtons(false); renderFinished(g); overlay.classList.add('show'); }
+    else if (g.status === 'finished') {
+      setButtons(false);
+      if (resultShownForGameId !== g.id && gameScreen.classList.contains('show') && !gameDismissed) {
+        resultShownForGameId = g.id;
+        renderFinished(g);
+        overlay.classList.add('show');
+      }
+    }
     if (g.lastRound && g.lastRound.next) { renderCard(g.lastRound.next); const right = g.me && g.lastRound.actions[String(g.me.id)]; setStatus('Karte: ' + rankLabels[g.lastRound.next.value - 2] + g.lastRound.next.suit + (right ? ' � Runde ausgewertet.' : '')); }
   }
   async function refresh() { if (!token) return; try { const d = await api('/api/magic-tower/state?token=' + encodeURIComponent(token)); renderBalance(d.state); if (d.game && !gameDismissed) render(d.game); refreshRooms(); } catch (e) { setStatus('Verbindung nicht verf�gbar.'); } }
@@ -845,6 +852,7 @@
   enterGameBtn.addEventListener('click', async () => {
     if (!token || busy) return;
     gameDismissed = false;
+    resultShownForGameId = null;
     busy = true;
     enterGameBtn.disabled = true;
     lobbyScreen.classList.add('hidden');
