@@ -132,6 +132,7 @@ button:disabled{cursor:not-allowed}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;
   background:#1a0404;border:1px solid #ff6a5a;color:#ffd9d3;padding:10px 14px;border-radius:6px;font-size:14px;display:none;max-width:90vw}
 .toast.on{display:block}
+#createStatus{min-height:1.3em;margin:8px 0 0;text-align:center;color:#ffd9d3;font-size:13px}
 
 /* dialogs */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.72);z-index:10}
@@ -202,6 +203,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         <button class="chip" type="button" data-v="1">1</button>
       </div>
       <button class="big" id="create" type="button" onclick="if(window.__createZombieRoom) window.__createZombieRoom()">Raum für 0.01 TON erstellen</button>
+      <p id="createStatus" role="status" aria-live="polite"></p>
     </div>
 
     <div class="box">
@@ -369,7 +371,8 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   const steps = p => p >= 0.65 ? 1 : p >= 0.35 ? 2 : 3;
   const clone = o => JSON.parse(JSON.stringify(o));
   let toastT;
-  function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3500); }
+  function setCreateStatus(msg){ const s = $('createStatus'); if (s) s.textContent = msg || ''; }
+  function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('on'); setCreateStatus(msg); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3500); }
 
   // ---------- state ----------
   let db = null, user = null, me = 'local';
@@ -594,6 +597,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   }
 
   async function createRoom(){
+    setCreateStatus('Verbinde mit dem Server …');
     if (!serverMode) {
       await loadTaxiTronBalance();
     }
