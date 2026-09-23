@@ -550,29 +550,29 @@
 </head>
 <body>
 
-  <h1 class="title">Zombie Tower</h1>
-  <p class="subtitle">Sag voraus, ob die nächste Karte <b style="color:var(--ink)">höher</b> oder <b style="color:var(--ink)">tiefer</b> ist als die aufgedeckte. Wer richtig liegt, steigt eine Etage. Wer zuerst oben ist, gewinnt den Turm.</p>
+  <h1 class="title" data-i="title">Zombie Tower</h1>
+  <p class="subtitle" data-i="subtitle">Sag voraus, ob die nächste Karte <b style="color:var(--ink)">höher</b> oder <b style="color:var(--ink)">tiefer</b> ist als die aufgedeckte. Wer richtig liegt, steigt eine Etage. Wer zuerst oben ist, gewinnt den Turm.</p>
 
   <div class="lobby-screen" id="lobbyScreen">
-    <div class="balance-badge" id="balanceBadge">Guthaben: — TON</div>
+    <div class="balance-badge" id="balanceBadge" data-i="balanceUnavailable">Guthaben: — TON</div>
     <section class="rooms-panel" aria-live="polite">
-      <h2 class="rooms-title">Spiele-Lobby</h2>
+      <h2 class="rooms-title" data-i="roomsTitle">Spiele-Lobby</h2>
       <div class="rooms-list" id="roomsList"></div>
     </section>
     <div class="lobby-actions">
-      <button class="restart lobby-action" id="enterGameBtn">Spiel betreten</button>
+      <button class="restart lobby-action" id="enterGameBtn" data-i="enterGame">Spiel betreten</button>
     </div>
   </div>
 
   <div class="game-screen" id="gameScreen">
-    <div class="balance-badge" id="gameBalanceBadge">Guthaben: — TON</div>
+    <div class="balance-badge" id="gameBalanceBadge" data-i="balanceUnavailable">Guthaben: — TON</div>
   <div class="arena">
     <div class="tower you" id="towerYou" style="--floors: 12"></div>
 
     <div class="center">
       <div class="label-row">
-        <span class="label-you">DU</span>
-        <span class="label-bot">GEGNER</span>
+        <span class="label-you" data-i="you">DU</span>
+        <span class="label-bot" data-i="opponent">GEGNER</span>
       </div>
       <div class="card-stage">
         <div class="playing-card" id="card">
@@ -588,55 +588,55 @@
           </div>
         </div>
       </div>
-      <div class="deck-count" id="deckCount">52 Karten im Stapel</div>
+      <div class="deck-count" id="deckCount" data-i="deckCount">52 Karten im Stapel</div>
       <div class="btn-row">
         <button class="lower" id="btnLower" data-i="lower">▼ Tiefer</button>
         <button class="higher" id="btnHigher" data-i="higher">▲ Höher</button>
       </div>
       <div class="turn-timer" id="turnTimer" aria-live="polite"></div>
-      <div class="status" id="status">Wähle deine Vorhersage für die erste Runde.</div>
+      <div class="status" id="status" data-i="chooseFirst">Wähle deine Vorhersage für die erste Runde.</div>
     </div>
 
     <div class="tower bot" id="towerBot" style="--floors: 12"></div>
   </div>
 
-  <button class="restart" id="restartBtn">Turm neu bauen</button>
-  <button class="restart lobby-action" id="backToLobbyBtn">Zur Spiele-Lobby</button>
+  <button class="restart" id="restartBtn" data-i="restart">Turm neu bauen</button>
+  <button class="restart lobby-action" id="backToLobbyBtn" data-i="backToLobby">Zur Spiele-Lobby</button>
   </div>
 
   <div class="overlay" id="stakeOverlay">
     <div class="overlay-card lobby-card">
-      <h2>☣ Lobby</h2>
+      <h2 data-i="lobby">☣ Lobby</h2>
       <div class="lobby-list">
         <div class="lobby-row">
           <span class="lobby-avatar you">🏃</span>
           <div class="lobby-info">
-            <span class="lobby-name">Du</span>
+            <span class="lobby-name" data-i="you">Du</span>
             <span class="lobby-stake">0.1 TON</span>
           </div>
-          <span class="lobby-status waiting" id="lobbyYouStatus">ausstehend</span>
+          <span class="lobby-status waiting" id="lobbyYouStatus" data-i="waiting">ausstehend</span>
         </div>
         <div class="lobby-row">
           <span class="lobby-avatar bot">🧟</span>
           <div class="lobby-info">
-            <span class="lobby-name">Zombie-Gegner</span>
+            <span class="lobby-name" data-i="opponentName">Zombie-Gegner</span>
             <span class="lobby-stake">0.1 TON</span>
           </div>
-          <span class="lobby-status waiting" id="lobbyBotStatus">verbindet …</span>
+          <span class="lobby-status waiting" id="lobbyBotStatus" data-i="connecting">verbindet …</span>
         </div>
       </div>
-      <div class="lobby-pot">Preispool <b>0.2 TON</b></div>
-      <p class="stake-note">Gewinner erhält 90 % des Pools (0.18 TON) · 10 % Gebühr. Demo-Guthaben, keine echte TON-Transaktion.</p>
-      <button class="restart stake-confirm" id="stakeConfirmBtn" style="margin-top:4px;">Einsatz setzen &amp; beitreten</button>
-      <button class="restart" id="topUpBtn" style="margin-top:10px; display:none; border-color: rgba(138,255,60,0.4); color: var(--you-glow);">Guthaben auffüllen (+1 TON)</button>
+      <div class="lobby-pot"><span data-i="pool">Preispool</span> <b>0.2 TON</b></div>
+      <p class="stake-note" data-i="stakeNote">Gewinner erhält 90 % des Pools (0.18 TON) · 10 % Gebühr. Demo-Guthaben, keine echte TON-Transaktion.</p>
+      <button class="restart stake-confirm" id="stakeConfirmBtn" data-i="joinStake" style="margin-top:4px;">Einsatz setzen &amp; beitreten</button>
+      <button class="restart" id="topUpBtn" data-i="topUp" style="margin-top:10px; display:none; border-color: rgba(138,255,60,0.4); color: var(--you-glow);">Guthaben auffüllen (+1 TON)</button>
     </div>
   </div>
 
   <div class="overlay" id="overlay">    <div class="overlay-card">
-      <h2 id="overlayTitle">Turm bezwungen!</h2>
+      <h2 id="overlayTitle" data-i="finishedTitle">Turm bezwungen!</h2>
       <p id="overlayText"></p>
-      <button class="restart" id="overlayRestart" style="margin-top:0;">Nochmal spielen</button>
-      <button class="restart" id="overlayBackToLobby" style="margin-top:10px;">Zur Spiele-Lobby</button>
+      <button class="restart" id="overlayRestart" data-i="playAgain" style="margin-top:0;">Nochmal spielen</button>
+      <button class="restart" id="overlayBackToLobby" data-i="backToLobby" style="margin-top:10px;">Zur Spiele-Lobby</button>
     </div>
   </div>
 
@@ -648,7 +648,7 @@
     </div>
     <button type="button" class="tower-lang-toggle" id="towerLangToggle">Languages</button>
   </div>
-  <a class="home-link" id="homeLink" href="/TaxiTon-new/index-new.html">Back to Home</a>
+  <a class="home-link" id="homeLink" data-i="backHome" href="/TaxiTon-new/index-new.html">Back to Home</a>
 
 <script>
 (function () {
@@ -657,27 +657,34 @@
       title:'Zombie Tower', subtitle:'Sag voraus, ob die nächste Karte <b style="color:var(--ink)">höher</b> oder <b style="color:var(--ink)">tiefer</b> ist als die aufgedeckte. Wer richtig liegt, steigt eine Etage. Wer zuerst oben ist, gewinnt den Turm.',
       you:'DU', opponent:'GEGNER', lower:'▼ Tiefer', higher:'▲ Höher', restart:'Turm neu bauen', lobby:'Lobby', secondPlayer:'Zweiter Spieler', enterGame:'Spiel betreten', backToLobby:'Zur Spiele-Lobby',
       pool:'Preispool', stakeNote:'Gewinner erhält 90 % des Pools (0.18 TON) · 10 % Gebühr. Echter Einsatz aus deinem Server-Guthaben.', ready:'Bereit',
-      roomsTitle:'Spiele-Lobby', roomsEmpty:'Noch keine Spiele.', waiting:'Wartet auf Spieler', playing:'Läuft',
-      balance:'Guthaben', unavailable:'nicht verfügbar', previewNote:'Vorschau – Demo-Spiele, kein Echtgeld', backHome:'Zur Startseite',
+      roomsTitle:'Spiele-Lobby', roomsEmpty:'Noch keine Spiele.', waiting:'Ausstehend', connecting:'Verbindet …', playing:'Läuft', chooseFirst:'Wähle deine Vorhersage für die erste Runde.',
+      balance:'Guthaben', unavailable:'nicht verfügbar', balanceUnavailable:'Guthaben: — TON', previewNote:'Vorschau – Demo-Spiele, kein Echtgeld', backHome:'Zur Startseite',
+      deckCount:'52 Karten im Stapel', opponentName:'Zombie-Gegner', joinStake:'Einsatz setzen &amp; beitreten', topUp:'Guthaben auffüllen (+1 TON)', finishedTitle:'Turm bezwungen!',
+      waitingPlayer:'Warte auf einen zweiten echten Spieler.', readyStatus:'Beide Spieler müssen bereit klicken.', waitingOpponent:'Warte auf den Gegner …', choose:'Wähle höher oder tiefer.', time:'Zeit', roundEvaluated:'Runde ausgewertet.', unavailableError:'Verbindung nicht verfügbar.', authError:'Authentifizierung nicht verfügbar.', lobbyError:'Lobby nicht verfügbar.', insufficientFunds:'Nicht genug TON für den Einsatz von 0.1 TON.',
       wonTitle:'Du hast gewonnen!', lostTitle:'Du hast verloren', wonText:'Auszahlung: +0.18 TON (Plattformgebühr: 0.02 TON).', lostText:'Dein Einsatz von 0.1 TON ist verloren.', playAgain:'Nochmal spielen'
     },
     fa: {
       title:'برج زامبی', subtitle:'پیش‌بینی کن کارت بعدی <b style="color:var(--ink)">بالاتر</b> یا <b style="color:var(--ink)">پایین‌تر</b> است. با حدس درست یک طبقه بالا می‌روی؛ هرکس زودتر به بالا برسد برنده است.',
       you:'شما', opponent:'حریف', lower:'▼ پایین‌تر', higher:'▲ بالاتر', restart:'ساخت دوباره برج', lobby:'لابی', secondPlayer:'بازیکن دوم', enterGame:'ورود به بازی', backToLobby:'بازگشت به لابی',
       pool:'مجموع جایزه', stakeNote:'برنده ۹۰٪ استخر (۰٫۱۸ TON) را می‌گیرد · ۱۰٪ کارمزد است. شرط واقعی از موجودی سرور کسر می‌شود.', ready:'آماده',
-      roomsTitle:'لابی بازی‌ها', roomsEmpty:'هنوز بازی‌ای نیست.', waiting:'منتظر بازیکن', playing:'در حال بازی',
-      balance:'موجودی', unavailable:'در دسترس نیست', previewNote:'پیش‌نمایش – بازی آزمایشی، بدون پول واقعی', backHome:'بازگشت به خانه',
+      roomsTitle:'لابی بازی‌ها', roomsEmpty:'هنوز بازی‌ای نیست.', waiting:'در انتظار', connecting:'در حال اتصال …', playing:'در حال بازی', chooseFirst:'پیش‌بینی خود را برای دور اول انتخاب کن.',
+      balance:'موجودی', unavailable:'در دسترس نیست', balanceUnavailable:'موجودی: — TON', previewNote:'پیش‌نمایش – بازی آزمایشی، بدون پول واقعی', backHome:'بازگشت به خانه',
+      deckCount:'۵۲ کارت در دسته', opponentName:'حریف زامبی', joinStake:'پرداخت شرط و ورود', topUp:'افزایش موجودی (+۱ TON)', finishedTitle:'برج تسخیر شد!',
+      waitingPlayer:'منتظر بازیکن دوم واقعی هستیم.', readyStatus:'هر دو بازیکن باید آماده شوند.', waitingOpponent:'منتظر حریف …', choose:'بالاتر یا پایین‌تر را انتخاب کن.', time:'زمان', roundEvaluated:'دور محاسبه شد.', unavailableError:'ارتباط برقرار نیست.', authError:'احراز هویت در دسترس نیست.', lobbyError:'لابی در دسترس نیست.', insufficientFunds:'TON کافی برای شرط ۰٫۱ TON نیست.',
       wonTitle:'شما برنده شدید!', lostTitle:'شما باختید', wonText:'پرداخت: +۰٫۱۸ TON (کارمزد پلتفرم: ۰٫۰۲ TON).', lostText:'شرط ۰٫۱ TON شما از دست رفت.', playAgain:'بازی دوباره'
     },
     en: {
       title:'Zombie Tower', subtitle:'Predict whether the next card is <b style="color:var(--ink)">higher</b> or <b style="color:var(--ink)">lower</b>. A correct guess moves you up one floor; the first to the top wins.',
       you:'YOU', opponent:'OPPONENT', lower:'▼ Lower', higher:'▲ Higher', restart:'Rebuild tower', lobby:'Lobby', secondPlayer:'Second player', enterGame:'Enter game', backToLobby:'Back to lobby',
       pool:'Prize pool', stakeNote:'Winner receives 90% of the pool (0.18 TON) · 10% fee. Real stake from your server balance.', ready:'Ready',
-      roomsTitle:'Game lobby', roomsEmpty:'No games yet.', waiting:'Waiting for player', playing:'In progress',
-      balance:'Balance', unavailable:'not available', previewNote:'Preview – demo games, no real money', backHome:'Back to Home',
+      roomsTitle:'Game lobby', roomsEmpty:'No games yet.', waiting:'Waiting', connecting:'Connecting …', playing:'In progress', chooseFirst:'Choose your prediction for the first round.',
+      balance:'Balance', unavailable:'not available', balanceUnavailable:'Balance: — TON', previewNote:'Preview – demo games, no real money', backHome:'Back to Home',
+      deckCount:'52 cards in deck', opponentName:'Zombie opponent', joinStake:'Set stake &amp; join', topUp:'Top up balance (+1 TON)', finishedTitle:'Tower conquered!',
+      waitingPlayer:'Waiting for a second real player.', readyStatus:'Both players must ready up.', waitingOpponent:'Waiting for opponent …', choose:'Choose higher or lower.', time:'Time', roundEvaluated:'Round evaluated.', unavailableError:'Connection unavailable.', authError:'Authentication unavailable.', lobbyError:'Lobby unavailable.', insufficientFunds:'Not enough TON for the 0.1 TON stake.',
       wonTitle:'You won!', lostTitle:'You lost', wonText:'Payout: +0.18 TON (platform fee: 0.02 TON).', lostText:'Your 0.1 TON stake was lost.', playAgain:'Play again'
     }
   };
+  const T = () => LANGS[lang];
   let lang = 'de';
   let displayedRooms = []; let displayedState = null;
   let uiReady = false;
@@ -696,7 +703,7 @@
     if (uiReady) {
       renderRooms(displayedRooms);
       renderBalance(displayedState);
-      if (game && game.status === 'finished') renderFinished(game);
+      if (game && game.status) render(game);
     }
   }
   langRoot.querySelector('#towerLangToggle').addEventListener('click', () => langRoot.classList.toggle('open'));
@@ -753,7 +760,7 @@
       return;
     }
     const seconds = Math.max(0, Math.ceil((Number(game.turnDeadlineAt) - Date.now()) / 1000));
-    turnTimer.textContent = 'Zeit: ' + seconds + ' s';
+    turnTimer.textContent = T().time + ': ' + seconds + ' s';
   }
   function renderFinished(g) {
     const dict = LANGS[lang];
@@ -830,9 +837,9 @@
     lobbyYouStatus.textContent = g.me && g.me.ready ? 'bereit ?' : 'ausstehend'; lobbyYouStatus.className = 'lobby-status ' + (g.me && g.me.ready ? 'ready' : 'waiting');
     lobbyBotStatus.textContent = other ? (other.ready ? 'bereit ?' : 'ausstehend') : 'wartet auf Gegner �'; lobbyBotStatus.className = 'lobby-status ' + (other && other.ready ? 'ready' : 'waiting');
     stakeConfirmBtn.disabled = !g.me || g.me.ready || g.status === 'playing';
-    if (g.status === 'waiting') setStatus('Warte auf einen zweiten echten Spieler.');
-    else if (g.status === 'ready') setStatus('Beide Spieler m�ssen bereit klicken.');
-    else if (g.status === 'playing') { stakeOverlay.classList.remove('show'); setButtons(!(g.me && g.me.hasAction)); setStatus(g.me && g.me.hasAction ? 'Warte auf den Gegner �' : 'W�hle h�her oder tiefer.'); updateTurnTimer(); }
+    if (g.status === 'waiting') setStatus(T().waitingPlayer);
+    else if (g.status === 'ready') setStatus(T().readyStatus);
+    else if (g.status === 'playing') { stakeOverlay.classList.remove('show'); setButtons(!(g.me && g.me.hasAction)); setStatus(g.me && g.me.hasAction ? T().waitingOpponent : T().choose); updateTurnTimer(); }
     else if (g.status === 'finished') {
       setButtons(false);
       if (resultShownForGameId !== g.id && gameScreen.classList.contains('show') && !gameDismissed) {
@@ -841,17 +848,17 @@
         overlay.classList.add('show');
       }
     }
-    if (g.lastRound && g.lastRound.next) { renderCard(g.lastRound.next); const right = g.me && g.lastRound.actions[String(g.me.id)]; setStatus('Karte: ' + rankLabels[g.lastRound.next.value - 2] + g.lastRound.next.suit + (right ? ' � Runde ausgewertet.' : '')); }
+    if (g.lastRound && g.lastRound.next) { renderCard(g.lastRound.next); const right = g.me && g.lastRound.actions[String(g.me.id)]; setStatus('Karte: ' + rankLabels[g.lastRound.next.value - 2] + g.lastRound.next.suit + (right ? ' · ' + T().roundEvaluated + '.' : '')); }
   }
-  async function refresh() { if (!token) return; try { const d = await api('/api/magic-tower/state?token=' + encodeURIComponent(token)); renderBalance(d.state); if (d.game && !gameDismissed) render(d.game); refreshRooms(); } catch (e) { setStatus('Verbindung nicht verf�gbar.'); } }
+  async function refresh() { if (!token) return; try { const d = await api('/api/magic-tower/state?token=' + encodeURIComponent(token)); renderBalance(d.state); if (d.game && !gameDismissed) render(d.game); refreshRooms(); } catch (e) { setStatus(T().unavailableError); } }
   async function authenticate() {
     if (!initData) { renderBalance(null); enterGameBtn.disabled = true; return; }
-    try { const d = await api('/api/auth', { method: 'POST', body: JSON.stringify({ initData }) }); token = d.token; renderBalance(d.state); pollTimer = setInterval(refresh, 2000); } catch (e) { setStatus('Authentifizierung nicht verf�gbar.'); enterGameBtn.disabled = true; }
+    try { const d = await api('/api/auth', { method: 'POST', body: JSON.stringify({ initData }) }); token = d.token; renderBalance(d.state); pollTimer = setInterval(refresh, 2000); } catch (e) { setStatus(T().authError); enterGameBtn.disabled = true; }
   }
   async function join() {
     gameDismissed = false;
     resultShownForGameId = null;
-    try { const d = await api('/api/magic-tower/join', { method: 'POST', body: JSON.stringify({ token }) }); renderBalance(d.state); render(d.game); stakeOverlay.classList.add('show'); } catch (e) { setStatus(e.message === 'insufficient-funds' ? 'Nicht genug TON f�r den Einsatz von 0.1 TON.' : 'Lobby nicht verf�gbar.'); stakeConfirmBtn.disabled = true; }
+    try { const d = await api('/api/magic-tower/join', { method: 'POST', body: JSON.stringify({ token }) }); renderBalance(d.state); render(d.game); stakeOverlay.classList.add('show'); } catch (e) { setStatus(e.message === 'insufficient-funds' ? T().insufficientFunds : T().lobbyError); stakeConfirmBtn.disabled = true; }
   }
   enterGameBtn.addEventListener('click', async () => {
     if (!token || busy) return;
