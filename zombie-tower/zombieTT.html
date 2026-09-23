@@ -1047,7 +1047,18 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   $('bal').textContent = fmt(wallet.bal);
   renderLobby(); show('lobby');
   (async () => {
-    const authenticated = await loadTaxiTronBalance();
+    let authenticated = false;
+    try {
+      authenticated = await Promise.race([
+        loadTaxiTronBalance(),
+        new Promise(resolve => setTimeout(() => resolve(false), 10000))
+      ]);
+    } catch (e) {
+      authenticated = false;
+    }
+    if (!authenticated && !serverMode) {
+      setLobbyStatus('Telegram-Anmeldung fehlt oder Server antwortet nicht.');
+    }
     const c = window.claude;
     if (c && typeof c.use === 'function' && !serverMode) {
       [db, user] = await Promise.all([c.use('db'), c.use('user')]);
@@ -1062,7 +1073,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       return;
     }
     if (!authenticated) {
-      setLobbyStatus('Telegram-Anmeldung fehlt. Öffne die Mini-App neu.');
+      setLobbyStatus('Telegram-Anmeldung fehlt oder Server antwortet nicht.');
       return;
     }
     if (!db) {
