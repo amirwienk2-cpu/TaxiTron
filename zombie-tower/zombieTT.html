@@ -657,8 +657,14 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         serverGame = normalizeServerGame(data && data.game);
         if (!serverGame || !serverGame.id) throw new Error('invalid-create-response');
         viewId = serverGame.id;
+        rooms = serverRooms.concat(serverGame);
+        renderLobby();
         setCreateStatus('Raum erstellt. Warte auf den zweiten Spieler …');
-        await refreshServerLobby();
+        try {
+          await refreshServerLobby();
+        } catch (refreshError) {
+          setCreateStatus('Raum erstellt. Warte auf den zweiten Spieler …');
+        }
       } catch (e) {
         const code = e.data && e.data.error;
         const detail = code || (e && e.message) || 'unbekannter-fehler';
