@@ -540,6 +540,8 @@
   .tower-lang-list button, .tower-lang-toggle { border: 1px solid rgba(138,255,60,0.5); border-radius: 6px; padding: 7px 9px; background: var(--panel-2); color: var(--toxic-bright); cursor: pointer; }
   .tower-lang-toggle { font-weight: 700; }
   .home-link { position: fixed; left: 14px; bottom: 14px; z-index: 20; border: 1px solid rgba(138,255,60,0.5); border-radius: 6px; padding: 9px 13px; background: rgba(16,26,16,0.96); color: var(--toxic-bright); font-size: 11px; text-decoration: none; }
+  body.game-active .tower-langs,
+  body.game-active .home-link { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
     .token, .playing-card { transition: none; }
@@ -857,6 +859,7 @@
     enterGameBtn.disabled = true;
     lobbyScreen.classList.add('hidden');
     gameScreen.classList.add('show');
+    document.body.classList.add('game-active');
     try { await join(); } finally { busy = false; enterGameBtn.disabled = false; }
   });
   function backToLobby() {
@@ -866,6 +869,7 @@
     overlay.classList.remove('show');
     gameScreen.classList.remove('show');
     lobbyScreen.classList.remove('hidden');
+    document.body.classList.remove('game-active');
     refreshRooms();
   }
   el('backToLobbyBtn').addEventListener('click', backToLobby);
