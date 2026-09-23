@@ -263,6 +263,33 @@
     });
   }
 
+  function wireZombieTowerLink() {
+    var zombieLink = document.querySelector('a[href*="/zombie-tower/zombieTT.html"]');
+    if (!zombieLink || zombieLink.dataset.authGuarded === '1') return;
+    zombieLink.dataset.authGuarded = '1';
+    zombieLink.addEventListener('click', function (event) {
+      if (SESSION.token) return;
+      var ctx = getInitData();
+      if (!ctx.initData) {
+        event.preventDefault();
+        window.alert('Bitte öffne Zombie Tower innerhalb der Telegram-Mini-App.');
+        return;
+      }
+      event.preventDefault();
+      zombieLink.setAttribute('aria-busy', 'true');
+      auth().then(function (state) {
+        zombieLink.removeAttribute('aria-busy');
+        if (!state || !SESSION.token) {
+          window.alert('Telegram-Anmeldung fehlgeschlagen. Bitte die Mini-App neu öffnen.');
+          return;
+        }
+        var target = new URL(zombieLink.href, window.location.href);
+        target.searchParams.set('token', SESSION.token);
+        window.location.assign(target.toString());
+      });
+    });
+  }
+
   // ---- deposit ----------------------------------------------------------------------------
   function loadDeposit() {
     if (!SESSION.token) return;
@@ -556,6 +583,7 @@
 
   // ---- boot ---------------------------------------------------------------------------------
   function start() {
+    wireZombieTowerLink();
     auth().then(function (state) {
       if (!state) { syncChat(); loadOnline(); loadLeaderboard(); loadInviteLeaderboard(); return; } // still show public chat/online/leaderboard data even if unauthenticated
       loadDeposit();
