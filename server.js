@@ -1622,9 +1622,9 @@ app.get('/api/online-users', (req, res) => {
     .sort((a, b) => {
       const adminDiff = (b.isChatAdmin === true ? 1 : 0) - (a.isChatAdmin === true ? 1 : 0);
       if (adminDiff !== 0) return adminDiff;
-      const designerDiff = (b.isDesigner === true ? 1 : 0) - (a.isDesigner === true ? 1 : 0);
-      if (designerDiff !== 0) return designerDiff;
-      return Number(b.lastSeenAt || 0) - Number(a.lastSeenAt || 0);
+      const badgeDiff = (b.badge4 === true ? 1 : 0) - (a.badge4 === true ? 1 : 0);
+      if (badgeDiff !== 0) return badgeDiff;
+      return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' });
     })
     .slice(0, 100)
     .map((user) => ({
