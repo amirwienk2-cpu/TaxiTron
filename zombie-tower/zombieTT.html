@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Zombie Tower – 1 gegen 1</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -158,6 +158,7 @@ button:disabled{cursor:not-allowed}
 .langs{display:flex;gap:6px;margin-inline-start:auto}
 .home-btn{height:28px;padding:0 9px;border:1px solid rgba(157,255,46,.65);border-radius:5px;background:rgba(13,42,11,.85);color:var(--acid);font:600 12px var(--hud);cursor:pointer;white-space:nowrap;box-shadow:0 0 8px rgba(57,224,22,.2)}
 .home-btn:hover{background:rgba(57,224,22,.2);box-shadow:0 0 12px rgba(157,255,46,.45)}
+button{touch-action:manipulation}
 .lang{width:30px;height:21px;border-radius:3px;overflow:hidden;opacity:.55;box-shadow:0 0 0 1px rgba(255,255,255,.35);display:block}
 .lang svg{display:block;width:100%;height:100%}
 .lang[aria-pressed="true"]{opacity:1;box-shadow:0 0 0 2px var(--acid),0 0 10px rgba(157,255,46,.6)}
@@ -288,7 +289,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       first_up: '{n} war zuerst oben · Du {a}:{b}', too_many_miss: 'Zu oft nicht getippt',
       no_mp: 'Die Mehrspieler-Lobby ist in dieser Ansicht nicht verfügbar.',
       mp_note: 'Mitspielen kann jeder, mit dem du diese Seite teilst. Dein Guthaben wird aus TaxiTron geladen.',
-      t_save: 'Guthaben konnte nicht gespeichert werden.', t_pick: 'Wahl nicht gesendet. Versuch es nochmal.',
+      t_save: 'Guthaben konnte nicht gespeichert werden.', t_pick: 'Wahl nicht gesendet. Versuch es nochmal.', t_authfail: 'Anmeldung abgelaufen. Öffne die Mini-App neu.',
       t_nofunds: 'Nicht genug Guthaben für diesen Einsatz.', t_hasroom: 'Du hast schon einen offenen Raum.',
       t_joining: 'Gerade tritt jemand bei …', t_started: 'Der Raum ist schon gestartet.', t_cancelfail: 'Abbrechen hat nicht geklappt.',
       t_other_join: 'Jemand anderes tritt gerade bei.', t_full: 'Dieser Raum ist schon voll.', t_nofunds_room: 'Nicht genug Guthaben für diesen Raum.',
@@ -313,7 +314,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       first_up: '{n} reached the top first · You {a}:{b}', too_many_miss: 'Missed too many picks',
       no_mp: 'The multiplayer lobby is not available in this view.',
       mp_note: 'Anyone you share this page with can play. Your balance is loaded from TaxiTron.',
-      t_save: 'Balance could not be saved.', t_pick: 'Pick not sent. Try again.',
+      t_save: 'Balance could not be saved.', t_pick: 'Pick not sent. Try again.', t_authfail: 'Your login expired. Reopen the Mini App.',
       t_nofunds: 'Not enough balance for this stake.', t_hasroom: 'You already have an open room.',
       t_joining: 'Someone is joining right now …', t_started: 'This room has already started.', t_cancelfail: 'Could not cancel.',
       t_other_join: 'Someone else is joining right now.', t_full: 'This room is already full.', t_nofunds_room: 'Not enough balance for this room.',
@@ -338,7 +339,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       first_up: '{n} زودتر به بالا رسید · تو {a}:{b}', too_many_miss: 'چند بار پشت سر هم انتخاب نکردی',
       no_mp: 'لابی چندنفره در این نما در دسترس نیست.',
       mp_note: 'هر کسی که این صفحه را با او به اشتراک بگذاری می‌تواند بازی کند. موجودی از TaxiTron خوانده می‌شود.',
-      t_save: 'موجودی ذخیره نشد.', t_pick: 'انتخاب ارسال نشد. دوباره امتحان کن.',
+      t_save: 'موجودی ذخیره نشد.', t_pick: 'انتخاب ارسال نشد. دوباره امتحان کن.', t_authfail: 'ورود شما منقضی شده است. مینی‌اپ را دوباره باز کنید.',
       t_nofunds: 'موجودی برای این مبلغ کافی نیست.', t_hasroom: 'تو از قبل یک اتاق باز داری.',
       t_joining: 'یک نفر در حال ورود است …', t_started: 'این اتاق قبلاً شروع شده است.', t_cancelfail: 'لغو انجام نشد.',
       t_other_join: 'نفر دیگری در حال ورود است.', t_full: 'این اتاق پر است.', t_nofunds_room: 'موجودی برای این اتاق کافی نیست.',
@@ -562,7 +563,10 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       try {
         const data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
         serverGame = normalizeServerGame(data.game); viewId = serverGame.id; await refreshServerLobby();
-      } catch (e) { toast(e.data && e.data.error === 'insufficient-funds' ? T('t_nofunds') : T('t_createfail')); }
+      } catch (e) {
+        const code = e.data && e.data.error;
+        toast(code === 'insufficient-funds' ? T('t_nofunds') : code === 'invalid-or-expired-token' ? T('t_authfail') : T('t_createfail'));
+      }
       return;
     }
     if (!db) return;
@@ -746,7 +750,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   function renderLobby(){
     $('create').textContent = T('create_btn', { s: stake < 0.1 ? stake.toFixed(2) : stake });
-    $('create').disabled = (!db && !serverMode) || wallet.bal < stake;
+    $('create').disabled = !db && !serverMode;
     document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.v) === stake));
     const box = $('rooms');
     if (!db && !serverMode) return;
