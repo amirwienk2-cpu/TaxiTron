@@ -1058,6 +1058,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     }
     if (!authenticated && !serverMode) {
       setLobbyStatus('Telegram-Anmeldung fehlt oder Server antwortet nicht.');
+      return;
     }
     const c = window.claude;
     if (c && typeof c.use === 'function' && !serverMode) {
