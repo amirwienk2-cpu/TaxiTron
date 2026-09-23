@@ -4,27 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Zombie Tower — Höher oder Tiefer</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cinzel+Decorative:wght@700;900&family=Creepster&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --bg-0: #0d0a1a;
-    --bg-1: #17122b;
-    --panel: #1e1838;
-    --panel-2: #251d45;
-    --stone: #2a2350;
+    --bg-0: #05080a;
+    --bg-1: #0a120c;
+    --panel: #101a10;
+    --panel-2: #15210f;
+    --metal: #23291f;
+    --metal-light: #4a5445;
+    --stone: #182618;
+    --toxic: #8aff3c;
+    --toxic-bright: #c3ff9b;
+    --toxic-dim: #3f8a1f;
+    --blood: #c81f2b;
+    --blood-bright: #e8495a;
     --gold: #c9a24b;
     --gold-bright: #e8c876;
-    --ink: #ece6f7;
-    --ink-dim: #9a8fbd;
-    --you: #4fb7a6;
-    --you-glow: #7fe0cf;
-    --bot: #c1546b;
-    --bot-glow: #e88ba0;
+    --ink: #e7f5e0;
+    --ink-dim: #7f9678;
+    --you: #8aff3c;
+    --you-glow: #c3ff9b;
+    --bot: #d21f2f;
+    --bot-glow: #ff6b76;
     --danger: #d1495b;
-    --win: #e8c876;
+    --win: #c3ff9b;
     --card-face: #f4efe2;
     --card-ink: #2a2138;
     padding-top: env(safe-area-inset-top, 0px);
@@ -42,36 +49,54 @@
     margin: 0;
     min-height: 100%;
     background:
-      radial-gradient(ellipse 90% 60% at 50% -10%, #2c2154 0%, transparent 60%),
+      radial-gradient(circle 340px at 88% 6%, rgba(180,255,140,0.16) 0%, transparent 70%),
+      radial-gradient(ellipse 100% 45% at 50% 0%, rgba(60,140,40,0.14) 0%, transparent 65%),
       linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
     color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 100dvh;
-    padding: 28px 16px 78px;
+    padding: 28px 16px 40px;
     overflow-x: hidden;
   }
 
   .title {
-    font-family: "Cinzel Decorative", "Cinzel", serif;
-    font-weight: 900;
-    font-size: clamp(26px, 6vw, 40px);
-    letter-spacing: 0.02em;
-    color: var(--gold-bright);
-    text-shadow: 0 0 22px rgba(201,162,75,0.35);
-    margin: 0 0 2px;
+    font-family: "Creepster", "Cinzel Decorative", cursive;
+    font-weight: 400;
+    font-size: clamp(38px, 11vw, 58px);
+    letter-spacing: 0.03em;
+    color: var(--toxic);
+    background: linear-gradient(180deg, var(--toxic-bright) 0%, var(--toxic) 45%, var(--blood) 130%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 14px rgba(138,255,60,0.45)) drop-shadow(0 4px 0 rgba(0,0,0,0.6));
+    margin: 0 0 4px;
     text-align: center;
+    line-height: 0.95;
   }
   .subtitle {
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--ink-dim);
-    margin: 0 0 26px;
+    margin: 0 0 22px;
     text-align: center;
-    max-width: 420px;
-    line-height: 1.5;
+    max-width: 380px;
+    line-height: 1.6;
+    background: linear-gradient(180deg, var(--metal) 0%, #14180f 100%);
+    border: 1px solid rgba(138,255,60,0.28);
+    border-radius: 4px;
+    padding: 12px 16px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4), 0 6px 16px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .subtitle::before {
+    content: "";
+    position: absolute;
+    left: -1px; right: -1px; bottom: -3px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--blood) 15%, var(--blood) 85%, transparent);
+    opacity: 0.6;
   }
 
   .arena {
@@ -307,9 +332,8 @@
   button:hover:not(:disabled) { background: #2e2554; transform: translateY(-1px); }
   button:active:not(:disabled) { transform: translateY(0); }
   button:disabled { opacity: 0.35; cursor: default; }
-  button.higher { border-color: rgba(79,183,166,0.5); }
-  button.lower { border-color: rgba(193,84,107,0.5); }
-  button.same { border-color: rgba(201,162,75,0.5); }
+  button.higher { border-color: rgba(138,255,60,0.5); }
+  button.lower { border-color: rgba(210,31,47,0.5); }
 
   .status {
     min-height: 40px;
@@ -319,14 +343,7 @@
     line-height: 1.5;
     max-width: 340px;
   }
-  .status b { color: var(--gold-bright); font-weight: 700; }
-  .turn-timer {
-    min-height: 18px;
-    color: var(--gold-bright);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-  }
+  .status b { color: var(--toxic-bright); font-weight: 700; }
 
   .deck-count {
     font-size: 11px;
@@ -337,18 +354,18 @@
   .restart {
     margin-top: 22px;
     background: none;
-    border: 1px solid rgba(201,162,75,0.35);
-    color: var(--gold-bright);
+    border: 1px solid rgba(138,255,60,0.35);
+    color: var(--toxic-bright);
     padding: 10px 22px;
     border-radius: 999px;
     font-size: 12px;
   }
-  .restart:hover { background: rgba(201,162,75,0.1); }
+  .restart:hover { background: rgba(138,255,60,0.1); }
 
   .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(10,7,22,0.86);
+    background: rgba(3,6,4,0.9);
     display: none;
     align-items: center;
     justify-content: center;
@@ -357,54 +374,87 @@
   }
   .overlay.show { display: flex; }
   .overlay-card {
-    background: var(--panel);
-    border: 1px solid rgba(201,162,75,0.35);
-    border-radius: 18px;
-    padding: 36px 30px;
+    position: relative;
+    background:
+      radial-gradient(circle 3px at 14px 14px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 3px at calc(100% - 14px) 14px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 3px at 14px calc(100% - 14px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 3px at calc(100% - 14px) calc(100% - 14px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 90px at 92% 4%, rgba(200,30,40,0.12), transparent 70%),
+      linear-gradient(160deg, var(--metal) 0%, #0d130a 100%);
+    border: 1px solid rgba(138,255,60,0.32);
+    border-radius: 8px;
+    padding: 30px 26px;
     text-align: center;
     max-width: 320px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 0 26px rgba(138,255,60,0.12), 0 24px 50px rgba(0,0,0,0.6);
   }
   .overlay-card h2 {
-    font-family: "Cinzel Decorative", serif;
-    color: var(--gold-bright);
-    margin: 0 0 10px;
-    font-size: 24px;
+    font-family: "Creepster", cursive;
+    font-weight: 400;
+    color: var(--toxic);
+    background: linear-gradient(180deg, var(--toxic-bright), var(--toxic) 60%, var(--blood) 140%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 8px rgba(138,255,60,0.4)) drop-shadow(0 3px 0 rgba(0,0,0,0.6));
+    margin: 0 0 14px;
+    font-size: 30px;
+    letter-spacing: 0.02em;
   }
   .overlay-card p { color: var(--ink-dim); font-size: 13px; margin: 0 0 20px; line-height: 1.5; }
 
   .balance-badge {
     font-family: "Cinzel", serif;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 0.03em;
-    color: var(--gold-bright);
-    background: var(--panel-2);
-    border: 1px solid rgba(201,162,75,0.3);
-    border-radius: 999px;
-    padding: 6px 16px;
+    color: var(--toxic-bright);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background:
+      radial-gradient(circle 2.5px at 10px 10px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2.5px at calc(100% - 10px) 10px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2.5px at 10px calc(100% - 10px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2.5px at calc(100% - 10px) calc(100% - 10px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      linear-gradient(180deg, var(--metal) 0%, #12160e 100%);
+    border: 1px solid rgba(138,255,60,0.35);
+    border-radius: 6px;
+    padding: 8px 18px;
     margin-bottom: 18px;
+    box-shadow: 0 0 14px rgba(138,255,60,0.15), inset 0 0 10px rgba(0,0,0,0.5);
+  }
+  .balance-badge::before {
+    content: "👛";
+    font-size: 13px;
   }
 
   .lobby-card { max-width: 340px; }
   .lobby-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 14px;
   }
   .lobby-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: var(--panel-2);
-    border: 1px solid rgba(201,162,75,0.16);
-    border-radius: 10px;
-    padding: 9px 12px;
+    background:
+      radial-gradient(circle 2px at 9px 9px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2px at calc(100% - 9px) 9px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2px at 9px calc(100% - 9px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2px at calc(100% - 9px) calc(100% - 9px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      linear-gradient(160deg, var(--panel-2) 0%, #0d1409 100%);
+    border: 1px solid rgba(138,255,60,0.2);
+    border-radius: 8px;
+    padding: 9px 13px;
     text-align: left;
   }
   .lobby-avatar {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     flex-shrink: 0;
     display: flex;
@@ -412,8 +462,8 @@
     justify-content: center;
     font-size: 16px;
   }
-  .lobby-avatar.you { background: radial-gradient(circle at 35% 30%, var(--you-glow), var(--you)); box-shadow: 0 0 10px var(--you-glow); }
-  .lobby-avatar.bot { background: radial-gradient(circle at 35% 30%, var(--bot-glow), var(--bot)); box-shadow: 0 0 10px var(--bot-glow); }
+  .lobby-avatar.you { background: radial-gradient(circle at 35% 30%, var(--you-glow), var(--you)); box-shadow: 0 0 12px var(--you-glow); }
+  .lobby-avatar.bot { background: radial-gradient(circle at 35% 30%, var(--bot-glow), var(--bot)); box-shadow: 0 0 12px var(--bot-glow); }
   .lobby-info {
     display: flex;
     flex-direction: column;
@@ -421,50 +471,77 @@
     min-width: 0;
   }
   .lobby-name { font-family: "Cinzel", serif; font-size: 12.5px; color: var(--ink); }
-  .lobby-stake { font-size: 11px; color: var(--gold-bright); font-weight: 700; }
+  .lobby-stake { font-size: 11px; color: var(--toxic-bright); font-weight: 700; }
   .lobby-status {
-    font-size: 10.5px;
+    font-size: 10px;
     letter-spacing: 0.02em;
-    padding: 4px 9px;
-    border-radius: 999px;
+    padding: 4px 10px;
+    border-radius: 5px;
     flex-shrink: 0;
     white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.08);
   }
-  .lobby-status.waiting { color: var(--ink-dim); background: rgba(255,255,255,0.06); }
-  .lobby-status.ready { color: #0d2622; background: var(--you-glow); font-weight: 700; }
+  .lobby-status.waiting { color: var(--ink-dim); background: rgba(0,0,0,0.35); }
+  .lobby-status.ready { color: #0d2205; background: var(--toxic); border-color: rgba(138,255,60,0.6); font-weight: 700; box-shadow: 0 0 10px rgba(138,255,60,0.5); }
   .lobby-pot {
-    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 13px;
     color: var(--ink-dim);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(138,255,60,0.18);
+    border-radius: 6px;
+    padding: 8px 10px;
   }
-  .lobby-pot b { color: var(--gold-bright); }
-  .stake-note { font-size: 11px; color: var(--ink-dim); opacity: 0.75; margin-top: -4px; margin-bottom: 12px; }
+  .lobby-pot::before { content: "🪙"; font-size: 14px; }
+  .lobby-pot b { color: var(--toxic-bright); }
+  .stake-note { font-size: 10.5px; color: var(--ink-dim); opacity: 0.75; margin-top: -2px; margin-bottom: 14px; line-height: 1.4; }
+  .stake-confirm {
+    font-family: "Creepster", cursive;
+    font-weight: 400;
+    font-size: 17px;
+    letter-spacing: 0.04em;
+    background:
+      radial-gradient(circle 2px at 8px 8px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2px at calc(100% - 8px) 8px, #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2px at 8px calc(100% - 8px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      radial-gradient(circle 2px at calc(100% - 8px) calc(100% - 8px), #050505 40%, var(--metal-light) 41% 70%, transparent 71%),
+      linear-gradient(160deg, #16220e 0%, #0b1106 100%);
+    color: var(--toxic-bright);
+    border: 1px solid rgba(138,255,60,0.5);
+    text-shadow: 0 0 8px rgba(138,255,60,0.5);
+    box-shadow: 0 0 16px rgba(138,255,60,0.2), inset 0 0 10px rgba(0,0,0,0.5);
+  }
+  .stake-confirm::before { content: "💀 "; }
+  .stake-confirm::after { content: " 💀"; }
   .stake-confirm.disabled, .stake-confirm:disabled {
     opacity: 0.4;
     pointer-events: none;
   }
-  .tower-langs { position:fixed; right:14px; bottom:14px; z-index:20; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-  .tower-lang-list { display:none; gap:5px; padding:5px; border:1px solid rgba(201,162,75,.45); border-radius:12px; background:rgba(30,24,56,.96); box-shadow:0 8px 24px rgba(0,0,0,.35); }
-  .tower-langs.open .tower-lang-list { display:flex; }
-  .tower-lang-list button,.tower-lang-toggle { flex:none; border:1px solid rgba(201,162,75,.35); border-radius:9px; padding:7px 9px; background:var(--panel-2); color:var(--ink); font:700 11px system-ui,sans-serif; cursor:pointer; }
-  .tower-lang-list button.active { color:#1a1428; background:var(--gold-bright); }
-  .tower-lang-toggle { border-radius:999px; padding:8px 11px; color:var(--gold-bright); }
-  .home-link { position:fixed; left:14px; bottom:14px; z-index:20; border:1px solid rgba(201,162,75,.45); border-radius:999px; padding:9px 13px; background:rgba(30,24,56,.96); color:var(--gold-bright); font:700 11px system-ui,sans-serif; text-decoration:none; box-shadow:0 8px 24px rgba(0,0,0,.35); }
-  .lobby-screen { width:min(560px,100%); }
-  .rooms-panel { width:100%; margin:0 auto 14px; padding:14px; border:1px solid rgba(201,162,75,.3); border-radius:16px; background:rgba(30,24,56,.72); }
-  .game-screen { display:none; width:100%; }
-  .game-screen.show { display:block; }
-  .lobby-screen.hidden { display:none; }
-  .lobby-actions { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
-  .lobby-action { margin:0; }
-  .rooms-title { margin:0 0 10px; color:var(--gold-bright); font:700 15px "Cinzel",serif; }
-  .rooms-list { display:flex; flex-direction:column; gap:7px; max-height:190px; overflow:auto; }
-  .room-row { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.05); font-size:11px; }
-  .room-players { flex:1; min-width:0; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .room-meta { color:var(--gold-bright); white-space:nowrap; font-weight:700; }
-  .room-status { color:var(--ink-dim); white-space:nowrap; }
-  .rooms-empty { color:var(--ink-dim); font-size:11px; text-align:center; padding:7px; }
-  .rooms-preview-note { color:var(--gold-bright); font-size:10px; text-align:center; margin-top:9px; opacity:.8; }
+  .lobby-screen { width: min(560px, 100%); }
+  .rooms-panel { width: 100%; margin: 0 auto 14px; padding: 14px; border: 1px solid rgba(138,255,60,0.28); border-radius: 8px; background: rgba(16,26,16,0.88); }
+  .rooms-title { margin: 0 0 10px; color: var(--toxic-bright); font: 700 17px "Cinzel", serif; text-align: center; }
+  .rooms-list { display: flex; flex-direction: column; gap: 7px; max-height: 190px; overflow: auto; }
+  .room-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 6px; background: rgba(0,0,0,0.35); border: 1px solid rgba(138,255,60,0.2); font-size: 11px; }
+  .room-players { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .room-meta { color: var(--toxic-bright); white-space: nowrap; font-weight: 700; }
+  .room-status { color: var(--ink-dim); white-space: nowrap; }
+  .rooms-empty, .rooms-preview-note { color: var(--ink-dim); font-size: 11px; text-align: center; padding: 7px; }
+  .lobby-actions { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .lobby-action { margin-top: 0; }
+  .game-screen { display: none; width: 100%; }
+  .game-screen.show { display: block; }
+  .lobby-screen.hidden { display: none; }
+  .turn-timer { min-height: 18px; color: var(--toxic-bright); font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-align: center; }
+  .tower-langs { position: fixed; right: 14px; bottom: 14px; z-index: 20; }
+  .tower-lang-list { display: none; gap: 5px; padding: 5px; background: rgba(16,26,16,0.96); }
+  .tower-langs.open .tower-lang-list { display: flex; }
+  .tower-lang-list button, .tower-lang-toggle { border: 1px solid rgba(138,255,60,0.5); border-radius: 6px; padding: 7px 9px; background: var(--panel-2); color: var(--toxic-bright); cursor: pointer; }
+  .tower-lang-toggle { font-weight: 700; }
+  .home-link { position: fixed; left: 14px; bottom: 14px; z-index: 20; border: 1px solid rgba(138,255,60,0.5); border-radius: 6px; padding: 9px 13px; background: rgba(16,26,16,0.96); color: var(--toxic-bright); font-size: 11px; text-decoration: none; }
 
   @media (prefers-reduced-motion: reduce) {
     .token, .playing-card { transition: none; }
@@ -473,29 +550,29 @@
 </head>
 <body>
 
-  <h1 class="title" data-i="title">Zombie Tower</h1>
-  <p class="subtitle" data-i="subtitle">Sag voraus, ob die nächste Karte <b style="color:var(--ink)">höher</b> oder <b style="color:var(--ink)">tiefer</b> ist als die aufgedeckte. Wer richtig liegt, steigt eine Etage. Wer zuerst oben ist, gewinnt den Turm.</p>
+  <h1 class="title">Zombie Tower</h1>
+  <p class="subtitle">Sag voraus, ob die nächste Karte <b style="color:var(--ink)">höher</b> oder <b style="color:var(--ink)">tiefer</b> ist als die aufgedeckte. Wer richtig liegt, steigt eine Etage. Wer zuerst oben ist, gewinnt den Turm.</p>
 
   <div class="lobby-screen" id="lobbyScreen">
     <div class="balance-badge" id="balanceBadge">Guthaben: — TON</div>
     <section class="rooms-panel" aria-live="polite">
-      <h2 class="rooms-title" data-i="roomsTitle">Spiele-Lobby</h2>
-      <div class="rooms-list" id="roomsList"><div class="rooms-empty" data-i="roomsEmpty">Noch keine Spiele.</div></div>
+      <h2 class="rooms-title">Spiele-Lobby</h2>
+      <div class="rooms-list" id="roomsList"></div>
     </section>
     <div class="lobby-actions">
-      <button class="restart lobby-action" id="enterGameBtn" data-i="enterGame">Spiel betreten</button>
+      <button class="restart lobby-action" id="enterGameBtn">Spiel betreten</button>
     </div>
   </div>
 
   <div class="game-screen" id="gameScreen">
     <div class="balance-badge" id="gameBalanceBadge">Guthaben: — TON</div>
-    <div class="arena">
+  <div class="arena">
     <div class="tower you" id="towerYou" style="--floors: 12"></div>
 
     <div class="center">
       <div class="label-row">
-        <span class="label-you" data-i="you">DU</span>
-        <span class="label-bot" data-i="opponent">GEGNER</span>
+        <span class="label-you">DU</span>
+        <span class="label-bot">GEGNER</span>
       </div>
       <div class="card-stage">
         <div class="playing-card" id="card">
@@ -513,66 +590,65 @@
       </div>
       <div class="deck-count" id="deckCount">52 Karten im Stapel</div>
       <div class="btn-row">
-        <button class="lower" id="btnLower" data-i="lower">▼ Tiefer</button>
-        <button class="higher" id="btnHigher" data-i="higher">▲ Höher</button>
+        <button class="lower" id="btnLower">▼ Tiefer</button>
+        <button class="higher" id="btnHigher">▲ Höher</button>
       </div>
       <div class="turn-timer" id="turnTimer" aria-live="polite"></div>
       <div class="status" id="status">Wähle deine Vorhersage für die erste Runde.</div>
     </div>
 
     <div class="tower bot" id="towerBot" style="--floors: 12"></div>
-    </div>
-    <div class="lobby-actions">
-      <button class="restart" id="restartBtn" data-i="restart">Turm neu bauen</button>
-      <button class="restart lobby-action" id="backToLobbyBtn" data-i="backToLobby">Zur Spiele-Lobby</button>
-    </div>
+  </div>
+
+  <button class="restart" id="restartBtn">Turm neu bauen</button>
+  <button class="restart lobby-action" id="backToLobbyBtn">Zur Spiele-Lobby</button>
   </div>
 
   <div class="overlay" id="stakeOverlay">
     <div class="overlay-card lobby-card">
-      <h2 data-i="lobby">Lobby</h2>
+      <h2>☣ Lobby</h2>
       <div class="lobby-list">
         <div class="lobby-row">
           <span class="lobby-avatar you">🏃</span>
           <div class="lobby-info">
-            <span class="lobby-name" data-i="you">Du</span>
+            <span class="lobby-name">Du</span>
             <span class="lobby-stake">0.1 TON</span>
           </div>
           <span class="lobby-status waiting" id="lobbyYouStatus">ausstehend</span>
         </div>
         <div class="lobby-row">
-          <span class="lobby-avatar bot">👤</span>
+          <span class="lobby-avatar bot">🧟</span>
           <div class="lobby-info">
-            <span class="lobby-name" data-i="secondPlayer">Zweiter Spieler</span>
+            <span class="lobby-name">Zombie-Gegner</span>
             <span class="lobby-stake">0.1 TON</span>
           </div>
           <span class="lobby-status waiting" id="lobbyBotStatus">verbindet …</span>
         </div>
       </div>
-      <div class="lobby-pot"><span data-i="pool">Preispool</span> <b>0.2 TON</b></div>
-      <p class="stake-note" data-i="stakeNote">Gewinner erhält 90 % des Pools (0.18 TON) · 10 % Gebühr. Echter Einsatz aus deinem Server-Guthaben.</p>
-      <button class="restart stake-confirm" id="stakeConfirmBtn" data-i="ready" style="margin-top:4px;">Bereit</button>
-      <button class="restart" id="topUpBtn" style="margin-top:10px; display:none; border-color: rgba(79,183,166,0.4); color: var(--you-glow);">Guthaben auffüllen (+1 TON)</button>
+      <div class="lobby-pot">Preispool <b>0.2 TON</b></div>
+      <p class="stake-note">Gewinner erhält 90 % des Pools (0.18 TON) · 10 % Gebühr. Demo-Guthaben, keine echte TON-Transaktion.</p>
+      <button class="restart stake-confirm" id="stakeConfirmBtn" style="margin-top:4px;">Einsatz setzen &amp; beitreten</button>
+      <button class="restart" id="topUpBtn" style="margin-top:10px; display:none; border-color: rgba(138,255,60,0.4); color: var(--you-glow);">Guthaben auffüllen (+1 TON)</button>
     </div>
-
   </div>
 
   <div class="overlay" id="overlay">    <div class="overlay-card">
       <h2 id="overlayTitle">Turm bezwungen!</h2>
       <p id="overlayText"></p>
-      <button class="restart" id="overlayRestart" data-i="playAgain" style="margin-top:0;">Nochmal spielen</button>
-      <button class="restart" id="overlayBackToLobby" data-i="backToLobby" style="margin-top:10px;">Zur Spiele-Lobby</button>
+      <button class="restart" id="overlayRestart" style="margin-top:0;">Nochmal spielen</button>
+      <button class="restart" id="overlayBackToLobby" style="margin-top:10px;">Zur Spiele-Lobby</button>
     </div>
   </div>
+
   <div class="tower-langs" id="towerLangs">
     <div class="tower-lang-list" role="group" aria-label="Languages">
       <button type="button" data-lang="de">DE</button>
       <button type="button" data-lang="fa">FA</button>
       <button type="button" data-lang="en">EN</button>
     </div>
-    <button type="button" class="tower-lang-toggle" id="towerLangToggle">文 Languages</button>
+    <button type="button" class="tower-lang-toggle" id="towerLangToggle">Languages</button>
   </div>
-  <a class="home-link" id="homeLink" href="/TaxiTon-new/index-new.html" data-i="backHome">Back to Home</a>
+  <a class="home-link" id="homeLink" href="/TaxiTon-new/index-new.html">Back to Home</a>
 
 <script>
 (function () {
