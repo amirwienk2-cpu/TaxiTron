@@ -373,6 +373,15 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   let toastT;
   function setCreateStatus(msg){ const s = $('createStatus'); if (s) s.textContent = msg || ''; }
   function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('on'); setCreateStatus(msg); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3500); }
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 8000){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, Object.assign({}, options, { signal: controller.signal }));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   // ---------- state ----------
   let db = null, user = null, me = 'local';
@@ -435,7 +444,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       try {
         const savedToken = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('cr3d_serverToken');
         if (!savedToken) return false;
-        const response = await fetch(API_BASE + '/api/zombie-tower/lobby?token=' + encodeURIComponent(savedToken));
+        const response = await fetchWithTimeout(API_BASE + '/api/zombie-tower/lobby?token=' + encodeURIComponent(savedToken));
         if (!response.ok) return false;
         const data = await response.json();
         apiToken = savedToken;
@@ -450,7 +459,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     }
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        const response = await fetch(API_BASE + '/api/auth', {
+        const response = await fetchWithTimeout(API_BASE + '/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData })
@@ -476,12 +485,13 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
+    toast('Server-Anmeldung fehlgeschlagen. Bitte Telegram-Mini-App neu öffnen.');
     return false;
   }
   async function serverApi(path, options = {}) {
     const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
     const body = options.body && typeof options.body !== 'string' ? Object.assign({}, options.body, { token: apiToken }) : options.body;
-    const response = await fetch(API_BASE + path, Object.assign({}, options, { headers, body: body && typeof body !== 'string' ? JSON.stringify(body) : body }));
+    const response = await fetchWithTimeout(API_BASE + path, Object.assign({}, options, { headers, body: body && typeof body !== 'string' ? JSON.stringify(body) : body }));
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw Object.assign(new Error(data.error || 'request-failed'), { data });
     return data;
@@ -599,7 +609,11 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   async function createRoom(){
     setCreateStatus('Verbinde mit dem Server …');
     if (!serverMode) {
-      await loadTaxiTronBalance();
+      const authenticated = await loadTaxiTronBalance();
+      if (!authenticated || !serverMode) {
+        toast('Server nicht erreichbar oder Telegram-Anmeldung fehlt.');
+        return;
+      }
     }
     if (serverMode) {
       const createButton = $('create');
