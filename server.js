@@ -168,6 +168,7 @@ const MAX_DISTANCE_PER_CALL = 1000000;
 // long-lasting run to not get falsely clamped.
 const MIN_MS_PER_TOURNAMENT_ZOMBIE = 40; // ceiling: 25 zombies/sec sustained
 const TOURNAMENT_PLAUSIBILITY_BUFFER = 300; // slack for bursts/high-speed late-game stretches
+const MAX_TOURNAMENT_SCORE_MULTIPLIER = 32; // weapon x2 * hack x4 * level-4 booster x4
 // Without an upper bound, a forged client could call /api/run/start, sit idle for an
 // arbitrarily long time (no real gameplay at all), then submit a huge zombie count that
 // still passes the elapsed-time check above. Capping how much elapsed time can be
@@ -2531,6 +2532,7 @@ app.post('/api/submit-score', requireUserFromBody, rejectBannedUser, (req, res) 
   let { distance, zombies } = req.body || {};
   zombies = Math.max(0, Math.min(MAX_ZOMBIES_PER_CALL, Math.floor(Number(zombies) || 0)));
   distance = Math.max(0, Math.min(MAX_DISTANCE_PER_CALL, Math.floor(Number(distance) || 0)));
+  const scoreMultiplier = Math.max(1, Math.min(MAX_TOURNAMENT_SCORE_MULTIPLIER, Number(req.body && req.body.scoreMultiplier) || 1));
 
   // Anti-cheat: trust only the server's own clock, not anything the client
   // claims about elapsed time. Without a matching /api/run/start beforehand
@@ -2542,9 +2544,9 @@ app.post('/api/submit-score', requireUserFromBody, rejectBannedUser, (req, res) 
   // idle (without ever really playing) between /api/run/start and this call must
   // not be able to buy an unlimited zombie allowance.
   const elapsedMs = Math.min(rawElapsedMs, MAX_MS_CREDITED_PER_TOURNAMENT_RUN);
-  const maxPlausibleZombies = Math.floor(elapsedMs / MIN_MS_PER_TOURNAMENT_ZOMBIE) + TOURNAMENT_PLAUSIBILITY_BUFFER;
+  const maxPlausibleZombies = Math.floor((elapsedMs / MIN_MS_PER_TOURNAMENT_ZOMBIE) * scoreMultiplier) + TOURNAMENT_PLAUSIBILITY_BUFFER;
   if (zombies > maxPlausibleZombies) {
-    console.warn(`[anti-cheat] submit-score: user ${user.id} reported ${zombies} zombies after ${rawElapsedMs}ms real / ${elapsedMs}ms credited (max plausible ${maxPlausibleZombies}) - clamped`);
+    console.warn(`[anti-cheat] submit-score: user ${user.id} reported ${zombies} zombies after ${rawElapsedMs}ms real / ${elapsedMs}ms credited at x${scoreMultiplier} (max plausible ${maxPlausibleZombies}) - clamped`);
     zombies = Math.max(0, maxPlausibleZombies);
   } else if (rawElapsedMs > MAX_MS_CREDITED_PER_TOURNAMENT_RUN) {
     // Not clamped (score was already within the capped budget), but a run

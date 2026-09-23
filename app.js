@@ -3712,7 +3712,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   }
 
   /* ================= GAME STATE ================= */
-  let player, obstacles, people, particles, bloodSplats, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft;
+  let player, obstacles, people, particles, bloodSplats, speed, baseSpeed, personScore, distance, running, spawnTimer, personTimer, best, reviveUsed, weapons, nextWeaponDist, weaponActive, weaponTimeLeft, runMaxScoreMultiplier;
   let nitroActive, nitroTimeLeft, nitroUsed;
   let slowActive, slowTimeLeft, slowUsed;
   let hackActive, hackTimeLeft, hackUsed, hackMult;
@@ -4010,6 +4010,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     baseSpeed = 0.175 + (store.upgrades.nitro ? 0.045 : 0);
     speed = baseSpeed;
     personScore = 0;
+    runMaxScoreMultiplier = 1;
     distance = 0;
     spawnTimer = 0;
     personTimer = 0;
@@ -4160,7 +4161,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     savePending();
     saveStore();
     refreshTopUI();
-    submitScoreForTournament(personScore, distance);
+    submitScoreForTournament(personScore, distance, runMaxScoreMultiplier);
   }
 
   // Reports this run's zombie count to the server for the TOURNAMENT ranking
@@ -4168,14 +4169,14 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   // changes when the player taps "Exchange" in the wallet. This runs
   // automatically after every round, so the leaderboard reflects real
   // performance even if the player never exchanges their coins.
-  async function submitScoreForTournament(zombies, dist){
+  async function submitScoreForTournament(zombies, dist, scoreMultiplier){
     if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
     if (zombies <= 0) return;
     try {
       await fetch(SERVER_URL + '/api/submit-score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: serverSession.token, distance: dist, zombies })
+        body: JSON.stringify({ token: serverSession.token, distance: dist, zombies, scoreMultiplier })
       });
     } catch (e) {
       // best-effort only - a missed submission just means this one run
@@ -4424,7 +4425,9 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
         const baseGain = weaponActive ? 2 : 1;
         const hackNumericMult = (hackActive && typeof hackMult === 'number') ? hackMult : 1;
         const lvl4Mult = mult2Active ? 2 : mult4Active ? 4 : 1;
-        personScore += baseGain * hackNumericMult * lvl4Mult;
+        const currentScoreMultiplier = baseGain * hackNumericMult * lvl4Mult;
+        runMaxScoreMultiplier = Math.max(runMaxScoreMultiplier, currentScoreMultiplier);
+        personScore += currentScoreMultiplier;
         updateCoinCountUI();
       }
     }
