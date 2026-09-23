@@ -944,6 +944,13 @@ TT.setUserMod=(u,st)=>{
   if(u&&u.id!==undefined){
     const id=CSS.escape(String(u.id)), muted=st.muted===true?'true':'false';
     document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{el.dataset.muted=muted});
+    if(typeof st.isChatAdmin==='boolean'){
+      document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{
+        if(st.isChatAdmin) el.dataset.admin=st.adminBadge==='girl'?'girl':'boy'; else delete el.dataset.admin;
+      });
+      renderChatBadges();
+      renderOnline();
+    }
     if(typeof st.badge4==='boolean'){
       document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{
         if(el.matches('.msg')){

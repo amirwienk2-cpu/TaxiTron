@@ -389,7 +389,7 @@
       text: m.text,
       time: m.ts,
       me: SESSION.uid != null && m.uid === SESSION.uid,
-      admin: m.isAdmin ? 'boy' : undefined,
+      admin: m.isAdmin ? (m.adminBadge === 'girl' ? 'girl' : 'boy') : undefined,
       badge: !m.isAdmin && m.isDesigner ? 'designer' : undefined,
       badge4: m.badge4 === true,
       muted: m.chatMuted === true,
@@ -440,7 +440,14 @@
           var el = mid != null ? document.querySelector('#chatList .msg[data-mid="' + CSS.escape(String(mid)) + '"]') : null;
           if (el) el.remove();
         } else if (payload.type === 'moderation' && typeof TT.setUserMod === 'function') {
-          TT.setUserMod({ id: payload.uid }, { muted: payload.chatMuted === true, badge4: payload.badge4 === true });
+          var moderationState = {};
+          if (typeof payload.chatMuted === 'boolean') moderationState.muted = payload.chatMuted;
+          if (typeof payload.badge4 === 'boolean') moderationState.badge4 = payload.badge4;
+          if (typeof payload.isChatAdmin === 'boolean') {
+            moderationState.isChatAdmin = payload.isChatAdmin;
+            moderationState.adminBadge = payload.adminBadge;
+          }
+          TT.setUserMod({ id: payload.uid }, moderationState);
         } else if (payload.type === 'settings' && typeof TT.setChatEnabled === 'function') {
           TT.setChatEnabled(payload.chatEnabled !== false);
         }
@@ -493,7 +500,7 @@
           id: u.uid,
           name: u.name,
           photoUrl: u.photoUrl || '',
-          admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined),
+          admin: u.isChatAdmin ? (u.adminBadge === 'girl' ? 'girl' : 'boy') : (u.isDesigner ? 'designer' : undefined),
           badge4: u.badge4 === true,
           muted: u.chatMuted === true,
           me: SESSION.uid != null && String(u.uid) === String(SESSION.uid),
@@ -518,7 +525,7 @@
           name: e.name,
           score: Number(e.best) || 0,
           me: false,
-          admin: e.isChatAdmin ? 'boy' : (e.isDesigner ? 'designer' : undefined),
+          admin: e.isChatAdmin ? (e.adminBadge === 'girl' ? 'girl' : 'boy') : (e.isDesigner ? 'designer' : undefined),
           badge4: e.badge4 === true,
         };
       });

@@ -444,6 +444,7 @@ function newUser(id, name) {
     campaignInvites: 0,
     campaignLastInviteAt: 0,
     isChatAdmin: false,
+    adminBadge: 'boy',
     isDesigner: false,
     badge4: false,
     chatMuted: false,
@@ -828,6 +829,7 @@ function publicState(user) {
     adRewardClaimed: user.adRewardClaimed === true,
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
     isChatAdmin: user.isChatAdmin === true,
+    adminBadge: user.adminBadge === 'girl' ? 'girl' : 'boy',
     isDesigner: user.isDesigner === true,
     badge4: user.badge4 === true,
     chatMuted: user.chatMuted === true,
@@ -1382,7 +1384,7 @@ app.get('/admin', (req, res) => {
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TaxiTron Admin</title><style>
 body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:1000px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.danger{background:#ff5c6c;color:#260b10}.sound-off{background:#3b3850;color:#f5f2ff}.sound-on{background:#3ddc84;color:#062012}.toolbar{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.player-search{flex:1;min-width:260px}.search-result-count{align-self:center;color:#aaa3b8;font-size:13px}.status{color:#aaa3b8;margin:12px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat{padding:14px;border:1px solid #3b3850;border-radius:8px;background:#181824}.stat b{display:block;font-size:24px;color:#ffd93d}.row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.row.new-withdrawal{background:rgba(61,220,132,0.16);border-left:4px solid #3ddc84;animation:flash-row 1.4s ease-in-out 4}@keyframes flash-row{0%,100%{background:rgba(61,220,132,0.16)}50%{background:rgba(61,220,132,0.38)}}.muted{color:#aaa3b8;font-size:12px}.reset-attempts{background:#3b3850;color:#f5f2ff;font-size:12px;padding:8px}@media(max-width:650px){.stats{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
-.chat-admin-row{display:grid;grid-template-columns:1.2fr .2fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}
+.chat-admin-row{display:grid;grid-template-columns:1.2fr .2fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}
 </style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
@@ -1444,15 +1446,18 @@ const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'
 d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.chatMuted?' is-muted':'');
 const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.badge4?'<span class="tag designer">Badge 4</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
 row.innerHTML='<span>'+u.name+tags+'<br><span class="muted">UID '+u.uid+'</span></span><span></span><span></span><span></span><span></span>';
-const adminBtn=document.createElement('button');adminBtn.className='small-btn';adminBtn.textContent=u.isChatAdmin?'Admin entfernen':'Zum Chat-Admin machen';
-adminBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isChatAdmin:!u.isChatAdmin})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
+const adminBtn=document.createElement('button');adminBtn.className='small-btn';adminBtn.textContent=u.isChatAdmin?'Admin speichern':'Zum Chat-Admin machen';
+const adminBadgeSelect=document.createElement('select');adminBadgeSelect.className='admin-badge-select';adminBadgeSelect.title='Admin-Badge auswählen';
+adminBadgeSelect.innerHTML='<option value="boy">Admin Junge</option><option value="girl">Admin Mädchen</option>';
+adminBadgeSelect.value=u.adminBadge==='girl'?'girl':'boy';adminBadgeSelect.disabled=!u.isChatAdmin;
+adminBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isChatAdmin:true,adminBadge:adminBadgeSelect.value})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const designerBtn=document.createElement('button');designerBtn.className='small-btn';designerBtn.textContent=u.isDesigner?'Designer entfernen':'Zum Designer machen';
 designerBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-designer',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isDesigner:!u.isDesigner})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const badgeBtn=document.createElement('button');badgeBtn.className='small-btn';badgeBtn.textContent=u.badge4?'Badge 4 entfernen':'Badge 4 geben';
 badgeBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-badge4',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,badge4:!u.badge4})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const muteBtn=document.createElement('button');muteBtn.className='small-btn'+(u.chatMuted?'':' danger');muteBtn.textContent=u.chatMuted?'Entmuten':'Muten';
 muteBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-mute',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,muted:!u.chatMuted})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
-row.children[2].appendChild(adminBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(badgeBtn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
+row.children[2].appendChild(adminBadgeSelect);row.children[2].appendChild(adminBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(badgeBtn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
 status(d.users.length+' Nutzer geladen.')}
 document.getElementById('chatUserSearchBtn').onclick=runSearch;
 document.getElementById('chatUserSearch').addEventListener('keydown',e=>{if(e.key==='Enter')runSearch()});
@@ -1644,6 +1649,7 @@ app.get('/api/online-users', (req, res) => {
       photoUrl: user.photoUrl || '',
       ton: Number(user.ton || 0),
       isChatAdmin: user.isChatAdmin === true,
+      adminBadge: user.adminBadge === 'girl' ? 'girl' : 'boy',
       isDesigner: user.isDesigner === true,
       badge4: user.badge4 === true,
       chatMuted: user.chatMuted === true,
@@ -1661,6 +1667,7 @@ app.get('/api/chat/messages', (req, res) => {
     return {
       ...message,
       isAdmin: user ? user.isChatAdmin === true : message.isAdmin === true,
+      adminBadge: user ? (user.adminBadge === 'girl' ? 'girl' : 'boy') : (message.adminBadge === 'girl' ? 'girl' : 'boy'),
       isDesigner: user ? user.isDesigner === true : message.isDesigner === true,
       badge4: user ? user.badge4 === true : message.badge4 === true,
       chatMuted: user ? user.chatMuted === true : message.chatMuted === true,
@@ -2542,6 +2549,7 @@ app.get('/api/leaderboard', (req, res) => {
       name: e.name,
       best: e.best,
       isChatAdmin: user && user.isChatAdmin === true,
+      adminBadge: user && user.adminBadge === 'girl' ? 'girl' : 'boy',
       isDesigner: user && user.isDesigner === true,
       badge4: user && user.badge4 === true,
     };
@@ -2657,6 +2665,7 @@ app.get('/admin/chat-users', requireAdmin, (req, res) => {
     uid: String(u.id),
     name: u.name || ('Player ' + u.id),
     isChatAdmin: u.isChatAdmin === true,
+    adminBadge: u.adminBadge === 'girl' ? 'girl' : 'boy',
     isDesigner: u.isDesigner === true,
     badge4: u.badge4 === true,
     chatMuted: u.chatMuted === true,
@@ -2677,8 +2686,16 @@ app.post('/admin/chat/set-admin', requireAdmin, (req, res) => {
   const user = users[uid];
   if (!user) return res.status(404).json({ error: 'user-not-found' });
   user.isChatAdmin = req.body.isChatAdmin === true;
+  if (user.isChatAdmin && req.body.adminBadge !== undefined) {
+    if (req.body.adminBadge !== 'boy' && req.body.adminBadge !== 'girl') {
+      return res.status(400).json({ error: 'invalid-admin-badge' });
+    }
+    user.adminBadge = req.body.adminBadge;
+  }
+  if (!user.isChatAdmin) user.adminBadge = 'boy';
   persist();
-  res.json({ ok: true, uid, isChatAdmin: user.isChatAdmin });
+  res.json({ ok: true, uid, isChatAdmin: user.isChatAdmin, adminBadge: user.adminBadge });
+  broadcastChatEvent('moderation', { uid, isChatAdmin: user.isChatAdmin, adminBadge: user.adminBadge });
 });
 
 app.post('/admin/chat/set-designer', requireAdmin, (req, res) => {
