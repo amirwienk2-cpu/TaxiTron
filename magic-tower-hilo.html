@@ -320,6 +320,13 @@
     max-width: 340px;
   }
   .status b { color: var(--gold-bright); font-weight: 700; }
+  .turn-timer {
+    min-height: 18px;
+    color: var(--gold-bright);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
 
   .deck-count {
     font-size: 11px;
@@ -509,6 +516,7 @@
         <button class="lower" id="btnLower" data-i="lower">▼ Tiefer</button>
         <button class="higher" id="btnHigher" data-i="higher">▲ Höher</button>
       </div>
+      <div class="turn-timer" id="turnTimer" aria-live="polite"></div>
       <div class="status" id="status">Wähle deine Vorhersage für die erste Runde.</div>
     </div>
 
@@ -650,10 +658,12 @@
   const cardEl = el('card');
   const btnHigher = el('btnHigher');
   const btnLower = el('btnLower');
+  const turnTimer = el('turnTimer');
   const stakeOverlay = el('stakeOverlay');
   const stakeConfirmBtn = el('stakeConfirmBtn');
   const lobbyYouStatus = el('lobbyYouStatus');
   const lobbyBotStatus = el('lobbyBotStatus');
+  let timerInterval = null;
   const overlay = el('overlay');
   const overlayTitle = el('overlayTitle');
   const overlayText = el('overlayText');
@@ -661,6 +671,14 @@
   const towerBot = el('towerBot');
   function setStatus(text) { statusEl.textContent = text; }
   function setButtons(enabled) { btnHigher.disabled = !enabled; btnLower.disabled = !enabled; }
+  function updateTurnTimer() {
+    if (!game || game.status !== 'playing' || !game.turnDeadlineAt) {
+      turnTimer.textContent = '';
+      return;
+    }
+    const seconds = Math.max(0, Math.ceil((Number(game.turnDeadlineAt) - Date.now()) / 1000));
+    turnTimer.textContent = 'Zeit: ' + seconds + ' s';
+  }
   function renderFinished(g) {
     const dict = LANGS[lang];
     const won = g.result && g.me && String(g.result.winnerId) === String(g.me.id);
@@ -686,7 +704,8 @@
     displayedRooms = games;
     const list = el('roomsList');
     list.innerHTML = '';
-    const visibleGames = lobbyPreview ? demoGames.concat(games) : games;
+    const visibleGames = (lobbyPreview ? demoGames.concat(games) : games)
+      .filter((room) => room.status !== 'finished' && room.status !== 'cancelled');
     if (!visibleGames.length) { list.innerHTML = '<div class="rooms-empty">' + LANGS[lang].roomsEmpty + '</div>'; return; }
     visibleGames.forEach((room) => {
       const row = document.createElement('div'); row.className = 'room-row';
@@ -737,7 +756,7 @@
     stakeConfirmBtn.disabled = !g.me || g.me.ready || g.status === 'playing';
     if (g.status === 'waiting') setStatus('Warte auf einen zweiten echten Spieler.');
     else if (g.status === 'ready') setStatus('Beide Spieler m�ssen bereit klicken.');
-    else if (g.status === 'playing') { stakeOverlay.classList.remove('show'); setButtons(!(g.me && g.me.hasAction)); setStatus(g.me && g.me.hasAction ? 'Warte auf den Gegner �' : 'W�hle h�her oder tiefer.'); }
+    else if (g.status === 'playing') { stakeOverlay.classList.remove('show'); setButtons(!(g.me && g.me.hasAction)); setStatus(g.me && g.me.hasAction ? 'Warte auf den Gegner �' : 'W�hle h�her oder tiefer.'); updateTurnTimer(); }
     else if (g.status === 'finished') { setButtons(false); renderFinished(g); overlay.classList.add('show'); }
     if (g.lastRound && g.lastRound.next) { renderCard(g.lastRound.next); const right = g.me && g.lastRound.actions[String(g.me.id)]; setStatus('Karte: ' + rankLabels[g.lastRound.next.value - 2] + g.lastRound.next.suit + (right ? ' � Runde ausgewertet.' : '')); }
   }
@@ -770,10 +789,10 @@
   el('backToLobbyBtn').addEventListener('click', backToLobby);
   el('overlayBackToLobby').addEventListener('click', backToLobby);
   stakeConfirmBtn.addEventListener('click', async () => { if (!game || busy || game.me.ready) return; busy = true; try { const d = await api('/api/magic-tower/ready', { method: 'POST', body: JSON.stringify({ token }) }); renderBalance(d.state); render(d.game); } catch (e) { setStatus(e.message); } finally { busy = false; } });
-  async function play(choice) { if (!game || game.status !== 'playing' || busy || (game.me && game.me.hasAction)) return; busy = true; setButtons(false); try { const d = await api('/api/magic-tower/play', { method: 'POST', body: JSON.stringify({ token, gameId: game.id, choice }) }); renderBalance(d.state); render(d.game); } catch (e) { setStatus(e.message); } finally { busy = false; } }
+  async function play(choice) { if (!game || game.status !== 'playing' || busy || (game.me && game.me.hasAction)) return; busy = true; setButtons(false); try { const d = await api('/api/magic-tower/play', { method: 'POST', body: JSON.stringify({ token, gameId: game.id, choice }) }); renderBalance(d.state); render(d.game); } catch (e) { if (e && e.game) render(e.game); else setStatus(e.message); } finally { busy = false; } }
   btnHigher.addEventListener('click', () => play('higher')); btnLower.addEventListener('click', () => play('lower'));
   el('restartBtn').addEventListener('click', () => { if (token) join(); }); el('overlayRestart').addEventListener('click', () => { overlay.classList.remove('show'); if (token) join(); });
-  setButtons(false); renderTower(towerYou, 0, 'you'); renderTower(towerBot, 0, 'bot'); refreshRooms(); roomsTimer = setInterval(refreshRooms, 3000); authenticate();
+  setButtons(false); renderTower(towerYou, 0, 'you'); renderTower(towerBot, 0, 'bot'); refreshRooms(); roomsTimer = setInterval(refreshRooms, 3000); timerInterval = setInterval(updateTurnTimer, 250); authenticate();
 })();
 </script>
 </body>

@@ -859,6 +859,7 @@ const GAME_PLAYER_OFFLINE_MS = 35 * 1000;
 const MAGIC_TOWER_STAKE = 0.1;
 const MAGIC_TOWER_FLOORS = 12;
 const MAGIC_TOWER_CHOICES = new Set(['higher', 'lower']);
+const MAGIC_TOWER_TURN_TIMEOUT_MS = 10 * 1000;
 const MAGIC_TOWER_LOBBY_TTL_MS = 30 * 60 * 1000;
 const MAGIC_TOWER_RESULT_TTL_MS = 10 * 60 * 1000;
 function magicTowerDeck() {
@@ -877,6 +878,7 @@ function magicTowerGamePublic(game, uid) {
     id: game.id, status: game.status, stake: MAGIC_TOWER_STAKE, pot: 0.2,
     winnerPayout: 0.18, platformFee: 0.02, round: game.round,
     current: game.current, deckCount: game.deck.length,
+    turnDeadlineAt: game.turnDeadlineAt || null,
     lastRound: game.lastRound || null,
     players: game.players.map((p) => ({ id: String(p.id), name: p.name, ready: p.ready, floor: p.floor, hasAction: !!game.actions[String(p.id)] })),
     me: me ? { id: String(me.id), ready: me.ready, floor: me.floor } : null,
@@ -938,7 +940,17 @@ function resolveMagicTowerRound(game) {
     settleMagicTowerGame(game, winner.id);
   } else {
     game.round += 1;
+    game.turnDeadlineAt = Date.now() + MAGIC_TOWER_TURN_TIMEOUT_MS;
   }
+}
+function enforceMagicTowerTurnTimeout(game) {
+  if (!game || game.status !== 'playing' || !game.turnDeadlineAt || Date.now() < game.turnDeadlineAt) return false;
+  game.players.forEach((player) => {
+    const id = String(player.id);
+    if (!game.actions[id]) game.actions[id] = Math.random() < 0.5 ? 'higher' : 'lower';
+  });
+  resolveMagicTowerRound(game);
+  return true;
 }
 function gameRoomId(stake) { return 'room-' + String(stake).replace('.', '-'); }
 function createGameRoom(stake) {
@@ -1515,6 +1527,8 @@ app.get('/api/magic-tower/games', (req, res) => {
 
 app.get('/api/magic-tower/state', requireUserFromQuery, (req, res) => {
   expireMagicTowerGames();
+  const timedOut = Object.values(magicTowerGames).some(enforceMagicTowerTurnTimeout);
+  if (timedOut) persistMagicTowerGames();
   const game = Object.values(magicTowerGames).find((item) => {
     if (!item.players.some((p) => String(p.id) === String(req.uid))) return false;
     if (item.status === 'cancelled') return false;
@@ -1528,12 +1542,16 @@ app.get('/api/magic-tower/state', requireUserFromQuery, (req, res) => {
 
 app.post('/api/magic-tower/ready', requireUserFromBody, rejectBannedUser, (req, res) => {
   expireMagicTowerGames();
+  Object.values(magicTowerGames).forEach(enforceMagicTowerTurnTimeout);
   const game = Object.values(magicTowerGames).find((item) => item.status !== 'finished' && item.status !== 'cancelled' && item.players.some((p) => String(p.id) === String(req.uid)));
   if (!game) return res.status(404).json({ error: 'game-not-found' });
   const player = game.players.find((p) => String(p.id) === String(req.uid));
   if (!player) return res.status(403).json({ error: 'not-a-player' });
   player.ready = true;
-  if (game.players.length === 2 && game.players.every((p) => p.ready) && game.status !== 'finished') game.status = 'playing';
+  if (game.players.length === 2 && game.players.every((p) => p.ready) && game.status !== 'finished') {
+    game.status = 'playing';
+    game.turnDeadlineAt = Date.now() + MAGIC_TOWER_TURN_TIMEOUT_MS;
+  }
   persistMagicTowerGames();
   res.json({ state: publicState(req.user), game: magicTowerGamePublic(game, req.uid) });
 });
@@ -1543,6 +1561,12 @@ app.post('/api/magic-tower/play', requireUserFromBody, rejectBannedUser, (req, r
   if (!MAGIC_TOWER_CHOICES.has(choice)) return res.status(400).json({ error: 'invalid-choice' });
   const game = magicTowerGames[String(req.body && req.body.gameId)];
   if (!game || game.status !== 'playing') return res.status(404).json({ error: 'game-not-playing' });
+  const timedOut = enforceMagicTowerTurnTimeout(game);
+  if (timedOut) {
+    persist();
+    persistMagicTowerGames();
+    return res.status(409).json({ error: 'turn-time-expired', game: magicTowerGamePublic(game, req.uid) });
+  }
   if (!game.players.some((p) => String(p.id) === String(req.uid))) return res.status(403).json({ error: 'not-a-player' });
   if (game.actions[String(req.uid)]) return res.status(409).json({ error: 'action-already-submitted', game: magicTowerGamePublic(game, req.uid) });
   game.actions[String(req.uid)] = choice;
