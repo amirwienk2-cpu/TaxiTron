@@ -62,7 +62,7 @@ const PLAY_GAME_URL = process.env.PLAY_GAME_URL || 'https://t.me/TaxiiTonBot';
 const NEWS_CHANNEL_URL = process.env.NEWS_CHANNEL_URL || 'https://t.me/TaxiiTon';
 const TON_EXPLORER_URL = process.env.TON_EXPLORER_URL || 'https://tonviewer.com/transaction/';
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://taxitron-production.up.railway.app';
-const TELEGRAM_MINI_APP_URL = new URL('/TaxiTon-new/index-new.html?v=20260922', MINI_APP_URL).toString();
+const TELEGRAM_MINI_APP_URL = new URL('/TaxiTon-new/index-new.html?v=2026092404', MINI_APP_URL).toString();
 const TON_USD_RATE = Number(process.env.TON_USD_RATE || 0);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
