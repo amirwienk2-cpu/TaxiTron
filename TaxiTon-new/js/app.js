@@ -25,6 +25,9 @@ Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random 
 Object.assign(I18N.fa,{gameNoAttempts:'تلاش دیگری باقی نمانده',gameTryLater:'بعداً دوباره امتحان کنید'});
 Object.assign(I18N.de,{gameNoAttempts:'Keine Versuche mehr',gameTryLater:'Später erneut versuchen'});
 Object.assign(I18N.en,{gameNoAttempts:'No attempts left',gameTryLater:'Try again later'});
+Object.assign(I18N.fa,{gameDisabled:'بازی Zombie Tower به دلیل مشکلات فنی موقتاً غیرفعال است.'});
+Object.assign(I18N.de,{gameDisabled:'Zombie Tower ist wegen technischer Fehler vorübergehend deaktiviert.'});
+Object.assign(I18N.en,{gameDisabled:'Zombie Tower is temporarily disabled due to technical issues.'});
 let lang='fa'; try{lang=localStorage.getItem('tt_lang')||'fa'}catch(e){}
 const T=()=>I18N[lang];
 const nf=n=>lang==='fa'?String(n).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]):String(n);
@@ -1134,7 +1137,15 @@ tabs.forEach(t=>{
   t.addEventListener('click',()=>{
     // "Game" tab opens the real Monster Crash game directly (matches old design's
     // navButtons handler: dataset.screen==='game-menu' -> location.href='/monster-crash/').
-    if(t.dataset.s==='game'){ window.location.href='/zombie.html'; return; }
+    if(t.dataset.s==='game'){
+      tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
+      t.classList.add('active');t.setAttribute('aria-selected','true');
+      document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='game'));
+      document.body.classList.remove('chat-open');
+      window.scrollTo(0,0);
+      try{window.Telegram&&Telegram.WebApp.HapticFeedback.selectionChanged()}catch(e){}
+      return;
+    }
     tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
     t.classList.add('active');t.setAttribute('aria-selected','true');
     document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===t.dataset.s));

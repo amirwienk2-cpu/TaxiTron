@@ -1333,8 +1333,17 @@ app.get(['/','/index.html'], (req, res) => {
   const target = '/TaxiTon-new/index-new.html?v=20260922' + (query ? '&' + query : '');
   res.redirect(302, target);
 });
-app.get('/magic-tower-hilo.html', (req, res) => {
-  res.redirect(302, '/zombie.html');
+app.get(['/magic-tower-hilo.html', '/zombie.html'], (req, res) => {
+  res.status(503).type('html').send(`<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zombie Tower pausiert</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#090b12;color:#f5f7ff;font:16px system-ui,sans-serif;text-align:center}
+main{max-width:420px;padding:32px}h1{color:#c9a24b;font-size:24px}p{color:#aeb6c8;line-height:1.6}
+</style></head><body><main>
+<h1>Zombie Tower ist vorübergehend pausiert</h1>
+<p>Das Spiel ist wegen technischer Fehler deaktiviert. Bitte versuche es später erneut.</p>
+</main></body></html>`);
 });
 app.get('/legacy-game.html', (req, res) => {
   res.set({
