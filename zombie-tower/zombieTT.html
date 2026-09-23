@@ -522,6 +522,10 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       const mineRooms = (data.mine || []).map(normalizeServerGame).filter(Boolean);
       serverGame = mineRooms.find(r => r.status === 'playing') || mineRooms[0] || serverGame;
       const merged = serverRooms.concat(mineRooms);
+      if (serverGame && ['open', 'playing'].includes(serverGame.status) &&
+          !merged.some(room => room.id === serverGame.id)) {
+        merged.push(serverGame);
+      }
       rooms = merged.filter((room, index, list) => list.findIndex(item => item.id === room.id) === index);
       if (serverGame && serverGame.status === 'playing' && (!viewId || viewId === BOT)) viewId = serverGame.id;
       renderLobby(); afterChange();
