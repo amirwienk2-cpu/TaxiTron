@@ -247,6 +247,7 @@
         return null;
       }
       SESSION.token = r.data.token;
+      try { localStorage.setItem('cr3d_serverToken', r.data.token); } catch (e) {}
       SESSION.online = true;
       applyState(r.data.state);
       return r.data.state;
