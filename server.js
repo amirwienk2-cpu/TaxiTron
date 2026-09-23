@@ -933,7 +933,11 @@ function zombieTowerPublic(game, uid) {
     card: game.card, deadline: game.deadline, floors: game.floors, picks: visiblePicks,
     hist: game.hist, last: game.last, sd: !!game.sd, winner: game.winner || null,
     forfeit: game.forfeit || null, ended: game.ended || null,
-    players: game.players.map((p) => ({ id: String(p.id), name: p.name })),
+    players: game.players.map((p) => ({
+      id: String(p.id),
+      name: p.name,
+      photoUrl: (users[String(p.id)] && users[String(p.id)].photoUrl) || p.photoUrl || '',
+    })),
     me: player ? { id: String(player.id) } : null,
   };
 }
