@@ -541,6 +541,10 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         toast(T('t_authfail'));
         return;
       }
+      if (rooms.some(room => room && ['open', 'playing'].includes(room.status))) {
+        renderLobby();
+        return;
+      }
       setLobbyStatus(code ? 'Serverfehler: ' + code : 'Server nicht erreichbar.');
       toast(code ? T('t_conn') + ' (' + code + ')' : 'Server nicht erreichbar.');
     }
