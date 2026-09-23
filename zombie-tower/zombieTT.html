@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Zombie Tower – 1 gegen 1</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Chakra+Petch:wght@500;600;700&family=Vazirmatn:wght@500;700&display=swap" rel="stylesheet">
@@ -371,6 +372,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   let db = null, user = null, me = 'local';
   let wallet = { bal: START_BAL, settled: [] };
   let houseWallet = { bal: 0 };
+  let serverBalance = null;
   let stake = 0.01;
   let rooms = [];              // all shared room docs [{id, ...}]
   let botRoom = null;          // local practice room
@@ -395,7 +397,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       const savedHouse = JSON.parse(localStorage.getItem('tt_house_wallet') || 'null');
       if (savedHouse && Number.isFinite(Number(savedHouse.bal))) houseWallet = { bal: Number(savedHouse.bal) };
     } catch(e){}
-    const miniAppBalance = Number(localStorage.getItem('cr3d_points'));
+    const miniAppBalance = serverBalance !== null ? serverBalance : Number(localStorage.getItem('cr3d_points'));
     if (Number.isFinite(miniAppBalance) && miniAppBalance >= 0) {
       wallet.bal = miniAppBalance;
       $('bal').textContent = fmt(wallet.bal);
@@ -408,6 +410,29 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       try { const v = JSON.parse(localStorage.getItem('mt_wallet')); if (v && isFinite(v.bal)) wallet = Object.assign({ settled: [] }, v); } catch(e){}
     }
     $('bal').textContent = fmt(wallet.bal);
+  }
+
+  async function loadTaxiTronBalance(){
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const initData = tg && tg.initData;
+    if (!initData) return false;
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData })
+      });
+      if (!response.ok) return false;
+      const data = await response.json();
+      const balance = Number(data.state && data.state.ton);
+      if (!Number.isFinite(balance) || balance < 0) return false;
+      serverBalance = balance;
+      if (data.state && data.state.uid) localStorage.setItem('cr3d_serverUid', String(data.state.uid));
+      localStorage.setItem('cr3d_points', String(balance));
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   function saveHouseFee(amount){
@@ -828,6 +853,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   $('bal').textContent = fmt(wallet.bal);
   renderLobby(); show('lobby');
   (async () => {
+    await loadTaxiTronBalance();
     const c = window.claude;
     if (c && typeof c.use === 'function') {
       [db, user] = await Promise.all([c.use('db'), c.use('user')]);
