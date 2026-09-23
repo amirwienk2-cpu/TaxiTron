@@ -507,6 +507,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     Object.keys(g.picks || {}).forEach((id) => { picks[id] = { d: g.picks[id].choice, r: g.picks[id].round }; });
     return Object.assign({}, g, {
       host: g.players[0] && g.players[0].id, guest: g.players[1] && g.players[1].id,
+      hostName: g.players[0] && g.players[0].name, guestName: g.players[1] && g.players[1].name,
       created: Number(g.createdAt || Date.now()), floors: g.floors || {}, picks, card: g.card,
       hist: g.hist || [], last: g.last, winner: g.winner,
     });
@@ -857,6 +858,10 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     if (id === me) return T('you');
     const p = profilesCache[id]; return (p && p.name) || T('opponent');
   }
+  function serverNameOf(room, id){
+    const player = room && (room.players || []).find(p => String(p.id) === String(id));
+    return player && player.name ? player.name : nameOf(id);
+  }
   async function refreshProfiles(ids){
     if (!user) return;
     const want = ids.filter(i => i && i !== BOT && i !== 'local');
@@ -895,7 +900,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       const row = document.createElement('div'); row.className = 'room' + (r.host === me ? ' mine' : '');
       const img = document.createElement('img'); img.alt = ''; const p = profilesCache[r.host]; if (p) img.src = p.avatarUrl; else img.style.background = '#1f4a14';
       const who = document.createElement('div'); who.className = 'who';
-      const b = document.createElement('b'); b.textContent = r.host === me ? T('your_room') : nameOf(r.host);
+      const b = document.createElement('b'); b.textContent = r.host === me ? T('your_room') : serverNameOf(r, r.host);
       const s = document.createElement('span'); s.textContent = r.host === me ? T('waiting_self') : T('waiting_other');
       who.append(b, s);
       const amt = document.createElement('span'); amt.className = 'amt'; amt.textContent = fmt(r.stake) + ' TON';
