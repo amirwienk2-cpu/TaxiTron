@@ -4191,7 +4191,8 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     if (runStartPending) return;
     syncActiveLevelFromShop();
     if ((!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
-      leaveGameToHome();
+      renderAttemptsUI();
+      document.getElementById('retryBtn').disabled = true;
       return;
     }
     runStartPending = true;
@@ -4201,7 +4202,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     runStartPending = false;
     if (!started) {
       renderAttemptsUI();
-      leaveGameToHome();
+      document.getElementById('retryBtn').disabled = true;
       return;
     }
     renderAttemptsUI();

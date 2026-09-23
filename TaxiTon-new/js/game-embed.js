@@ -276,7 +276,7 @@
     watcher.observe(gameScreen, { attributes: true, attributeFilter: ['class'] });
   }
 
-  function closeRealGame(){
+  function closeRealGame(goHome = true){
     if (watcher) { watcher.disconnect(); watcher = null; }
     stopProgressPoll();
     syncGameExchangeRate();
@@ -287,7 +287,8 @@
     frame.src = 'about:blank'; // drop the embedded game/session cleanly
     launching = false;
     preloaded = false;
-    if (homeTab) homeTab.click();
+    if (placeholder) placeholder.style.display = '';
+    if (goHome && homeTab) homeTab.click();
     // Warm the iframe back up in the background so the *next* play press is
     // fast again too, without blocking anything the user is doing now.
     setTimeout(preload, 400);
@@ -295,7 +296,7 @@
 
   window.addEventListener('message', event => {
     if (event.source !== frame.contentWindow || !event.data || event.data.type !== 'tt-game-start-rejected') return;
-    closeRealGame();
+    closeRealGame(false);
   });
 
   if (startBtn) startBtn.addEventListener('click', openRealGame);
