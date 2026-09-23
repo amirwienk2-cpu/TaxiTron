@@ -353,7 +353,9 @@ function renderOnline(){
   document.getElementById('onlineCount').textContent=nf(o.count);
   box.textContent='';
   o.users.forEach(u=>{
-    const n=typeof u==='string'?u:u.name, adm=typeof u==='string'?null:(u.badge||u.admin);
+    const n=typeof u==='string'?u:u.name;
+    const adm=typeof u==='string'?null:(u.badge||u.admin);
+    const hasBadge4=typeof u!=='string'&&u.badge4===true;
     const chip=document.createElement('span'); chip.className='ou'; chip.setAttribute('role','listitem'); chip.title=n;
     if(typeof u!=='string'&&u.id!==undefined) chip.dataset.uid=u.id;
     if(typeof u!=='string'&&u.muted!==undefined) chip.dataset.muted=u.muted?'true':'false';
@@ -364,7 +366,11 @@ function renderOnline(){
     const dot=document.createElement('i'); av.append(dot);
     const nm=document.createElement('span'); nm.className='ou-name'; nm.textContent=n;
     const bal=document.createElement('span'); bal.className='ou-bal'; bal.textContent=nf(fmtTonOnline(typeof u==='string'?0:u.ton))+' TON';
-    chip.append(av);     if(adm==='designer'||adm==='badge4') chip.append(admBadge(adm,20)); chip.append(nm,bal); if(adm&&adm!=='designer'&&adm!=='badge4') chip.append(admBadge(adm,20)); box.append(chip);
+    chip.append(av);
+    if(adm) chip.append(admBadge(adm,20));
+    if(hasBadge4) chip.append(admBadge('badge4',20));
+    chip.append(nm,bal);
+    box.append(chip);
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
 }

@@ -491,7 +491,8 @@
         return {
           id: u.uid,
           name: u.name,
-          admin: u.isChatAdmin ? 'boy' : (u.badge4 ? 'badge4' : (u.isDesigner ? 'designer' : undefined)),
+          admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined),
+          badge4: u.badge4 === true,
           muted: u.chatMuted === true,
           me: SESSION.uid != null && String(u.uid) === String(SESSION.uid),
           ton: Number(u.ton) || 0

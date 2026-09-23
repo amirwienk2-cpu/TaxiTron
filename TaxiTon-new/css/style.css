@@ -447,6 +447,7 @@ body.en .online-bar{direction:ltr}
 .ou .ou-name{order:2}
 .ou .ou-bal{order:4}
 .ou .adm-designer{order:3;margin-inline:0}
+.ou .adm-badge4{order:1;margin-inline:0}
 .ou.more{display:block;text-align:center;padding:5px;font-weight:800;font-size:12px;color:#ffd84a;direction:ltr}
 
 /* Admin badge (boy / girl sticker) */
