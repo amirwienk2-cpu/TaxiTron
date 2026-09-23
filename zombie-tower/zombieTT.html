@@ -201,7 +201,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         <button class="chip" type="button" data-v="0.5">0.5</button>
         <button class="chip" type="button" data-v="1">1</button>
       </div>
-      <button class="big" id="create" type="button">Raum für 0.01 TON erstellen</button>
+      <button class="big" id="create" type="button" onclick="if(window.__createZombieRoom) window.__createZombieRoom()">Raum für 0.01 TON erstellen</button>
     </div>
 
     <div class="box">
@@ -932,6 +932,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   // ---------- wiring ----------
   $('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; stake = Number(b.dataset.v); renderLobby(); });
   $('homeBtn').onclick = () => { window.location.href = '/TaxiTon-new/index-new.html'; };
+  window.__createZombieRoom = createRoom;
   $('create').onclick = createRoom;
   $('hi').onclick = () => pick('hi');
   $('lo').onclick = () => pick('lo');
