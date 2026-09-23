@@ -498,7 +498,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     const body = options.body && typeof options.body !== 'string' ? Object.assign({}, options.body, { token: apiToken }) : options.body;
     const response = await fetchWithTimeout(API_BASE + path, Object.assign({}, options, { headers, body: body && typeof body !== 'string' ? JSON.stringify(body) : body }));
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw Object.assign(new Error(data.error || 'request-failed'), { data });
+    if (!response.ok) throw Object.assign(new Error(data.error || 'request-failed'), { data, status: response.status });
     return data;
   }
   function normalizeServerGame(g) {
@@ -654,10 +654,14 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
           if (!await loadTaxiTronBalance() || !serverMode) throw e;
           data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
         }
-        serverGame = normalizeServerGame(data.game); viewId = serverGame.id; await refreshServerLobby();
+        serverGame = normalizeServerGame(data && data.game);
+        if (!serverGame || !serverGame.id) throw new Error('invalid-create-response');
+        viewId = serverGame.id;
+        await refreshServerLobby();
       } catch (e) {
         const code = e.data && e.data.error;
-        toast(e && e.name === 'TypeError' ? 'Netzwerkfehler. Bitte Verbindung prüfen.' : code === 'insufficient-funds' ? T('t_nofunds') : code === 'invalid-or-expired-token' ? T('t_authfail') : code === 'user-banned' ? 'Account gesperrt.' : T('t_createfail') + (code ? ' (' + code + ')' : ''));
+        const detail = code || (e && e.message) || 'unbekannter-fehler';
+        toast(e && e.name === 'TypeError' ? 'Netzwerkfehler. Bitte Verbindung prüfen.' : code === 'insufficient-funds' ? T('t_nofunds') : code === 'invalid-or-expired-token' ? T('t_authfail') : code === 'user-banned' ? 'Account gesperrt.' : T('t_createfail') + ' (' + detail + (e && e.status ? ', HTTP ' + e.status : '') + ')');
       } finally {
         createButton.disabled = false;
         createButton.removeAttribute('aria-busy');
