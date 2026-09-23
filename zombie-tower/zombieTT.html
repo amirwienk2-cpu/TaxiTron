@@ -418,15 +418,21 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   async function loadTaxiTronBalance(){
     const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && typeof tg.ready === 'function') tg.ready();
+    if (tg && typeof tg.expand === 'function') tg.expand();
     const initData = tg && tg.initData;
     if (!initData) return false;
-    try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
-      });
-      if (!response.ok) return false;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData })
+        });
+        if (!response.ok) {
+          if (response.status >= 500 && attempt < 2) throw new Error('auth-server-unavailable');
+          return false;
+        }
       const data = await response.json();
       apiToken = data.token || '';
       serverMode = !!apiToken;
@@ -436,9 +442,11 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       if (data.state && data.state.uid) localStorage.setItem('cr3d_serverUid', String(data.state.uid));
       localStorage.setItem('cr3d_points', String(balance));
       return true;
-    } catch (error) {
-      return false;
+      } catch (error) {
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
+    return false;
   }
   async function serverApi(path, options = {}) {
     const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -569,7 +577,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       }
       return;
     }
-    if (!db) return;
+    if (!db) { toast(T('t_authfail')); return; }
     if (wallet.bal < stake) { toast(T('t_nofunds')); return; }
     if (rooms.some(r => r.host === me && r.status === 'open')) { toast(T('t_hasroom')); return; }
     wallet.bal -= stake; await saveWallet();
@@ -750,7 +758,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   function renderLobby(){
     $('create').textContent = T('create_btn', { s: stake < 0.1 ? stake.toFixed(2) : stake });
-    $('create').disabled = !db && !serverMode;
+    $('create').disabled = false;
     document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.v) === stake));
     const box = $('rooms');
     if (!db && !serverMode) return;
