@@ -507,7 +507,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     Object.keys(g.picks || {}).forEach((id) => { picks[id] = { d: g.picks[id].choice, r: g.picks[id].round }; });
     return Object.assign({}, g, {
       host: g.players[0] && g.players[0].id, guest: g.players[1] && g.players[1].id,
-      created: g.createdAt, floors: g.floors || {}, picks, card: g.card,
+      created: Number(g.createdAt || Date.now()), floors: g.floors || {}, picks, card: g.card,
       hist: g.hist || [], last: g.last, winner: g.winner,
     });
   }

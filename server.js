@@ -924,7 +924,7 @@ function zombieTowerPublic(game, uid) {
     if (String(id) === String(uid)) visiblePicks[id].choice = game.picks[id].choice;
   });
   return {
-    id: game.id, status: game.status, stake: ZOMBIE_TOWER_STAKE, pot: 0.02,
+    id: game.id, status: game.status, createdAt: game.createdAt, stake: ZOMBIE_TOWER_STAKE, pot: 0.02,
     winnerPayout: 0.018, platformFee: 0.002, round: game.round,
     card: game.card, deadline: game.deadline, floors: game.floors, picks: visiblePicks,
     hist: game.hist, last: game.last, sd: !!game.sd, winner: game.winner || null,
