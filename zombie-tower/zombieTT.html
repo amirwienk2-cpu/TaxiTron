@@ -608,14 +608,18 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   async function createRoom(){
     setCreateStatus('Verbinde mit dem Server …');
-    if (!serverMode) {
-      const authenticated = await loadTaxiTronBalance();
-      if (!authenticated || !serverMode) {
-        toast('Server nicht erreichbar oder Telegram-Anmeldung fehlt.');
-        return;
+    try {
+      if (!serverMode) {
+        const authenticated = await Promise.race([
+          loadTaxiTronBalance(),
+          new Promise(resolve => setTimeout(() => resolve(false), 10000))
+        ]);
+        if (!authenticated || !serverMode) {
+          toast('Server nicht erreichbar oder Telegram-Anmeldung fehlt.');
+          return;
+        }
       }
-    }
-    if (serverMode) {
+      if (serverMode) {
       const createButton = $('create');
       createButton.disabled = true;
       createButton.setAttribute('aria-busy', 'true');
@@ -640,17 +644,20 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         createButton.removeAttribute('aria-busy');
       }
       return;
-    }
-    if (!db) { toast(T('t_authfail')); return; }
-    if (wallet.bal < stake) { toast(T('t_nofunds')); return; }
-    if (rooms.some(r => r.host === me && r.status === 'open')) { toast(T('t_hasroom')); return; }
-    wallet.bal -= stake; await saveWallet();
-    try {
-      const ref = db.collection('rooms').doc();
-      await ref.set({ host: me, guest: null, stake, status: 'open', created: Date.now(), round: 0, floors: {}, picks: {}, hist: [] });
-    } catch(e){
-      wallet.bal += stake; await saveWallet();
-      toast(e && e.code === 'quota_exceeded' ? T('t_quota') : T('t_createfail'));
+      }
+      if (!db) { toast(T('t_authfail')); return; }
+      if (wallet.bal < stake) { toast(T('t_nofunds')); return; }
+      if (rooms.some(r => r.host === me && r.status === 'open')) { toast(T('t_hasroom')); return; }
+      wallet.bal -= stake; await saveWallet();
+      try {
+        const ref = db.collection('rooms').doc();
+        await ref.set({ host: me, guest: null, stake, status: 'open', created: Date.now(), round: 0, floors: {}, picks: {}, hist: [] });
+      } catch(e){
+        wallet.bal += stake; await saveWallet();
+        toast(e && e.code === 'quota_exceeded' ? T('t_quota') : T('t_createfail'));
+      }
+    } catch (e) {
+      toast(e && e.name === 'AbortError' ? 'Server antwortet nicht.' : 'Raum konnte nicht erstellt werden.');
     }
   }
 
