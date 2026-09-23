@@ -2807,6 +2807,7 @@
   const qualityProfiles = safeDevice
     ? [{ pixelRatio:1.25, renderFps:24 }, { pixelRatio:1.5, renderFps:30 }, { pixelRatio:Math.min(window.devicePixelRatio, 2.5), renderFps:40 }]
     : [{ pixelRatio:1.25, renderFps:30 }, { pixelRatio:1.75, renderFps:45 }, { pixelRatio:2, renderFps:60 }, { pixelRatio:Math.min(window.devicePixelRatio, 3), renderFps:60 }];
+  const adaptiveQualityEnabled = false;
   let qualityIndex = qualityProfiles.length - 1;
   let qualityStableTime = 0;
   let qualitySampleTime = 0;
@@ -4487,7 +4488,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       qualityRenderedFrames++;
     }
     qualitySampleTime += dt;
-    if (qualitySampleTime >= 2){
+    if (adaptiveQualityEnabled && qualitySampleTime >= 2){
       const measuredFps = qualityRenderedFrames / qualitySampleTime;
       qualityRenderedFrames = 0;
       qualitySampleTime = 0;
