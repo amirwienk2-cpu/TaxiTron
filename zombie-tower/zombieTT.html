@@ -530,6 +530,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         toast(T('t_authfail'));
         return;
       }
+      setLobbyStatus(code ? 'Serverfehler: ' + code : 'Server nicht erreichbar.');
       toast(code ? T('t_conn') + ' (' + code + ')' : 'Server nicht erreichbar.');
     }
   }
@@ -839,13 +840,25 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   // ---------- rendering ----------
   function show(which){ $('quit').style.display = which === 'game' ? '' : 'none'; $('lobby').style.display = which === 'lobby' ? 'flex' : 'none'; $('game').style.display = which === 'game' ? 'flex' : 'none'; }
+  function setLobbyStatus(msg){
+    const box = $('rooms');
+    if (!box) return;
+    box.textContent = '';
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = msg;
+    box.appendChild(p);
+  }
 
   function renderLobby(){
     $('create').textContent = T('create_btn', { s: stake < 0.1 ? stake.toFixed(2) : stake });
     $('create').disabled = false;
     document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.v) === stake));
     const box = $('rooms');
-    if (!db && !serverMode) return;
+    if (!db && !serverMode) {
+      setLobbyStatus('Telegram-Anmeldung fehlt. Öffne die Mini-App neu.');
+      return;
+    }
     const now = Date.now();
     const open = rooms.filter(r => r.status === 'open' && now - r.created < 2 * 3600e3).sort((a, b) => (b.host === me) - (a.host === me) || b.created - a.created);
     box.textContent = '';
@@ -1034,7 +1047,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   $('bal').textContent = fmt(wallet.bal);
   renderLobby(); show('lobby');
   (async () => {
-    await loadTaxiTronBalance();
+    const authenticated = await loadTaxiTronBalance();
     const c = window.claude;
     if (c && typeof c.use === 'function' && !serverMode) {
       [db, user] = await Promise.all([c.use('db'), c.use('user')]);
@@ -1046,6 +1059,10 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       $('mpNote').dataset.i18n = 'mp_note'; $('mpNote').textContent = T('mp_note');
       await refreshServerLobby();
       setInterval(refreshServerLobby, 1200);
+      return;
+    }
+    if (!authenticated) {
+      setLobbyStatus('Telegram-Anmeldung fehlt. Öffne die Mini-App neu.');
       return;
     }
     if (!db) {
