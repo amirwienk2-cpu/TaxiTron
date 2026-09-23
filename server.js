@@ -1320,6 +1320,9 @@ app.get(['/','/index.html'], (req, res) => {
   const target = '/TaxiTon-new/index-new.html?v=20260922' + (query ? '&' + query : '');
   res.redirect(302, target);
 });
+app.get('/magic-tower-hilo.html', (req, res) => {
+  res.redirect(302, '/zombie.html');
+});
 app.get('/legacy-game.html', (req, res) => {
   res.set({
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
