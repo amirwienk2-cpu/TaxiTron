@@ -345,12 +345,17 @@ function admBadge(kind,h){
 }
 // Messages with data-admin="boy|girl" get the badge next to the name
 function renderChatBadges(){
-  document.querySelectorAll('#chatList .msg[data-badge],#chatList .msg[data-admin]').forEach(m=>{
+  document.querySelectorAll('#chatList .msg[data-badge],#chatList .msg[data-admin],#chatList .msg[data-badge4]').forEach(m=>{
     const nameEl=m.querySelector(':scope > b'); if(!nameEl) return;
     nameEl.querySelectorAll('.adm').forEach(x=>x.remove());
-    const kind=m.dataset.badge||m.dataset.admin;
-    const badge=admBadge(kind,kind==='badge4'?34:26);
-    if(kind==='designer') nameEl.prepend(badge); else nameEl.append(badge);
+    const kinds=[];
+    const primary=m.dataset.badge||m.dataset.admin;
+    if(primary&&primary!=='badge4') kinds.push(primary);
+    if(m.dataset.badge4==='true'||primary==='badge4') kinds.push('badge4');
+    kinds.forEach(kind=>{
+      const badge=admBadge(kind,kind==='badge4'?26:26);
+      if(kind==='designer') nameEl.prepend(badge); else nameEl.append(badge);
+    });
   });
 }
 function renderOnline(){
@@ -398,7 +403,10 @@ TT.setOnline=x=>{
 TT.addMessage=(m)=>{
   m=m||{};
   if(m.mid!==undefined&&Array.from(chatList.querySelectorAll('.msg[data-mid]')).some(el=>el.dataset.mid===String(m.mid))) return;
-  const d=document.createElement('div'); d.className='msg'+(m.me?' me':'')+(m.randomWinner?' random-winner':''); if(m.badge||m.admin) d.dataset.badge=m.badge||m.admin;
+  const d=document.createElement('div'); d.className='msg'+(m.me?' me':'')+(m.randomWinner?' random-winner':'');
+  if(m.admin) d.dataset.admin=m.admin;
+  if(m.badge&&m.badge!=='badge4') d.dataset.badge=m.badge;
+  if(m.badge4===true||m.badge==='badge4') d.dataset.badge4='true';
   if(m.id!==undefined) d.dataset.uid=m.id;
   if(m.mid!==undefined) d.dataset.mid=m.mid;
   if(m.muted!==undefined) d.dataset.muted=m.muted?'true':'false';
@@ -938,10 +946,19 @@ TT.setUserMod=(u,st)=>{
     document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{el.dataset.muted=muted});
     if(typeof st.badge4==='boolean'){
       document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{
-        el.dataset.badge=st.badge4?'badge4':'';
-        el.querySelectorAll('.adm').forEach(x=>x.remove());
-        const nameEl=el.matches('.msg')?el.querySelector(':scope > b'):el.querySelector('.ou-name');
-        if(nameEl&&st.badge4) nameEl.append(admBadge('badge4',el.matches('.msg')?34:20));
+        if(el.matches('.msg')){
+          if(st.badge4) el.dataset.badge4='true'; else delete el.dataset.badge4;
+          renderChatBadges();
+        } else {
+          el.dataset.badge4=st.badge4?'true':'false';
+          el.querySelectorAll('.adm').forEach(x=>x.remove());
+          const nameEl=el.querySelector('.ou-name');
+          if(nameEl){
+            const adminKind=el.dataset.badge;
+            if(adminKind) nameEl.append(admBadge(adminKind,20));
+            if(st.badge4) nameEl.append(admBadge('badge4',20));
+          }
+        }
       });
     }
   }
