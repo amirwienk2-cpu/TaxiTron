@@ -132,6 +132,8 @@ function runRandomDraw() {
 
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
+const DEPOSIT_LEDGER_FILE = path.join(DATA_DIR, 'deposit-ledger.json');
+const DEPOSIT_LOCK_FILE = path.join(DATA_DIR, 'deposit-processing.lock');
 const RPS_FILE = path.join(DATA_DIR, 'rps-games.json');
 const MAGIC_TOWER_FILE = path.join(DATA_DIR, 'magic-tower-games.json');
 const INVITE_CAMPAIGN_FILE = path.join(DATA_DIR, 'invite-campaign.json');
@@ -329,6 +331,61 @@ function persist() {
         console.error('[storage] write failed: ' + err.message);
         resolve();
         return;
+      }
+
+      let depositLedgerIds = new Set();
+      try {
+        if (fs.existsSync(DEPOSIT_LEDGER_FILE)) {
+          const loaded = JSON.parse(fs.readFileSync(DEPOSIT_LEDGER_FILE, 'utf8'));
+          if (Array.isArray(loaded)) depositLedgerIds = new Set(loaded.map((id) => String(id).toLowerCase()));
+        }
+      } catch (e) {
+        console.error('[deposit] ledger unreadable: ' + e.message);
+      }
+
+      function refreshDepositLedger() {
+        try {
+          if (fs.existsSync(DEPOSIT_LEDGER_FILE)) {
+            const loaded = JSON.parse(fs.readFileSync(DEPOSIT_LEDGER_FILE, 'utf8'));
+            if (Array.isArray(loaded)) depositLedgerIds = new Set(loaded.map((id) => String(id).toLowerCase()));
+          }
+        } catch (e) {
+          console.error('[deposit] ledger refresh failed: ' + e.message);
+        }
+      }
+
+      function persistDepositLedger() {
+        const tmp = DEPOSIT_LEDGER_FILE + '.tmp';
+        fs.writeFileSync(tmp, JSON.stringify(Array.from(depositLedgerIds).slice(-5000)));
+        fs.renameSync(tmp, DEPOSIT_LEDGER_FILE);
+      }
+
+      async function withSharedDepositLock(operation) {
+        let handle;
+        for (;;) {
+          try {
+            handle = fs.openSync(DEPOSIT_LOCK_FILE, 'wx');
+            break;
+          } catch (e) {
+            if (e.code !== 'EEXIST') throw e;
+            try {
+              const age = Date.now() - fs.statSync(DEPOSIT_LOCK_FILE).mtimeMs;
+              if (age > 60000) fs.unlinkSync(DEPOSIT_LOCK_FILE);
+            } catch (statError) {
+              if (statError.code !== 'ENOENT') throw statError;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+        }
+        try {
+          refreshDepositLedger();
+          return await operation();
+        } finally {
+          try { fs.closeSync(handle); } catch (e) { console.error('[deposit] lock close failed: ' + e.message); }
+          try { fs.unlinkSync(DEPOSIT_LOCK_FILE); } catch (e) {
+            if (e.code !== 'ENOENT') console.error('[deposit] lock cleanup failed: ' + e.message);
+          }
+        }
       }
       fs.rename(tmp, DATA_FILE, (err2) => {
         if (err2) console.error('[storage] rename failed: ' + err2.message);
@@ -2006,6 +2063,7 @@ async function tonApiJson(pathname) {
 function hasRecordedDeposit(depositId) {
   const id = String(depositId || '').toLowerCase();
   if (!id) return false;
+  if (depositLedgerIds.has(id)) return true;
   return Object.values(users).some((user) => {
     const txs = Array.isArray(user.depositTxs) ? user.depositTxs : [];
     if (txs.includes(id)) return true;
@@ -2021,7 +2079,7 @@ function withDepositLock(operation) {
   depositOperation = new Promise((resolve) => {
     release = resolve;
   });
-  return previous.then(operation).finally(() => release());
+  return previous.then(() => withSharedDepositLock(operation)).finally(() => release());
 }
 
 async function scanDeposits() {
@@ -2053,6 +2111,8 @@ async function scanDeposits() {
           if (!Array.isArray(user.deposits)) user.deposits = [];
           user.deposits.push({ ts: Date.now(), amount: amountTon, txId });
           if (user.deposits.length > 200) user.deposits = user.deposits.slice(-200);
+          depositLedgerIds.add(txId);
+          persistDepositLedger();
           changed = true;
           console.log('[deposit] credited ' + amountTon + ' TON to user ' + user.id);
           notifyAdminDeposit(user, amountTon);
@@ -2118,6 +2178,9 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
       if (!Array.isArray(user.deposits)) user.deposits = [];
       user.deposits.push({ ts: Date.now(), amount, txId: canonicalEventId });
       if (user.deposits.length > 200) user.deposits = user.deposits.slice(-200);
+      depositLedgerIds.add(canonicalEventId);
+      depositLedgerIds.add(txHash);
+      persistDepositLedger();
       persist();
       notifyAdminDeposit(user, amount);
       res.json({ state: publicState(user), amount });
