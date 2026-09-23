@@ -386,6 +386,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   // ---------- state ----------
   let db = null, user = null, me = 'local';
   let serverMode = false, apiToken = '', serverRooms = [], serverGame = null, serverSettled = {};
+  let authRunId = 0;
   const API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? ''
     : 'https://taxitron-production.up.railway.app';
@@ -432,6 +433,8 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   }
 
   async function loadTaxiTronBalance(){
+    const runId = ++authRunId;
+    const isCurrent = () => runId === authRunId;
     const tg = window.Telegram && window.Telegram.WebApp;
     if (tg && typeof tg.ready === 'function') tg.ready();
     if (tg && typeof tg.expand === 'function') tg.expand();
@@ -447,6 +450,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         const response = await fetchWithTimeout(API_BASE + '/api/zombie-tower/lobby?token=' + encodeURIComponent(savedToken));
         if (!response.ok) return false;
         const data = await response.json();
+        if (!isCurrent()) return false;
         apiToken = savedToken;
         serverMode = true;
         serverBalance = Number(data.state && data.state.ton);
@@ -469,6 +473,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
           return false;
         }
       const data = await response.json();
+      if (!isCurrent()) return false;
       apiToken = data.token || '';
       serverMode = !!apiToken;
       if (data.state && data.state.uid) me = String(data.state.uid);
@@ -626,7 +631,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       if (!serverMode) {
         const authenticated = await Promise.race([
           loadTaxiTronBalance(),
-          new Promise(resolve => setTimeout(() => resolve(false), 10000))
+          new Promise(resolve => setTimeout(() => { authRunId += 1; resolve(false); }, 10000))
         ]);
         if (!authenticated || !serverMode) {
           toast('Server nicht erreichbar oder Telegram-Anmeldung fehlt.');
@@ -1051,7 +1056,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     try {
       authenticated = await Promise.race([
         loadTaxiTronBalance(),
-        new Promise(resolve => setTimeout(() => resolve(false), 10000))
+        new Promise(resolve => setTimeout(() => { authRunId += 1; resolve(false); }, 10000))
       ]);
     } catch (e) {
       authenticated = false;
