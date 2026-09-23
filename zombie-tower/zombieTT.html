@@ -420,7 +420,11 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     const tg = window.Telegram && window.Telegram.WebApp;
     if (tg && typeof tg.ready === 'function') tg.ready();
     if (tg && typeof tg.expand === 'function') tg.expand();
-    const initData = tg && tg.initData;
+    let initData = tg && tg.initData;
+    for (let wait = 0; !initData && wait < 20; wait += 1) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      initData = tg && tg.initData;
+    }
     if (!initData) {
       try {
         const savedToken = localStorage.getItem('cr3d_serverToken');
