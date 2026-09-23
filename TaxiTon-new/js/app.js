@@ -349,7 +349,7 @@ function renderChatBadges(){
     const nameEl=m.querySelector(':scope > b'); if(!nameEl) return;
     nameEl.querySelectorAll('.adm').forEach(x=>x.remove());
     const kind=m.dataset.badge||m.dataset.admin;
-    const badge=admBadge(kind,34);
+    const badge=admBadge(kind,kind==='badge4'?34:26);
     if(kind==='designer') nameEl.prepend(badge); else nameEl.append(badge);
   });
 }
