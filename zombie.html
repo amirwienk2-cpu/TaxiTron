@@ -849,6 +849,8 @@
     try { const d = await api('/api/auth', { method: 'POST', body: JSON.stringify({ initData }) }); token = d.token; renderBalance(d.state); pollTimer = setInterval(refresh, 2000); } catch (e) { setStatus('Authentifizierung nicht verf�gbar.'); enterGameBtn.disabled = true; }
   }
   async function join() {
+    gameDismissed = false;
+    resultShownForGameId = null;
     try { const d = await api('/api/magic-tower/join', { method: 'POST', body: JSON.stringify({ token }) }); renderBalance(d.state); render(d.game); stakeOverlay.classList.add('show'); } catch (e) { setStatus(e.message === 'insufficient-funds' ? 'Nicht genug TON f�r den Einsatz von 0.1 TON.' : 'Lobby nicht verf�gbar.'); stakeConfirmBtn.disabled = true; }
   }
   enterGameBtn.addEventListener('click', async () => {

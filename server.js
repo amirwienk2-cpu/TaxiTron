@@ -1532,11 +1532,14 @@ app.get('/api/magic-tower/state', requireUserFromQuery, (req, res) => {
   expireMagicTowerGames();
   const timedOut = Object.values(magicTowerGames).some(enforceMagicTowerTurnTimeout);
   if (timedOut) persistMagicTowerGames();
-  const game = Object.values(magicTowerGames).find((item) => {
+  const userGames = Object.values(magicTowerGames).filter((item) => {
     if (!item.players.some((p) => String(p.id) === String(req.uid))) return false;
     if (item.status === 'cancelled') return false;
     if (item.status === 'finished') return Date.now() - Number(item.finishedAt || 0) <= MAGIC_TOWER_RESULT_TTL_MS;
     return true;
+  });
+  const game = userGames.find((item) => item.status !== 'finished') || userGames.find((item) => {
+    return item.status === 'finished';
   });
   if (!game) return res.json({ state: publicState(req.user), game: null });
   req.user.lastSeenAt = Date.now();
