@@ -879,8 +879,9 @@ const RANDOM_PROMO_END=RANDOM_PROMO_START+72*60*60*1000;
 const randomPromoTimer=document.getElementById('randomPromoTimer');
 function formatPromoTime(ms){
   const total=Math.max(0,Math.floor(ms/1000));
-  const d=Math.floor(total/86400), h=Math.floor(total%86400/3600), m=Math.floor(total%3600/60);
-  return d>0 ? `${d}d ${h}h ${m}m` : `${h}h ${m}m`;
+  const d=Math.floor(total/86400), h=Math.floor(total%86400/3600), m=Math.floor(total%3600/60), s=total%60;
+  const seconds=String(s).padStart(2,'0');
+  return d>0 ? `${d}d ${h}h ${m}m ${seconds}s` : `${h}h ${m}m ${seconds}s`;
 }
 function renderRandomPromoTimer(){
   if(!randomPromoTimer) return;
