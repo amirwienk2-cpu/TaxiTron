@@ -3788,7 +3788,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     if (!running || nitroUsed || nitroActive) return;
     nitroActive = true;
     nitroUsed = true;
-    nitroTimeLeft = 30;
+    nitroTimeLeft = 50;
     updateNitroHud();
   }
 
