@@ -1666,7 +1666,7 @@ app.get('/api/zombie-tower/lobby', requireUserFromQuery, (req, res) => {
   expireZombieTowerGames();
   const uid = String(req.uid);
   const rooms = Object.values(zombieTowerGames)
-    .filter((game) => game.status === 'open' && !game.players.some((p) => String(p.id) === uid))
+    .filter((game) => game.status === 'open')
     .sort((a, b) => b.createdAt - a.createdAt).slice(0, 50)
     .map((game) => zombieTowerPublic(game, uid));
   const mine = Object.values(zombieTowerGames)
