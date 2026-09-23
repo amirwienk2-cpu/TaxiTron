@@ -549,7 +549,8 @@
   <div class="overlay" id="overlay">    <div class="overlay-card">
       <h2 id="overlayTitle">Turm bezwungen!</h2>
       <p id="overlayText"></p>
-      <button class="restart" id="overlayRestart" style="margin-top:0;">Nochmal spielen</button>
+      <button class="restart" id="overlayRestart" data-i="playAgain" style="margin-top:0;">Nochmal spielen</button>
+      <button class="restart" id="overlayBackToLobby" data-i="backToLobby" style="margin-top:10px;">Zur Spiele-Lobby</button>
     </div>
   </div>
   <div class="tower-langs" id="towerLangs">
@@ -569,21 +570,24 @@
       you:'DU', opponent:'GEGNER', lower:'▼ Tiefer', higher:'▲ Höher', restart:'Turm neu bauen', lobby:'Lobby', secondPlayer:'Zweiter Spieler', enterGame:'Spiel betreten', backToLobby:'Zur Spiele-Lobby',
       pool:'Preispool', stakeNote:'Gewinner erhält 90 % des Pools (0.18 TON) · 10 % Gebühr. Echter Einsatz aus deinem Server-Guthaben.', ready:'Bereit',
       roomsTitle:'Spiele-Lobby', roomsEmpty:'Noch keine Spiele.', waiting:'Wartet auf Spieler', playing:'Läuft',
-      balance:'Guthaben', unavailable:'nicht verfügbar', previewNote:'Vorschau – Demo-Spiele, kein Echtgeld'
+      balance:'Guthaben', unavailable:'nicht verfügbar', previewNote:'Vorschau – Demo-Spiele, kein Echtgeld',
+      wonTitle:'Du hast gewonnen!', lostTitle:'Du hast verloren', wonText:'Auszahlung: +0.18 TON (Plattformgebühr: 0.02 TON).', lostText:'Dein Einsatz von 0.1 TON ist verloren.', playAgain:'Nochmal spielen'
     },
     fa: {
       title:'برج زامبی', subtitle:'پیش‌بینی کن کارت بعدی <b style="color:var(--ink)">بالاتر</b> یا <b style="color:var(--ink)">پایین‌تر</b> است. با حدس درست یک طبقه بالا می‌روی؛ هرکس زودتر به بالا برسد برنده است.',
       you:'شما', opponent:'حریف', lower:'▼ پایین‌تر', higher:'▲ بالاتر', restart:'ساخت دوباره برج', lobby:'لابی', secondPlayer:'بازیکن دوم', enterGame:'ورود به بازی', backToLobby:'بازگشت به لابی',
       pool:'مجموع جایزه', stakeNote:'برنده ۹۰٪ استخر (۰٫۱۸ TON) را می‌گیرد · ۱۰٪ کارمزد است. شرط واقعی از موجودی سرور کسر می‌شود.', ready:'آماده',
       roomsTitle:'لابی بازی‌ها', roomsEmpty:'هنوز بازی‌ای نیست.', waiting:'منتظر بازیکن', playing:'در حال بازی',
-      balance:'موجودی', unavailable:'در دسترس نیست', previewNote:'پیش‌نمایش – بازی آزمایشی، بدون پول واقعی'
+      balance:'موجودی', unavailable:'در دسترس نیست', previewNote:'پیش‌نمایش – بازی آزمایشی، بدون پول واقعی',
+      wonTitle:'شما برنده شدید!', lostTitle:'شما باختید', wonText:'پرداخت: +۰٫۱۸ TON (کارمزد پلتفرم: ۰٫۰۲ TON).', lostText:'شرط ۰٫۱ TON شما از دست رفت.', playAgain:'بازی دوباره'
     },
     en: {
       title:'Zombie Tower', subtitle:'Predict whether the next card is <b style="color:var(--ink)">higher</b> or <b style="color:var(--ink)">lower</b>. A correct guess moves you up one floor; the first to the top wins.',
       you:'YOU', opponent:'OPPONENT', lower:'▼ Lower', higher:'▲ Higher', restart:'Rebuild tower', lobby:'Lobby', secondPlayer:'Second player', enterGame:'Enter game', backToLobby:'Back to lobby',
       pool:'Prize pool', stakeNote:'Winner receives 90% of the pool (0.18 TON) · 10% fee. Real stake from your server balance.', ready:'Ready',
       roomsTitle:'Game lobby', roomsEmpty:'No games yet.', waiting:'Waiting for player', playing:'In progress',
-      balance:'Balance', unavailable:'not available', previewNote:'Preview – demo games, no real money'
+      balance:'Balance', unavailable:'not available', previewNote:'Preview – demo games, no real money',
+      wonTitle:'You won!', lostTitle:'You lost', wonText:'Payout: +0.18 TON (platform fee: 0.02 TON).', lostText:'Your 0.1 TON stake was lost.', playAgain:'Play again'
     }
   };
   let lang = 'de';
@@ -604,6 +608,7 @@
     if (uiReady) {
       renderRooms(displayedRooms);
       renderBalance(displayedState);
+      if (game && game.status === 'finished') renderFinished(game);
     }
   }
   langRoot.querySelector('#towerLangToggle').addEventListener('click', () => langRoot.classList.toggle('open'));
@@ -652,6 +657,12 @@
   const towerBot = el('towerBot');
   function setStatus(text) { statusEl.textContent = text; }
   function setButtons(enabled) { btnHigher.disabled = !enabled; btnLower.disabled = !enabled; }
+  function renderFinished(g) {
+    const dict = LANGS[lang];
+    const won = g.result && g.me && String(g.result.winnerId) === String(g.me.id);
+    overlayTitle.textContent = won ? dict.wonTitle : dict.lostTitle;
+    overlayText.textContent = won ? dict.wonText : dict.lostText;
+  }
   function api(path, options) {
     const opts = options || {}; opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
     return fetch(path, opts).then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'request-failed'); return d; });
@@ -723,7 +734,7 @@
     if (g.status === 'waiting') setStatus('Warte auf einen zweiten echten Spieler.');
     else if (g.status === 'ready') setStatus('Beide Spieler m�ssen bereit klicken.');
     else if (g.status === 'playing') { stakeOverlay.classList.remove('show'); setButtons(!(g.me && g.me.hasAction)); setStatus(g.me && g.me.hasAction ? 'Warte auf den Gegner �' : 'W�hle h�her oder tiefer.'); }
-    else if (g.status === 'finished') { setButtons(false); overlay.classList.add('show'); const won = g.result && String(g.result.winnerId) === String(g.me.id); overlayTitle.textContent = won ? 'Du hast gewonnen!' : 'Der Gegner gewinnt'; overlayText.textContent = won ? 'Auszahlung: +0.18 TON (Plattformgeb�hr: 0.02 TON).' : 'Dein Einsatz von 0.1 TON ist verloren.'; }
+    else if (g.status === 'finished') { setButtons(false); renderFinished(g); overlay.classList.add('show'); }
     if (g.lastRound && g.lastRound.next) { renderCard(g.lastRound.next); const right = g.me && g.lastRound.actions[String(g.me.id)]; setStatus('Karte: ' + rankLabels[g.lastRound.next.value - 2] + g.lastRound.next.suit + (right ? ' � Runde ausgewertet.' : '')); }
   }
   async function refresh() { if (!token) return; try { const d = await api('/api/magic-tower/state?token=' + encodeURIComponent(token)); renderBalance(d.state); if (d.game) render(d.game); refreshRooms(); } catch (e) { setStatus('Verbindung nicht verf�gbar.'); } }
@@ -742,12 +753,15 @@
     gameScreen.classList.add('show');
     try { await join(); } finally { busy = false; enterGameBtn.disabled = false; }
   });
-  el('backToLobbyBtn').addEventListener('click', () => {
+  function backToLobby() {
     stakeOverlay.classList.remove('show');
+    overlay.classList.remove('show');
     gameScreen.classList.remove('show');
     lobbyScreen.classList.remove('hidden');
     refreshRooms();
-  });
+  }
+  el('backToLobbyBtn').addEventListener('click', backToLobby);
+  el('overlayBackToLobby').addEventListener('click', backToLobby);
   stakeConfirmBtn.addEventListener('click', async () => { if (!game || busy || game.me.ready) return; busy = true; try { const d = await api('/api/magic-tower/ready', { method: 'POST', body: JSON.stringify({ token }) }); renderBalance(d.state); render(d.game); } catch (e) { setStatus(e.message); } finally { busy = false; } });
   async function play(choice) { if (!game || game.status !== 'playing' || busy || (game.me && game.me.hasAction)) return; busy = true; setButtons(false); try { const d = await api('/api/magic-tower/play', { method: 'POST', body: JSON.stringify({ token, gameId: game.id, choice }) }); renderBalance(d.state); render(d.game); } catch (e) { setStatus(e.message); } finally { busy = false; } }
   btnHigher.addEventListener('click', () => play('higher')); btnLower.addEventListener('click', () => play('lower'));
