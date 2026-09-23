@@ -518,9 +518,11 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       if (data.state && Number.isFinite(Number(data.state.ton))) {
         wallet.bal = Number(data.state.ton); serverBalance = wallet.bal; $('bal').textContent = fmt(wallet.bal);
       }
-      serverRooms = (data.rooms || []).map(normalizeServerGame);
-      serverGame = normalizeServerGame((data.mine || [])[0] || null);
-      rooms = serverRooms.concat(serverGame && !serverRooms.some(r => r.id === serverGame.id) ? [serverGame] : []);
+      serverRooms = (data.rooms || []).map(normalizeServerGame).filter(Boolean);
+      const mineRooms = (data.mine || []).map(normalizeServerGame).filter(Boolean);
+      serverGame = mineRooms.find(r => r.status === 'playing') || mineRooms[0] || serverGame;
+      const merged = serverRooms.concat(mineRooms);
+      rooms = merged.filter((room, index, list) => list.findIndex(item => item.id === room.id) === index);
       if (serverGame && serverGame.status === 'playing' && (!viewId || viewId === BOT)) viewId = serverGame.id;
       renderLobby(); afterChange();
     } catch (e) {
