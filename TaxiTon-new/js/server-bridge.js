@@ -518,6 +518,7 @@
           score: Number(e.best) || 0,
           me: false,
           admin: e.isChatAdmin ? 'boy' : (e.isDesigner ? 'designer' : undefined),
+          badge4: e.badge4 === true,
         };
       });
       var you = r.data.you;

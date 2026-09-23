@@ -2543,6 +2543,7 @@ app.get('/api/leaderboard', (req, res) => {
       best: e.best,
       isChatAdmin: user && user.isChatAdmin === true,
       isDesigner: user && user.isDesigner === true,
+      badge4: user && user.badge4 === true,
     };
   });
 

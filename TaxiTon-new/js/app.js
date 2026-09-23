@@ -1203,6 +1203,7 @@ TT.setLeaderboard=(entries)=>{
     const nameText=document.createElement('span'); nameText.className='lb-user-name'; nameText.textContent=e.name||T().youTag;
     nm.append(nameText);
     if(e.admin) nm.append(admBadge(e.admin,26));
+    if(e.badge4) nm.append(admBadge('badge4',26));
     if(e.me){ const tag=document.createElement('span'); tag.className='lb-you'; tag.textContent=T().youTag; nm.append(tag); }
     const sc=document.createElement('div'); sc.className='lb-score'; sc.textContent=(e.score||0)+' 🧟';
     row.append(rk,av,nm,sc);
