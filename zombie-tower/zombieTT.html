@@ -156,6 +156,8 @@ button:disabled{cursor:not-allowed}
 .winb .b3{left:35%;top:88.6%;width:30%;height:4.4%;font-size:clamp(11px,3vw,13px);text-decoration:underline;opacity:.8}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .langs{display:flex;gap:6px;margin-inline-start:auto}
+.home-btn{height:28px;padding:0 9px;border:1px solid rgba(157,255,46,.65);border-radius:5px;background:rgba(13,42,11,.85);color:var(--acid);font:600 12px var(--hud);cursor:pointer;white-space:nowrap;box-shadow:0 0 8px rgba(57,224,22,.2)}
+.home-btn:hover{background:rgba(57,224,22,.2);box-shadow:0 0 12px rgba(157,255,46,.45)}
 .lang{width:30px;height:21px;border-radius:3px;overflow:hidden;opacity:.55;box-shadow:0 0 0 1px rgba(255,255,255,.35);display:block}
 .lang svg{display:block;width:100%;height:100%}
 .lang[aria-pressed="true"]{opacity:1;box-shadow:0 0 0 2px var(--acid),0 0 10px rgba(157,255,46,.6)}
@@ -174,6 +176,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   <header class="hud">
     <div class="bal" aria-live="polite"><span id="bal">0.00</span><small>TON</small></div>
     <div class="langs" role="group" aria-label="Sprache / Language / زبان">
+      <button class="home-btn" id="homeBtn" type="button" data-i18n="home" aria-label="Back Home">⌂ Home</button>
       <button class="lang" type="button" data-lang="de" aria-label="Deutsch" title="Deutsch"><svg viewBox="0 0 5 3"><rect width="5" height="1" fill="#000"/><rect y="1" width="5" height="1" fill="#D00"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg></button>
       <button class="lang" type="button" data-lang="en" aria-label="English" title="English"><svg viewBox="0 0 60 30"><clipPath id="uks"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#uks)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg></button>
       <button class="lang" type="button" data-lang="fa" aria-label="فارسی" title="فارسی"><svg viewBox="0 0 7 4"><rect width="7" height="4" fill="#fff"/><rect width="7" height="1.33" fill="#239F40"/><rect y="2.67" width="7" height="1.33" fill="#DA0000"/><circle cx="3.5" cy="2" r=".42" fill="none" stroke="#DA0000" stroke-width=".14"/></svg></button>
@@ -275,7 +278,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       first_card: 'Erste Karte liegt. Höher oder niedriger?',
       rules: 'Gleich zählt immer als richtig. Richtig getippt: eine Stufe hoch. Falsch oder keine Wahl in 15 s: eine Stufe runter. Wer zuerst 12 erreicht, gewinnt. Kommen beide gleichzeitig oben an, geht es weiter, bis einer vorne liegt.',
       eaten: 'Gefressen!', to_lobby: 'Zur Lobby', new_room: 'Neuer Raum', top: 'Turmspitze!', opp_gone: 'Gegner weg!',
-      stake: 'Einsatz', rounds: 'Runden', floors: 'Punkte', create_btn: 'Raum für {s} TON erstellen',
+      stake: 'Einsatz', rounds: 'Runden', floors: 'Punkte', home: 'Home', create_btn: 'Raum für {s} TON erstellen',
       no_rooms: 'Gerade ist kein Raum offen. Erstelle einen und warte auf einen Gegner.',
       your_room: 'Dein Raum', waiting_self: 'Warte auf einen Gegner …', waiting_other: 'wartet auf einen Gegner',
       cancel: 'Abbrechen', invite_bot: 'Bot einladen', join: 'Beitreten', tiebreak: 'Stechen',
@@ -300,7 +303,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       first_card: 'First card is down. Higher or lower?',
       rules: 'Equal always counts as correct. Correct guess: one step up. Wrong guess or no pick within 15 s: one step down. First to 12 wins. If both reach the top together, play continues until one is ahead.',
       eaten: 'Eaten!', to_lobby: 'Back to lobby', new_room: 'New room', top: 'Top of the tower!', opp_gone: 'Opponent left!',
-      stake: 'Stake', rounds: 'Rounds', floors: 'Points', create_btn: 'Create room for {s} TON',
+      stake: 'Stake', rounds: 'Rounds', floors: 'Points', home: 'Home', create_btn: 'Create room for {s} TON',
       no_rooms: 'No open rooms right now. Create one and wait for an opponent.',
       your_room: 'Your room', waiting_self: 'Waiting for an opponent …', waiting_other: 'waiting for an opponent',
       cancel: 'Cancel', invite_bot: 'Invite bot', join: 'Join', tiebreak: 'Tiebreak',
@@ -325,7 +328,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       first_card: 'کارت اول آمد. بالاتر یا پایین‌تر؟',
       rules: 'مساوی همیشه درست حساب می‌شود. حدس درست: یک پله بالا. حدس غلط یا انتخاب نکردن در ۱۵ ثانیه: یک پله پایین. هر کس زودتر به ۱۲ برسد برنده است. اگر هر دو هم‌زمان به بالا برسند، بازی ادامه پیدا می‌کند تا یکی جلو بیفتد.',
       eaten: 'خورده شدی!', to_lobby: 'بازگشت به لابی', new_room: 'اتاق جدید', top: 'نوک برج!', opp_gone: 'حریف رفت!',
-      stake: 'مبلغ شرط', rounds: 'دورها', floors: 'امتیاز', create_btn: 'ساخت اتاق با {s} TON',
+      stake: 'مبلغ شرط', rounds: 'دورها', floors: 'امتیاز', home: 'خانه', create_btn: 'ساخت اتاق با {s} TON',
       no_rooms: 'الان هیچ اتاق بازی نیست. یکی بساز و منتظر حریف بمان.',
       your_room: 'اتاق تو', waiting_self: 'در انتظار حریف …', waiting_other: 'منتظر حریف است',
       cancel: 'لغو', invite_bot: 'دعوت از ربات', join: 'ورود', tiebreak: 'تساوی',
@@ -369,6 +372,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   // ---------- state ----------
   let db = null, user = null, me = 'local';
+  let serverMode = false, apiToken = '', serverRooms = [], serverGame = null, serverSettled = {};
   let wallet = { bal: START_BAL, settled: [] };
   let houseWallet = { bal: 0 };
   let serverBalance = null;
@@ -423,6 +427,8 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       });
       if (!response.ok) return false;
       const data = await response.json();
+      apiToken = data.token || '';
+      serverMode = !!apiToken;
       const balance = Number(data.state && data.state.ton);
       if (!Number.isFinite(balance) || balance < 0) return false;
       serverBalance = balance;
@@ -432,6 +438,38 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     } catch (error) {
       return false;
     }
+  }
+  async function serverApi(path, options = {}) {
+    const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+    const body = options.body && typeof options.body !== 'string' ? Object.assign({}, options.body, { token: apiToken }) : options.body;
+    const response = await fetch(path, Object.assign({}, options, { headers, body: body && typeof body !== 'string' ? JSON.stringify(body) : body }));
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw Object.assign(new Error(data.error || 'request-failed'), { data });
+    return data;
+  }
+  function normalizeServerGame(g) {
+    if (!g) return null;
+    const picks = {};
+    Object.keys(g.picks || {}).forEach((id) => { picks[id] = { d: g.picks[id].choice, r: g.picks[id].round }; });
+    return Object.assign({}, g, {
+      host: g.players[0] && g.players[0].id, guest: g.players[1] && g.players[1].id,
+      created: g.createdAt, floors: g.floors || {}, picks, card: g.card,
+      hist: g.hist || [], last: g.last, winner: g.winner,
+    });
+  }
+  async function refreshServerLobby() {
+    if (!serverMode) return;
+    try {
+      const data = await serverApi('/api/zombie-tower/lobby?token=' + encodeURIComponent(apiToken));
+      if (data.state && Number.isFinite(Number(data.state.ton))) {
+        wallet.bal = Number(data.state.ton); serverBalance = wallet.bal; $('bal').textContent = fmt(wallet.bal);
+      }
+      serverRooms = (data.rooms || []).map(normalizeServerGame);
+      serverGame = normalizeServerGame((data.mine || [])[0] || null);
+      rooms = serverRooms.concat(serverGame && !serverRooms.some(r => r.id === serverGame.id) ? [serverGame] : []);
+      if (serverGame && serverGame.status === 'playing' && (!viewId || viewId === BOT)) viewId = serverGame.id;
+      renderLobby(); afterChange();
+    } catch (e) { toast(T('t_conn')); }
   }
 
   function saveHouseFee(amount){
@@ -484,6 +522,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   async function tryResolve(d){
     if (resolving || !readyToResolve(d)) return;
     if (viewId === BOT) { botRoom = resolveDoc(d); afterChange(); scheduleBot(); return; }
+    if (serverMode) return;
     const amResolver = d.host === me || Date.now() > d.deadline + 4000;
     if (!amResolver) return;
     resolving = true;
@@ -505,11 +544,27 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     const mine = d.picks && d.picks[me] && d.picks[me].r === d.round;
     if (mine || prob(d.card, dir) === 0) return;
     if (viewId === BOT) { botRoom.picks[me] = { d: dir, r: d.round }; afterChange(); return; }
+    if (serverMode) {
+      try {
+        const data = await serverApi('/api/zombie-tower/play', { method: 'POST', body: { gameId: d.id, choice: dir } });
+        serverGame = normalizeServerGame(data.game);
+        rooms = rooms.map(r => r.id === d.id ? serverGame : r);
+        afterChange();
+      } catch (e) { toast(T('t_pick')); }
+      return;
+    }
     try { await roomRef(d.id).update({ picks: { [me]: { d: dir, r: d.round } } }); }
     catch(e){ toast(T('t_pick')); }
   }
 
   async function createRoom(){
+    if (serverMode) {
+      try {
+        const data = await serverApi('/api/zombie-tower/create', { method: 'POST', body: {} });
+        serverGame = normalizeServerGame(data.game); viewId = serverGame.id; await refreshServerLobby();
+      } catch (e) { toast(e.data && e.data.error === 'insufficient-funds' ? T('t_nofunds') : T('t_createfail')); }
+      return;
+    }
     if (!db) return;
     if (wallet.bal < stake) { toast(T('t_nofunds')); return; }
     if (rooms.some(r => r.host === me && r.status === 'open')) { toast(T('t_hasroom')); return; }
@@ -524,6 +579,13 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   }
 
   async function cancelRoom(id){
+    if (serverMode) {
+      try {
+        await serverApi('/api/zombie-tower/leave', { method: 'POST', body: { gameId: id } });
+        await refreshServerLobby();
+      } catch (e) { toast(T('t_cancelfail')); }
+      return;
+    }
     const ref = roomRef(id);
     try {
       const lease = await ref.acquire({ holder: me, ttlMs: 3000 });
@@ -536,6 +598,13 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   }
 
   async function joinRoom(id){
+    if (serverMode) {
+      try {
+        const data = await serverApi('/api/zombie-tower/join', { method: 'POST', body: { gameId: id } });
+        serverGame = normalizeServerGame(data.game); viewId = id; await refreshServerLobby();
+      } catch (e) { toast(e.data && e.data.error === 'insufficient-funds' ? T('t_nofunds_room') : T('t_joinfail')); }
+      return;
+    }
     const ref = roomRef(id);
     try {
       const lease = await ref.acquire({ holder: me, ttlMs: 3000 });
@@ -613,6 +682,14 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   // ---------- settlement ----------
   function settle(d){
+    if (serverMode && d && ['done', 'abandoned'].includes(d.status)) {
+      if (serverSettled[d.id]) return true;
+      serverSettled[d.id] = true;
+      if (d.winner === me) showResult(d, true, 0.018);
+      else if (d.status === 'abandoned') toast(T('t_abandoned'));
+      else showResult(d, false, 0);
+      return true;
+    }
     if (d && d.status === 'abandoned' && !wallet.settled.includes(d.id) && (d.host === me || d.guest === me)) {
       if (d.guest !== BOT || d.host === me) wallet.bal += d.stake;
       wallet.settled.push(d.id); saveWallet();
@@ -669,10 +746,10 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
 
   function renderLobby(){
     $('create').textContent = T('create_btn', { s: stake < 0.1 ? stake.toFixed(2) : stake });
-    $('create').disabled = !db || wallet.bal < stake;
+    $('create').disabled = (!db && !serverMode) || wallet.bal < stake;
     document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.v) === stake));
     const box = $('rooms');
-    if (!db) return;
+    if (!db && !serverMode) return;
     const now = Date.now();
     const open = rooms.filter(r => r.status === 'open' && now - r.created < 2 * 3600e3).sort((a, b) => (b.host === me) - (a.host === me) || b.created - a.created);
     box.textContent = '';
@@ -690,9 +767,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       const btn = document.createElement('button'); btn.type = 'button';
       if (r.host === me) {
         btn.className = 'cancel'; btn.textContent = T('cancel'); btn.onclick = () => cancelRoom(r.id);
-        const bb = document.createElement('button'); bb.type = 'button'; bb.textContent = T('invite_bot'); bb.onclick = () => addBotToRoom(r.id);
-        const acts = document.createElement('div'); acts.className = 'acts'; acts.append(bb, btn);
-        row.append(img, who, amt, acts);
+        row.append(img, who, amt, btn);
       } else {
         btn.textContent = T('join'); btn.disabled = wallet.bal < r.stake; btn.onclick = () => joinRoom(r.id);
         row.append(img, who, amt, btn);
@@ -768,6 +843,9 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   function afterChange(){
     const d = currentRoom();
     if (d && d.status === 'abandoned') { settle(d); return; }
+    if (serverMode && d && d.status === 'done' && serverSettled[d.id]) {
+      show('lobby'); renderLobby(); return;
+    }
     if (d && (d.status === 'playing' || d.status === 'done')) {
       show('game'); renderGame();
       if (d.status === 'done') { clearTimeout(botTimer); settle(d); }
@@ -805,11 +883,13 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     const d = currentRoom(); const wasBot = viewId === BOT;
     if (d) stake = d.stake;
     backToLobby();
-    if (wasBot || !db) startBot(); else createRoom();
+    if (wasBot || (!db && !serverMode)) return;
+    createRoom();
   }
 
   // ---------- wiring ----------
   $('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; stake = Number(b.dataset.v); renderLobby(); });
+  $('homeBtn').onclick = () => { window.location.href = '/TaxiTon-new/index-new.html'; };
   $('create').onclick = createRoom;
   $('hi').onclick = () => pick('hi');
   $('lo').onclick = () => pick('lo');
@@ -822,6 +902,12 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     if (Date.now() - quitArmed > 3000) { quitArmed = Date.now(); $('quit').textContent = T('quit_confirm'); setTimeout(() => { $('quit').textContent = T('quit'); }, 3000); return; }
     quitArmed = 0; $('quit').textContent = T('quit');
     const op = opponentOf(d);
+    if (serverMode) {
+      try { await serverApi('/api/zombie-tower/leave', { method: 'POST', body: { gameId: d.id } }); await refreshServerLobby(); }
+      catch (e) { toast(T('t_cancelfail')); }
+      backToLobby();
+      return;
+    }
     wallet.settled.push(d.id); await saveWallet();
     if (viewId === BOT) { backToLobby(); return; }
     try {
@@ -853,12 +939,18 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
   (async () => {
     await loadTaxiTronBalance();
     const c = window.claude;
-    if (c && typeof c.use === 'function') {
+    if (c && typeof c.use === 'function' && !serverMode) {
       [db, user] = await Promise.all([c.use('db'), c.use('user')]);
       if (user) { const id = await user.id(); if (id) me = id; }
       if (db && me === 'local') db = null;
     }
     await loadWallet();
+    if (serverMode) {
+      $('mpNote').dataset.i18n = 'mp_note'; $('mpNote').textContent = T('mp_note');
+      await refreshServerLobby();
+      setInterval(refreshServerLobby, 1200);
+      return;
+    }
     if (!db) {
       $('rooms').textContent = '';
       const p = document.createElement('p'); p.className = 'empty'; p.textContent = T('no_mp'); p.dataset.i18n = 'no_mp'; $('rooms').appendChild(p);

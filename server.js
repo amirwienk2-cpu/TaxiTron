@@ -134,6 +134,7 @@ const DATA_FILE = path.join(DATA_DIR, 'users.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
 const RPS_FILE = path.join(DATA_DIR, 'rps-games.json');
 const MAGIC_TOWER_FILE = path.join(DATA_DIR, 'magic-tower-games.json');
+const ZOMBIE_TOWER_FILE = path.join(DATA_DIR, 'zombie-tower-games.json');
 const INVITE_CAMPAIGN_FILE = path.join(DATA_DIR, 'invite-campaign.json');
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
@@ -252,6 +253,12 @@ try {
 } catch (e) {
   console.error('[magic-tower] games file unreadable: ' + e.message);
 }
+let zombieTowerGames = {};
+try {
+  if (fs.existsSync(ZOMBIE_TOWER_FILE)) zombieTowerGames = readJsonFile(ZOMBIE_TOWER_FILE);
+} catch (e) {
+  console.error('[zombie-tower] games file unreadable: ' + e.message);
+}
 
 let chatMessages = [];
 try {
@@ -357,6 +364,15 @@ function persistMagicTowerGames() {
     console.error('[magic-tower] write failed: ' + e.message);
   }
 }
+function persistZombieTowerGames() {
+  const tmp = ZOMBIE_TOWER_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(zombieTowerGames));
+    fs.renameSync(tmp, ZOMBIE_TOWER_FILE);
+  } catch (e) {
+    console.error('[zombie-tower] write failed: ' + e.message);
+  }
+}
 setInterval(expireRpsGames, 30000);
 setInterval(expireMagicTowerGames, 30000);
 
@@ -396,6 +412,12 @@ function flushSync() {
     fs.renameSync(MAGIC_TOWER_FILE + '.shutdown.tmp', MAGIC_TOWER_FILE);
   } catch (e) {
     console.error('[magic-tower] final flush failed: ' + e.message);
+  }
+  try {
+    fs.writeFileSync(ZOMBIE_TOWER_FILE + '.shutdown.tmp', JSON.stringify(zombieTowerGames));
+    fs.renameSync(ZOMBIE_TOWER_FILE + '.shutdown.tmp', ZOMBIE_TOWER_FILE);
+  } catch (e) {
+    console.error('[zombie-tower] final flush failed: ' + e.message);
   }
 }
 
@@ -886,6 +908,100 @@ const MAGIC_TOWER_CHOICES = new Set(['higher', 'lower']);
 const MAGIC_TOWER_TURN_TIMEOUT_MS = 10 * 1000;
 const MAGIC_TOWER_LOBBY_TTL_MS = 30 * 60 * 1000;
 const MAGIC_TOWER_RESULT_TTL_MS = 10 * 60 * 1000;
+const ZOMBIE_TOWER_STAKE = 0.01;
+const ZOMBIE_TOWER_TOP = 12;
+const ZOMBIE_TOWER_ROUND_MS = 15000;
+const ZOMBIE_TOWER_TTL_MS = 2 * 60 * 60 * 1000;
+const ZOMBIE_TOWER_CHOICES = new Set(['hi', 'lo']);
+function zombieTowerCard() {
+  return { r: crypto.randomInt(2, 15), s: ['♠', '♥', '♦', '♣'][crypto.randomInt(4)] };
+}
+function zombieTowerPublic(game, uid) {
+  const player = game.players.find((p) => String(p.id) === String(uid));
+  const visiblePicks = {};
+  Object.keys(game.picks || {}).forEach((id) => {
+    visiblePicks[id] = { round: game.picks[id].round };
+    if (String(id) === String(uid)) visiblePicks[id].choice = game.picks[id].choice;
+  });
+  return {
+    id: game.id, status: game.status, stake: ZOMBIE_TOWER_STAKE, pot: 0.02,
+    winnerPayout: 0.018, platformFee: 0.002, round: game.round,
+    card: game.card, deadline: game.deadline, floors: game.floors, picks: visiblePicks,
+    hist: game.hist, last: game.last, sd: !!game.sd, winner: game.winner || null,
+    forfeit: game.forfeit || null, ended: game.ended || null,
+    players: game.players.map((p) => ({ id: String(p.id), name: p.name })),
+    me: player ? { id: String(player.id) } : null,
+  };
+}
+function settleZombieTower(game, winnerId) {
+  if (game.status === 'done' || game.status === 'abandoned') return;
+  if (!winnerId) {
+    game.status = 'abandoned';
+    game.ended = Date.now();
+    game.result = { refunded: true };
+    game.players.forEach((p) => {
+      const user = users[String(p.id)];
+      if (user) user.ton = Number((Number(user.ton || 0) + ZOMBIE_TOWER_STAKE).toFixed(9));
+    });
+    return;
+  }
+  const winner = users[String(winnerId)];
+  if (!winner) return;
+  winner.ton = Number((Number(winner.ton || 0) + 0.018).toFixed(9));
+  const operatorId = PLATFORM_USER_ID || ADMIN_CHAT_ID;
+  if (operatorId) {
+    const platform = getOrCreateUser(operatorId, 'Platform');
+    platform.ton = Number((Number(platform.ton || 0) + 0.002).toFixed(9));
+  }
+  game.status = 'done';
+  game.winner = String(winnerId);
+  game.ended = Date.now();
+  game.result = { winnerId: String(winnerId), payout: 0.018, platformFee: 0.002, pot: 0.02 };
+}
+function resolveZombieTower(game) {
+  if (!game || game.status !== 'playing') return;
+  const ready = game.players.every((p) => game.picks[String(p.id)] && game.picks[String(p.id)].round === game.round);
+  if (!ready && Date.now() <= game.deadline) return;
+  const next = zombieTowerCard();
+  const result = {};
+  game.players.forEach((p) => {
+    const id = String(p.id);
+    const pick = game.picks[id] && game.picks[id].choice;
+    const ok = !!pick && (next.r === game.card.r || (pick === 'hi' ? next.r > game.card.r : next.r < game.card.r));
+    game.floors[id] = Math.max(0, Number(game.floors[id] || 0) + (ok ? 1 : -1));
+    game.misses[id] = pick ? 0 : Number(game.misses[id] || 0) + 1;
+    result[id] = { d: pick || null, ok, g: ok ? 1 : -1 };
+  });
+  game.last = { from: game.card, to: next, res: result, round: game.round };
+  game.hist = (game.hist || []).concat([next]).slice(-24);
+  game.card = next;
+  game.picks = {};
+  const failed = game.players.filter((p) => game.misses[String(p.id)] >= 3);
+  const top = game.players.filter((p) => game.floors[String(p.id)] >= ZOMBIE_TOWER_TOP);
+  if (failed.length === 2) settleZombieTower(game, null);
+  else if (failed.length === 1) settleZombieTower(game, game.players.find((p) => String(p.id) !== String(failed[0].id)).id);
+  else if (top.length && top.length === 1) settleZombieTower(game, top[0].id);
+  else if (top.length === 2) game.sd = true;
+  else {
+    game.round += 1;
+    game.deadline = Date.now() + ZOMBIE_TOWER_ROUND_MS;
+  }
+}
+function expireZombieTowerGames() {
+  let changed = false;
+  Object.values(zombieTowerGames).forEach((game) => {
+    if (['done', 'abandoned'].includes(game.status)) return;
+    if (Date.now() - Number(game.createdAt || Date.now()) > ZOMBIE_TOWER_TTL_MS) {
+      settleZombieTower(game, null);
+      changed = true;
+    } else if (game.status === 'playing' && Date.now() > game.deadline + 1000) {
+      resolveZombieTower(game);
+      changed = true;
+    }
+  });
+  if (changed) { persist(); persistZombieTowerGames(); }
+}
+setInterval(expireZombieTowerGames, 1000);
 function magicTowerDeck() {
   const cards = [];
   const suits = [{ symbol: '♠', color: 'black' }, { symbol: '♥', color: 'red' }, { symbol: '♦', color: 'red' }, { symbol: '♣', color: 'black' }];
@@ -1543,6 +1659,82 @@ app.post('/api/auth', (req, res) => {
 
   const token = signToken({ uid: user.id, iat: Date.now() });
   res.json({ token, state });
+});
+
+// ---- Zombie Tower: server-authoritative two-player higher/lower game ----
+app.get('/api/zombie-tower/lobby', requireUserFromQuery, (req, res) => {
+  expireZombieTowerGames();
+  const uid = String(req.uid);
+  const rooms = Object.values(zombieTowerGames)
+    .filter((game) => game.status === 'open' && !game.players.some((p) => String(p.id) === uid))
+    .sort((a, b) => b.createdAt - a.createdAt).slice(0, 50)
+    .map((game) => zombieTowerPublic(game, uid));
+  const mine = Object.values(zombieTowerGames)
+    .filter((game) => game.players.some((p) => String(p.id) === uid) && !['done', 'abandoned'].includes(game.status))
+    .map((game) => zombieTowerPublic(game, uid));
+  const finished = Object.values(zombieTowerGames)
+    .filter((game) => game.players.some((p) => String(p.id) === uid) && ['done', 'abandoned'].includes(game.status))
+    .sort((a, b) => b.createdAt - a.createdAt).slice(0, 1)
+    .map((game) => zombieTowerPublic(game, uid));
+  res.json({ state: publicState(req.user), rooms, mine: mine.length ? mine : finished });
+});
+app.post('/api/zombie-tower/create', requireUserFromBody, rejectBannedUser, (req, res) => {
+  expireZombieTowerGames();
+  const user = req.user;
+  if (Number(user.ton || 0) < ZOMBIE_TOWER_STAKE) return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
+  const existing = Object.values(zombieTowerGames).find((g) => !['done', 'abandoned'].includes(g.status) && g.players.some((p) => String(p.id) === String(user.id)));
+  if (existing) return res.json({ state: publicState(user), game: zombieTowerPublic(existing, user.id) });
+  const id = crypto.randomUUID();
+  user.ton = Number((Number(user.ton || 0) - ZOMBIE_TOWER_STAKE).toFixed(9));
+  zombieTowerGames[id] = {
+    id, status: 'open', createdAt: Date.now(), players: [{ id: user.id, name: user.name }],
+    floors: {}, misses: {}, picks: {}, hist: [], round: 0, card: null, deadline: 0,
+  };
+  persist(); persistZombieTowerGames();
+  res.json({ state: publicState(user), game: zombieTowerPublic(zombieTowerGames[id], user.id) });
+});
+app.post('/api/zombie-tower/join', requireUserFromBody, rejectBannedUser, (req, res) => {
+  expireZombieTowerGames();
+  const game = zombieTowerGames[String(req.body && req.body.gameId)];
+  const user = req.user;
+  if (!game || game.status !== 'open' || game.players.length !== 1) return res.status(409).json({ error: 'room-not-open' });
+  if (String(game.players[0].id) === String(user.id)) return res.status(400).json({ error: 'cannot-join-own-game' });
+  if (Number(user.ton || 0) < ZOMBIE_TOWER_STAKE) return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
+  user.ton = Number((Number(user.ton || 0) - ZOMBIE_TOWER_STAKE).toFixed(9));
+  game.players.push({ id: user.id, name: user.name });
+  game.status = 'playing'; game.round = 1; game.card = zombieTowerCard();
+  game.hist = [game.card]; game.deadline = Date.now() + ZOMBIE_TOWER_ROUND_MS;
+  game.players.forEach((p) => { game.floors[String(p.id)] = 0; game.misses[String(p.id)] = 0; });
+  persist(); persistZombieTowerGames();
+  res.json({ state: publicState(user), game: zombieTowerPublic(game, user.id) });
+});
+app.get('/api/zombie-tower/state', requireUserFromQuery, (req, res) => {
+  expireZombieTowerGames();
+  const uid = String(req.uid);
+  const game = Object.values(zombieTowerGames).filter((g) => g.players.some((p) => String(p.id) === uid))
+    .sort((a, b) => b.createdAt - a.createdAt)[0];
+  res.json({ state: publicState(req.user), game: game ? zombieTowerPublic(game, uid) : null });
+});
+app.post('/api/zombie-tower/play', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const game = zombieTowerGames[String(req.body && req.body.gameId)];
+  const choice = String(req.body && req.body.choice || '');
+  if (!game || game.status !== 'playing') return res.status(409).json({ error: 'game-not-playing' });
+  if (!ZOMBIE_TOWER_CHOICES.has(choice)) return res.status(400).json({ error: 'invalid-choice' });
+  const uid = String(req.uid);
+  if (!game.players.some((p) => String(p.id) === uid)) return res.status(403).json({ error: 'not-a-player' });
+  if (game.picks[uid] && game.picks[uid].round === game.round) return res.status(409).json({ error: 'choice-already-made' });
+  game.picks[uid] = { choice, round: game.round };
+  resolveZombieTower(game);
+  persist(); persistZombieTowerGames();
+  res.json({ state: publicState(req.user), game: zombieTowerPublic(game, uid) });
+});
+app.post('/api/zombie-tower/leave', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const game = zombieTowerGames[String(req.body && req.body.gameId)];
+  if (!game || !game.players.some((p) => String(p.id) === String(req.uid))) return res.status(404).json({ error: 'game-not-found' });
+  if (game.status === 'open') settleZombieTower(game, null);
+  else if (game.status === 'playing') settleZombieTower(game, game.players.find((p) => String(p.id) !== String(req.uid)).id);
+  persist(); persistZombieTowerGames();
+  res.json({ state: publicState(req.user), game: zombieTowerPublic(game, req.uid) });
 });
 
 // ---- Magic Tower: two-player real-ledger higher/lower game --------------
