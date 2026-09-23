@@ -634,7 +634,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
           new Promise(resolve => setTimeout(() => { authRunId += 1; resolve(false); }, 10000))
         ]);
         if (!authenticated || !serverMode) {
-          toast('Server nicht erreichbar oder Telegram-Anmeldung fehlt.');
+          toast('Telegram-Anmeldung fehlt oder ist abgelaufen. Bitte die Mini-App in Telegram neu öffnen.');
           return;
         }
       }
@@ -657,6 +657,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
         serverGame = normalizeServerGame(data && data.game);
         if (!serverGame || !serverGame.id) throw new Error('invalid-create-response');
         viewId = serverGame.id;
+        setCreateStatus('Raum erstellt. Warte auf den zweiten Spieler …');
         await refreshServerLobby();
       } catch (e) {
         const code = e.data && e.data.error;
