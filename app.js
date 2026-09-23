@@ -1631,6 +1631,7 @@
       }
       const data = await res.json();
       serverSession.token = data.token;
+      try { localStorage.setItem('cr3d_serverToken', data.token); } catch(e){}
       serverSession.online = true;
       serverSession.uid = data.state && data.state.uid;
       window.__depositDebug = 'ok';

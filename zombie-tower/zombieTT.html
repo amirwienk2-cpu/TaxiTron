@@ -421,7 +421,23 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     if (tg && typeof tg.ready === 'function') tg.ready();
     if (tg && typeof tg.expand === 'function') tg.expand();
     const initData = tg && tg.initData;
-    if (!initData) return false;
+    if (!initData) {
+      try {
+        const savedToken = localStorage.getItem('cr3d_serverToken');
+        if (!savedToken) return false;
+        const response = await fetch('/api/zombie-tower/lobby?token=' + encodeURIComponent(savedToken));
+        if (!response.ok) return false;
+        const data = await response.json();
+        apiToken = savedToken;
+        serverMode = true;
+        serverBalance = Number(data.state && data.state.ton);
+        if (!Number.isFinite(serverBalance) || serverBalance < 0) return false;
+        localStorage.setItem('cr3d_points', String(serverBalance));
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
         const response = await fetch('/api/auth', {
@@ -436,6 +452,9 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       const data = await response.json();
       apiToken = data.token || '';
       serverMode = !!apiToken;
+      if (apiToken) {
+        try { localStorage.setItem('cr3d_serverToken', apiToken); } catch(e){}
+      }
       const balance = Number(data.state && data.state.ton);
       if (!Number.isFinite(balance) || balance < 0) return false;
       serverBalance = balance;
