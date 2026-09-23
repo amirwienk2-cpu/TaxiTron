@@ -491,6 +491,7 @@
         return {
           id: u.uid,
           name: u.name,
+          photoUrl: u.photoUrl || '',
           admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined),
           badge4: u.badge4 === true,
           muted: u.chatMuted === true,

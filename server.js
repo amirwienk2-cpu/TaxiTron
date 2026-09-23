@@ -402,6 +402,7 @@ function newUser(id, name) {
   return {
     id,
     name: name || ('Player ' + id),
+    photoUrl: '',
     coins: 0,
     ton: 0,
     ttBalance: 0,
@@ -1256,7 +1257,7 @@ function verifyInitData(initData) {
   if (!user || !user.id) return { ok: false, error: 'missing-user' };
 
   const name = user.username || [user.first_name, user.last_name].filter(Boolean).join(' ') || ('Player ' + user.id);
-  return { ok: true, id: user.id, name };
+  return { ok: true, id: user.id, name, photoUrl: typeof user.photo_url === 'string' ? user.photo_url : '' };
 }
 
 // ---------------------------------------------------------------
@@ -1498,6 +1499,7 @@ app.post('/api/auth', (req, res) => {
 
   const existed = !!users[String(result.id)];
   const user = getOrCreateUser(result.id, result.name);
+  if (result.photoUrl) user.photoUrl = result.photoUrl;
   if (!existed) applyReferral(user, referralCode);
   user.lastSeenAt = Date.now();
   ensureDailyReset(user);
@@ -1630,6 +1632,7 @@ app.get('/api/online-users', (req, res) => {
     .map((user) => ({
       uid: String(user.id),
       name: user.name || ('Player ' + user.id),
+      photoUrl: user.photoUrl || '',
       ton: Number(user.ton || 0),
       isChatAdmin: user.isChatAdmin === true,
       isDesigner: user.isDesigner === true,
