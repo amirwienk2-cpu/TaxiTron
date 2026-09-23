@@ -860,6 +860,7 @@ const MAGIC_TOWER_STAKE = 0.1;
 const MAGIC_TOWER_FLOORS = 12;
 const MAGIC_TOWER_CHOICES = new Set(['higher', 'lower']);
 const MAGIC_TOWER_LOBBY_TTL_MS = 30 * 60 * 1000;
+const MAGIC_TOWER_RESULT_TTL_MS = 10 * 60 * 1000;
 function magicTowerDeck() {
   const cards = [];
   const suits = [{ symbol: '♠', color: 'black' }, { symbol: '♥', color: 'red' }, { symbol: '♦', color: 'red' }, { symbol: '♣', color: 'black' }];
@@ -894,6 +895,7 @@ function settleMagicTowerGame(game, winnerId) {
     platform.ton = Number((Number(platform.ton || 0) + fee).toFixed(9));
   }
   game.status = 'finished';
+  game.finishedAt = Date.now();
   game.result = { winnerId: String(winnerId), winnerName: winner.name, payout, platformFee: fee, pot: 0.2 };
 }
 function expireMagicTowerGames() {
@@ -1513,7 +1515,12 @@ app.get('/api/magic-tower/games', (req, res) => {
 
 app.get('/api/magic-tower/state', requireUserFromQuery, (req, res) => {
   expireMagicTowerGames();
-  const game = Object.values(magicTowerGames).find((item) => item.status !== 'finished' && item.status !== 'cancelled' && item.players.some((p) => String(p.id) === String(req.uid)));
+  const game = Object.values(magicTowerGames).find((item) => {
+    if (!item.players.some((p) => String(p.id) === String(req.uid))) return false;
+    if (item.status === 'cancelled') return false;
+    if (item.status === 'finished') return Date.now() - Number(item.finishedAt || 0) <= MAGIC_TOWER_RESULT_TTL_MS;
+    return true;
+  });
   if (!game) return res.json({ state: publicState(req.user), game: null });
   req.user.lastSeenAt = Date.now();
   res.json({ state: publicState(req.user), game: magicTowerGamePublic(game, req.uid) });
