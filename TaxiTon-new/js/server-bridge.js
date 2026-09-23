@@ -61,7 +61,13 @@
     SESSION.referralCode = state.referralCode || SESSION.referralCode;
     window.__TT_STATE = state; // for manual inspection/debugging only
 
-    var level = Number(state.level) || 1;
+    var ownedLevel = Number(state.level) || 1;
+    var selectedLevel = Number(localStorage.getItem('tt_active_level')) || 0;
+    if (!selectedLevel) {
+      var selectedSkin = localStorage.getItem('cr3d_skin') || '';
+      selectedLevel = selectedSkin === 'green' ? 4 : selectedSkin === 'white' ? 3 : selectedSkin === 'red' ? 2 : 1;
+    }
+    var level = selectedLevel <= ownedLevel ? selectedLevel : ownedLevel;
     var dailyCap = dailyCapForLevel(level);
     var tonToday = (state.tonTodayByLevel && typeof state.tonTodayByLevel[level] === 'number')
       ? state.tonTodayByLevel[level]
