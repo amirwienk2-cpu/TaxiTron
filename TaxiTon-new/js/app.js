@@ -872,8 +872,9 @@ const RANDOM_PROMO_START=Date.parse('2026-09-22T22:30:00+02:00');
 const RANDOM_PROMO_END=RANDOM_PROMO_START+72*60*60*1000;
 const randomPromoTimer=document.getElementById('randomPromoTimer');
 function formatPromoTime(ms){
-  const total=Math.max(0,Math.floor(ms/1000)), h=Math.floor(total/3600), m=Math.floor(total%3600/60), s=total%60;
-  return [h,m,s].map(n=>String(n).padStart(2,'0')).join(':');
+  const total=Math.max(0,Math.floor(ms/1000));
+  const d=Math.floor(total/86400), h=Math.floor(total%86400/3600), m=Math.floor(total%3600/60);
+  return d>0 ? `${d}d ${h}h ${m}m` : `${h}h ${m}m`;
 }
 function renderRandomPromoTimer(){
   if(!randomPromoTimer) return;
@@ -1110,7 +1111,7 @@ tabs.forEach(t=>{
   t.addEventListener('click',()=>{
     // "Game" tab opens the real Monster Crash game directly (matches old design's
     // navButtons handler: dataset.screen==='game-menu' -> location.href='/monster-crash/').
-    if(t.dataset.s==='game'){ window.location.href='/monster-crash/'; return; }
+    if(t.dataset.s==='game'){ window.location.href='/magic-tower-hilo.html'; return; }
     tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
     t.classList.add('active');t.setAttribute('aria-selected','true');
     document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===t.dataset.s));

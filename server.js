@@ -133,6 +133,7 @@ function runRandomDraw() {
 const DATA_FILE = path.join(DATA_DIR, 'users.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'users.backup.json');
 const RPS_FILE = path.join(DATA_DIR, 'rps-games.json');
+const MAGIC_TOWER_FILE = path.join(DATA_DIR, 'magic-tower-games.json');
 const INVITE_CAMPAIGN_FILE = path.join(DATA_DIR, 'invite-campaign.json');
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
@@ -244,6 +245,12 @@ try {
 } catch (e) {
   console.error('[rps] games file unreadable: ' + e.message);
 }
+let magicTowerGames = {};
+try {
+  if (fs.existsSync(MAGIC_TOWER_FILE)) magicTowerGames = readJsonFile(MAGIC_TOWER_FILE);
+} catch (e) {
+  console.error('[magic-tower] games file unreadable: ' + e.message);
+}
 
 let chatMessages = [];
 try {
@@ -340,7 +347,17 @@ function persistRpsGames() {
     console.error('[rps] write failed: ' + e.message);
   }
 }
+function persistMagicTowerGames() {
+  const tmp = MAGIC_TOWER_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(magicTowerGames));
+    fs.renameSync(tmp, MAGIC_TOWER_FILE);
+  } catch (e) {
+    console.error('[magic-tower] write failed: ' + e.message);
+  }
+}
 setInterval(expireRpsGames, 30000);
+setInterval(expireMagicTowerGames, 30000);
 
 function persistChat() {
   const tmp = CHAT_FILE + '.tmp';
@@ -372,6 +389,12 @@ function flushSync() {
     fs.renameSync(CHAT_FILE + '.shutdown.tmp', CHAT_FILE);
   } catch (e) {
     console.error('[chat] final flush failed: ' + e.message);
+  }
+  try {
+    fs.writeFileSync(MAGIC_TOWER_FILE + '.shutdown.tmp', JSON.stringify(magicTowerGames));
+    fs.renameSync(MAGIC_TOWER_FILE + '.shutdown.tmp', MAGIC_TOWER_FILE);
+  } catch (e) {
+    console.error('[magic-tower] final flush failed: ' + e.message);
   }
 }
 
@@ -833,6 +856,88 @@ const GAME_ROOM_STAKE = 0.001;
 const GAME_ROOM_RESET_DELAY_MS = 15000;
 const GAME_ROUND_TIMEOUT_MS = 60 * 1000;
 const GAME_PLAYER_OFFLINE_MS = 35 * 1000;
+const MAGIC_TOWER_STAKE = 0.1;
+const MAGIC_TOWER_FLOORS = 12;
+const MAGIC_TOWER_CHOICES = new Set(['higher', 'lower']);
+const MAGIC_TOWER_LOBBY_TTL_MS = 30 * 60 * 1000;
+function magicTowerDeck() {
+  const cards = [];
+  const suits = [{ symbol: '♠', color: 'black' }, { symbol: '♥', color: 'red' }, { symbol: '♦', color: 'red' }, { symbol: '♣', color: 'black' }];
+  for (let value = 2; value <= 14; value += 1) suits.forEach((suit) => cards.push({ value, suit: suit.symbol, color: suit.color }));
+  for (let i = cards.length - 1; i > 0; i -= 1) {
+    const j = crypto.randomInt(i + 1);
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  return cards;
+}
+function magicTowerGamePublic(game, uid) {
+  const me = game.players.find((p) => String(p.id) === String(uid));
+  return {
+    id: game.id, status: game.status, stake: MAGIC_TOWER_STAKE, pot: 0.2,
+    winnerPayout: 0.18, platformFee: 0.02, round: game.round,
+    current: game.current, deckCount: game.deck.length,
+    lastRound: game.lastRound || null,
+    players: game.players.map((p) => ({ id: String(p.id), name: p.name, ready: p.ready, floor: p.floor, hasAction: !!game.actions[String(p.id)] })),
+    me: me ? { id: String(me.id), ready: me.ready, floor: me.floor } : null,
+    result: game.result || null,
+  };
+}
+function settleMagicTowerGame(game, winnerId) {
+  if (game.status === 'finished') return;
+  const payout = 0.18;
+  const fee = 0.02;
+  const winner = users[String(winnerId)];
+  if (!winner) throw new Error('magic-tower-winner-missing');
+  winner.ton = Number((Number(winner.ton || 0) + payout).toFixed(9));
+  if (PLATFORM_USER_ID) {
+    const platform = getOrCreateUser(PLATFORM_USER_ID, 'Platform');
+    platform.ton = Number((Number(platform.ton || 0) + fee).toFixed(9));
+  }
+  game.status = 'finished';
+  game.result = { winnerId: String(winnerId), winnerName: winner.name, payout, platformFee: fee, pot: 0.2 };
+}
+function expireMagicTowerGames() {
+  let changed = false;
+  const now = Date.now();
+  Object.values(magicTowerGames).forEach((game) => {
+    if (game.status === 'finished' || game.status === 'cancelled' || now - Number(game.createdAt || now) < MAGIC_TOWER_LOBBY_TTL_MS) return;
+    game.players.forEach((player) => {
+      const user = users[String(player.id)];
+      if (user) user.ton = Number((Number(user.ton || 0) + MAGIC_TOWER_STAKE).toFixed(9));
+    });
+    game.status = 'cancelled';
+    game.result = { reason: 'lobby-timeout', refunded: true };
+    changed = true;
+  });
+  if (changed) {
+    persist();
+    persistMagicTowerGames();
+  }
+}
+function resolveMagicTowerRound(game) {
+  if (game.status !== 'playing' || game.players.length !== 2 || Object.keys(game.actions).length !== 2) return;
+  const next = game.deck.pop();
+  const previous = game.current;
+  game.current = next;
+  game.players.forEach((player) => {
+    const choice = game.actions[String(player.id)];
+    if (next.value !== previous.value && choice === (next.value > previous.value ? 'higher' : 'lower')) player.floor = Math.min(MAGIC_TOWER_FLOORS, player.floor + 1);
+  });
+  game.lastRound = { previous, next, actions: { ...game.actions }, floors: game.players.map((p) => ({ id: String(p.id), floor: p.floor })) };
+  game.actions = {};
+  const reached = game.players.filter((p) => p.floor >= MAGIC_TOWER_FLOORS);
+  if (reached.length) {
+    const winner = reached.length === 1 ? reached[0] : reached[crypto.randomInt(reached.length)];
+    settleMagicTowerGame(game, winner.id);
+  } else if (!game.deck.length) {
+    const winner = game.players[0].floor === game.players[1].floor
+      ? game.players[crypto.randomInt(2)]
+      : game.players[0].floor > game.players[1].floor ? game.players[0] : game.players[1];
+    settleMagicTowerGame(game, winner.id);
+  } else {
+    game.round += 1;
+  }
+}
 function gameRoomId(stake) { return 'room-' + String(stake).replace('.', '-'); }
 function createGameRoom(stake) {
   return { id: gameRoomId(stake), mode: 'room-knockout', stake, status: 'open', round: 0, roundStartedAt: 0, players: [], choices: {}, revealedChoices: {}, lastRoundChoices: {}, lastRoundWinners: [], result: null, resetAt: 0, createdAt: Date.now() };
@@ -1371,6 +1476,73 @@ app.post('/api/auth', (req, res) => {
 
   const token = signToken({ uid: user.id, iat: Date.now() });
   res.json({ token, state });
+});
+
+// ---- Magic Tower: two-player real-ledger higher/lower game --------------
+app.post('/api/magic-tower/join', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  expireMagicTowerGames();
+  const existing = Object.values(magicTowerGames).find((game) => game.status !== 'finished' && game.status !== 'cancelled' && game.players.some((p) => String(p.id) === String(user.id)));
+  if (existing) return res.json({ state: publicState(user), game: magicTowerGamePublic(existing, user.id) });
+  if (Number(user.ton || 0) < MAGIC_TOWER_STAKE) return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
+  let game = Object.values(magicTowerGames).find((item) => item.status === 'waiting' && item.players.length === 1);
+  if (!game) {
+    const id = 'magic-' + crypto.randomBytes(12).toString('hex');
+    game = { id, status: 'waiting', round: 1, deck: magicTowerDeck(), current: null, actions: {}, lastRound: null, players: [], result: null, createdAt: Date.now() };
+    magicTowerGames[id] = game;
+  }
+  user.ton = Number((Number(user.ton) - MAGIC_TOWER_STAKE).toFixed(9));
+  game.players.push({ id: String(user.id), name: user.name, ready: false, floor: 0 });
+  if (game.players.length === 2) {
+    game.status = 'ready';
+    game.current = game.deck.pop();
+  }
+  persist();
+  persistMagicTowerGames();
+  res.json({ state: publicState(user), game: magicTowerGamePublic(game, user.id) });
+});
+
+app.get('/api/magic-tower/games', (req, res) => {
+  expireMagicTowerGames();
+  const games = Object.values(magicTowerGames)
+    .filter((game) => game.status !== 'finished' && game.status !== 'cancelled')
+    .sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0))
+    .map((game) => magicTowerGamePublic(game, null));
+  res.json({ games });
+});
+
+app.get('/api/magic-tower/state', requireUserFromQuery, (req, res) => {
+  expireMagicTowerGames();
+  const game = Object.values(magicTowerGames).find((item) => item.status !== 'finished' && item.status !== 'cancelled' && item.players.some((p) => String(p.id) === String(req.uid)));
+  if (!game) return res.json({ state: publicState(req.user), game: null });
+  req.user.lastSeenAt = Date.now();
+  res.json({ state: publicState(req.user), game: magicTowerGamePublic(game, req.uid) });
+});
+
+app.post('/api/magic-tower/ready', requireUserFromBody, rejectBannedUser, (req, res) => {
+  expireMagicTowerGames();
+  const game = Object.values(magicTowerGames).find((item) => item.status !== 'finished' && item.status !== 'cancelled' && item.players.some((p) => String(p.id) === String(req.uid)));
+  if (!game) return res.status(404).json({ error: 'game-not-found' });
+  const player = game.players.find((p) => String(p.id) === String(req.uid));
+  if (!player) return res.status(403).json({ error: 'not-a-player' });
+  player.ready = true;
+  if (game.players.length === 2 && game.players.every((p) => p.ready) && game.status !== 'finished') game.status = 'playing';
+  persistMagicTowerGames();
+  res.json({ state: publicState(req.user), game: magicTowerGamePublic(game, req.uid) });
+});
+
+app.post('/api/magic-tower/play', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const choice = String(req.body && req.body.choice || '');
+  if (!MAGIC_TOWER_CHOICES.has(choice)) return res.status(400).json({ error: 'invalid-choice' });
+  const game = magicTowerGames[String(req.body && req.body.gameId)];
+  if (!game || game.status !== 'playing') return res.status(404).json({ error: 'game-not-playing' });
+  if (!game.players.some((p) => String(p.id) === String(req.uid))) return res.status(403).json({ error: 'not-a-player' });
+  if (game.actions[String(req.uid)]) return res.status(409).json({ error: 'action-already-submitted', game: magicTowerGamePublic(game, req.uid) });
+  game.actions[String(req.uid)] = choice;
+  resolveMagicTowerRound(game);
+  persist();
+  persistMagicTowerGames();
+  res.json({ state: publicState(req.user), game: magicTowerGamePublic(game, req.uid) });
 });
 
 // ---- Online player count (any user seen in the last 90s, i.e. app still open) ----
