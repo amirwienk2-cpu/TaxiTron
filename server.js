@@ -444,6 +444,7 @@ function newUser(id, name) {
     campaignLastInviteAt: 0,
     isChatAdmin: false,
     isDesigner: false,
+    badge4: false,
     chatMuted: false,
     isBanned: false,
   };
@@ -827,6 +828,7 @@ function publicState(user) {
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
     isChatAdmin: user.isChatAdmin === true,
     isDesigner: user.isDesigner === true,
+    badge4: user.badge4 === true,
     chatMuted: user.chatMuted === true,
     isBanned: user.isBanned === true,
   };
@@ -1430,15 +1432,17 @@ async function runSearch(){const q=document.getElementById('chatUserSearch').val
 updateChatToggleBtn(d.chatEnabled);
 const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'':'Keine Nutzer gefunden.';
 d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.chatMuted?' is-muted':'');
-const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
+const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.badge4?'<span class="tag designer">Badge 4</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
 row.innerHTML='<span>'+u.name+tags+'<br><span class="muted">UID '+u.uid+'</span></span><span></span><span></span><span></span><span></span>';
 const adminBtn=document.createElement('button');adminBtn.className='small-btn';adminBtn.textContent=u.isChatAdmin?'Admin entfernen':'Zum Chat-Admin machen';
 adminBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isChatAdmin:!u.isChatAdmin})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const designerBtn=document.createElement('button');designerBtn.className='small-btn';designerBtn.textContent=u.isDesigner?'Designer entfernen':'Zum Designer machen';
 designerBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-designer',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isDesigner:!u.isDesigner})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
+const badgeBtn=document.createElement('button');badgeBtn.className='small-btn';badgeBtn.textContent=u.badge4?'Badge 4 entfernen':'Badge 4 geben';
+badgeBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-badge4',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,badge4:!u.badge4})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const muteBtn=document.createElement('button');muteBtn.className='small-btn'+(u.chatMuted?'':' danger');muteBtn.textContent=u.chatMuted?'Entmuten':'Muten';
 muteBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-mute',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,muted:!u.chatMuted})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
-row.children[2].appendChild(adminBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
+row.children[2].appendChild(adminBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(badgeBtn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
 status(d.users.length+' Nutzer geladen.')}
 document.getElementById('chatUserSearchBtn').onclick=runSearch;
 document.getElementById('chatUserSearch').addEventListener('keydown',e=>{if(e.key==='Enter')runSearch()});
@@ -1629,6 +1633,7 @@ app.get('/api/online-users', (req, res) => {
       ton: Number(user.ton || 0),
       isChatAdmin: user.isChatAdmin === true,
       isDesigner: user.isDesigner === true,
+      badge4: user.badge4 === true,
       chatMuted: user.chatMuted === true,
     }));
   res.json({ users: list });
@@ -1645,6 +1650,7 @@ app.get('/api/chat/messages', (req, res) => {
       ...message,
       isAdmin: user ? user.isChatAdmin === true : message.isAdmin === true,
       isDesigner: user ? user.isDesigner === true : message.isDesigner === true,
+      badge4: user ? user.badge4 === true : message.badge4 === true,
       chatMuted: user ? user.chatMuted === true : message.chatMuted === true,
     };
   });
@@ -1705,6 +1711,7 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     ts: Date.now(),
     isAdmin: req.user.isChatAdmin === true,
     isDesigner: req.user.isDesigner === true,
+    badge4: req.user.badge4 === true,
     chatMuted: req.user.chatMuted === true,
     replyTo,
   };
@@ -2638,6 +2645,7 @@ app.get('/admin/chat-users', requireAdmin, (req, res) => {
     name: u.name || ('Player ' + u.id),
     isChatAdmin: u.isChatAdmin === true,
     isDesigner: u.isDesigner === true,
+    badge4: u.badge4 === true,
     chatMuted: u.chatMuted === true,
     lastSeenAt: Number(u.lastSeenAt || 0),
   }));
@@ -2667,6 +2675,16 @@ app.post('/admin/chat/set-designer', requireAdmin, (req, res) => {
   user.isDesigner = req.body.isDesigner === true;
   persist();
   res.json({ ok: true, uid, isDesigner: user.isDesigner });
+});
+
+app.post('/admin/chat/set-badge4', requireAdmin, (req, res) => {
+  const uid = String(req.body && req.body.uid || '');
+  const user = users[uid];
+  if (!user) return res.status(404).json({ error: 'user-not-found' });
+  user.badge4 = req.body.badge4 === true;
+  persist();
+  res.json({ ok: true, uid, badge4: user.badge4 });
+  broadcastChatEvent('moderation', { uid, badge4: user.badge4 });
 });
 
 app.post('/admin/chat/set-mute', requireAdmin, (req, res) => {

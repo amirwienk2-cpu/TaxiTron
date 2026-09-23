@@ -326,15 +326,15 @@ renderHome();
 // Demo data. Set real data with TT.setOnline(128)  |  TT.setOnline(['Ali','Sara'])  |  TT.setOnline({count:342, users:['Ali','Sara','Max']})
 const CHAT={online:{count:128,users:[{name:'TaxiBoss',admin:'boy'},{name:'ZombieHunter',admin:'girl'},{name:'Designer',badge:'designer'},'NightRider','TonMaster','SuperTaxiDriver99','Sara','Max','Kian','Nima','Dara','Roya','Ali']}};
 const AV_COLORS=[['#ffe36a','#f0a000'],['#9dff8a','#2aa84a'],['#8fd0ff','#1e6bff'],['#ffa08a','#d8341a'],['#d9a8ff','#8a3cff']];
-const ADM_IMG={boy:'assets/images/adm-boy.png',girl:'assets/images/adm-girl.png',designer:'../sprites/designer22.webp'};
+const ADM_IMG={boy:'assets/images/adm-boy.png',girl:'assets/images/adm-girl.png',designer:'../sprites/designer22.webp',badge4:'../sprites/badge4.png'};
 // Admin badge: kind = 'boy' | 'girl'
 function admBadge(kind,h){
   const s=document.createElement('span'); s.className='adm adm-'+kind; if(h) s.style.setProperty('--ah',h+'px');
   if(kind==='designer' && h) s.style.setProperty('--ah',(h+28)+'px');
   const i=document.createElement('img');
   i.src=ADM_IMG[kind]||ADM_IMG.boy; i.alt='';
-  s.title=kind==='designer'?T().designer:T().admin; s.append(i);
-  if(kind!=='designer'){ const t=document.createElement('em'); t.className='adm-t'; t.textContent=T().admin; s.append(t); }
+  s.title=kind==='designer'?T().designer:kind==='badge4'?'Badge 4':T().admin; s.append(i);
+  if(kind!=='designer'&&kind!=='badge4'){ const t=document.createElement('em'); t.className='adm-t'; t.textContent=T().admin; s.append(t); }
   return s;
 }
 // Messages with data-admin="boy|girl" get the badge next to the name
@@ -364,7 +364,7 @@ function renderOnline(){
     const dot=document.createElement('i'); av.append(dot);
     const nm=document.createElement('span'); nm.className='ou-name'; nm.textContent=n;
     const bal=document.createElement('span'); bal.className='ou-bal'; bal.textContent=nf(fmtTonOnline(typeof u==='string'?0:u.ton))+' TON';
-    chip.append(av); if(adm==='designer') chip.append(admBadge(adm,20)); chip.append(nm,bal); if(adm&&adm!=='designer') chip.append(admBadge(adm,20)); box.append(chip);
+    chip.append(av);     if(adm==='designer'||adm==='badge4') chip.append(admBadge(adm,20)); chip.append(nm,bal); if(adm&&adm!=='designer'&&adm!=='badge4') chip.append(admBadge(adm,20)); box.append(chip);
   });
   if(extra>0){ const m=document.createElement('span'); m.className='ou more'; m.textContent='+'+nf(extra); box.append(m); }
 }
@@ -918,6 +918,14 @@ TT.setUserMod=(u,st)=>{
   if(u&&u.id!==undefined){
     const id=CSS.escape(String(u.id)), muted=st.muted===true?'true':'false';
     document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{el.dataset.muted=muted});
+    if(typeof st.badge4==='boolean'){
+      document.querySelectorAll(`#chatList .msg[data-uid="${id}"],#onlineAvs .ou[data-uid="${id}"]`).forEach(el=>{
+        el.dataset.badge=st.badge4?'badge4':'';
+        el.querySelectorAll('.adm').forEach(x=>x.remove());
+        const nameEl=el.matches('.msg')?el.querySelector(':scope > b'):el.querySelector('.ou-name');
+        if(nameEl&&st.badge4) nameEl.append(admBadge('badge4',el.matches('.msg')?34:20));
+      });
+    }
   }
   setMod(u,{mute:st.muted===true?-1:(+st.muted||0),ban:st.banned?1:0});
 };

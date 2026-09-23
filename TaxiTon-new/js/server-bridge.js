@@ -390,7 +390,7 @@
       time: m.ts,
       me: SESSION.uid != null && m.uid === SESSION.uid,
       admin: m.isAdmin ? 'boy' : undefined,
-      badge: !m.isAdmin && m.isDesigner ? 'designer' : undefined,
+      badge: m.badge4 ? 'badge4' : (!m.isAdmin && m.isDesigner ? 'designer' : undefined),
       muted: m.chatMuted === true,
       randomWinner: m.randomWinner === true,
       randomWinnerName: m.randomWinnerName,
@@ -439,7 +439,7 @@
           var el = mid != null ? document.querySelector('#chatList .msg[data-mid="' + CSS.escape(String(mid)) + '"]') : null;
           if (el) el.remove();
         } else if (payload.type === 'moderation' && typeof TT.setUserMod === 'function') {
-          TT.setUserMod({ id: payload.uid }, { muted: payload.chatMuted === true });
+          TT.setUserMod({ id: payload.uid }, { muted: payload.chatMuted === true, badge4: payload.badge4 === true });
         } else if (payload.type === 'settings' && typeof TT.setChatEnabled === 'function') {
           TT.setChatEnabled(payload.chatEnabled !== false);
         }
@@ -491,7 +491,7 @@
         return {
           id: u.uid,
           name: u.name,
-          admin: u.isChatAdmin ? 'boy' : (u.isDesigner ? 'designer' : undefined),
+          admin: u.isChatAdmin ? 'boy' : (u.badge4 ? 'badge4' : (u.isDesigner ? 'designer' : undefined)),
           muted: u.chatMuted === true,
           me: SESSION.uid != null && String(u.uid) === String(SESSION.uid),
           ton: Number(u.ton) || 0
