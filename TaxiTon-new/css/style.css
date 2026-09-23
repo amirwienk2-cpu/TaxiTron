@@ -179,6 +179,8 @@ body.en .page,body.en .countdown{direction:ltr}
 .msg{align-self:flex-start;max-width:85%;padding:10px 14px;border-radius:14px;
   background:rgba(40,20,90,.6);box-shadow:0 0 0 1px rgba(224,161,0,.35);line-height:1.7;font-size:15px;
   overflow-wrap:anywhere;word-break:break-word}
+.msg[data-admin]{background:linear-gradient(135deg,rgba(18,105,145,.95),rgba(20,42,105,.95));
+  box-shadow:0 0 0 1px rgba(76,218,255,.85),0 0 14px rgba(76,218,255,.2)}
 .msg b{display:flex;align-items:center;color:var(--gold);font-size:13px}
 .msg.me{align-self:flex-end}
 .random-winner-art{position:relative;width:100%;margin:4px auto 2px;line-height:1.2}
