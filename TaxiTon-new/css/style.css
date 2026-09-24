@@ -40,8 +40,6 @@ body.chat-open::before{filter:blur(14px);transform:scale(1.08)}
   display:block;border-radius:18px;outline:2px solid transparent;transition:outline-color .15s ease,background .15s ease}
 .bazia-test .bazia-test-tower-link:hover,.bazia-test .bazia-test-tower-link:focus-visible{
   outline-color:rgba(255,255,255,.9);background:rgba(50,170,255,.08)}
-.bazia-test nav{display:none}
-
 /* TEST-ONLY: embed the real game (root index.html) via iframe inside #play */
 .game-embed-wrap{position:fixed;inset:0;z-index:500;background:#000}
 .game-embed-wrap[hidden]{display:none}
