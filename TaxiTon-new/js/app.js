@@ -1155,6 +1155,26 @@ TT.setInviteLeaderboard=renderInviteLeaderboard;
 
 // Tabs
 const tabs=document.querySelectorAll('.tab');
+const SHOP_AD_COOLDOWN_MS=20*60*1000;
+let shopAdInProgress=false;
+async function showShopAdIfDue(){
+  let lastShown=0;
+  try{ lastShown=Number(localStorage.getItem('tt_shop_ad_last_shown')||0); }catch(e){}
+  if(Date.now()-lastShown<SHOP_AD_COOLDOWN_MS)return;
+  if(!window.Adsgram||typeof window.Adsgram.init!=='function')return;
+  if(shopAdInProgress)return;
+  shopAdInProgress=true;
+  try{
+    const controller=window.Adsgram.init({blockId:'48235'});
+    if(!controller||typeof controller.show!=='function')return;
+    await controller.show();
+    try{ localStorage.setItem('tt_shop_ad_last_shown',String(Date.now())); }catch(e){}
+  }catch(e){
+    console.warn('[TaxiTron] shop ad was not shown',e);
+  }finally{
+    shopAdInProgress=false;
+  }
+}
 document.body.classList.toggle('chat-open',document.querySelector('#chat').classList.contains('active'));
 tabs.forEach(t=>{
   t.setAttribute('aria-selected',t.classList.contains('active'));
@@ -1162,6 +1182,7 @@ tabs.forEach(t=>{
     // "Game" tab opens the real Monster Crash game directly (matches old design's
     // navButtons handler: dataset.screen==='game-menu' -> location.href='/monster-crash/').
     if(t.dataset.s==='game'){
+      if(t.dataset.s==='shop')showShopAdIfDue();
       tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
       t.classList.add('active');t.setAttribute('aria-selected','true');
       document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='game'));
