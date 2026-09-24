@@ -272,6 +272,20 @@ try {
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
 const chatEventClients = new Set();
+const CHAT_REACTION_EMOJIS = new Set(['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '😡']);
+
+function publicChatReactions(message, uid) {
+  const reactions = message.reactions && typeof message.reactions === 'object' ? message.reactions : {};
+  const counts = {};
+  let mine = null;
+  Object.entries(reactions).forEach(([emoji, usersForEmoji]) => {
+    if (!CHAT_REACTION_EMOJIS.has(emoji) || !Array.isArray(usersForEmoji)) return;
+    const uniqueUsers = [...new Set(usersForEmoji.map(String))];
+    if (uniqueUsers.length) counts[emoji] = uniqueUsers.length;
+    if (uid != null && uniqueUsers.includes(String(uid))) mine = emoji;
+  });
+  return { counts, mine };
+}
 
 function broadcastChatEvent(type, details = {}) {
   const payload = 'event: chat-update\ndata: ' + JSON.stringify({ type, ...details }) + '\n\n';
@@ -1944,6 +1958,8 @@ app.get('/api/online-users', (req, res) => {
 // GET returns messages newer than ?after=<id> (or the last ~50 if omitted), for polling.
 app.get('/api/chat/messages', (req, res) => {
   const after = Number(req.query.after) || 0;
+  const viewerPayload = verifyToken(req.query.token);
+  const viewerUid = viewerPayload ? String(viewerPayload.uid) : null;
   const storedMessages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
   const messages = storedMessages.map((message) => {
     const user = users[String(message.uid)];
@@ -1954,6 +1970,7 @@ app.get('/api/chat/messages', (req, res) => {
       isDesigner: user ? user.isDesigner === true : message.isDesigner === true,
       badge4: user ? user.badge4 === true : message.badge4 === true,
       chatMuted: user ? user.chatMuted === true : message.chatMuted === true,
+      reactions: publicChatReactions(message, viewerUid),
     };
   });
   res.json({ messages, enabled: chatEnabled });
@@ -2022,6 +2039,27 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   persistChat();
   res.json({ message });
   broadcastChatEvent('message');
+});
+
+app.post('/api/chat/react', requireUserFromBody, (req, res) => {
+  const messageId = Number(req.body && req.body.messageId);
+  const emoji = String(req.body && req.body.emoji || '');
+  const on = req.body && req.body.on === true;
+  if (!Number.isSafeInteger(messageId) || messageId <= 0) return res.status(400).json({ error: 'invalid-message-id' });
+  if (!CHAT_REACTION_EMOJIS.has(emoji)) return res.status(400).json({ error: 'invalid-reaction' });
+  const message = chatMessages.find((entry) => entry.id === messageId);
+  if (!message) return res.status(404).json({ error: 'message-not-found' });
+  if (!message.reactions || typeof message.reactions !== 'object') message.reactions = {};
+  Object.keys(message.reactions).forEach((key) => {
+    if (!Array.isArray(message.reactions[key])) message.reactions[key] = [];
+    message.reactions[key] = message.reactions[key].filter((uid) => String(uid) !== String(req.uid));
+    if (!message.reactions[key].length) delete message.reactions[key];
+  });
+  if (on) (message.reactions[emoji] || (message.reactions[emoji] = [])).push(String(req.uid));
+  persistChat();
+  const reactions = publicChatReactions(message, req.uid);
+  res.json({ messageId, reactions });
+  broadcastChatEvent('reaction', { messageId, reactions: publicChatReactions(message, null) });
 });
 
 app.post('/api/chat/delete', requireUserFromBody, (req, res) => {

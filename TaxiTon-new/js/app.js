@@ -432,7 +432,9 @@ TT.addMessage=(m)=>{
     d.append(s);
   }
   if(m.reply) d.append(buildQuote(m.reply));
-  chatList.append(d); decorateMsg(d); renderChatBadges(); renderModMarks(); scrollChatToEnd();
+  chatList.append(d); decorateMsg(d); renderChatBadges(); renderModMarks();
+  if(m.reactions) TT.setReactions(m.mid,m.reactions.counts,m.reactions.mine);
+  scrollChatToEnd();
 };
 function renderRandomWinnerMessages(){
   document.querySelectorAll('#chatList .msg.random-winner').forEach((message)=>{
@@ -630,7 +632,6 @@ function react(m,em){
   if(chip&&on){ chip.classList.remove('pop'); void chip.offsetWidth; chip.classList.add('pop'); }
   try{ Telegram.WebApp.HapticFeedback.selectionChanged(); }catch(e){}
   if(typeof TT.onReact==='function') try{
-    if(old&&old!==em) TT.onReact({mid, emoji:old, on:false});
     TT.onReact({mid, emoji:em, on});
   }catch(e){}
 }

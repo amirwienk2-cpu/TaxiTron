@@ -450,7 +450,7 @@
   }
 
   function syncChat() {
-    var url = '/api/chat/messages' + (lastChatMessageId ? '?after=' + lastChatMessageId : '');
+    var url = withToken('/api/chat/messages' + (lastChatMessageId ? '?after=' + lastChatMessageId : ''));
     api(url).then(function (r) {
       if (!r.ok) return;
       var messages = r.data.messages || [];
@@ -462,7 +462,11 @@
         chatBootstrapped = true;
       }
       messages.forEach(function (m) {
-        if (typeof TT.addMessage === 'function') TT.addMessage(mapServerMessage(m));
+        if (typeof TT.addMessage === 'function') {
+          var mapped = mapServerMessage(m);
+          mapped.reactions = m.reactions;
+          TT.addMessage(mapped);
+        }
         if (m.id > lastChatMessageId) lastChatMessageId = m.id;
       });
     }).catch(function () {});
@@ -484,6 +488,8 @@
               if (typeof TT.setWithdraw === 'function') TT.setWithdraw({ balance: winnerTon });
             }
           }
+        } else if (payload.type === 'reaction' && typeof TT.setReactions === 'function') {
+          TT.setReactions(payload.messageId, payload.reactions && payload.reactions.counts, null);
         } else if (payload.type === 'message-deleted') {
           var mid = payload.messageId;
           var el = mid != null ? document.querySelector('#chatList .msg[data-mid="' + CSS.escape(String(mid)) + '"]') : null;
@@ -535,7 +541,17 @@
   };
   // TT.editMessage has no server-side driver: server.js supports send/delete only, no edit
   // endpoint or event exists, so editing (if triggered locally) stays purely client-side.
-  // TT.setReactions/onReact also stay local-only: there is no reaction concept in server.js at all.
+  TT.onReact = function (payload) {
+    if (!SESSION.token) return Promise.resolve(false);
+    return postJSON('/api/chat/react', {
+      token: SESSION.token, messageId: payload.mid, emoji: payload.emoji, on: payload.on === true
+    }).then(function (r) {
+      if (r.ok && r.data.reactions && typeof TT.setReactions === 'function') {
+        TT.setReactions(payload.mid, r.data.reactions.counts, r.data.reactions.mine);
+      }
+      return r.ok;
+    }).catch(function () { return false; });
+  };
 
   // ---- online users/count -------------------------------------------------------------------
   function loadOnline() {
