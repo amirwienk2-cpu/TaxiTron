@@ -810,7 +810,12 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     if (serverMode && d && ['done', 'abandoned'].includes(d.status)) {
       if (serverSettled[d.id]) return true;
       serverSettled[d.id] = true;
-      if (d.winner === me) showResult(d, true, 0.018);
+      if (d.winner === me) {
+        const payout = Number.isFinite(Number(d.winnerPayout))
+          ? Number(d.winnerPayout)
+          : r2(Number(d.stake || 0) * 2 * 0.9);
+        showResult(d, true, payout);
+      }
       else if (d.status === 'abandoned') toast(T('t_abandoned'));
       else showResult(d, false, 0);
       return true;
