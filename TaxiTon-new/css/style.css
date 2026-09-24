@@ -32,7 +32,8 @@ body.chat-open::before{filter:blur(14px);transform:scale(1.08)}
 .bazia-test{background:#07156f}
 .bazia-test::before{display:none}
 .bazia-test .app{max-width:480px;padding:0}
-.bazia-test #game{min-height:100vh;display:block!important}
+.bazia-test #game.active{min-height:100vh;display:block!important}
+.bazia-test #game:not(.active){display:none!important}
 .bazia-test #game>.page{display:none}
 .bazia-test .bazia-test-view{display:block;position:relative;width:100%;min-height:100vh;overflow:hidden;background:#07156f}
 .bazia-test .bazia-test-view img{display:block;width:94%;height:auto;margin:0 auto;min-height:0;object-fit:contain;object-position:top center}
