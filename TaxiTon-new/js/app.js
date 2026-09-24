@@ -1156,25 +1156,27 @@ TT.setInviteLeaderboard=renderInviteLeaderboard;
 // Tabs
 const tabs=document.querySelectorAll('.tab');
 const SHOP_AD_COOLDOWN_MS=20*60*1000;
-let shopAdInProgress=false;
-async function showShopAdIfDue(){
+const SECTION_AD_COOLDOWN_MS=60*60*1000;
+const sectionAdInProgress={};
+async function showSectionAdIfDue(section,cooldownMs){
   let lastShown=0;
-  try{ lastShown=Number(localStorage.getItem('tt_shop_ad_last_shown')||0); }catch(e){}
-  if(Date.now()-lastShown<SHOP_AD_COOLDOWN_MS)return;
+  try{ lastShown=Number(localStorage.getItem('tt_'+section+'_ad_last_shown')||0); }catch(e){}
+  if(Date.now()-lastShown<cooldownMs)return;
   if(!window.Adsgram||typeof window.Adsgram.init!=='function')return;
-  if(shopAdInProgress)return;
-  shopAdInProgress=true;
+  if(sectionAdInProgress[section])return;
+  sectionAdInProgress[section]=true;
   try{
     const controller=window.Adsgram.init({blockId:'48235'});
     if(!controller||typeof controller.show!=='function')return;
     await controller.show();
-    try{ localStorage.setItem('tt_shop_ad_last_shown',String(Date.now())); }catch(e){}
+    try{ localStorage.setItem('tt_'+section+'_ad_last_shown',String(Date.now())); }catch(e){}
   }catch(e){
-    console.warn('[TaxiTron] shop ad was not shown',e);
+    console.warn('[TaxiTron] '+section+' ad was not shown',e);
   }finally{
-    shopAdInProgress=false;
+    sectionAdInProgress[section]=false;
   }
 }
+function showShopAdIfDue(){ return showSectionAdIfDue('shop',SHOP_AD_COOLDOWN_MS); }
 document.body.classList.toggle('chat-open',document.querySelector('#chat').classList.contains('active'));
 tabs.forEach(t=>{
   t.setAttribute('aria-selected',t.classList.contains('active'));
@@ -1191,6 +1193,8 @@ tabs.forEach(t=>{
       return;
     }
     if(t.dataset.s==='shop')showShopAdIfDue();
+    if(t.dataset.s==='tournament')showSectionAdIfDue('tournament',SECTION_AD_COOLDOWN_MS);
+    if(t.dataset.s==='wallet')showSectionAdIfDue('wallet',SECTION_AD_COOLDOWN_MS);
     tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
     t.classList.add('active');t.setAttribute('aria-selected','true');
     document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===t.dataset.s));
