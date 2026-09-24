@@ -76,7 +76,7 @@ document.querySelectorAll('.seg-btn').forEach(b=>b.addEventListener('click',()=>
 }));
 
 // Chat (local demo – connect to your server later)
-const chatList=document.getElementById('chatList'), chatText=document.getElementById('chatText'), voiceSend=document.getElementById('voiceSend');
+const chatList=document.getElementById('chatList'), chatText=document.getElementById('chatText');
 function scrollChatToEnd(smooth=true){
   chatList.scrollTo({top:chatList.scrollHeight,behavior:smooth?'smooth':'auto'});
 }
@@ -129,122 +129,6 @@ function sendMsg(){
   chatList.append(d); decorateMsg(d); chatText.value=''; autoGrowChatInput(); cancelReply(); scrollChatToEnd();
 }
 document.getElementById('chatSend').addEventListener('click',sendMsg);
-let voiceRecorder=null;
-function encodeVoiceWav(samples,sampleRate){
-  const buffer=new ArrayBuffer(44+samples.length*2);
-  const view=new DataView(buffer);
-  const write=(offset,text)=>[...text].forEach((char,index)=>view.setUint8(offset+index,char.charCodeAt(0)));
-  write(0,'RIFF'); view.setUint32(4,36+samples.length*2,true); write(8,'WAVE');
-  write(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
-  view.setUint16(22,1,true); view.setUint32(24,sampleRate,true); view.setUint32(28,sampleRate*2,true);
-  view.setUint16(32,2,true); view.setUint16(34,16,true); write(36,'data');
-  view.setUint32(40,samples.length*2,true);
-  samples.forEach((sample,index)=>view.setInt16(44+index*2,Math.max(-1,Math.min(1,sample))*0x7fff,true));
-  return new Blob([view],{type:'audio/wav'});
-}
-voiceSend.addEventListener('click',async()=>{
-  if(voiceRecorder){
-    voiceRecorder.stop();
-    return;
-  }
-  if(!navigator.mediaDevices||typeof navigator.mediaDevices.getUserMedia!=='function'||typeof AudioContext==='undefined'){
-    alert('Sprachnachrichten werden in diesem Browser nicht unterstützt.');
-    return;
-  }
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    const context=new AudioContext();
-    const source=context.createMediaStreamSource(stream);
-    const processor=context.createScriptProcessor(4096,1,1);
-    const silentGain=context.createGain();
-    const samples=[];
-    silentGain.gain.value=0;
-    processor.onaudioprocess=event=>samples.push(new Float32Array(event.inputBuffer.getChannelData(0)));
-    source.connect(processor);
-    processor.connect(silentGain);
-    silentGain.connect(context.destination);
-    voiceRecorder={stop:()=>{
-      processor.onaudioprocess=null;
-      processor.disconnect(); source.disconnect(); silentGain.disconnect();
-      stream.getTracks().forEach(track=>track.stop());
-      const merged=new Float32Array(samples.reduce((total,chunk)=>total+chunk.length,0));
-      let offset=0;
-      samples.forEach(chunk=>{merged.set(chunk,offset);offset+=chunk.length});
-      const blob=encodeVoiceWav(merged,context.sampleRate);
-      const audio=document.createElement('audio');
-      audio.preload='metadata';
-      audio.src=URL.createObjectURL(blob);
-      audio.load();
-      audio.addEventListener('click',event=>event.stopPropagation());
-      audio.addEventListener('error',()=>console.warn('[TaxiTron] Local voice recording cannot be played'));
-      const bubble=document.createElement('div');
-      bubble.className='msg me skin-'+skin+' voice-message';
-      const name=document.createElement('b');
-      name.textContent=T().me;
-      const playButton=document.createElement('button');
-      playButton.type='button';
-      playButton.className='voice-play';
-      playButton.textContent='▶';
-      playButton.setAttribute('aria-label','Sprachnachricht abspielen');
-      const voiceTrack=document.createElement('span');
-      voiceTrack.className='voice-track';
-      const voiceProgress=document.createElement('span');
-      voiceProgress.className='voice-progress';
-      voiceTrack.append(voiceProgress);
-      const voiceDuration=document.createElement('span');
-      voiceDuration.className='voice-duration';
-      voiceDuration.textContent='0:00';
-      playButton.addEventListener('click',event=>{
-        event.stopPropagation();
-        if(audio.paused){
-          audio.play().then(()=>{
-            playButton.textContent='⏸';
-            playButton.setAttribute('aria-label','Sprachnachricht pausieren');
-          }).catch(error=>console.warn('[TaxiTron] Local voice playback failed',error));
-        }else{
-          audio.pause();
-          playButton.textContent='▶';
-          playButton.setAttribute('aria-label','Sprachnachricht abspielen');
-        }
-      });
-      audio.addEventListener('loadedmetadata',()=>{
-        if(Number.isFinite(audio.duration)) voiceDuration.textContent=voiceTime(audio.duration);
-      });
-      audio.addEventListener('timeupdate',()=>{
-        const ratio=audio.duration?audio.currentTime/audio.duration:0;
-        voiceProgress.style.width=(ratio*100)+'%';
-        voiceDuration.textContent=voiceTime(audio.currentTime);
-      });
-      audio.addEventListener('ended',()=>{
-        playButton.textContent='▶';
-        playButton.setAttribute('aria-label','Sprachnachricht abspielen');
-        voiceProgress.style.width='0%';
-        voiceDuration.textContent=voiceTime(audio.duration);
-      });
-      voiceTrack.addEventListener('click',event=>{
-        event.stopPropagation();
-        if(!audio.duration) return;
-        const box=voiceTrack.getBoundingClientRect();
-        audio.currentTime=Math.max(0,Math.min(1,(event.clientX-box.left)/box.width))*audio.duration;
-      });
-      const voiceTime=seconds=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
-      bubble.append(name,playButton,voiceTrack,voiceDuration,audio);
-      chatList.append(bubble);
-      decorateMsg(bubble);
-      scrollChatToEnd();
-      voiceRecorder=null;
-      voiceSend.classList.remove('recording');
-      voiceSend.textContent='🎙️';
-      voiceSend.title='Sprachnachricht aufnehmen';
-      context.close();
-    }};
-    voiceSend.classList.add('recording');
-    voiceSend.textContent='⏹';
-    voiceSend.title='Aufnahme stoppen';
-  }catch(error){
-    console.warn('[TaxiTron] Voice recording was not started',error);
-  }
-});
 // Enter sends the message (matches the old single-line input's behavior); Shift+Enter
 // still inserts a newline, like Telegram/WhatsApp, now that this is a growable textarea.
 chatText.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } });
