@@ -932,6 +932,7 @@ function zombieTowerPublic(game, uid) {
     winnerPayout, platformFee, round: game.round,
     card: game.card, deadline: game.deadline, floors: game.floors, picks: visiblePicks,
     hist: game.hist, last: game.last, sd: !!game.sd, winner: game.winner || null,
+    result: game.result || null,
     forfeit: game.forfeit || null, ended: game.ended || null,
     players: game.players.map((p) => ({
       id: String(p.id),
@@ -941,12 +942,12 @@ function zombieTowerPublic(game, uid) {
     me: player ? { id: String(player.id) } : null,
   };
 }
-function settleZombieTower(game, winnerId) {
+function settleZombieTower(game, winnerId, draw = false) {
   if (game.status === 'done' || game.status === 'abandoned') return;
   if (!winnerId) {
     game.status = 'abandoned';
     game.ended = Date.now();
-    game.result = { refunded: true };
+    game.result = { refunded: true, draw: !!draw };
     game.players.forEach((p) => {
       const user = users[String(p.id)];
       if (user) user.ton = Number((Number(user.ton || 0) + Number(game.stake || ZOMBIE_TOWER_STAKE)).toFixed(9));
@@ -993,7 +994,7 @@ function resolveZombieTower(game) {
   if (failed.length === 2) settleZombieTower(game, null);
   else if (failed.length === 1) settleZombieTower(game, game.players.find((p) => String(p.id) !== String(failed[0].id)).id);
   else if (top.length && top.length === 1) settleZombieTower(game, top[0].id);
-  else if (top.length === 2) game.sd = true;
+  else if (top.length === 2) settleZombieTower(game, null, true);
   else {
     game.round += 1;
     game.deadline = Date.now() + ZOMBIE_TOWER_ROUND_MS;

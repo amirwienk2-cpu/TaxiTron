@@ -280,7 +280,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       create_h: 'Raum erstellen', open_h: 'Offene Räume', connecting: 'Anmeldung wird geprüft …',
       round: 'Runde', pot: 'Pot', you: 'Du', opponent: 'Gegner', versus: 'Du spielst gegen', bot_name: 'Zombie-Bot', higher: '▲ Höher', lower: '▼ Niedriger',
       first_card: 'Erste Karte liegt. Höher oder niedriger?',
-      rules: 'Gleich zählt immer als richtig. Richtig getippt: eine Stufe hoch. Falsch oder keine Wahl in 15 s: eine Stufe runter. Wer zuerst 12 erreicht, gewinnt. Kommen beide gleichzeitig oben an, geht es weiter, bis einer vorne liegt.',
+      rules: 'Gleich zählt immer als richtig. Richtig getippt: eine Stufe hoch. Falsch oder keine Wahl in 15 s: eine Stufe runter. Wer zuerst 12 erreicht, gewinnt. Bei 12:12 endet das Spiel unentschieden und beide Einsätze werden zurückgezahlt.',
       eaten: 'Gefressen!', to_lobby: 'Zur Lobby', new_room: 'Neuer Raum', top: 'Turmspitze!', opp_gone: 'Gegner weg!',
       stake: 'Einsatz', rounds: 'Runden', floors: 'Punkte', home: 'Home', create_btn: 'Raum für {s} TON erstellen',
       no_rooms: 'Gerade ist kein Raum offen. Erstelle einen und warte auf einen Gegner.',
@@ -297,7 +297,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       t_joining: 'Gerade tritt jemand bei …', t_started: 'Der Raum ist schon gestartet.', t_cancelfail: 'Abbrechen hat nicht geklappt.',
       t_other_join: 'Jemand anderes tritt gerade bei.', t_full: 'Dieser Raum ist schon voll.', t_nofunds_room: 'Nicht genug Guthaben für diesen Raum.',
       t_joinfail: 'Beitreten hat nicht geklappt.', t_botfail: 'Bot konnte nicht beitreten.',
-      t_abandoned: 'Keiner hat mehr getippt – Spiel abgebrochen, Einsatz zurück.', t_conn: 'Verbindung zur Lobby unterbrochen. Lade die Seite neu.',
+      t_abandoned: 'Keiner hat mehr getippt – Spiel abgebrochen, Einsatz zurück.', t_draw: 'Unentschieden bei 12:12 – beide Einsätze wurden ohne Gebühr zurückgezahlt.', t_conn: 'Verbindung zur Lobby unterbrochen. Lade die Seite neu.',
       t_quota: 'Die Lobby ist voll. Versuch es später.', t_createfail: 'Raum konnte nicht erstellt werden.'
     },
     en: {
@@ -305,7 +305,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       create_h: 'Create a room', open_h: 'Open rooms', connecting: 'Checking Telegram login …',
       round: 'Round', pot: 'Pot', you: 'You', opponent: 'Opponent', versus: 'You are playing against', bot_name: 'Zombie Bot', higher: '▲ Higher', lower: '▼ Lower',
       first_card: 'First card is down. Higher or lower?',
-      rules: 'Equal always counts as correct. Correct guess: one step up. Wrong guess or no pick within 15 s: one step down. First to 12 wins. If both reach the top together, play continues until one is ahead.',
+      rules: 'Equal always counts as correct. Correct guess: one step up. Wrong guess or no pick within 15 s: one step down. First to 12 wins. At 12:12 the game ends as a draw and both stakes are returned.',
       eaten: 'Eaten!', to_lobby: 'Back to lobby', new_room: 'New room', top: 'Top of the tower!', opp_gone: 'Opponent left!',
       stake: 'Stake', rounds: 'Rounds', floors: 'Points', home: 'Home', create_btn: 'Create room for {s} TON',
       no_rooms: 'No open rooms right now. Create one and wait for an opponent.',
@@ -322,7 +322,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       t_joining: 'Someone is joining right now …', t_started: 'This room has already started.', t_cancelfail: 'Could not cancel.',
       t_other_join: 'Someone else is joining right now.', t_full: 'This room is already full.', t_nofunds_room: 'Not enough balance for this room.',
       t_joinfail: 'Could not join.', t_botfail: 'The bot could not join.',
-      t_abandoned: 'Nobody picked anymore – game cancelled, stakes returned.', t_conn: 'Lost connection to the lobby. Reload the page.',
+      t_abandoned: 'Nobody picked anymore – game cancelled, stakes returned.', t_draw: 'Draw at 12:12 – both stakes were returned without a fee.', t_conn: 'Lost connection to the lobby. Reload the page.',
       t_quota: 'The lobby is full. Try again later.', t_createfail: 'Could not create the room.'
     },
     fa: {
@@ -330,7 +330,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       create_h: 'ساخت اتاق', open_h: 'اتاق‌های باز', connecting: 'در حال بررسی ورود تلگرام …',
       round: 'دور', pot: 'جایزه', you: 'تو', opponent: 'حریف', versus: 'بازی مقابل', bot_name: 'ربات زامبی', higher: '▲ بالاتر', lower: '▼ پایین‌تر',
       first_card: 'کارت اول آمد. بالاتر یا پایین‌تر؟',
-      rules: 'مساوی همیشه درست حساب می‌شود. حدس درست: یک پله بالا. حدس غلط یا انتخاب نکردن در ۱۵ ثانیه: یک پله پایین. هر کس زودتر به ۱۲ برسد برنده است. اگر هر دو هم‌زمان به بالا برسند، بازی ادامه پیدا می‌کند تا یکی جلو بیفتد.',
+      rules: 'مساوی همیشه درست حساب می‌شود. حدس درست: یک پله بالا. حدس غلط یا انتخاب نکردن در ۱۵ ثانیه: یک پله پایین. هر کس زودتر به ۱۲ برسد برنده است. در حالت ۱۲:۱۲ بازی مساوی تمام می‌شود و هر دو مبلغ بدون کارمزد برمی‌گردد.',
       eaten: 'خورده شدی!', to_lobby: 'بازگشت به لابی', new_room: 'اتاق جدید', top: 'نوک برج!', opp_gone: 'حریف رفت!',
       stake: 'مبلغ شرط', rounds: 'دورها', floors: 'امتیاز', home: 'خانه', create_btn: 'ساخت اتاق با {s} TON',
       no_rooms: 'الان هیچ اتاق بازی نیست. یکی بساز و منتظر حریف بمان.',
@@ -347,7 +347,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
       t_joining: 'یک نفر در حال ورود است …', t_started: 'این اتاق قبلاً شروع شده است.', t_cancelfail: 'لغو انجام نشد.',
       t_other_join: 'نفر دیگری در حال ورود است.', t_full: 'این اتاق پر است.', t_nofunds_room: 'موجودی برای این اتاق کافی نیست.',
       t_joinfail: 'ورود انجام نشد.', t_botfail: 'ربات نتوانست وارد شود.',
-      t_abandoned: 'هیچ‌کس انتخاب نکرد – بازی لغو شد و مبلغ برگشت.', t_conn: 'اتصال به لابی قطع شد. صفحه را دوباره بارگذاری کن.',
+      t_abandoned: 'هیچ‌کس انتخاب نکرد – بازی لغو شد و مبلغ برگشت.', t_draw: 'تساوی ۱۲:۱۲ – هر دو مبلغ بدون کارمزد برگشت داده شد.', t_conn: 'اتصال به لابی قطع شد. صفحه را دوباره بارگذاری کن.',
       t_quota: 'لابی پر است. بعداً امتحان کن.', t_createfail: 'اتاق ساخته نشد.'
     }
   };
@@ -584,11 +584,11 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
     newRound(n, next);
     const fa = n.floors[d.host], fb = n.floors[d.guest];
     const ma = n.miss[d.host] >= 3, mb = n.miss[d.guest] >= 3;
-    if (ma && mb) { n.status = 'abandoned'; n.ended = Date.now(); return n; }
+    if (ma && mb) { n.status = 'abandoned'; n.ended = Date.now(); n.result = { refunded: true, draw: true }; return n; }
     if (ma || mb) { n.status = 'done'; n.winner = ma ? d.guest : d.host; n.ended = Date.now(); n.forfeit = ma ? d.host : d.guest; return n; }
     if (Math.max(fa, fb) >= TOP) {
       if (fa !== fb) { n.status = 'done'; n.winner = fa > fb ? d.host : d.guest; n.ended = Date.now(); }
-      else n.sd = true;
+      else { n.status = 'abandoned'; n.ended = Date.now(); n.result = { refunded: true, draw: true }; }
     }
     return n;
   }
@@ -816,7 +816,7 @@ html[lang="fa"] .lose .t{align-items:flex-end;text-align:right}
           : r2(Number(d.stake || 0) * 2 * 0.9);
         showResult(d, true, payout);
       }
-      else if (d.status === 'abandoned') toast(T('t_abandoned'));
+      else if (d.status === 'abandoned') toast(d.result && d.result.draw ? T('t_draw') : T('t_abandoned'));
       else showResult(d, false, 0);
       return true;
     }
