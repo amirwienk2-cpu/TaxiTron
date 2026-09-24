@@ -219,7 +219,10 @@
     if (preloaded || preloading) return; // already loaded or in flight
     preloading = true;
     frame.addEventListener('load', () => { preloaded = true; preloading = false; }, { once: true });
-    frame.src = '/legacy-game.html?embedded=1&v=20260922';
+    const testQuery = new URLSearchParams(window.location.search).get('ad-attempt-test') === '1'
+      ? '&ad-attempt-test=1'
+      : '';
+    frame.src = '/legacy-game.html?embedded=1&v=20260922' + testQuery;
   }
   // Start preloading immediately so the real app is (usually) already
   // sitting ready in the background by the time the user presses play.

@@ -287,6 +287,7 @@
     attemptsLeft: localStorage.getItem('cr3d_attemptsLeft') !== null ? parseInt(localStorage.getItem('cr3d_attemptsLeft'), 10) : 10,
     attemptsResetAt: localStorage.getItem('cr3d_attemptsResetAt') ? parseInt(localStorage.getItem('cr3d_attemptsResetAt'), 10) : null,
     attemptsResetDay: localStorage.getItem('cr3d_attemptsResetDay') || '',
+    testAdBonusAttempts: parseInt(localStorage.getItem('cr3d_testAdBonusAttempts') || '0', 10),
     attemptsByLevel: {},
     withdrawals: JSON.parse(localStorage.getItem('cr3d_withdrawals') || '[]'),
     lastWithdrawalDay: localStorage.getItem('cr3d_lastWithdrawalDay') || ''
@@ -355,6 +356,7 @@
     const attemptsByLevelKey = accountStorageKey('cr3d_attemptsByLevel');
     store.attemptsByLevel[activeAttemptLevel()] = { left:store.attemptsLeft, resetAt:store.attemptsResetAt, resetDay:store.attemptsResetDay };
     localStorage.setItem(attemptsByLevelKey, JSON.stringify(store.attemptsByLevel));
+    localStorage.setItem('cr3d_testAdBonusAttempts', Math.max(0, Number(store.testAdBonusAttempts) || 0));
     localStorage.setItem('cr3d_withdrawals', JSON.stringify(store.withdrawals));
   }
 
@@ -517,6 +519,7 @@
     ensureAttempts();
     if (store.attemptsLeft <= 0) return false;
     store.attemptsLeft -= 1;
+    if (Number(store.testAdBonusAttempts) > 0) store.testAdBonusAttempts -= 1;
     if (store.attemptsLeft === 0) {
       store.attemptsResetAt = getAttemptResetAt();
     }
@@ -1885,10 +1888,13 @@
     const statusEl = document.getElementById('adsTaskStatus');
     const card = document.getElementById('adsTaskCard');
     if (!progressEl || !button || !statusEl || !card) return;
-    const watched = Math.min(10, Math.max(0, Number(store.adVideosWatched) || 0));
-    const completed = store.adRewardClaimed || watched >= 10;
+    const testMode = new URLSearchParams(window.location.search).get('ad-attempt-test') === '1';
+    const watched = testMode
+      ? Math.min(10, Math.max(0, Number(localStorage.getItem('tt_test_ad_videos') || 0)))
+      : Math.min(10, Math.max(0, Number(store.adVideosWatched) || 0));
+    const completed = testMode ? watched >= 10 : (store.adRewardClaimed || watched >= 10);
     progressEl.textContent = watched + ' / 10 videos · Reward: 0.03 TON';
-    button.disabled = completed || !serverSession.online || !serverSession.token;
+    button.disabled = completed || (!testMode && (!serverSession.online || !serverSession.token));
     button.textContent = completed ? 'Completed' : 'Watch video';
     if (completed){
       card.classList.add('completed');
@@ -1903,7 +1909,24 @@
   async function watchRewardedAd(){
     const statusEl = document.getElementById('adsTaskStatus');
     const button = document.getElementById('watchAdBtn');
-    if (!statusEl || !button || store.adRewardClaimed) return;
+    const testMode = new URLSearchParams(window.location.search).get('ad-attempt-test') === '1';
+    if (!statusEl || !button || (!testMode && store.adRewardClaimed)) return;
+    if (testMode) {
+      const today = todayStr();
+      if (localStorage.getItem('tt_test_ad_day') !== today) {
+        localStorage.setItem('tt_test_ad_day', today);
+        localStorage.setItem('tt_test_ad_videos', '0');
+      }
+      const watched = Number(localStorage.getItem('tt_test_ad_videos') || 0);
+      if (watched >= 10) return;
+      store.attemptsLeft = Math.min(10, Math.max(0, Number(store.attemptsLeft) || 0) + 1);
+      store.testAdBonusAttempts = Math.max(0, Number(store.testAdBonusAttempts) || 0) + 1;
+      localStorage.setItem('tt_test_ad_videos', String(watched + 1));
+      saveStore();
+      renderAdsTask();
+      statusEl.textContent = 'Test: 1 Versuch hinzugefügt. 2-Stunden-Reset bleibt unverändert.';
+      return;
+    }
     if (!serverSession.online || !serverSession.token){
       statusEl.textContent = 'Open the game in Telegram to watch rewarded videos.';
       return;
