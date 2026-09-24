@@ -591,6 +591,15 @@ body:not(.en) .rp svg,body:not(.en) .rb-ic svg{transform:scaleX(-1)}
 .chat-input{direction:ltr}
 .chat-input input,.chat-input textarea{direction:ltr;text-align:left}
 .chat-input .btn.send{order:-1;height:36px;padding:0 11px;border-radius:10px;font-size:12.5px;line-height:36px;box-shadow:0 2px 0 #9b5a00;flex-shrink:0}
+.chat-input .btn.voice-send{height:36px;width:38px;padding:0;border-radius:10px;font-size:17px;line-height:36px;box-shadow:0 2px 0 #9b5a00;flex-shrink:0}
+.chat-input .btn.voice-send.recording{background:#c52d3b;box-shadow:0 2px 0 #7b1823}
+.voice-message{display:flex;align-items:center;gap:8px}
+.voice-message audio{display:none}
+.voice-message .voice-play{width:34px;height:34px;padding:0;border:0;border-radius:50%;background:var(--gold);color:#1a0f00;font-weight:900;cursor:pointer;flex:none;transition:transform .15s,background .15s}
+.voice-message .voice-play:hover{transform:scale(1.06);background:var(--gold2)}
+.voice-track{position:relative;width:min(150px,42vw);height:7px;border-radius:999px;background:rgba(255,255,255,.22);cursor:pointer;overflow:hidden}
+.voice-progress{display:block;width:0;height:100%;border-radius:inherit;background:var(--gold);transition:width .1s linear}
+.voice-duration{min-width:32px;color:rgba(255,255,255,.78);font:700 11px/1 "Vazirmatn",Tahoma,sans-serif;direction:ltr;text-align:right}
 .reply-bar:not([hidden]) + .chat-input{margin-top:6px}
 @media (max-width:600px){
   .chat-input input,.chat-input textarea{font-size:16px}
