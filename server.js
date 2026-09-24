@@ -3100,6 +3100,56 @@ app.post('/admin/users/:uid/adjust-ton', requireAdmin, (req, res) => {
   res.json({ ok: true, uid: user.id, ton: user.ton });
 });
 
+// One-time-safe correction for the duplicate deposit case: restore Level 1
+// while preserving deposits and purchase history, and set the exact TON balance.
+app.post('/admin/users/:uid/correct-duplicate-deposit', requireAdmin, (req, res) => {
+  const uid = String(req.params.uid);
+  const user = users[uid];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  if (String(req.body && req.body.confirmUid || '') !== uid) {
+    return res.status(400).json({ error: 'confirmation-uid-required' });
+  }
+
+  const targetTon = Number(req.body && req.body.targetTon);
+  if (!Number.isFinite(targetTon) || targetTon !== 0.5) {
+    return res.status(400).json({ error: 'target-ton-must-be-0.5' });
+  }
+
+  const before = {
+    ton: Number(user.ton) || 0,
+    level: Number(user.level) || 1,
+    ownedSkins: Array.isArray(user.ownedSkins) ? user.ownedSkins.slice() : [],
+  };
+  user.ton = 0.5;
+  user.level = 1;
+  user.ownedSkins = ['yellow'];
+  user.tonToday = 0;
+  user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  user.tonDate = '';
+  user.attemptsLeft = ATTEMPT_LIMIT_LEVEL_ONE;
+  user.attemptsResetAt = null;
+  user.attemptsByLevel = {};
+  user.attemptResetVersion = Date.now();
+  user.adminCorrections = Array.isArray(user.adminCorrections) ? user.adminCorrections : [];
+  user.adminCorrections.push({
+    type: 'duplicate-deposit-level-rollback',
+    ts: Date.now(),
+    before,
+    after: { ton: user.ton, level: user.level, ownedSkins: user.ownedSkins.slice() },
+  });
+  persist();
+  console.log('[admin] duplicate-deposit correction for user ' + user.id + ': TON ' + before.ton + ' -> 0.5, level ' + before.level + ' -> 1');
+  res.json({
+    ok: true,
+    uid: user.id,
+    ton: user.ton,
+    level: user.level,
+    ownedSkins: user.ownedSkins,
+    depositsPreserved: true,
+    purchasesPreserved: true,
+  });
+});
+
 app.post('/admin/reset-users', requireAdmin, async (req, res) => {
   const resetUsers = Object.values(users);
   rpsGames = {};
