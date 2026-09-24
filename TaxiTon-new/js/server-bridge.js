@@ -292,7 +292,7 @@
           window.alert('Telegram-Anmeldung fehlt. Öffne die Mini-App über den Bot-Button neu.');
           return;
         }
-        var target = new URL('/zombie-tower/zombieTT.html?v=2026092405', window.location.origin);
+        var target = new URL('/zombie-tower/zombieTT.html?v=2026092407', window.location.origin);
         target.searchParams.set('token', SESSION.token);
         window.location.assign(target.toString());
       });
