@@ -1182,7 +1182,6 @@ tabs.forEach(t=>{
     // "Game" tab opens the real Monster Crash game directly (matches old design's
     // navButtons handler: dataset.screen==='game-menu' -> location.href='/monster-crash/').
     if(t.dataset.s==='game'){
-      if(t.dataset.s==='shop')showShopAdIfDue();
       tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
       t.classList.add('active');t.setAttribute('aria-selected','true');
       document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='game'));
@@ -1191,6 +1190,7 @@ tabs.forEach(t=>{
       try{window.Telegram&&Telegram.WebApp.HapticFeedback.selectionChanged()}catch(e){}
       return;
     }
+    if(t.dataset.s==='shop')showShopAdIfDue();
     tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
     t.classList.add('active');t.setAttribute('aria-selected','true');
     document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===t.dataset.s));
