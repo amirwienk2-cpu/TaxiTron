@@ -1941,6 +1941,13 @@ function randomGiftPrizeTon() {
   return 0.5;
 }
 
+function normalizeChatGuess(text) {
+  return text.replace(/[\u06F0-\u06F9\u0660-\u0669]/g, (digit) => {
+    const code = digit.charCodeAt(0);
+    return String(code - (code >= 0x06F0 ? 0x06F0 : 0x0660));
+  });
+}
+
 function runRandomGiftDrop(now) {
   chatMessages.forEach((message) => {
     if (message.randomGift && message.giftClaimed !== true && message.giftExpired !== true) {
@@ -2076,7 +2083,8 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     .trim();
   if (!raw) return res.status(400).json({ error: 'empty-message' });
   const now = Date.now();
-  const isGiftGuess = /^(?:[1-9]|[1-4][0-9]|50)$/.test(raw) &&
+  const normalizedGuess = normalizeChatGuess(raw);
+  const isGiftGuess = /^(?:[1-9]|[1-4][0-9]|50)$/.test(normalizedGuess) &&
     now >= RANDOM_GIFT_EVENT_START_MS && now < RANDOM_GIFT_EVENT_END_MS;
   const gift = isGiftGuess ? [...chatMessages].reverse().find((entry) => (
     entry.randomGift === true && entry.giftClaimed !== true && entry.giftExpired !== true
@@ -2097,7 +2105,7 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   const text = raw.slice(0, CHAT_MAX_LEN);
   let wonGift = null;
   if (gift) chatLastGiftGuessAt[req.uid] = now;
-  if (gift && Number(raw) === gift.giftNumber) {
+  if (gift && Number(normalizedGuess) === gift.giftNumber) {
     gift.giftClaimed = true;
     gift.giftWinnerUid = String(req.uid);
     gift.giftWinnerName = req.user.name || ('Player ' + req.uid);
