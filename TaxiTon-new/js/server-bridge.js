@@ -443,8 +443,12 @@
       badge4: m.badge4 === true,
       muted: m.chatMuted === true,
       randomWinner: m.randomWinner === true,
+      randomGiftWinner: m.randomGiftWinner === true,
       randomWinnerName: m.randomWinnerName,
       randomPrizeTon: m.randomPrizeTon,
+      randomGiftNumber: m.randomGiftNumber,
+      randomGift: m.randomGift === true,
+      randomGiftActive: !!(m.gift && m.gift.active),
       reply: m.replyTo ? { mid: m.replyTo.id, name: m.replyTo.name, text: m.replyTo.text } : undefined
     };
   }
@@ -520,9 +524,16 @@
       body.replyTo = payload.replyTo.mid;
     }
     return postJSON('/api/chat/send', body).then(function (r) {
+      if (r.data && r.data.guessCooldownMs && typeof TT.startChatGuessCooldown === 'function') {
+        TT.startChatGuessCooldown(r.data.guessCooldownMs);
+      } else if (r.status === 429 && r.data && r.data.error === 'guess-cooldown' &&
+                 typeof TT.startChatGuessCooldown === 'function') {
+        TT.startChatGuessCooldown(r.data.retryAfterMs);
+      }
       if (r.ok && r.data.message) {
         if (typeof TT.addMessage === 'function') TT.addMessage(mapServerMessage(r.data.message));
         if (r.data.message.id > lastChatMessageId) lastChatMessageId = r.data.message.id;
+        if (r.data.state) applyState(r.data.state);
         if (r.data.randomRemaining !== undefined && typeof window.toast === 'function' && typeof T === 'function') {
           window.toast(T().randomRemaining.replace('{n}', String(r.data.randomRemaining)));
         }

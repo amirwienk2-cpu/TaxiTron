@@ -92,6 +92,10 @@ if (ON_RAILWAY && SESSION_SECRET === 'dev-insecure-secret-change-me') {
 
 function runRandomDraw() {
   const now = Date.now();
+  if (now >= RANDOM_GIFT_EVENT_START_MS && now < RANDOM_GIFT_EVENT_END_MS) {
+    runRandomGiftDrop(now);
+    return;
+  }
   const candidates = Object.values(users).filter((user) => (
     now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS
   ));
@@ -191,6 +195,7 @@ const CHAT_SETTINGS_FILE = path.join(DATA_DIR, 'chat-settings.json');
 const CHAT_MAX_STORED = 200; // how many messages are kept on disk/in memory
 const CHAT_MAX_LEN = 300; // characters per message
 const CHAT_MIN_INTERVAL_MS = 2000; // basic anti-spam: one message per user every 2s
+const RANDOM_GIFT_GUESS_COOLDOWN_MS = 5000;
 
 // ---------------------------------------------------------------
 // Storage: load once, keep in memory, persist through a write queue
@@ -271,6 +276,7 @@ try {
 }
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
+const chatLastGiftGuessAt = {}; // uid -> timestamp, in-memory only (number-gift guess cooldown)
 const chatEventClients = new Set();
 const CHAT_REACTION_EMOJIS = new Set(['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '😡']);
 
@@ -1911,14 +1917,85 @@ app.post('/api/magic-tower/play', requireUserFromBody, rejectBannedUser, (req, r
 
 // ---- Online player count (any user seen in the last 90s, i.e. app still open) ----
 const ONLINE_WINDOW_MS = 90000;
-const RANDOM_INTERVAL_MS = 15 * 60 * 1000;
+const RANDOM_INTERVAL_MS = Number(process.env.RANDOM_BOT_INTERVAL_MS) || 15 * 60 * 1000;
 const RANDOM_BOT_UID = 'random-bot';
 const RANDOM_BOT_NAME = 'ZombieBot';
 const RANDOM_PROMO_START_MS = Date.parse('2026-09-22T22:30:00+02:00');
 const RANDOM_PROMO_END_MS = RANDOM_PROMO_START_MS + 72 * 60 * 60 * 1000;
+const RANDOM_GIFT_EVENT_START_MS = Date.parse(
+  process.env.RANDOM_GIFT_EVENT_START_AT || new Date(RANDOM_PROMO_END_MS).toISOString()
+);
+const RANDOM_GIFT_EVENT_END_MS = RANDOM_GIFT_EVENT_START_MS + 72 * 60 * 60 * 1000;
+if (!Number.isFinite(RANDOM_GIFT_EVENT_START_MS)) throw new Error('RANDOM_GIFT_EVENT_START_AT must be a valid date');
 
 function randomPrizeTon(now) {
   return now >= RANDOM_PROMO_START_MS && now < RANDOM_PROMO_END_MS ? 0.2 : 0.001;
+}
+
+function randomGiftPrizeTon() {
+  const roll = crypto.randomInt(100);
+  if (roll < 70) return 0.1;
+  if (roll < 90) return 0.2;
+  if (roll < 97) return 0.3;
+  if (roll < 99) return 0.4;
+  return 0.5;
+}
+
+function runRandomGiftDrop(now) {
+  chatMessages.forEach((message) => {
+    if (message.randomGift && message.giftClaimed !== true && message.giftExpired !== true) {
+      message.giftExpired = true;
+    }
+  });
+  const message = {
+    id: chatNextId++,
+    uid: RANDOM_BOT_UID,
+    name: RANDOM_BOT_NAME,
+    text: 'ZombieBot hat ein Zahlen-Geschenk abgelegt!',
+    ts: now,
+    isAdmin: false,
+    isDesigner: false,
+    chatMuted: false,
+    replyTo: null,
+    randomGift: true,
+    giftNumber: crypto.randomInt(1, 51),
+    giftPrizeTon: randomGiftPrizeTon(),
+    giftClaimed: false,
+    giftExpired: false,
+  };
+  chatMessages.push(message);
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  persistChat();
+  broadcastChatEvent('message');
+}
+
+function publicChatMessage(message, viewerUid) {
+  const {
+    giftNumber, giftPrizeTon: secretGiftPrizeTon, giftClaimed, giftExpired, giftWinnerUid,
+    giftWinnerName, ...publicMessage
+  } = message;
+  publicMessage.isAdmin = users[String(message.uid)]
+    ? users[String(message.uid)].isChatAdmin === true : message.isAdmin === true;
+  publicMessage.adminBadge = users[String(message.uid)]
+    ? (users[String(message.uid)].adminBadge === 'girl' ? 'girl' : 'boy')
+    : (message.adminBadge === 'girl' ? 'girl' : 'boy');
+  publicMessage.isDesigner = users[String(message.uid)]
+    ? users[String(message.uid)].isDesigner === true : message.isDesigner === true;
+  publicMessage.badge4 = users[String(message.uid)]
+    ? users[String(message.uid)].badge4 === true : message.badge4 === true;
+  publicMessage.chatMuted = users[String(message.uid)]
+    ? users[String(message.uid)].chatMuted === true : message.chatMuted === true;
+  publicMessage.reactions = publicChatReactions(message, viewerUid);
+  if (message.randomGift) {
+    publicMessage.gift = {
+      active: giftClaimed !== true && giftExpired !== true && Date.now() < RANDOM_GIFT_EVENT_END_MS,
+      claimed: giftClaimed === true,
+      expired: giftExpired === true,
+      winnerName: giftWinnerName,
+      prizeTon: giftClaimed === true ? secretGiftPrizeTon : undefined,
+    };
+  }
+  return publicMessage;
 }
 
 app.get('/api/online-count', (req, res) => {
@@ -1961,18 +2038,7 @@ app.get('/api/chat/messages', (req, res) => {
   const viewerPayload = verifyToken(req.query.token);
   const viewerUid = viewerPayload ? String(viewerPayload.uid) : null;
   const storedMessages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
-  const messages = storedMessages.map((message) => {
-    const user = users[String(message.uid)];
-    return {
-      ...message,
-      isAdmin: user ? user.isChatAdmin === true : message.isAdmin === true,
-      adminBadge: user ? (user.adminBadge === 'girl' ? 'girl' : 'boy') : (message.adminBadge === 'girl' ? 'girl' : 'boy'),
-      isDesigner: user ? user.isDesigner === true : message.isDesigner === true,
-      badge4: user ? user.badge4 === true : message.badge4 === true,
-      chatMuted: user ? user.chatMuted === true : message.chatMuted === true,
-      reactions: publicChatReactions(message, viewerUid),
-    };
-  });
+  const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
   res.json({ messages, enabled: chatEnabled });
 });
 
@@ -2009,13 +2075,48 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '')
     .trim();
   if (!raw) return res.status(400).json({ error: 'empty-message' });
+  const now = Date.now();
+  const isGiftGuess = /^(?:[1-9]|[1-4][0-9]|50)$/.test(raw) &&
+    now >= RANDOM_GIFT_EVENT_START_MS && now < RANDOM_GIFT_EVENT_END_MS;
+  const gift = isGiftGuess ? [...chatMessages].reverse().find((entry) => (
+    entry.randomGift === true && entry.giftClaimed !== true && entry.giftExpired !== true
+  )) : null;
+  const lastGiftGuessAt = chatLastGiftGuessAt[req.uid] || 0;
+  const guessCooldownRemainingMs = gift
+    ? RANDOM_GIFT_GUESS_COOLDOWN_MS - (now - lastGiftGuessAt)
+    : 0;
+  if (guessCooldownRemainingMs > 0) {
+    return res.status(429).json({ error: 'guess-cooldown', retryAfterMs: guessCooldownRemainingMs });
+  }
   const lastAt = chatLastSentAt[req.uid] || 0;
   if (Date.now() - lastAt < CHAT_MIN_INTERVAL_MS) return res.status(429).json({ error: 'too-fast' });
-  chatLastSentAt[req.uid] = Date.now();
+  chatLastSentAt[req.uid] = now;
   if (raw.toLowerCase() === '/random') {
     return res.status(403).json({ error: 'random-bot-only' });
   }
   const text = raw.slice(0, CHAT_MAX_LEN);
+  let wonGift = null;
+  if (gift) chatLastGiftGuessAt[req.uid] = now;
+  if (gift && Number(raw) === gift.giftNumber) {
+    gift.giftClaimed = true;
+    gift.giftWinnerUid = String(req.uid);
+    gift.giftWinnerName = req.user.name || ('Player ' + req.uid);
+    req.user.ton = Number((Number(req.user.ton || 0) + Number(gift.giftPrizeTon)).toFixed(9));
+    wonGift = {
+      uid: RANDOM_BOT_UID,
+      name: RANDOM_BOT_NAME,
+      text: gift.giftWinnerName + ': ' + gift.giftNumber + ' richtig – ' + gift.giftPrizeTon + ' TON',
+      isAdmin: false,
+      isDesigner: false,
+      chatMuted: false,
+      replyTo: null,
+      randomWinner: true,
+      randomGiftWinner: true,
+      randomWinnerName: gift.giftWinnerName,
+      randomPrizeTon: gift.giftPrizeTon,
+      randomGiftNumber: gift.giftNumber,
+    };
+  }
   const replyToId = Number(req.body && req.body.replyTo) || 0;
   let replyTo = null;
   if (replyToId > 0) {
@@ -2035,9 +2136,19 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     replyTo,
   };
   chatMessages.push(message);
+  if (wonGift) {
+    wonGift.id = chatNextId++;
+    wonGift.ts = Date.now();
+    chatMessages.push(wonGift);
+  }
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
-  res.json({ message });
+  if (wonGift) persist();
+  res.json({
+    message: publicChatMessage(message, req.uid),
+    state: wonGift ? publicState(req.user) : undefined,
+    guessCooldownMs: gift ? RANDOM_GIFT_GUESS_COOLDOWN_MS : undefined,
+  });
   broadcastChatEvent('message');
 });
 

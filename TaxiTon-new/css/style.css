@@ -200,11 +200,26 @@ body.en .page,body.en .countdown{direction:ltr}
 .random-winner-art{position:relative;width:100%;margin:4px auto 2px;line-height:1.2}
 .random-winner-art img{display:block;width:100%;height:auto;object-fit:contain}
 .random-winner-text{position:absolute;top:36%;left:19%;width:65%;color:#1b1a1c;font-size:clamp(10px,2.5vw,15px);font-weight:900;line-height:1.25;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+#chatList .msg.random-gift-winner{width:min(100%,460px);max-width:100%;padding:0;background:transparent;box-shadow:none;overflow:visible}
+.random-gift-winner-art{position:relative;width:100%;line-height:1.2}
+.random-gift-winner-art>img{display:block;width:100%;height:auto;object-fit:contain}
+.random-gift-winner-overlay{position:absolute;top:57%;left:15%;width:70%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;text-align:center}
+.random-gift-winner-overlay .random-winner-text{position:static;width:100%;color:#fff;font-size:clamp(10px,2.4vw,13px);font-weight:900;line-height:1.15;text-shadow:0 2px 4px #651000}
+#chatList .msg.random-gift-winner>.rp,#chatList .msg.random-gift-winner>.rx-btn{top:2px}
+#chatList .msg.random-gift{width:min(100%,460px);max-width:100%;padding:0;background:transparent;box-shadow:none;overflow:visible}
+.random-gift-art{position:relative;width:100%;line-height:1.2}
+.random-gift-art>img{display:block;width:100%;height:auto;object-fit:contain}
+.random-gift-overlay{position:absolute;top:50%;left:18%;width:64%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:0;text-align:center}
+.random-gift-overlay>b{justify-content:center;padding:0!important;color:#40c8ff!important;font-size:clamp(8px,2vw,11px)!important;line-height:1.05;text-shadow:0 1px 3px #001028}
+.random-gift-text{color:#fff;font-size:clamp(8px,2.1vw,11px);font-weight:800;line-height:1.12;white-space:pre-line;text-shadow:0 1px 4px #001028}
+#chatList .msg.random-gift>.rp,#chatList .msg.random-gift>.rx-btn{top:2px}
 .chat-input{display:flex;gap:8px;margin-top:16px;align-items:flex-end}
 .chat-input input,.chat-input textarea{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(224,161,0,.55);
   background:rgba(10,8,30,.8);color:#fff;font:600 15px "Vazirmatn",Tahoma,sans-serif;outline:none}
 .chat-input textarea{resize:none;overflow-y:auto;max-height:140px;line-height:1.4;font-family:inherit}
 .chat-input input:focus,.chat-input textarea:focus{border-color:var(--gold)}
+.chat-guess-cooldown{width:calc(100% - 104px);margin:4px auto 0 0;color:rgba(255,216,74,.9);font:700 11px/1.35 "Vazirmatn",Tahoma,sans-serif;text-align:center}
+.chat-guess-cooldown[hidden]{display:none}
 .btn.send{margin-top:0;padding:12px 20px}
 body.en .tab{font-size:11.5px}
 

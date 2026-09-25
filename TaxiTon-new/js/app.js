@@ -20,8 +20,13 @@ const I18N={
 };
 Object.assign(I18N.fa,{levelLocked:'قفل شده',randomWinner:'{name} برنده رندوم شد: {amount} TON 🎉'});
 Object.assign(I18N.fa,{randomRemaining:'Random {n}'});
-Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: {amount} TON 🎉',randomRemaining:'Random {n}'});
-Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: {amount} TON 🎉',randomRemaining:'Random {n}'});
+Object.assign(I18N.fa,{randomGift:'عدد ۱ تا ۵۰ را حدس بزن!\nاولین پاسخ درست برنده است.'});
+Object.assign(I18N.fa,{randomGiftWinner:'{name}: {number} درست — {amount} TON',giftGuessCooldown:'حدس بعدی تا {seconds} ثانیه دیگر'});
+Object.assign(I18N.de,{levelLocked:'Gesperrt',randomWinner:'{name} hat random gewonnen: {amount} TON 🎉',randomRemaining:'Random {n}',randomGift:'Zahl von 1–50 erraten!\nDer erste Treffer gewinnt.',randomGiftExpired:'Dieses Geschenk ist abgelaufen. Tippe die Zahl aus dem neuesten Geschenk.',giftGuessCooldown:'Du kannst in {seconds} Sek. wieder raten.'});
+Object.assign(I18N.de,{randomGiftWinner:'{name}: {number} richtig – {amount} TON'});
+Object.assign(I18N.en,{levelLocked:'Locked',randomWinner:'{name} won the random draw: {amount} TON 🎉',randomRemaining:'Random {n}',randomGift:'Guess a number from 1–50!\nFirst correct guess wins.',randomGiftExpired:'This gift has expired. Guess the number in the newest gift.',giftGuessCooldown:'You can guess again in {seconds}s.'});
+Object.assign(I18N.en,{randomGiftWinner:'{name}: {number} correct – {amount} TON'});
+Object.assign(I18N.fa,{randomGiftExpired:'این هدیه منقضی شده است. عدد هدیه جدیدتر را حدس بزن.'});
 Object.assign(I18N.fa,{gameNoAttempts:'تلاش دیگری باقی نمانده',gameTryLater:'بعداً دوباره امتحان کنید'});
 Object.assign(I18N.de,{gameNoAttempts:'Keine Versuche mehr',gameTryLater:'Später erneut versuchen'});
 Object.assign(I18N.en,{gameNoAttempts:'No attempts left',gameTryLater:'Try again later'});
@@ -53,6 +58,7 @@ function applyLang(){
   if(typeof renderOnline==='function') renderOnline();
   if(typeof renderChatBadges==='function') renderChatBadges();
   if(typeof renderRandomWinnerMessages==='function') renderRandomWinnerMessages();
+  if(typeof renderRandomGiftMessages==='function') renderRandomGiftMessages();
   if(typeof renderTask==='function') renderTask();
   if(typeof renderAdsTask==='function') renderAdsTask();
   if(typeof renderInviteLeaderboard==='function') renderInviteLeaderboard(IV_LAST_DATA);
@@ -76,7 +82,26 @@ document.querySelectorAll('.seg-btn').forEach(b=>b.addEventListener('click',()=>
 }));
 
 // Chat (local demo – connect to your server later)
-const chatList=document.getElementById('chatList'), chatText=document.getElementById('chatText');
+const chatList=document.getElementById('chatList'), chatText=document.getElementById('chatText'), chatGuessCooldown=document.getElementById('chatGuessCooldown');
+let chatGuessCooldownUntil=0, chatGuessCooldownTimer=null;
+function renderChatGuessCooldown(){
+  const seconds=Math.max(0,Math.ceil((chatGuessCooldownUntil-Date.now())/1000));
+  chatGuessCooldown.hidden=seconds===0;
+  chatGuessCooldown.textContent=seconds?T().giftGuessCooldown.replace('{seconds}',nf(seconds)):'';
+  if(seconds===0){
+    if(chatGuessCooldownTimer){clearInterval(chatGuessCooldownTimer);chatGuessCooldownTimer=null;}
+    renderMyState();
+    return;
+  }
+  chatText.disabled=true;
+  document.getElementById('chatSend').disabled=true;
+}
+window.TT=window.TT||{};
+TT.startChatGuessCooldown=duration=>{
+  chatGuessCooldownUntil=Math.max(chatGuessCooldownUntil,Date.now()+Math.max(0,Number(duration)||0));
+  if(!chatGuessCooldownTimer) chatGuessCooldownTimer=setInterval(renderChatGuessCooldown,200);
+  renderChatGuessCooldown();
+};
 function scrollChatToEnd(smooth=true){
   chatList.scrollTo({top:chatList.scrollHeight,behavior:smooth?'smooth':'auto'});
 }
@@ -403,48 +428,85 @@ TT.setOnline=x=>{
 TT.addMessage=(m)=>{
   m=m||{};
   if(m.mid!==undefined&&Array.from(chatList.querySelectorAll('.msg[data-mid]')).some(el=>el.dataset.mid===String(m.mid))) return;
-  const d=document.createElement('div'); d.className='msg'+(m.me?' me':'')+(m.randomWinner?' random-winner':'');
+  const d=document.createElement('div'); d.className='msg'+(m.me?' me':'')+(m.randomWinner?' random-winner':'')+(m.randomGift?' random-gift':'')+(m.randomGiftWinner?' random-gift-winner':'');
   if(m.admin) d.dataset.admin=m.admin;
   if(m.badge&&m.badge!=='badge4') d.dataset.badge=m.badge;
   if(m.badge4===true||m.badge==='badge4') d.dataset.badge4='true';
   if(m.id!==undefined) d.dataset.uid=m.id;
   if(m.mid!==undefined) d.dataset.mid=m.mid;
   if(m.muted!==undefined) d.dataset.muted=m.muted?'true':'false';
-  if(m.randomWinner){
+  if(m.randomWinner||m.randomGiftWinner){
     d.dataset.randomWinnerName=m.randomWinnerName||'';
     d.dataset.randomWinnerText=m.text||'';
     d.dataset.randomPrizeTon=m.randomPrizeTon||'';
+    if(m.randomGiftNumber!==undefined) d.dataset.randomGiftNumber=m.randomGiftNumber;
   }
   if(m.time!==undefined){ const t=new Date(m.time).getTime(); if(!isNaN(t)) d.dataset.ts=t; }
   const b=document.createElement('b'); b.textContent=m.name||'?'; const s=document.createElement('span'); s.textContent=m.text||'';
-  d.append(b);
-  if(m.randomWinner){
+  if(m.randomGift){ s.className='random-gift-text'; if(m.randomGiftActive===false) d.dataset.giftExpired='true'; }
+  if(m.randomGift){
+    const giftArt=document.createElement('div');
+    giftArt.className='random-gift-art';
+    const giftImage=document.createElement('img');
+    giftImage.src='/sprites/Event2.png';
+    giftImage.alt='';
+    giftImage.setAttribute('aria-hidden','true');
+    const giftOverlay=document.createElement('div');
+    giftOverlay.className='random-gift-overlay';
+    giftOverlay.append(b,s);
+    giftArt.append(giftImage,giftOverlay);
+    d.append(giftArt);
+  } else if(m.randomWinner||m.randomGiftWinner){
     const winnerArt=document.createElement('div');
-    winnerArt.className='random-winner-art';
+    winnerArt.className=m.randomGiftWinner?'random-gift-winner-art':'random-winner-art';
     const winnerImage=document.createElement('img');
-    winnerImage.src='/sprites/ghore.png';
+    winnerImage.src=m.randomGiftWinner?'/sprites/Event1.png':'/sprites/ghore.png';
     winnerImage.alt='';
     winnerImage.setAttribute('aria-hidden','true');
     s.className='random-winner-text';
-    winnerArt.append(winnerImage,s);
+    if(m.randomGiftWinner){
+      const winnerOverlay=document.createElement('div');
+      winnerOverlay.className='random-gift-winner-overlay';
+      winnerOverlay.append(s);
+      winnerArt.append(winnerImage,winnerOverlay);
+    } else {
+      d.append(b);
+      winnerArt.append(winnerImage,s);
+    }
     d.append(winnerArt);
   } else {
+    d.append(b);
     d.append(s);
   }
   if(m.reply) d.append(buildQuote(m.reply));
   chatList.append(d); decorateMsg(d); renderChatBadges(); renderModMarks();
+  if(m.randomGift){
+    document.querySelectorAll('#chatList .msg.random-gift').forEach(oldGift=>{oldGift.dataset.giftExpired='true';});
+    if(m.randomGiftActive!==false) d.dataset.giftExpired='false';
+    renderRandomGiftMessages();
+  }
   if(m.reactions) TT.setReactions(m.mid,m.reactions.counts,m.reactions.mine);
   scrollChatToEnd();
 };
 function renderRandomWinnerMessages(){
-  document.querySelectorAll('#chatList .msg.random-winner').forEach((message)=>{
+  document.querySelectorAll('#chatList .msg.random-winner, #chatList .msg.random-gift-winner').forEach((message)=>{
     const name=message.dataset.randomWinnerName;
     const amount=message.dataset.randomPrizeTon || '0.001';
-    const text=name && T().randomWinner
-      ? T().randomWinner.replace('{name}',name).replace('{amount}',amount)
+    const number=message.dataset.randomGiftNumber || '';
+    const messageTemplate=message.classList.contains('random-gift-winner')?T().randomGiftWinner:T().randomWinner;
+    const text=name && messageTemplate
+      ? messageTemplate.replace('{name}',name).replace('{number}',number).replace('{amount}',amount)
       : message.dataset.randomWinnerText;
     const body=message.querySelector('.random-winner-text');
     if(body && text) body.textContent=text;
+  });
+}
+function renderRandomGiftMessages(){
+  document.querySelectorAll('#chatList .msg.random-gift').forEach(message=>{
+    const body=message.querySelector('.random-gift-text');
+    if(body) body.textContent=message.dataset.giftExpired==='true'
+      ? (T().randomGiftExpired||T().randomGift||body.textContent)
+      : (T().randomGift||body.textContent);
   });
 }
 
@@ -925,7 +987,8 @@ function chatBlocked(){
 }
 function renderMyState(){
   const manager=canManageChat(), closed=!CHAT_ENABLED&&!manager, off=closed||MY.banned||myMuted();
-  chatText.disabled=off; document.getElementById('chatSend').disabled=off;
+  const guessing=chatGuessCooldownUntil>Date.now();
+  chatText.disabled=off||guessing; document.getElementById('chatSend').disabled=off||guessing;
   chatText.placeholder=closed?T().chatClosed:MY.banned?T().youBanned:off?T().youMuted:T().chatPh;
   chatToggle.hidden=!manager;
   chatToggle.textContent=CHAT_ENABLED?T().chatClose:T().chatOpen;
