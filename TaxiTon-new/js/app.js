@@ -764,9 +764,9 @@ Object.assign(I18N.en,{aMute:'Mute',aTalk:'Unmute',aChatOff:'Block chat',aChatOn
 Object.assign(I18N.fa,{chatClose:'بستن چت',chatOpen:'باز کردن چت',chatClosed:'چت توسط ادمین بسته شده'});
 Object.assign(I18N.de,{chatClose:'Chat schließen',chatOpen:'Chat öffnen',chatClosed:'Der Chat wurde vom Admin geschlossen'});
 Object.assign(I18N.en,{chatClose:'Close chat',chatOpen:'Open chat',chatClosed:'The chat was closed by an admin'});
-Object.assign(I18N.fa,{randomPromoBefore:'قرعه‌کشی ZombieBot شروع می‌شود در {time}',randomPromoActive:'زمان باقی‌مانده ZombieBot: {time}',randomPromoDone:'رویداد ZombieBot تمام شد'});
-Object.assign(I18N.de,{randomPromoBefore:'ZombieBot-Ziehung startet in {time}',randomPromoActive:'ZombieBot-Aktion verbleibend: {time}',randomPromoDone:'ZombieBot-Aktion beendet'});
-Object.assign(I18N.en,{randomPromoBefore:'ZombieBot draw starts in {time}',randomPromoActive:'ZombieBot event remaining: {time}',randomPromoDone:'ZombieBot event ended'});
+Object.assign(I18N.fa,{randomPromoBefore:'رویداد ZombieBot شروع می‌شود در {time}',randomPromoActive:'زمان باقی‌مانده رویداد ZombieBot: {time}',randomPromoDone:'رویداد ZombieBot تمام شد'});
+Object.assign(I18N.de,{randomPromoBefore:'ZombieBot-Event startet in {time}',randomPromoActive:'ZombieBot-Event endet in {time}',randomPromoDone:'ZombieBot-Event beendet'});
+Object.assign(I18N.en,{randomPromoBefore:'ZombieBot event starts in {time}',randomPromoActive:'ZombieBot event ends in {time}',randomPromoDone:'ZombieBot event ended'});
 Object.assign(I18N.fa,{lvInfoTitle:'راننده لول {n}',lvInfoSoon:'اطلاعات این راننده به‌زودی اضافه می‌شود.'});
 Object.assign(I18N.de,{lvInfoTitle:'Fahrer Level {n}',lvInfoSoon:'Infos zu diesem Fahrer folgen in Kürze.'});
 Object.assign(I18N.en,{lvInfoTitle:'Level {n} driver',lvInfoSoon:'Details about this driver are coming soon.'});
@@ -957,7 +957,8 @@ renderOnline=function(){ _renderOnline2(); filterOnline(); };
 const MY={muted:false,banned:false};
 let CHAT_ENABLED=true;
 const RANDOM_PROMO_START=Date.parse('2026-09-22T22:30:00+02:00');
-const RANDOM_PROMO_END=RANDOM_PROMO_START+72*60*60*1000;
+const RANDOM_GIFT_EVENT_START=RANDOM_PROMO_START+72*60*60*1000;
+const RANDOM_GIFT_EVENT_END=RANDOM_GIFT_EVENT_START+72*60*60*1000;
 const randomPromoTimer=document.getElementById('randomPromoTimer');
 function formatPromoTime(ms){
   const total=Math.max(0,Math.floor(ms/1000));
@@ -969,7 +970,8 @@ function renderRandomPromoTimer(){
   if(!randomPromoTimer) return;
   const now=Date.now();
   if(now<RANDOM_PROMO_START) randomPromoTimer.textContent=T().randomPromoBefore.replace('{time}',formatPromoTime(RANDOM_PROMO_START-now));
-  else if(now<RANDOM_PROMO_END) randomPromoTimer.textContent=T().randomPromoActive.replace('{time}',formatPromoTime(RANDOM_PROMO_END-now));
+  else if(now<RANDOM_GIFT_EVENT_START) randomPromoTimer.textContent=T().randomPromoActive.replace('{time}',formatPromoTime(RANDOM_GIFT_EVENT_START-now));
+  else if(now<RANDOM_GIFT_EVENT_END) randomPromoTimer.textContent=T().randomPromoActive.replace('{time}',formatPromoTime(RANDOM_GIFT_EVENT_END-now));
   else randomPromoTimer.textContent=T().randomPromoDone;
 }
 renderRandomPromoTimer();
