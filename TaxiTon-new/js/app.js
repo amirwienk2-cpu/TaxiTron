@@ -1222,7 +1222,6 @@ TT.setInviteLeaderboard=renderInviteLeaderboard;
 // Tabs
 const tabs=document.querySelectorAll('.tab');
 const SHOP_AD_COOLDOWN_MS=20*60*1000;
-const SECTION_AD_COOLDOWN_MS=60*60*1000;
 const sectionAdInProgress={};
 async function showSectionAdIfDue(section,cooldownMs){
   let lastShown=0;
@@ -1259,8 +1258,6 @@ tabs.forEach(t=>{
       return;
     }
     if(t.dataset.s==='shop')showShopAdIfDue();
-    if(t.dataset.s==='tournament')showSectionAdIfDue('tournament',SECTION_AD_COOLDOWN_MS);
-    if(t.dataset.s==='wallet')showSectionAdIfDue('wallet',SECTION_AD_COOLDOWN_MS);
     tabs.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
     t.classList.add('active');t.setAttribute('aria-selected','true');
     document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===t.dataset.s));
