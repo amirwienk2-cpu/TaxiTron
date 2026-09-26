@@ -1917,7 +1917,9 @@ app.post('/api/magic-tower/play', requireUserFromBody, rejectBannedUser, (req, r
 
 // ---- Online player count (any user seen in the last 90s, i.e. app still open) ----
 const ONLINE_WINDOW_MS = 90000;
-const RANDOM_INTERVAL_MS = Number(process.env.RANDOM_BOT_INTERVAL_MS) || 15 * 60 * 1000;
+const RANDOM_BOT_INTERVAL_MS = Number(process.env.RANDOM_BOT_INTERVAL_MS);
+const RANDOM_BOT_MIN_INTERVAL_MS = 15 * 60 * 1000;
+const RANDOM_BOT_MAX_INTERVAL_MS = 45 * 60 * 1000;
 const RANDOM_BOT_UID = 'random-bot';
 const RANDOM_BOT_NAME = 'ZombieBot';
 const RANDOM_PROMO_START_MS = Date.parse('2026-09-22T22:30:00+02:00');
@@ -1946,6 +1948,25 @@ function normalizeChatGuess(text) {
     const code = digit.charCodeAt(0);
     return String(code - (code >= 0x06F0 ? 0x06F0 : 0x0660));
   });
+}
+
+function nextRandomBotIntervalMs() {
+  if (Number.isFinite(RANDOM_BOT_INTERVAL_MS) && RANDOM_BOT_INTERVAL_MS > 0) {
+    return RANDOM_BOT_INTERVAL_MS;
+  }
+  return crypto.randomInt(RANDOM_BOT_MIN_INTERVAL_MS, RANDOM_BOT_MAX_INTERVAL_MS + 1);
+}
+
+function scheduleRandomDraw() {
+  setTimeout(() => {
+    try {
+      runRandomDraw();
+    } catch (error) {
+      console.error('[random-bot] draw failed: ' + error.message);
+    } finally {
+      scheduleRandomDraw();
+    }
+  }, nextRandomBotIntervalMs());
 }
 
 function runRandomGiftDrop(now) {
@@ -3545,7 +3566,7 @@ server.listen(PORT, () => {
   }
   if (!BOT_TOKEN) console.warn('WARNING: BOT_TOKEN not set — /api/auth will always fail.');
   startTelegramBot().catch((error) => console.error('[bot] NICHT gestartet: ' + error.message));
-  setInterval(runRandomDraw, RANDOM_INTERVAL_MS);
+  scheduleRandomDraw();
   if (!DEPOSIT_ADDRESS) console.warn('WARNING: DEPOSIT_ADDRESS not set — automatic deposits are disabled.');
   if (!PLATFORM_USER_ID) console.warn('WARNING: PLATFORM_USER_ID not set — RPS platform fees cannot be credited.');
   else {
