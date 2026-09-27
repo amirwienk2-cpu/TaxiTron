@@ -27,6 +27,9 @@ npm start
   private TURN provider. TURN is required for reliable Telegram mobile voice
   chat because many mobile networks cannot connect through STUN alone. Use an
   HTTPS public domain for the Mini App so Telegram can grant microphone access.
+  The optional `INVITE_LEADERBOARD_CAMPAIGN_STARTS_AT` and
+  `INVITE_LEADERBOARD_CAMPAIGN_ENDS_AT` values set the invite leaderboard
+  window as ISO-8601 timestamps.
 4. Deploy. Railway provides `PORT` automatically.
 5. In `app.js`, make sure `SERVER_URL` points at the Railway domain.
   The current production fallback is `https://taxitron-production.up.railway.app`.

@@ -77,10 +77,19 @@ if (!Number.isFinite(INVITE_EVENT_ENDS_AT)) throw new Error('INVITE_EVENT_ENDS_A
 // starting from INVITE_LEADERBOARD_STARTS_AT wins TON once the campaign ends.
 // Only invites completed inside this window count (existing referralCount
 // from before the campaign is untouched).
-const INVITE_LEADERBOARD_STARTS_AT = Date.parse(process.env.INVITE_LEADERBOARD_STARTS_AT || '2026-09-19T15:21:53.666Z');
-const INVITE_LEADERBOARD_ENDS_AT = Date.parse(process.env.INVITE_LEADERBOARD_ENDS_AT || '2026-09-26T15:21:53.666Z');
-if (!Number.isFinite(INVITE_LEADERBOARD_STARTS_AT)) throw new Error('INVITE_LEADERBOARD_STARTS_AT must be a valid date');
-if (!Number.isFinite(INVITE_LEADERBOARD_ENDS_AT)) throw new Error('INVITE_LEADERBOARD_ENDS_AT must be a valid date');
+const INVITE_LEADERBOARD_STARTS_AT = Date.parse(
+  process.env.INVITE_LEADERBOARD_CAMPAIGN_STARTS_AT ||
+  process.env.INVITE_LEADERBOARD_STARTS_AT ||
+  '2026-09-27T17:13:24.368Z'
+);
+const INVITE_LEADERBOARD_ENDS_AT = Date.parse(
+  process.env.INVITE_LEADERBOARD_CAMPAIGN_ENDS_AT ||
+  process.env.INVITE_LEADERBOARD_ENDS_AT ||
+  '2026-10-04T17:13:24.368Z'
+);
+if (!Number.isFinite(INVITE_LEADERBOARD_STARTS_AT)) throw new Error('Invite leaderboard campaign start must be a valid date');
+if (!Number.isFinite(INVITE_LEADERBOARD_ENDS_AT)) throw new Error('Invite leaderboard campaign end must be a valid date');
+if (INVITE_LEADERBOARD_ENDS_AT <= INVITE_LEADERBOARD_STARTS_AT) throw new Error('Invite leaderboard campaign end must be after its start');
 const INVITE_LEADERBOARD_REWARDS = [20, 10, 5]; // TON for rank 1 / 2 / 3
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
 const RAILWAY_VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
@@ -322,11 +331,17 @@ function persistChatSettings() {
 
 // One-time settlement state for the invite leaderboard campaign (payout only
 // happens once, tracked outside of any single user so it survives restarts).
-let inviteCampaignState = { settled: false, winners: [] };
+let inviteCampaignState = { campaignId: null, settled: false, winners: [] };
 try {
   if (fs.existsSync(INVITE_CAMPAIGN_FILE)) {
     const loaded = JSON.parse(fs.readFileSync(INVITE_CAMPAIGN_FILE, 'utf8'));
-    if (loaded && typeof loaded === 'object') inviteCampaignState = { settled: !!loaded.settled, winners: Array.isArray(loaded.winners) ? loaded.winners : [] };
+    if (loaded && typeof loaded === 'object') {
+      inviteCampaignState = {
+        campaignId: typeof loaded.campaignId === 'string' ? loaded.campaignId : null,
+        settled: !!loaded.settled,
+        winners: Array.isArray(loaded.winners) ? loaded.winners : [],
+      };
+    }
   }
 } catch (e) {
   console.error('[invite-campaign] settings file unreadable: ' + e.message);
@@ -335,15 +350,6 @@ function persistInviteCampaignState() {
   try { fs.writeFileSync(INVITE_CAMPAIGN_FILE, JSON.stringify(inviteCampaignState)); }
   catch (e) { console.error('[invite-campaign] could not write settings: ' + e.message); }
 }
-
-
-// Keep a copy of the last good state from startup as a safety net
-try {
-  if (Object.keys(users).length > 0) fs.writeFileSync(BACKUP_FILE, JSON.stringify(users));
-} catch (e) {
-  console.error('[storage] could not write backup: ' + e.message);
-}
-
 let writeQueue = Promise.resolve();
 let shuttingDown = false;
 
@@ -364,6 +370,25 @@ function persist() {
     });
   }));
   return writeQueue;
+}
+
+const inviteCampaignId = String(INVITE_LEADERBOARD_STARTS_AT);
+if (inviteCampaignState.campaignId !== inviteCampaignId) {
+  Object.values(users).forEach((user) => {
+    user.campaignInvites = 0;
+    user.campaignLastInviteAt = 0;
+    if (user.referredBy) user.campaignInviteCounted = true;
+  });
+  inviteCampaignState = { campaignId: inviteCampaignId, settled: false, winners: [] };
+  persistInviteCampaignState();
+  persist();
+  console.log('[invite-campaign] new campaign started; invite counts reset.');
+}
+
+try {
+  if (Object.keys(users).length > 0) fs.writeFileSync(BACKUP_FILE, JSON.stringify(users));
+} catch (e) {
+  console.error('[storage] could not write backup: ' + e.message);
 }
 
 function persistRpsGames() {
