@@ -473,11 +473,19 @@ function publicChatLikeRound(round, uid) {
 
 function publicChatLikeEvent(uid) {
   const now = Date.now();
+  const currentRound = [...chatLikeEventState.rounds].reverse()
+    .find((round) => !round.settled) || chatLikeEventState.rounds[chatLikeEventState.rounds.length - 1] || null;
+  const currentRoundData = currentRound ? publicChatLikeRound(currentRound, uid) : null;
   return {
     startsAt: CHAT_LIKE_EVENT_START_MS,
     endsAt: CHAT_LIKE_EVENT_END_MS,
     status: now < CHAT_LIKE_EVENT_START_MS ? 'scheduled' : now < CHAT_LIKE_EVENT_END_MS ? 'active' : 'expired',
     nextDropAt: chatLikeEventState.nextDropAt,
+    target: currentRoundData ? currentRoundData.target : 0,
+    likes: currentRoundData ? currentRoundData.likes : 0,
+    userLiked: currentRoundData ? currentRoundData.userLiked : false,
+    messageId: currentRoundData ? currentRoundData.messageId : 0,
+    winners: currentRoundData ? currentRoundData.winners : [],
     rounds: chatLikeEventState.rounds.map((round) => publicChatLikeRound(round, uid)),
   };
 }
@@ -2346,13 +2354,17 @@ app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (re
   }
   const roundId = String(req.body.roundId || '');
   const round = chatLikeEventState.rounds.find((entry) => entry.roundId === roundId);
-  if (!round) {
+  const compatibleRound = !roundId
+    ? [...chatLikeEventState.rounds].reverse().find((entry) => !entry.settled)
+    : null;
+  const targetRound = round || compatibleRound;
+  if (!targetRound) {
     return res.status(409).json({
       error: 'like-event-not-dropped',
       event: publicChatLikeEvent(req.uid),
     });
   }
-  if (round.settled) {
+  if (targetRound.settled) {
     return res.status(409).json({
       error: 'like-event-complete',
       event: publicChatLikeEvent(req.uid),
@@ -2360,37 +2372,37 @@ app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (re
   }
 
   const uid = String(req.uid);
-  const alreadyLiked = round.likers.includes(uid);
+  const alreadyLiked = targetRound.likers.includes(uid);
   if (!alreadyLiked) {
     const previousState = JSON.parse(JSON.stringify(chatLikeEventState));
-    round.likers.push(uid);
-    if (round.likers.length >= round.target) {
-      const selected = round.likers.slice();
+    targetRound.likers.push(uid);
+    if (targetRound.likers.length >= targetRound.target) {
+      const selected = targetRound.likers.slice();
       for (let i = 0; i < 3; i += 1) {
         const j = i + crypto.randomInt(selected.length - i);
         [selected[i], selected[j]] = [selected[j], selected[i]];
       }
-      round.winners = selected.slice(0, 3).map((winnerUid) => ({
+      targetRound.winners = selected.slice(0, 3).map((winnerUid) => ({
         uid: winnerUid,
         name: users[winnerUid] && users[winnerUid].name || ('Player ' + winnerUid),
         photoUrl: users[winnerUid] && users[winnerUid].photoUrl || '',
         reward: 0.2,
       }));
-      round.settled = true;
+      targetRound.settled = true;
     }
     if (!persistChatLikeEventState()) {
       chatLikeEventState = previousState;
       return res.status(500).json({ error: 'like-event-save-failed' });
     }
     applyChatLikeEventPayouts();
-    ensureChatLikeEventWinnerMessage(round);
+    ensureChatLikeEventWinnerMessage(targetRound);
     broadcastChatEvent('like-event', {
       event: publicChatLikeEvent(null),
-      winnerBalances: round.winners.map((winner) => ({
+      winnerBalances: targetRound.winners.map((winner) => ({
         uid: winner.uid,
         ton: Number(users[winner.uid] && users[winner.uid].ton || 0),
       })),
-      roundId: round.roundId,
+      roundId: targetRound.roundId,
     });
   }
 
