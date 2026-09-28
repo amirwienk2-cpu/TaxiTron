@@ -434,6 +434,7 @@ TT.addMessage=(m)=>{
   if(m.badge4===true||m.badge==='badge4') d.dataset.badge4='true';
   if(m.id!==undefined) d.dataset.uid=m.id;
   if(m.mid!==undefined) d.dataset.mid=m.mid;
+  if(m.likeEventRoundId!==undefined) d.dataset.likeEventRoundId=String(m.likeEventRoundId);
   if(m.muted!==undefined) d.dataset.muted=m.muted?'true':'false';
   if(m.likeEventWinner) d.dataset.likeEventWinners=JSON.stringify(m.likeEventWinners||[]);
   if(m.randomWinner||m.randomGiftWinner){
@@ -1068,19 +1069,24 @@ function renderRandomPromoTimer(){
 }
 function renderChatLikeMessages(){
   if(!chatLikeEventData) return;
-  const likes=Math.max(0,Number(chatLikeEventData.likes)||0);
-  const target=Math.max(1,Number(chatLikeEventData.target)||1);
-  const progress=(Math.min(1,likes/target)*66)+'%';
-  const active=chatLikeEventData.status==='active'||
-    (chatLikeEventData.testMode&&chatLikeEventData.status==='complete');
-  const liked=chatLikeEventData.userLiked===true;
-  const label=(chatLikeEventData.testMode?T().likeEventTestProgress:T().likeEventProgress)
-    .replace('{likes}',String(likes)).replace('{target}',String(target));
   chatList.querySelectorAll('.chat-like-message').forEach(message=>{
-    const winners=Array.isArray(chatLikeEventData.winners)?chatLikeEventData.winners:[];
+    const rounds=Array.isArray(chatLikeEventData.rounds)?chatLikeEventData.rounds:[];
+    const round=chatLikeEventData.testMode
+      ? chatLikeEventData
+      : rounds.find(item=>String(item.roundId)===message.dataset.likeEventRoundId);
+    if(!round) return;
+    const likes=Math.max(0,Number(round.likes)||0);
+    const target=Math.max(1,Number(round.target)||1);
+    const progress=(Math.min(1,likes/target)*66)+'%';
+    const active=round.status==='active'||
+      (chatLikeEventData.testMode&&round.status==='complete');
+    const liked=round.userLiked===true;
+    const label=(chatLikeEventData.testMode?T().likeEventTestProgress:T().likeEventProgress)
+      .replace('{likes}',String(likes)).replace('{target}',String(target));
+    const winners=Array.isArray(round.winners)?round.winners:[];
     let art=message.querySelector('.chat-like-art');
     if(!art) return;
-    if(chatLikeEventData.status==='complete'&&winners.length>=3){
+    if(round.status==='complete'&&winners.length>=3){
       renderLikeEventPodium(message,winners);
       return;
     }
@@ -1119,13 +1125,19 @@ chatList.addEventListener('click',async event=>{
   if(!action) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  if(chatLikeBusy||!chatLikeEventData||
-     (chatLikeEventData.status!=='active'&&!chatLikeEventData.testMode)||
-     (chatLikeEventData.userLiked&&!chatLikeEventData.testMode)) return;
+  const message=action.closest('.chat-like-message');
+  const round=chatLikeEventData&&chatLikeEventData.testMode
+    ? chatLikeEventData
+    : chatLikeEventData&&Array.isArray(chatLikeEventData.rounds)
+      ? chatLikeEventData.rounds.find(item=>String(item.roundId)===message?.dataset.likeEventRoundId)
+      : null;
+  if(chatLikeBusy||!round||
+     (round.status!=='active'&&!chatLikeEventData.testMode)||
+     (round.userLiked&&!chatLikeEventData.testMode)) return;
   if(typeof TT.likeChatEvent!=='function'){ toast(T().likeEventError); return; }
   chatLikeBusy=true; renderChatLikeMessages();
   try{
-    const result=await TT.likeChatEvent();
+    const result=await TT.likeChatEvent(message?.dataset.likeEventRoundId);
     if(result&&result.event) TT.setChatLikeEvent(result.event);
     if(result&&result.state&&typeof TT.setWallet==='function') TT.setWallet({points:result.state.ton});
     toast(result&&result.ok?T().likeEventLiked:T().likeEventError);

@@ -462,6 +462,7 @@
       likeEventWinner: m.likeEventWinner === true,
       likeEventWinners: Array.isArray(m.likeEventWinners) ? m.likeEventWinners : [],
       likeEventBar: m.likeEventBar === true,
+      likeEventRoundId: m.likeEventRoundId || (m.likeEventBar ? String(m.id) : ''),
       reply: m.replyTo ? { mid: m.replyTo.id, name: m.replyTo.name, text: m.replyTo.text } : undefined
     };
   }
@@ -569,7 +570,7 @@
       return r.ok;
     }).catch(function () { return false; });
   };
-  TT.likeChatEvent = function () {
+  TT.likeChatEvent = function (roundId) {
     if (localLikeEventTest && localLikeTestState) {
       if (localLikeTestState.status === 'complete') {
         localLikeTestState.status = 'active';
@@ -593,7 +594,7 @@
       return Promise.resolve({ ok: true, event: testEvent });
     }
     if (!SESSION.token) return Promise.resolve({ ok: false });
-    return postJSON('/api/chat/like-event/like', { token: SESSION.token }).then(function (r) {
+    return postJSON('/api/chat/like-event/like', { token: SESSION.token, roundId: roundId }).then(function (r) {
       if (r.data && r.data.event && typeof TT.setChatLikeEvent === 'function') {
         TT.setChatLikeEvent(r.data.event);
       }
@@ -704,7 +705,8 @@
           name: 'ZombieBot · TEST',
           text: 'Like-Event-Test · beliebig oft klicken · kein echter TON',
           time: Date.now(),
-          likeEventBar: true
+          likeEventBar: true,
+          likeEventRoundId: 'local-like-event-test'
         });
       }
       if (typeof TT.setChatLikeEvent === 'function') TT.setChatLikeEvent(localLikeTestState);

@@ -376,27 +376,38 @@ function persistInviteCampaignState() {
 }
 let chatLikeEventState = {
   campaignId: null,
-  target: 0,
-  likers: [],
-  settled: false,
-  winners: [],
-  dropAt: 0,
-  messageId: 0,
-  winnerMessageId: 0,
+  rounds: [],
+  nextDropAt: 0,
 };
 try {
   if (fs.existsSync(CHAT_LIKE_EVENT_FILE)) {
     const loaded = readJsonFile(CHAT_LIKE_EVENT_FILE);
     chatLikeEventState = {
       campaignId: typeof loaded.campaignId === 'string' ? loaded.campaignId : null,
-      target: Number.isSafeInteger(loaded.target) ? loaded.target : 0,
-      likers: Array.isArray(loaded.likers) ? [...new Set(loaded.likers.map(String))] : [],
-      settled: loaded.settled === true,
-      winners: Array.isArray(loaded.winners) ? loaded.winners : [],
-      dropAt: Number.isSafeInteger(loaded.dropAt) ? loaded.dropAt : 0,
-      messageId: Number.isSafeInteger(loaded.messageId) ? loaded.messageId : 0,
-      winnerMessageId: Number.isSafeInteger(loaded.winnerMessageId) ? loaded.winnerMessageId : 0,
+      rounds: Array.isArray(loaded.rounds) ? loaded.rounds.map((round) => ({
+        roundId: String(round.roundId || round.messageId || ''),
+        target: Number.isSafeInteger(round.target) ? round.target : 0,
+        likers: Array.isArray(round.likers) ? [...new Set(round.likers.map(String))] : [],
+        settled: round.settled === true,
+        winners: Array.isArray(round.winners) ? round.winners : [],
+        messageId: Number.isSafeInteger(round.messageId) ? round.messageId : 0,
+        winnerMessageId: Number.isSafeInteger(round.winnerMessageId) ? round.winnerMessageId : 0,
+        legacyRewardKey: round.legacyRewardKey === true,
+      })).filter((round) => round.roundId && round.messageId) : [],
+      nextDropAt: Number.isSafeInteger(loaded.nextDropAt) ? loaded.nextDropAt : 0,
     };
+    if (!chatLikeEventState.rounds.length && Number.isSafeInteger(loaded.messageId) && loaded.messageId > 0) {
+      chatLikeEventState.rounds.push({
+        roundId: String(loaded.messageId),
+        target: Number.isSafeInteger(loaded.target) ? loaded.target : 0,
+        likers: Array.isArray(loaded.likers) ? [...new Set(loaded.likers.map(String))] : [],
+        settled: loaded.settled === true,
+        winners: Array.isArray(loaded.winners) ? loaded.winners : [],
+        messageId: loaded.messageId,
+        winnerMessageId: Number.isSafeInteger(loaded.winnerMessageId) ? loaded.winnerMessageId : 0,
+        legacyRewardKey: true,
+      });
+    }
   }
 } catch (e) {
   console.error('[chat-like-event] state file unreadable: ' + e.message);
@@ -435,22 +446,21 @@ function persistChatLikeEventState() {
   }
 }
 
-function publicChatLikeEvent(uid) {
+function publicChatLikeRound(round, uid) {
   const now = Date.now();
-  const status = chatLikeEventState.settled
+  const status = round.settled
     ? 'complete'
-    : now < CHAT_LIKE_EVENT_START_MS
-      ? 'scheduled'
-      : now < CHAT_LIKE_EVENT_END_MS ? 'active' : 'expired';
+    : now >= CHAT_LIKE_EVENT_END_MS ? 'expired' : 'active';
   return {
+    roundId: round.roundId,
     startsAt: CHAT_LIKE_EVENT_START_MS,
     endsAt: CHAT_LIKE_EVENT_END_MS,
     status,
-    target: chatLikeEventState.target,
-    likes: chatLikeEventState.likers.length,
-    userLiked: uid != null && chatLikeEventState.likers.includes(String(uid)),
-    messageId: chatLikeEventState.messageId,
-    winners: chatLikeEventState.winners.map((winner) => ({
+    target: round.target,
+    likes: round.likers.length,
+    userLiked: uid != null && round.likers.includes(String(uid)),
+    messageId: round.messageId,
+    winners: round.winners.map((winner) => ({
       name: winner.name,
       photoUrl: winner.photoUrl || '',
       reward: Number(winner.reward) || 0.2,
@@ -458,67 +468,102 @@ function publicChatLikeEvent(uid) {
   };
 }
 
+function publicChatLikeEvent(uid) {
+  const now = Date.now();
+  return {
+    startsAt: CHAT_LIKE_EVENT_START_MS,
+    endsAt: CHAT_LIKE_EVENT_END_MS,
+    status: now < CHAT_LIKE_EVENT_START_MS ? 'scheduled' : now < CHAT_LIKE_EVENT_END_MS ? 'active' : 'expired',
+    nextDropAt: chatLikeEventState.nextDropAt,
+    rounds: chatLikeEventState.rounds.map((round) => publicChatLikeRound(round, uid)),
+  };
+}
+
 function ensureChatLikeEventDrop() {
   if (
-    chatLikeEventState.messageId ||
-    chatLikeEventState.settled ||
     Date.now() < CHAT_LIKE_EVENT_START_MS ||
-    Date.now() < chatLikeEventState.dropAt ||
+    Date.now() < chatLikeEventState.nextDropAt ||
     Date.now() >= CHAT_LIKE_EVENT_END_MS
   ) return;
+  const now = Date.now();
+  const messageId = chatNextId++;
+  const round = {
+    roundId: String(messageId),
+    target: crypto.randomInt(100, 1001),
+    likers: [],
+    settled: false,
+    winners: [],
+    messageId,
+    winnerMessageId: 0,
+  };
+  const previousNextDropAt = chatLikeEventState.nextDropAt;
+  chatLikeEventState.rounds.push(round);
+  chatLikeEventState.nextDropAt = now + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1);
+  if (!persistChatLikeEventState()) {
+    chatLikeEventState.rounds.pop();
+    chatLikeEventState.nextDropAt = Math.max(previousNextDropAt, now + 60 * 1000);
+    chatNextId = messageId;
+    return;
+  }
   const message = {
-    id: chatNextId++,
+    id: messageId,
     uid: RANDOM_BOT_UID,
     name: RANDOM_BOT_NAME,
     text: 'ZombieBot hat eine Like-Challenge gestartet!',
-    ts: Date.now(),
+    ts: now,
     isAdmin: false,
     isDesigner: false,
     chatMuted: false,
     replyTo: null,
     likeEventBar: true,
+    likeEventRoundId: round.roundId,
   };
   chatMessages.push(message);
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
-  chatLikeEventState.messageId = message.id;
-  persistChatLikeEventState();
   persistChat();
   broadcastChatEvent('message');
   broadcastChatEvent('like-event', { event: publicChatLikeEvent(null) });
 }
 
 function scheduleChatLikeEventDrop() {
-  if (chatLikeEventState.messageId || chatLikeEventState.settled) return;
   const delay = Math.max(0, Math.min(
-    chatLikeEventState.dropAt - Date.now(),
+    chatLikeEventState.nextDropAt - Date.now(),
     CHAT_LIKE_EVENT_END_MS - Date.now()
   ));
-  setTimeout(ensureChatLikeEventDrop, delay);
+  setTimeout(() => {
+    ensureChatLikeEventDrop();
+    if (Date.now() < CHAT_LIKE_EVENT_END_MS) scheduleChatLikeEventDrop();
+  }, delay);
 }
 
 function applyChatLikeEventPayouts() {
-  if (!chatLikeEventState.settled) return;
   let changed = false;
-  chatLikeEventState.winners.forEach((winner) => {
-    const user = users[String(winner.uid)];
-    if (!user) {
-      console.error('[chat-like-event] winning user missing: ' + winner.uid);
-      return;
-    }
-    if (!user.chatLikeEventRewards || typeof user.chatLikeEventRewards !== 'object') {
-      user.chatLikeEventRewards = {};
-    }
-    if (user.chatLikeEventRewards[chatLikeEventState.campaignId] === true) return;
-    user.ton = Number((Number(user.ton || 0) + 0.2).toFixed(9));
-    user.chatLikeEventRewards[chatLikeEventState.campaignId] = true;
-    changed = true;
+  chatLikeEventState.rounds.forEach((round) => {
+    if (!round.settled) return;
+    round.winners.forEach((winner) => {
+      const user = users[String(winner.uid)];
+      if (!user) {
+        console.error('[chat-like-event] winning user missing: ' + winner.uid);
+        return;
+      }
+      if (!user.chatLikeEventRewards || typeof user.chatLikeEventRewards !== 'object') {
+        user.chatLikeEventRewards = {};
+      }
+      const rewardId = round.legacyRewardKey
+        ? chatLikeEventState.campaignId
+        : chatLikeEventState.campaignId + ':' + round.roundId;
+      if (user.chatLikeEventRewards[rewardId] === true) return;
+      user.ton = Number((Number(user.ton || 0) + 0.2).toFixed(9));
+      user.chatLikeEventRewards[rewardId] = true;
+      changed = true;
+    });
   });
   if (changed) persist();
 }
 
-function ensureChatLikeEventWinnerMessage() {
-  if (!chatLikeEventState.settled || !chatLikeEventState.winners.length || chatLikeEventState.winnerMessageId) return;
-  const names = chatLikeEventState.winners.map((winner) => winner.name).join(', ');
+function ensureChatLikeEventWinnerMessage(round) {
+  if (!round.settled || !round.winners.length || round.winnerMessageId) return;
+  const names = round.winners.map((winner) => winner.name).join(', ');
   const message = {
     id: chatNextId++,
     uid: RANDOM_BOT_UID,
@@ -530,7 +575,8 @@ function ensureChatLikeEventWinnerMessage() {
     chatMuted: false,
     replyTo: null,
     likeEventWinner: true,
-    likeEventWinners: chatLikeEventState.winners.map(({ name, photoUrl, reward }) => ({
+    likeEventRoundId: round.roundId,
+    likeEventWinners: round.winners.map(({ name, photoUrl, reward }) => ({
       name,
       photoUrl: photoUrl || '',
       reward,
@@ -538,36 +584,29 @@ function ensureChatLikeEventWinnerMessage() {
   };
   chatMessages.push(message);
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
-  chatLikeEventState.winnerMessageId = message.id;
+  round.winnerMessageId = message.id;
   persistChatLikeEventState();
   persistChat();
+  broadcastChatEvent('message');
 }
 
 const chatLikeEventCampaignId = String(CHAT_LIKE_EVENT_START_MS);
-if (
-  chatLikeEventState.campaignId !== chatLikeEventCampaignId ||
-  chatLikeEventState.target < 100 ||
-  chatLikeEventState.target > 1000
-) {
+if (chatLikeEventState.campaignId !== chatLikeEventCampaignId) {
   chatLikeEventState = {
     campaignId: chatLikeEventCampaignId,
-    target: crypto.randomInt(100, 1001),
-    likers: [],
-    settled: false,
-    winners: [],
-    dropAt: CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1),
-    messageId: 0,
-    winnerMessageId: 0,
+    rounds: [],
+    nextDropAt: CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1),
   };
   persistChatLikeEventState();
-  console.log('[chat-like-event] new event started with target ' + chatLikeEventState.target + ' likes.');
 }
-if (!chatLikeEventState.dropAt) {
-  chatLikeEventState.dropAt = CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1);
+if (!chatLikeEventState.nextDropAt) {
+  chatLikeEventState.nextDropAt = Date.now() < CHAT_LIKE_EVENT_START_MS
+    ? CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1)
+    : Date.now();
   persistChatLikeEventState();
 }
 applyChatLikeEventPayouts();
-ensureChatLikeEventWinnerMessage();
+chatLikeEventState.rounds.forEach(ensureChatLikeEventWinnerMessage);
 ensureChatLikeEventDrop();
 scheduleChatLikeEventDrop();
 
@@ -2226,6 +2265,9 @@ function publicChatMessage(message, viewerUid) {
   publicMessage.chatMuted = users[String(message.uid)]
     ? users[String(message.uid)].chatMuted === true : message.chatMuted === true;
   publicMessage.reactions = publicChatReactions(message, viewerUid);
+  if (message.likeEventBar) {
+    publicMessage.likeEventRoundId = String(message.likeEventRoundId || message.id);
+  }
   if (message.randomGift) {
     publicMessage.gift = {
       active: giftClaimed !== true && giftExpired !== true && Date.now() < RANDOM_GIFT_EVENT_END_MS,
@@ -2295,13 +2337,15 @@ app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (re
       event: publicChatLikeEvent(req.uid),
     });
   }
-  if (!chatLikeEventState.messageId) {
+  const roundId = String(req.body.roundId || '');
+  const round = chatLikeEventState.rounds.find((entry) => entry.roundId === roundId);
+  if (!round) {
     return res.status(409).json({
       error: 'like-event-not-dropped',
       event: publicChatLikeEvent(req.uid),
     });
   }
-  if (chatLikeEventState.settled) {
+  if (round.settled) {
     return res.status(409).json({
       error: 'like-event-complete',
       event: publicChatLikeEvent(req.uid),
@@ -2309,36 +2353,37 @@ app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (re
   }
 
   const uid = String(req.uid);
-  const alreadyLiked = chatLikeEventState.likers.includes(uid);
+  const alreadyLiked = round.likers.includes(uid);
   if (!alreadyLiked) {
     const previousState = JSON.parse(JSON.stringify(chatLikeEventState));
-    chatLikeEventState.likers.push(uid);
-    if (chatLikeEventState.likers.length >= chatLikeEventState.target) {
-      const selected = chatLikeEventState.likers.slice();
+    round.likers.push(uid);
+    if (round.likers.length >= round.target) {
+      const selected = round.likers.slice();
       for (let i = 0; i < 3; i += 1) {
         const j = i + crypto.randomInt(selected.length - i);
         [selected[i], selected[j]] = [selected[j], selected[i]];
       }
-      chatLikeEventState.winners = selected.slice(0, 3).map((winnerUid) => ({
+      round.winners = selected.slice(0, 3).map((winnerUid) => ({
         uid: winnerUid,
         name: users[winnerUid] && users[winnerUid].name || ('Player ' + winnerUid),
         photoUrl: users[winnerUid] && users[winnerUid].photoUrl || '',
         reward: 0.2,
       }));
-      chatLikeEventState.settled = true;
+      round.settled = true;
     }
     if (!persistChatLikeEventState()) {
       chatLikeEventState = previousState;
       return res.status(500).json({ error: 'like-event-save-failed' });
     }
     applyChatLikeEventPayouts();
-    ensureChatLikeEventWinnerMessage();
+    ensureChatLikeEventWinnerMessage(round);
     broadcastChatEvent('like-event', {
       event: publicChatLikeEvent(null),
-      winnerBalances: chatLikeEventState.winners.map((winner) => ({
+      winnerBalances: round.winners.map((winner) => ({
         uid: winner.uid,
         ton: Number(users[winner.uid] && users[winner.uid].ton || 0),
       })),
+      roundId: round.roundId,
     });
   }
 
