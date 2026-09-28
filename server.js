@@ -608,7 +608,7 @@ function ensureChatLikeEventWinnerMessage(round) {
 }
 
 const chatLikeEventCampaignId = String(CHAT_LIKE_EVENT_START_MS);
-const CHAT_LIKE_IMMEDIATE_DROP_DEPLOYMENT = '2026-09-28-first-drop-now';
+const CHAT_LIKE_IMMEDIATE_DROP_DEPLOYMENT = '2026-09-28-restart-like-drop-2317';
 if (chatLikeEventState.campaignId !== chatLikeEventCampaignId) {
   chatLikeEventState = {
     campaignId: chatLikeEventCampaignId,
