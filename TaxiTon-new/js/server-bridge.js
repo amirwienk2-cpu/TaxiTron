@@ -18,6 +18,16 @@
   var lastChatMessageId = 0;
   var chatBootstrapped = false;
   var chatEventSource = null;
+  var localLikeEventTest = ['localhost', '127.0.0.1'].indexOf(window.location.hostname) !== -1 &&
+    new URLSearchParams(window.location.search).get('like-event-test') === '1';
+  var localLikeTestState = null;
+  function localTestAvatar(name, color) {
+    var initial = String(name || '?').trim().charAt(0).replace(/[<>&'"]/g, '?');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x2="0" y2="1"><stop stop-color="' +
+      color + '"/><stop offset="1" stop-color="#10182f"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#g)"/><circle cx="50" cy="37" r="18" fill="#f4c9a8"/><path d="M16 96c2-24 16-36 34-36s32 12 34 36" fill="#e8eef8"/><text x="50" y="47" text-anchor="middle" font-family="Arial" font-size="15" font-weight="700" fill="#202842">' +
+      initial + '</text></svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
 
   // Mirrors the server-side daily TON-earning caps (server.js: DAILY_PTS_CAP and friends).
   // The server does not expose these via any endpoint (same situation as the root app.js,
@@ -449,6 +459,9 @@
       randomGiftNumber: m.randomGiftNumber,
       randomGift: m.randomGift === true,
       randomGiftActive: !!(m.gift && m.gift.active),
+      likeEventWinner: m.likeEventWinner === true,
+      likeEventWinners: Array.isArray(m.likeEventWinners) ? m.likeEventWinners : [],
+      likeEventBar: m.likeEventBar === true,
       reply: m.replyTo ? { mid: m.replyTo.id, name: m.replyTo.name, text: m.replyTo.text } : undefined
     };
   }
@@ -476,6 +489,14 @@
     }).catch(function () {});
   }
 
+  function loadChatLikeEvent() {
+    api(withToken('/api/chat/like-event')).then(function (r) {
+      if (r.ok && r.data && r.data.event && typeof TT.setChatLikeEvent === 'function') {
+        TT.setChatLikeEvent(r.data.event);
+      }
+    }).catch(function () {});
+  }
+
   function subscribeChatEvents() {
     if (chatEventSource || typeof EventSource === 'undefined') return;
     try {
@@ -492,6 +513,13 @@
               if (typeof TT.setWithdraw === 'function') TT.setWithdraw({ balance: winnerTon });
             }
           }
+        } else if (payload.type === 'like-event') {
+          if (payload.event && typeof TT.setChatLikeEvent === 'function') TT.setChatLikeEvent(payload.event);
+          (payload.winnerBalances || []).forEach(function (winner) {
+            if (String(winner.uid) !== String(SESSION.uid)) return;
+            if (typeof TT.setWallet === 'function') TT.setWallet({ points: Number(winner.ton) || 0 });
+            if (typeof TT.setWithdraw === 'function') TT.setWithdraw({ balance: Number(winner.ton) || 0 });
+          });
         } else if (payload.type === 'reaction' && typeof TT.setReactions === 'function') {
           TT.setReactions(payload.messageId, payload.reactions && payload.reactions.counts, null);
         } else if (payload.type === 'message-deleted') {
@@ -540,6 +568,42 @@
       }
       return r.ok;
     }).catch(function () { return false; });
+  };
+  TT.likeChatEvent = function () {
+    if (localLikeEventTest && localLikeTestState) {
+      if (localLikeTestState.status === 'complete') {
+        localLikeTestState.status = 'active';
+        localLikeTestState.likes = 0;
+        localLikeTestState.winners = [];
+      }
+      localLikeTestState.likes += 1;
+      if (localLikeTestState.likes >= localLikeTestState.target) {
+        localLikeTestState.status = 'complete';
+        localLikeTestState.winners = [
+          { name: 'Test Alex', reward: 0.2, photoUrl: localTestAvatar('A', '#ffc21a') },
+          { name: 'Test Sam', reward: 0.2, photoUrl: localTestAvatar('S', '#39a9ff') },
+          { name: 'Test Kim', reward: 0.2, photoUrl: localTestAvatar('K', '#ff783f') }
+        ];
+      }
+      var testEvent = Object.assign({}, localLikeTestState, {
+        userLiked: false,
+        testMode: true
+      });
+      if (typeof TT.setChatLikeEvent === 'function') TT.setChatLikeEvent(testEvent);
+      return Promise.resolve({ ok: true, event: testEvent });
+    }
+    if (!SESSION.token) return Promise.resolve({ ok: false });
+    return postJSON('/api/chat/like-event/like', { token: SESSION.token }).then(function (r) {
+      if (r.data && r.data.event && typeof TT.setChatLikeEvent === 'function') {
+        TT.setChatLikeEvent(r.data.event);
+      }
+      if (r.data && r.data.state) applyState(r.data.state);
+      return {
+        ok: r.ok,
+        event: r.data && r.data.event,
+        state: r.data && r.data.state
+      };
+    }).catch(function () { return { ok: false }; });
   };
   TT.isChatAdmin = function () { return SESSION.isChatAdmin === true; };
   TT.setChatEnabledServer = function (enabled) {
@@ -620,8 +684,34 @@
   // ---- boot ---------------------------------------------------------------------------------
   function start() {
     wireZombieTowerLink();
+    if (localLikeEventTest) {
+      SESSION.uid = 'local-like-tester';
+      chatBootstrapped = true;
+      localLikeTestState = {
+        startsAt: Date.now() - 1000,
+        endsAt: Date.now() + 72 * 60 * 60 * 1000,
+        status: 'active',
+        target: 10,
+        likes: 0,
+        userLiked: false,
+        testMode: true,
+        winners: []
+      };
+      if (typeof TT.addMessage === 'function') {
+        TT.addMessage({
+          id: 'local-like-bot',
+          mid: 'local-like-event-test',
+          name: 'ZombieBot · TEST',
+          text: 'Like-Event-Test · beliebig oft klicken · kein echter TON',
+          time: Date.now(),
+          likeEventBar: true
+        });
+      }
+      if (typeof TT.setChatLikeEvent === 'function') TT.setChatLikeEvent(localLikeTestState);
+      return;
+    }
     auth().then(function (state) {
-      if (!state) { syncChat(); loadOnline(); loadLeaderboard(); loadInviteLeaderboard(); return; } // still show public chat/online/leaderboard data even if unauthenticated
+      if (!state) { syncChat(); loadOnline(); loadLeaderboard(); loadInviteLeaderboard(); loadChatLikeEvent(); return; } // still show public chat/online/leaderboard data even if unauthenticated
       loadDeposit();
       loadWithdrawals();
       loadReferralStatus();
@@ -630,6 +720,7 @@
       loadOnline();
       loadLeaderboard();
       loadInviteLeaderboard();
+      loadChatLikeEvent();
       // Mirrors root app.js's ~30s re-auth/refresh cadence.
       setInterval(function () { auth().then(function () { loadWithdrawals(); }); }, 30000);
     });
@@ -637,6 +728,7 @@
     setInterval(loadOnline, 20000);       // ~20-30s cadence, matches root app.js
     setInterval(loadLeaderboard, 20000);  // weekly leaderboard refresh
     setInterval(loadInviteLeaderboard, 10000); // matches root app.js's invite-campaign polling cadence
+    setInterval(loadChatLikeEvent, 5000);
   }
 
   if (document.readyState === 'loading') {

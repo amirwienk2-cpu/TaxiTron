@@ -73,6 +73,29 @@ const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
 const INVITE_EVENT_ENDS_AT = Date.parse(process.env.INVITE_EVENT_ENDS_AT || '2026-09-19T13:50:22.986Z');
 if (!Number.isFinite(INVITE_EVENT_ENDS_AT)) throw new Error('INVITE_EVENT_ENDS_AT must be a valid date');
+const RANDOM_BOT_INTERVAL_MS = Number(process.env.RANDOM_BOT_INTERVAL_MS);
+const RANDOM_BOT_MIN_INTERVAL_MS = 15 * 60 * 1000;
+const RANDOM_BOT_MAX_INTERVAL_MS = 45 * 60 * 1000;
+const RANDOM_BOT_UID = 'random-bot';
+const RANDOM_BOT_NAME = 'ZombieBot';
+const RANDOM_PROMO_START_MS = Date.parse('2026-09-22T22:30:00+02:00');
+const RANDOM_PROMO_END_MS = RANDOM_PROMO_START_MS + 72 * 60 * 60 * 1000;
+const RANDOM_GIFT_EVENT_START_MS = Date.parse(
+  process.env.RANDOM_GIFT_EVENT_START_AT || new Date(RANDOM_PROMO_END_MS).toISOString()
+);
+const RANDOM_GIFT_EVENT_END_MS = RANDOM_GIFT_EVENT_START_MS + 72 * 60 * 60 * 1000;
+if (!Number.isFinite(RANDOM_GIFT_EVENT_START_MS)) throw new Error('RANDOM_GIFT_EVENT_START_AT must be a valid date');
+const CHAT_LIKE_EVENT_START_MS = Date.parse(
+  process.env.CHAT_LIKE_EVENT_START_AT || new Date(RANDOM_GIFT_EVENT_END_MS).toISOString()
+);
+const CHAT_LIKE_EVENT_END_MS = Date.parse(
+  process.env.CHAT_LIKE_EVENT_END_AT || new Date(CHAT_LIKE_EVENT_START_MS + 72 * 60 * 60 * 1000).toISOString()
+);
+if (!Number.isFinite(CHAT_LIKE_EVENT_START_MS)) throw new Error('CHAT_LIKE_EVENT_START_AT must be a valid date');
+if (!Number.isFinite(CHAT_LIKE_EVENT_END_MS)) throw new Error('CHAT_LIKE_EVENT_END_AT must be a valid date');
+if (CHAT_LIKE_EVENT_END_MS - CHAT_LIKE_EVENT_START_MS !== 72 * 60 * 60 * 1000) {
+  throw new Error('Like event must last exactly 72 hours');
+}
 // ---- "Invite leaderboard" campaign: whoever invites the most new users
 // starting from INVITE_LEADERBOARD_STARTS_AT wins TON once the campaign ends.
 // Only invites completed inside this window count (existing referralCount
@@ -149,6 +172,7 @@ const RPS_FILE = path.join(DATA_DIR, 'rps-games.json');
 const MAGIC_TOWER_FILE = path.join(DATA_DIR, 'magic-tower-games.json');
 const ZOMBIE_TOWER_FILE = path.join(DATA_DIR, 'zombie-tower-games.json');
 const INVITE_CAMPAIGN_FILE = path.join(DATA_DIR, 'invite-campaign.json');
+const CHAT_LIKE_EVENT_FILE = path.join(DATA_DIR, 'chat-like-event.json');
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
 const STORAGE_PERSISTENT = !ON_RAILWAY || (
@@ -350,6 +374,33 @@ function persistInviteCampaignState() {
   try { fs.writeFileSync(INVITE_CAMPAIGN_FILE, JSON.stringify(inviteCampaignState)); }
   catch (e) { console.error('[invite-campaign] could not write settings: ' + e.message); }
 }
+let chatLikeEventState = {
+  campaignId: null,
+  target: 0,
+  likers: [],
+  settled: false,
+  winners: [],
+  dropAt: 0,
+  messageId: 0,
+  winnerMessageId: 0,
+};
+try {
+  if (fs.existsSync(CHAT_LIKE_EVENT_FILE)) {
+    const loaded = readJsonFile(CHAT_LIKE_EVENT_FILE);
+    chatLikeEventState = {
+      campaignId: typeof loaded.campaignId === 'string' ? loaded.campaignId : null,
+      target: Number.isSafeInteger(loaded.target) ? loaded.target : 0,
+      likers: Array.isArray(loaded.likers) ? [...new Set(loaded.likers.map(String))] : [],
+      settled: loaded.settled === true,
+      winners: Array.isArray(loaded.winners) ? loaded.winners : [],
+      dropAt: Number.isSafeInteger(loaded.dropAt) ? loaded.dropAt : 0,
+      messageId: Number.isSafeInteger(loaded.messageId) ? loaded.messageId : 0,
+      winnerMessageId: Number.isSafeInteger(loaded.winnerMessageId) ? loaded.winnerMessageId : 0,
+    };
+  }
+} catch (e) {
+  console.error('[chat-like-event] state file unreadable: ' + e.message);
+}
 let writeQueue = Promise.resolve();
 let shuttingDown = false;
 
@@ -371,6 +422,154 @@ function persist() {
   }));
   return writeQueue;
 }
+
+function persistChatLikeEventState() {
+  const tmp = CHAT_LIKE_EVENT_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(chatLikeEventState));
+    fs.renameSync(tmp, CHAT_LIKE_EVENT_FILE);
+    return true;
+  } catch (e) {
+    console.error('[chat-like-event] state write failed: ' + e.message);
+    return false;
+  }
+}
+
+function publicChatLikeEvent(uid) {
+  const now = Date.now();
+  const status = chatLikeEventState.settled
+    ? 'complete'
+    : now < CHAT_LIKE_EVENT_START_MS
+      ? 'scheduled'
+      : now < CHAT_LIKE_EVENT_END_MS ? 'active' : 'expired';
+  return {
+    startsAt: CHAT_LIKE_EVENT_START_MS,
+    endsAt: CHAT_LIKE_EVENT_END_MS,
+    status,
+    target: chatLikeEventState.target,
+    likes: chatLikeEventState.likers.length,
+    userLiked: uid != null && chatLikeEventState.likers.includes(String(uid)),
+    messageId: chatLikeEventState.messageId,
+    winners: chatLikeEventState.winners.map((winner) => ({
+      name: winner.name,
+      photoUrl: winner.photoUrl || '',
+      reward: Number(winner.reward) || 0.2,
+    })),
+  };
+}
+
+function ensureChatLikeEventDrop() {
+  if (
+    chatLikeEventState.messageId ||
+    chatLikeEventState.settled ||
+    Date.now() < CHAT_LIKE_EVENT_START_MS ||
+    Date.now() < chatLikeEventState.dropAt ||
+    Date.now() >= CHAT_LIKE_EVENT_END_MS
+  ) return;
+  const message = {
+    id: chatNextId++,
+    uid: RANDOM_BOT_UID,
+    name: RANDOM_BOT_NAME,
+    text: 'ZombieBot hat eine Like-Challenge gestartet!',
+    ts: Date.now(),
+    isAdmin: false,
+    isDesigner: false,
+    chatMuted: false,
+    replyTo: null,
+    likeEventBar: true,
+  };
+  chatMessages.push(message);
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  chatLikeEventState.messageId = message.id;
+  persistChatLikeEventState();
+  persistChat();
+  broadcastChatEvent('message');
+  broadcastChatEvent('like-event', { event: publicChatLikeEvent(null) });
+}
+
+function scheduleChatLikeEventDrop() {
+  if (chatLikeEventState.messageId || chatLikeEventState.settled) return;
+  const delay = Math.max(0, Math.min(
+    chatLikeEventState.dropAt - Date.now(),
+    CHAT_LIKE_EVENT_END_MS - Date.now()
+  ));
+  setTimeout(ensureChatLikeEventDrop, delay);
+}
+
+function applyChatLikeEventPayouts() {
+  if (!chatLikeEventState.settled) return;
+  let changed = false;
+  chatLikeEventState.winners.forEach((winner) => {
+    const user = users[String(winner.uid)];
+    if (!user) {
+      console.error('[chat-like-event] winning user missing: ' + winner.uid);
+      return;
+    }
+    if (!user.chatLikeEventRewards || typeof user.chatLikeEventRewards !== 'object') {
+      user.chatLikeEventRewards = {};
+    }
+    if (user.chatLikeEventRewards[chatLikeEventState.campaignId] === true) return;
+    user.ton = Number((Number(user.ton || 0) + 0.2).toFixed(9));
+    user.chatLikeEventRewards[chatLikeEventState.campaignId] = true;
+    changed = true;
+  });
+  if (changed) persist();
+}
+
+function ensureChatLikeEventWinnerMessage() {
+  if (!chatLikeEventState.settled || !chatLikeEventState.winners.length || chatLikeEventState.winnerMessageId) return;
+  const names = chatLikeEventState.winners.map((winner) => winner.name).join(', ');
+  const message = {
+    id: chatNextId++,
+    uid: RANDOM_BOT_UID,
+    name: RANDOM_BOT_NAME,
+    text: 'Like-Event voll! ' + names + ' gewinnen je 0.2 TON 🎉',
+    ts: Date.now(),
+    isAdmin: false,
+    isDesigner: false,
+    chatMuted: false,
+    replyTo: null,
+    likeEventWinner: true,
+    likeEventWinners: chatLikeEventState.winners.map(({ name, photoUrl, reward }) => ({
+      name,
+      photoUrl: photoUrl || '',
+      reward,
+    })),
+  };
+  chatMessages.push(message);
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  chatLikeEventState.winnerMessageId = message.id;
+  persistChatLikeEventState();
+  persistChat();
+}
+
+const chatLikeEventCampaignId = String(CHAT_LIKE_EVENT_START_MS);
+if (
+  chatLikeEventState.campaignId !== chatLikeEventCampaignId ||
+  chatLikeEventState.target < 100 ||
+  chatLikeEventState.target > 1000
+) {
+  chatLikeEventState = {
+    campaignId: chatLikeEventCampaignId,
+    target: crypto.randomInt(100, 1001),
+    likers: [],
+    settled: false,
+    winners: [],
+    dropAt: CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1),
+    messageId: 0,
+    winnerMessageId: 0,
+  };
+  persistChatLikeEventState();
+  console.log('[chat-like-event] new event started with target ' + chatLikeEventState.target + ' likes.');
+}
+if (!chatLikeEventState.dropAt) {
+  chatLikeEventState.dropAt = CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1);
+  persistChatLikeEventState();
+}
+applyChatLikeEventPayouts();
+ensureChatLikeEventWinnerMessage();
+ensureChatLikeEventDrop();
+scheduleChatLikeEventDrop();
 
 const inviteCampaignId = String(INVITE_LEADERBOARD_STARTS_AT);
 if (inviteCampaignState.campaignId !== inviteCampaignId) {
@@ -1942,18 +2141,6 @@ app.post('/api/magic-tower/play', requireUserFromBody, rejectBannedUser, (req, r
 
 // ---- Online player count (any user seen in the last 90s, i.e. app still open) ----
 const ONLINE_WINDOW_MS = 90000;
-const RANDOM_BOT_INTERVAL_MS = Number(process.env.RANDOM_BOT_INTERVAL_MS);
-const RANDOM_BOT_MIN_INTERVAL_MS = 15 * 60 * 1000;
-const RANDOM_BOT_MAX_INTERVAL_MS = 45 * 60 * 1000;
-const RANDOM_BOT_UID = 'random-bot';
-const RANDOM_BOT_NAME = 'ZombieBot';
-const RANDOM_PROMO_START_MS = Date.parse('2026-09-22T22:30:00+02:00');
-const RANDOM_PROMO_END_MS = RANDOM_PROMO_START_MS + 72 * 60 * 60 * 1000;
-const RANDOM_GIFT_EVENT_START_MS = Date.parse(
-  process.env.RANDOM_GIFT_EVENT_START_AT || new Date(RANDOM_PROMO_END_MS).toISOString()
-);
-const RANDOM_GIFT_EVENT_END_MS = RANDOM_GIFT_EVENT_START_MS + 72 * 60 * 60 * 1000;
-if (!Number.isFinite(RANDOM_GIFT_EVENT_START_MS)) throw new Error('RANDOM_GIFT_EVENT_START_AT must be a valid date');
 
 function randomPrizeTon(now) {
   return now >= RANDOM_PROMO_START_MS && now < RANDOM_PROMO_END_MS ? 0.2 : 0.001;
@@ -2093,6 +2280,73 @@ app.get('/api/chat/messages', (req, res) => {
   const storedMessages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
   const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
   res.json({ messages, enabled: chatEnabled });
+});
+
+app.get('/api/chat/like-event', (req, res) => {
+  const payload = verifyToken(req.query.token);
+  res.json({ event: publicChatLikeEvent(payload ? String(payload.uid) : null) });
+});
+
+app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const now = Date.now();
+  if (now < CHAT_LIKE_EVENT_START_MS || now >= CHAT_LIKE_EVENT_END_MS) {
+    return res.status(409).json({
+      error: 'like-event-not-active',
+      event: publicChatLikeEvent(req.uid),
+    });
+  }
+  if (!chatLikeEventState.messageId) {
+    return res.status(409).json({
+      error: 'like-event-not-dropped',
+      event: publicChatLikeEvent(req.uid),
+    });
+  }
+  if (chatLikeEventState.settled) {
+    return res.status(409).json({
+      error: 'like-event-complete',
+      event: publicChatLikeEvent(req.uid),
+    });
+  }
+
+  const uid = String(req.uid);
+  const alreadyLiked = chatLikeEventState.likers.includes(uid);
+  if (!alreadyLiked) {
+    const previousState = JSON.parse(JSON.stringify(chatLikeEventState));
+    chatLikeEventState.likers.push(uid);
+    if (chatLikeEventState.likers.length >= chatLikeEventState.target) {
+      const selected = chatLikeEventState.likers.slice();
+      for (let i = 0; i < 3; i += 1) {
+        const j = i + crypto.randomInt(selected.length - i);
+        [selected[i], selected[j]] = [selected[j], selected[i]];
+      }
+      chatLikeEventState.winners = selected.slice(0, 3).map((winnerUid) => ({
+        uid: winnerUid,
+        name: users[winnerUid] && users[winnerUid].name || ('Player ' + winnerUid),
+        photoUrl: users[winnerUid] && users[winnerUid].photoUrl || '',
+        reward: 0.2,
+      }));
+      chatLikeEventState.settled = true;
+    }
+    if (!persistChatLikeEventState()) {
+      chatLikeEventState = previousState;
+      return res.status(500).json({ error: 'like-event-save-failed' });
+    }
+    applyChatLikeEventPayouts();
+    ensureChatLikeEventWinnerMessage();
+    broadcastChatEvent('like-event', {
+      event: publicChatLikeEvent(null),
+      winnerBalances: chatLikeEventState.winners.map((winner) => ({
+        uid: winner.uid,
+        ton: Number(users[winner.uid] && users[winner.uid].ton || 0),
+      })),
+    });
+  }
+
+  res.json({
+    event: publicChatLikeEvent(uid),
+    state: publicState(req.user),
+    alreadyLiked,
+  });
 });
 
 app.get('/api/chat/events', (req, res) => {

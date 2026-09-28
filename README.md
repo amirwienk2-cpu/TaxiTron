@@ -30,6 +30,10 @@ npm start
   The optional `INVITE_LEADERBOARD_CAMPAIGN_STARTS_AT` and
   `INVITE_LEADERBOARD_CAMPAIGN_ENDS_AT` values set the invite leaderboard
   window as ISO-8601 timestamps.
+  The optional `CHAT_LIKE_EVENT_START_AT` and `CHAT_LIKE_EVENT_END_AT` values
+  set the three-day chat like event window. The Like button is posted to chat
+  after a random 15–45 minute delay, with a goal selected from 100 to 1,000
+  likes for each new campaign.
 4. Deploy. Railway provides `PORT` automatically.
 5. In `app.js`, make sure `SERVER_URL` points at the Railway domain.
   The current production fallback is `https://taxitron-production.up.railway.app`.

@@ -181,6 +181,38 @@ body.en .page,body.en .countdown{direction:ltr}
 .chat-page h1{text-align:center;margin-bottom:14px}
 .chat-head{position:relative}
 .random-promo-timer{position:relative;display:flex;align-items:center;justify-content:center;gap:7px;width:fit-content;max-width:calc(100% - 24px);margin:-4px auto 14px;padding:7px 14px;color:#fff;font:900 12px/1.2 "Vazirmatn",Tahoma,sans-serif;direction:ltr;white-space:nowrap;border:1px solid rgba(255,210,74,.75);border-radius:999px;background:linear-gradient(110deg,rgba(38,18,92,.94),rgba(105,42,126,.9),rgba(38,18,92,.94));box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 0 14px rgba(255,196,35,.25),0 4px 14px rgba(0,0,0,.25);animation:randomPromoGlow 2.4s ease-in-out infinite}
+.chat-like-art{position:relative;width:100%;margin-top:5px;line-height:1;isolation:isolate}
+.chat-like-art>img{position:relative;z-index:2;display:block;width:100%;height:auto;pointer-events:none}
+.chat-like-fill{position:absolute;z-index:3;left:27%;top:49%;height:27%;width:0;max-width:66%;border-radius:8px;opacity:.85;mix-blend-mode:screen;
+  background:linear-gradient(180deg,#78f8ff,#16b7ff 45%,#145fff);box-shadow:0 0 12px rgba(0,205,255,.8);transition:width .25s ease}
+.chat-like-action{position:absolute;z-index:4;inset:0;width:100%;height:100%;padding:0;border:0;border-radius:10px;background:transparent;cursor:pointer}
+.chat-like-action:disabled{cursor:default}
+.chat-like-label{position:absolute;z-index:5;inset:49% 7% auto 27%;height:27%;display:flex;align-items:center;justify-content:center;gap:4px;
+  color:#fff;font:900 clamp(10px,3.2vw,14px)/1 "Vazirmatn",Tahoma,sans-serif;direction:ltr;white-space:nowrap;
+  text-shadow:0 1px 3px #00132b,0 0 5px #00132b;pointer-events:none}
+.chat-like-action:not(:disabled):active{filter:brightness(1.15)}
+.chat-like-action:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:12px}
+#chatList .msg.chat-like-message{box-sizing:border-box;width:min(100%,520px);max-width:100%;padding:8px 10px}
+.chat-like-message .rp,.chat-like-message .rx-btn,.chat-like-message .ed{display:none}
+.chat-like-podium{position:relative;width:100%;aspect-ratio:1774/886;overflow:hidden;border-radius:10px}
+.chat-like-podium-art{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.chat-like-podium-player{position:absolute;z-index:1;display:flex;align-items:center;justify-content:center}
+.chat-like-podium-player.rank-1{left:42.5%;top:25%;width:16%;aspect-ratio:1}
+.chat-like-podium-player.rank-2{left:12.5%;top:36%;width:12%;aspect-ratio:1}
+.chat-like-podium-player.rank-3{left:75.5%;top:36%;width:12%;aspect-ratio:1}
+.chat-like-podium-photo{display:block;width:100%;height:100%;border:2px solid #ffe17a;border-radius:50%;object-fit:cover;box-shadow:0 0 10px rgba(255,197,31,.7)}
+.chat-like-podium-player.rank-2 .chat-like-podium-photo{border-color:#e4f3ff;box-shadow:0 0 8px rgba(147,211,255,.75)}
+.chat-like-podium-player.rank-3 .chat-like-podium-photo{border-color:#ffc08a;box-shadow:0 0 8px rgba(255,133,62,.7)}
+.chat-like-podium-photo.placeholder{background:#16223c}
+.chat-like-podium-name{position:absolute;top:calc(100% - 2px);left:50%;width:185%;height:45%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding:0 3px;border:1px solid #ffc21a;border-radius:5px;background:rgba(28,14,7,.96);box-shadow:0 2px 5px #000;
+  color:#fff;text-align:center;text-overflow:ellipsis;white-space:nowrap;font:900 clamp(8px,2.2vw,12px)/1.15 "Vazirmatn",Tahoma,sans-serif;
+  text-shadow:0 1px 3px #000}
+.chat-like-podium-player.rank-2 .chat-like-podium-name{border-color:#b9dcf7}
+.chat-like-podium-player.rank-3 .chat-like-podium-name{border-color:#ff9c5a}
+.chat-like-podium-reward{position:absolute;z-index:2;left:50%;bottom:3%;transform:translateX(-50%);color:#fff;font:900 clamp(8px,2vw,11px)/1 "Vazirmatn",Tahoma,sans-serif;
+  text-shadow:0 1px 3px #000,0 0 5px #000;white-space:nowrap;direction:ltr}
+@media (prefers-reduced-motion:reduce){.chat-like-fill{transition:none}}
 @keyframes randomPromoGlow{0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 0 12px rgba(255,196,35,.22),0 4px 14px rgba(0,0,0,.25)}50%{box-shadow:0 0 0 1px rgba(255,255,255,.12) inset,0 0 22px rgba(255,196,35,.48),0 4px 16px rgba(0,0,0,.3)}}
 @media (prefers-reduced-motion:reduce){.random-promo-timer{animation:none}}
 .chat-toggle{display:block;margin:-8px auto 10px;padding:6px 14px;border:1px solid rgba(255,90,90,.7);border-radius:10px;

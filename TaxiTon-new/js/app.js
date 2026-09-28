@@ -428,13 +428,14 @@ TT.setOnline=x=>{
 TT.addMessage=(m)=>{
   m=m||{};
   if(m.mid!==undefined&&Array.from(chatList.querySelectorAll('.msg[data-mid]')).some(el=>el.dataset.mid===String(m.mid))) return;
-  const d=document.createElement('div'); d.className='msg'+(m.me?' me':'')+(m.randomWinner?' random-winner':'')+(m.randomGift?' random-gift':'')+(m.randomGiftWinner?' random-gift-winner':'');
+  const d=document.createElement('div'); d.className='msg'+(m.me?' me':'')+(m.randomWinner?' random-winner':'')+(m.randomGift?' random-gift':'')+(m.randomGiftWinner?' random-gift-winner':'')+(m.likeEventWinner?' like-event-winner':'')+(m.likeEventBar?' chat-like-message':'');
   if(m.admin) d.dataset.admin=m.admin;
   if(m.badge&&m.badge!=='badge4') d.dataset.badge=m.badge;
   if(m.badge4===true||m.badge==='badge4') d.dataset.badge4='true';
   if(m.id!==undefined) d.dataset.uid=m.id;
   if(m.mid!==undefined) d.dataset.mid=m.mid;
   if(m.muted!==undefined) d.dataset.muted=m.muted?'true':'false';
+  if(m.likeEventWinner) d.dataset.likeEventWinners=JSON.stringify(m.likeEventWinners||[]);
   if(m.randomWinner||m.randomGiftWinner){
     d.dataset.randomWinnerName=m.randomWinnerName||'';
     d.dataset.randomWinnerText=m.text||'';
@@ -456,6 +457,26 @@ TT.addMessage=(m)=>{
     giftOverlay.append(b,s);
     giftArt.append(giftImage,giftOverlay);
     d.append(giftArt);
+  } else if(m.likeEventBar){
+    d.append(b);
+    const likeArt=document.createElement('div');
+    likeArt.className='chat-like-art';
+    const likeImage=document.createElement('img');
+    likeImage.src='/sprites/likebutten.png';
+    likeImage.alt='';
+    likeImage.setAttribute('aria-hidden','true');
+    const likeFill=document.createElement('span');
+    likeFill.className='chat-like-fill';
+    const likeAction=document.createElement('button');
+    likeAction.className='chat-like-action';
+    likeAction.type='button';
+    likeAction.disabled=true;
+    const likeLabel=document.createElement('span');
+    likeLabel.className='chat-like-label';
+    likeLabel.textContent=T().likeEventLoading;
+    likeAction.setAttribute('aria-label',T().likeEventJoin);
+    likeArt.append(likeImage,likeFill,likeAction,likeLabel);
+    d.append(likeArt);
   } else if(m.randomWinner||m.randomGiftWinner){
     const winnerArt=document.createElement('div');
     winnerArt.className=m.randomGiftWinner?'random-gift-winner-art':'random-winner-art';
@@ -474,6 +495,8 @@ TT.addMessage=(m)=>{
       winnerArt.append(winnerImage,s);
     }
     d.append(winnerArt);
+  } else if(m.likeEventWinner){
+    d.append(b,s);
   } else {
     d.append(b);
     d.append(s);
@@ -485,6 +508,8 @@ TT.addMessage=(m)=>{
     if(m.randomGiftActive!==false) d.dataset.giftExpired='false';
     renderRandomGiftMessages();
   }
+  if(m.likeEventWinner) renderLikeEventWinnerMessage(d);
+  if(m.likeEventBar) renderChatLikeMessages();
   if(m.reactions) TT.setReactions(m.mid,m.reactions.counts,m.reactions.mine);
   scrollChatToEnd();
 };
@@ -499,6 +524,64 @@ function renderRandomWinnerMessages(){
       : message.dataset.randomWinnerText;
     const body=message.querySelector('.random-winner-text');
     if(body && text) body.textContent=text;
+  });
+}
+function renderLikeEventWinnerMessage(message){
+  let winners=[];
+  try{ winners=JSON.parse(message.dataset.likeEventWinners||'[]'); }catch(e){ winners=[]; }
+  const names=winners.map(w=>String(w.name||'')).filter(Boolean).join(', ');
+  const body=message.querySelector(':scope > span');
+  if(body) body.textContent=T().likeEventResult.replace('{names}',names);
+}
+function renderLikeEventPodium(message,winners){
+  let art=message.querySelector('.chat-like-art');
+  if(!art){
+    art=document.createElement('div');
+    art.className='chat-like-art';
+    message.append(art);
+  }
+  let podium=art.querySelector('.chat-like-podium');
+  if(!podium){
+    art.textContent='';
+    podium=document.createElement('div');
+    podium.className='chat-like-podium';
+    const background=document.createElement('img');
+    background.className='chat-like-podium-art';
+    background.src='/sprites/barandegan.png';
+    background.alt='';
+    background.setAttribute('aria-hidden','true');
+    podium.append(background);
+    const reward=document.createElement('span');
+    reward.className='chat-like-podium-reward';
+    podium.append(reward);
+    art.append(podium);
+  }
+  const reward=podium.querySelector('.chat-like-podium-reward');
+  if(reward) reward.textContent=T().likeEventPodiumReward;
+  podium.querySelectorAll('.chat-like-podium-player').forEach(player=>player.remove());
+  winners.slice(0,3).forEach((winner,index)=>{
+    const player=document.createElement('div');
+    player.className='chat-like-podium-player rank-'+(index+1);
+    const photo=document.createElement('img');
+    photo.className='chat-like-podium-photo';
+    photo.alt='';
+    photo.setAttribute('aria-hidden','true');
+    if(winner.photoUrl){
+      photo.src=winner.photoUrl;
+    }else{
+      photo.classList.add('placeholder');
+      photo.src='data:image/svg+xml,'+encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#192846"/><text x="50" y="62" text-anchor="middle" font-family="Arial" font-size="42" font-weight="700" fill="white">'+
+        String(winner.name||'?').trim().charAt(0).replace(/[<>&'"]/g,'?')+
+        '</text></svg>'
+      );
+    }
+    photo.addEventListener('error',()=>photo.classList.add('placeholder'),{once:true});
+    const name=document.createElement('span');
+    name.className='chat-like-podium-name';
+    name.textContent=winner.name||'?';
+    player.append(photo,name);
+    podium.append(player);
   });
 }
 function renderRandomGiftMessages(){
@@ -767,6 +850,9 @@ Object.assign(I18N.en,{chatClose:'Close chat',chatOpen:'Open chat',chatClosed:'T
 Object.assign(I18N.fa,{randomPromoBefore:'رویداد ZombieBot شروع می‌شود در {time}',randomPromoActive:'زمان باقی‌مانده رویداد ZombieBot: {time}',randomPromoDone:'رویداد ZombieBot تمام شد'});
 Object.assign(I18N.de,{randomPromoBefore:'ZombieBot-Event startet in {time}',randomPromoActive:'ZombieBot-Event endet in {time}',randomPromoDone:'ZombieBot-Event beendet'});
 Object.assign(I18N.en,{randomPromoBefore:'ZombieBot event starts in {time}',randomPromoActive:'ZombieBot event ends in {time}',randomPromoDone:'ZombieBot event ended'});
+Object.assign(I18N.fa,{likeEventStarts:'رویداد لایک شروع می‌شود در {time}',likeEventEnds:'زمان باقی‌مانده رویداد لایک: {time}',likeEventDone:'رویداد لایک تمام شد',likeEventLoading:'در حال بارگذاری رویداد لایک…',likeEventProgress:'{likes} / {target} · ۳ برنده × ۰٫۲ TON',likeEventTestProgress:'تست {likes}/{target} · بدون TON',likeEventJoin:'برای لایک و شرکت در قرعه‌کشی بزن',likeEventLiked:'لایک ثبت شد!',likeEventWinners:'برندگان: {names}',likeEventResult:'رویداد کامل شد! {names} هر کدام ۰٫۲ TON بردند 🎉',likeEventPodiumReward:'۳ برنده · هر نفر ۰٫۲ TON',likeEventError:'ثبت لایک ناموفق بود'});
+Object.assign(I18N.de,{likeEventStarts:'Like-Event startet in {time}',likeEventEnds:'Like-Event endet in {time}',likeEventDone:'Like-Event beendet',likeEventLoading:'Like-Event wird geladen …',likeEventProgress:'{likes} / {target} Likes · 3 × 0,2 TON',likeEventTestProgress:'TEST {likes}/{target} · kein TON',likeEventJoin:'Tippen zum Liken und Mitmachen',likeEventLiked:'Like gezählt!',likeEventWinners:'Gewinner: {names}',likeEventResult:'Like-Ziel erreicht! {names} gewinnen je 0,2 TON 🎉',likeEventPodiumReward:'3 Gewinner · je 0,2 TON',likeEventError:'Like konnte nicht gezählt werden'});
+Object.assign(I18N.en,{likeEventStarts:'Like event starts in {time}',likeEventEnds:'Like event ends in {time}',likeEventDone:'Like event ended',likeEventLoading:'Loading like event…',likeEventProgress:'{likes} / {target} likes · 3 × 0.2 TON',likeEventTestProgress:'TEST {likes}/{target} · no TON',likeEventJoin:'Tap to like and enter the draw',likeEventLiked:'Like counted!',likeEventWinners:'Winners: {names}',likeEventResult:'Like goal reached! {names} won 0.2 TON each 🎉',likeEventPodiumReward:'3 winners · 0.2 TON each',likeEventError:'Could not count your like'});
 Object.assign(I18N.fa,{lvInfoTitle:'راننده لول {n}',lvInfoSoon:'اطلاعات این راننده به‌زودی اضافه می‌شود.'});
 Object.assign(I18N.de,{lvInfoTitle:'Fahrer Level {n}',lvInfoSoon:'Infos zu diesem Fahrer folgen in Kürze.'});
 Object.assign(I18N.en,{lvInfoTitle:'Level {n} driver',lvInfoSoon:'Details about this driver are coming soon.'});
@@ -956,10 +1042,9 @@ renderOnline=function(){ _renderOnline2(); filterOnline(); };
 // own state (the user who got muted / banned)
 const MY={muted:false,banned:false};
 let CHAT_ENABLED=true;
-const RANDOM_PROMO_START=Date.parse('2026-09-22T22:30:00+02:00');
-const RANDOM_GIFT_EVENT_START=RANDOM_PROMO_START+72*60*60*1000;
-const RANDOM_GIFT_EVENT_END=RANDOM_GIFT_EVENT_START+72*60*60*1000;
 const randomPromoTimer=document.getElementById('randomPromoTimer');
+let chatLikeEventData=null;
+let chatLikeBusy=false;
 function formatPromoTime(ms){
   const total=Math.max(0,Math.floor(ms/1000));
   const d=Math.floor(total/86400), h=Math.floor(total%86400/3600), m=Math.floor(total%3600/60), s=total%60;
@@ -969,13 +1054,94 @@ function formatPromoTime(ms){
 function renderRandomPromoTimer(){
   if(!randomPromoTimer) return;
   const now=Date.now();
-  if(now<RANDOM_PROMO_START) randomPromoTimer.textContent=T().randomPromoBefore.replace('{time}',formatPromoTime(RANDOM_PROMO_START-now));
-  else if(now<RANDOM_GIFT_EVENT_START) randomPromoTimer.textContent=T().randomPromoActive.replace('{time}',formatPromoTime(RANDOM_GIFT_EVENT_START-now));
-  else if(now<RANDOM_GIFT_EVENT_END) randomPromoTimer.textContent=T().randomPromoActive.replace('{time}',formatPromoTime(RANDOM_GIFT_EVENT_END-now));
-  else randomPromoTimer.textContent=T().randomPromoDone;
+  if(!chatLikeEventData){
+    randomPromoTimer.textContent=T().likeEventLoading;
+    return;
+  }
+  if(chatLikeEventData.status==='scheduled'){
+    randomPromoTimer.textContent=T().likeEventStarts.replace('{time}',formatPromoTime(chatLikeEventData.startsAt-now));
+  }else if(chatLikeEventData.status==='active'){
+    randomPromoTimer.textContent=T().likeEventEnds.replace('{time}',formatPromoTime(chatLikeEventData.endsAt-now));
+  }else{
+    randomPromoTimer.textContent=T().likeEventDone;
+  }
+}
+function renderChatLikeMessages(){
+  if(!chatLikeEventData) return;
+  const likes=Math.max(0,Number(chatLikeEventData.likes)||0);
+  const target=Math.max(1,Number(chatLikeEventData.target)||1);
+  const progress=(Math.min(1,likes/target)*66)+'%';
+  const active=chatLikeEventData.status==='active'||
+    (chatLikeEventData.testMode&&chatLikeEventData.status==='complete');
+  const liked=chatLikeEventData.userLiked===true;
+  const label=(chatLikeEventData.testMode?T().likeEventTestProgress:T().likeEventProgress)
+    .replace('{likes}',String(likes)).replace('{target}',String(target));
+  chatList.querySelectorAll('.chat-like-message').forEach(message=>{
+    const winners=Array.isArray(chatLikeEventData.winners)?chatLikeEventData.winners:[];
+    let art=message.querySelector('.chat-like-art');
+    if(!art) return;
+    if(chatLikeEventData.status==='complete'&&winners.length>=3){
+      renderLikeEventPodium(message,winners);
+      return;
+    }
+    if(art.querySelector('.chat-like-podium')){
+      art.textContent='';
+      const background=document.createElement('img');
+      background.src='/sprites/likebutten.png';
+      background.alt='';
+      background.setAttribute('aria-hidden','true');
+      const fillBar=document.createElement('span');
+      fillBar.className='chat-like-fill';
+      const actionButton=document.createElement('button');
+      actionButton.className='chat-like-action';
+      actionButton.type='button';
+      actionButton.disabled=true;
+      const counterText=document.createElement('span');
+      counterText.className='chat-like-label';
+      art.append(background,fillBar,actionButton,counterText);
+    }
+    const fill=art.querySelector('.chat-like-fill');
+    const counter=art.querySelector('.chat-like-label');
+    const action=art.querySelector('.chat-like-action');
+    if(fill) fill.style.width=progress;
+    if(counter) counter.textContent=label;
+    if(action){
+      action.disabled=!active||liked||chatLikeBusy;
+      action.setAttribute('aria-label',liked?T().likeEventLiked:T().likeEventJoin);
+      action.title=liked?T().likeEventLiked:T().likeEventJoin;
+    }
+  });
 }
 renderRandomPromoTimer();
 setInterval(renderRandomPromoTimer,1000);
+chatList.addEventListener('click',async event=>{
+  const action=event.target.closest('.chat-like-action');
+  if(!action) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if(chatLikeBusy||!chatLikeEventData||
+     (chatLikeEventData.status!=='active'&&!chatLikeEventData.testMode)||
+     (chatLikeEventData.userLiked&&!chatLikeEventData.testMode)) return;
+  if(typeof TT.likeChatEvent!=='function'){ toast(T().likeEventError); return; }
+  chatLikeBusy=true; renderChatLikeMessages();
+  try{
+    const result=await TT.likeChatEvent();
+    if(result&&result.event) TT.setChatLikeEvent(result.event);
+    if(result&&result.state&&typeof TT.setWallet==='function') TT.setWallet({points:result.state.ton});
+    toast(result&&result.ok?T().likeEventLiked:T().likeEventError);
+  }catch(error){
+    console.error('[chat-like-event] like failed',error);
+    toast(T().likeEventError);
+  }finally{
+    chatLikeBusy=false; renderChatLikeMessages();
+  }
+},true);
+TT.setChatLikeEvent=data=>{
+  if(!data||typeof data!=='object') return;
+  chatLikeEventData=data;
+  renderRandomPromoTimer();
+  renderChatLikeMessages();
+};
 const chatToggle=document.getElementById('chatToggle');
 const canManageChat=()=>typeof TT.isChatAdmin==='function'?!!TT.isChatAdmin():isAdmin();
 TT.setMyChatState=o=>{ o=o||{}; if('muted' in o) MY.muted=o.muted; if('banned' in o) MY.banned=!!o.banned; renderMyState(); };
@@ -1040,7 +1206,7 @@ TT.setUserMod=(u,st)=>{
 const _renderOnline=renderOnline;
 renderOnline=function(){ _renderOnline(); markClickable(); renderModMarks(); };
 const _applyLang=applyLang;
-applyLang=function(){ _applyLang(); onSearch.setAttribute('aria-label',T().searchPh); renderRandomPromoTimer(); renderModMarks(); renderReplyBar(); document.querySelectorAll('#chatList .rp').forEach(r=>{r.setAttribute('aria-label',T().reply);r.title=T().reply;}); document.querySelectorAll('#chatList .rx-btn').forEach(r=>{r.setAttribute('aria-label',T().react);r.title=T().react;}); document.querySelectorAll('#chatList .msg').forEach(renderReactions); document.querySelectorAll('#chatList .msg').forEach(renderTime); renderMyState(); if(admSheet&&!admSheet.hidden) renderSheet(); };
+applyLang=function(){ _applyLang(); onSearch.setAttribute('aria-label',T().searchPh); renderRandomPromoTimer(); renderChatLikeMessages(); renderModMarks(); renderReplyBar(); document.querySelectorAll('#chatList .rp').forEach(r=>{r.setAttribute('aria-label',T().reply);r.title=T().reply;}); document.querySelectorAll('#chatList .rx-btn').forEach(r=>{r.setAttribute('aria-label',T().react);r.title=T().react;}); document.querySelectorAll('#chatList .msg').forEach(renderReactions); document.querySelectorAll('#chatList .msg').forEach(renderTime); document.querySelectorAll('#chatList .msg.like-event-winner').forEach(renderLikeEventWinnerMessage); renderMyState(); if(admSheet&&!admSheet.hidden) renderSheet(); };
 setInterval(()=>{ renderModMarks(); renderMyState(); if(admSheet&&!admSheet.hidden) renderSheet(); },30000);   // mutes run out
 renderOnline(); renderMyState();
 
