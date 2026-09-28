@@ -380,6 +380,7 @@ let chatLikeEventState = {
   nextDropAt: 0,
   immediateDropDeployment: null,
 };
+let chatLikeEventDropTimer = null;
 try {
   if (fs.existsSync(CHAT_LIKE_EVENT_FILE)) {
     const loaded = readJsonFile(CHAT_LIKE_EVENT_FILE);
@@ -478,6 +479,8 @@ function publicChatLikeRound(round, uid) {
 
 function publicChatLikeEvent(uid) {
   const now = Date.now();
+  const chatLocked = now >= CHAT_LIKE_EVENT_START_MS && now < CHAT_LIKE_EVENT_END_MS &&
+    chatLikeEventState.rounds.some((round) => !round.settled);
   const currentRound = [...chatLikeEventState.rounds].reverse()
     .find((round) => !round.settled) || chatLikeEventState.rounds[chatLikeEventState.rounds.length - 1] || null;
   const currentRoundData = currentRound ? publicChatLikeRound(currentRound, uid) : null;
@@ -485,6 +488,7 @@ function publicChatLikeEvent(uid) {
     startsAt: CHAT_LIKE_EVENT_START_MS,
     endsAt: CHAT_LIKE_EVENT_END_MS,
     status: now < CHAT_LIKE_EVENT_START_MS ? 'scheduled' : now < CHAT_LIKE_EVENT_END_MS ? 'active' : 'expired',
+    chatLocked,
     nextDropAt: chatLikeEventState.nextDropAt,
     target: currentRoundData ? currentRoundData.target : 0,
     likes: currentRoundData ? currentRoundData.likes : 0,
@@ -498,7 +502,8 @@ function ensureChatLikeEventDrop() {
   if (
     Date.now() < CHAT_LIKE_EVENT_START_MS ||
     Date.now() < chatLikeEventState.nextDropAt ||
-    Date.now() >= CHAT_LIKE_EVENT_END_MS
+    Date.now() >= CHAT_LIKE_EVENT_END_MS ||
+    chatLikeEventState.rounds.some((round) => !round.settled)
   ) return;
   const now = Date.now();
   const messageId = chatNextId++;
@@ -543,11 +548,18 @@ function ensureChatLikeEventDrop() {
 }
 
 function scheduleChatLikeEventDrop() {
+  if (chatLikeEventDropTimer) clearTimeout(chatLikeEventDropTimer);
+  chatLikeEventDropTimer = null;
+  if (
+    Date.now() >= CHAT_LIKE_EVENT_END_MS ||
+    chatLikeEventState.rounds.some((round) => !round.settled)
+  ) return;
   const delay = Math.max(0, Math.min(
     chatLikeEventState.nextDropAt - Date.now(),
     CHAT_LIKE_EVENT_END_MS - Date.now()
   ));
-  setTimeout(() => {
+  chatLikeEventDropTimer = setTimeout(() => {
+    chatLikeEventDropTimer = null;
     ensureChatLikeEventDrop();
     if (Date.now() < CHAT_LIKE_EVENT_END_MS) scheduleChatLikeEventDrop();
   }, delay);
@@ -608,7 +620,7 @@ function ensureChatLikeEventWinnerMessage(round) {
 }
 
 const chatLikeEventCampaignId = String(CHAT_LIKE_EVENT_START_MS);
-const CHAT_LIKE_IMMEDIATE_DROP_DEPLOYMENT = '2026-09-28-restart-like-drop-2317';
+const CHAT_LIKE_IMMEDIATE_DROP_DEPLOYMENT = '2026-09-28-like-live-lock-immediate-2330';
 if (chatLikeEventState.campaignId !== chatLikeEventCampaignId) {
   chatLikeEventState = {
     campaignId: chatLikeEventCampaignId,
@@ -2408,6 +2420,7 @@ app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (re
       delete remaining[winnerUid];
     }
     targetRound.settled = true;
+    chatLikeEventState.nextDropAt = now + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1);
   }
   if (!persistChatLikeEventState()) {
     chatLikeEventState = previousState;
@@ -2423,6 +2436,7 @@ app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (re
     })),
     roundId: targetRound.roundId,
   });
+  if (targetRound.settled) scheduleChatLikeEventDrop();
 
   res.json({
     event: publicChatLikeEvent(uid),
@@ -2458,6 +2472,9 @@ app.get('/api/chat/events', (req, res) => {
 
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   if (!chatEnabled && req.user.isChatAdmin !== true) return res.status(403).json({ error: 'chat-disabled' });
+  if (publicChatLikeEvent(req.uid).chatLocked) {
+    return res.status(423).json({ error: 'like-event-chat-locked' });
+  }
   if (req.user.chatMuted === true) return res.status(403).json({ error: 'muted' });
   const raw = String((req.body && req.body.text) || '')
     .replace(/\r\n?/g, '\n')
@@ -2543,6 +2560,9 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
 });
 
 app.post('/api/chat/react', requireUserFromBody, (req, res) => {
+  if (publicChatLikeEvent(req.uid).chatLocked) {
+    return res.status(423).json({ error: 'like-event-chat-locked' });
+  }
   const messageId = Number(req.body && req.body.messageId);
   const emoji = String(req.body && req.body.emoji || '');
   const on = req.body && req.body.on === true;

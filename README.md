@@ -32,10 +32,14 @@ npm start
   window as ISO-8601 timestamps.
   The optional `CHAT_LIKE_EVENT_START_AT` and `CHAT_LIKE_EVENT_END_AT` values
   set the three-day chat like event window. A new Like challenge is posted
-  immediately on this deployment, then every random 15–45 minutes; each post
+  immediately on this deployment, then 15–45 minutes after the previous round
+  finishes; each post
   has its own 100–1,000 like goal and draws three winners for 0.2 TON each
   when reached. Users can like without a per-round limit; repeated likes
   increase their weighted chance, while each winner is a different user.
+  The like counter updates live; regular chat messages and reactions are
+  disabled while any challenge is unresolved and reopen after its winners are
+  selected. Each winner's 0.2 TON reward is credited to their account balance.
 4. Deploy. Railway provides `PORT` automatically.
 5. In `app.js`, make sure `SERVER_URL` points at the Railway domain.
   The current production fallback is `https://taxitron-production.up.railway.app`.

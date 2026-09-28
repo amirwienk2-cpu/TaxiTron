@@ -530,11 +530,18 @@ function renderRandomWinnerMessages(){
 function renderLikeEventWinnerMessage(message){
   let winners=[];
   try{ winners=JSON.parse(message.dataset.likeEventWinners||'[]'); }catch(e){ winners=[]; }
+  if(winners.length>=3){
+    renderLikeEventPodium(message,winners);
+    return;
+  }
   const names=winners.map(w=>String(w.name||'')).filter(Boolean).join(', ');
   const body=message.querySelector(':scope > span');
   if(body) body.textContent=T().likeEventResult.replace('{names}',names);
 }
 function renderLikeEventPodium(message,winners){
+  if(message.classList.contains('like-event-winner')){
+    message.querySelectorAll(':scope > b, :scope > span').forEach(node=>node.remove());
+  }
   let art=message.querySelector('.chat-like-art');
   if(!art){
     art=document.createElement('div');
@@ -769,6 +776,7 @@ function renderReactions(m){
   });
 }
 function react(m,em){
+  if(isChatLikeRoundActive()) return;
   const mid=m.dataset.mid, st=rxOf(mid), old=st.mine;
   if(old){ st.counts[old]=Math.max(0,(st.counts[old]||1)-1); if(!st.counts[old]) delete st.counts[old]; }
   const on=old!==em;
@@ -851,9 +859,9 @@ Object.assign(I18N.en,{chatClose:'Close chat',chatOpen:'Open chat',chatClosed:'T
 Object.assign(I18N.fa,{randomPromoBefore:'رویداد ZombieBot شروع می‌شود در {time}',randomPromoActive:'زمان باقی‌مانده رویداد ZombieBot: {time}',randomPromoDone:'رویداد ZombieBot تمام شد'});
 Object.assign(I18N.de,{randomPromoBefore:'ZombieBot-Event startet in {time}',randomPromoActive:'ZombieBot-Event endet in {time}',randomPromoDone:'ZombieBot-Event beendet'});
 Object.assign(I18N.en,{randomPromoBefore:'ZombieBot event starts in {time}',randomPromoActive:'ZombieBot event ends in {time}',randomPromoDone:'ZombieBot event ended'});
-Object.assign(I18N.fa,{likeEventStarts:'رویداد لایک شروع می‌شود در {time}',likeEventEnds:'زمان باقی‌مانده رویداد لایک: {time}',likeEventDone:'رویداد لایک تمام شد',likeEventLoading:'در حال بارگذاری رویداد لایک…',likeEventProgress:'{likes} / {target} · ۳ برنده × ۰٫۲ TON',likeEventTestProgress:'تست {likes}/{target} · بدون TON',likeEventJoin:'برای لایک و شرکت در قرعه‌کشی بزن',likeEventLiked:'لایک ثبت شد!',likeEventWinners:'برندگان: {names}',likeEventResult:'رویداد کامل شد! {names} هر کدام ۰٫۲ TON بردند 🎉',likeEventPodiumReward:'۳ برنده · هر نفر ۰٫۲ TON',likeEventError:'ثبت لایک ناموفق بود'});
-Object.assign(I18N.de,{likeEventStarts:'Like-Event startet in {time}',likeEventEnds:'Like-Event endet in {time}',likeEventDone:'Like-Event beendet',likeEventLoading:'Like-Event wird geladen …',likeEventProgress:'{likes} / {target} Likes · 3 × 0,2 TON',likeEventTestProgress:'TEST {likes}/{target} · kein TON',likeEventJoin:'Tippen zum Liken und Mitmachen',likeEventLiked:'Like gezählt!',likeEventWinners:'Gewinner: {names}',likeEventResult:'Like-Ziel erreicht! {names} gewinnen je 0,2 TON 🎉',likeEventPodiumReward:'3 Gewinner · je 0,2 TON',likeEventError:'Like konnte nicht gezählt werden'});
-Object.assign(I18N.en,{likeEventStarts:'Like event starts in {time}',likeEventEnds:'Like event ends in {time}',likeEventDone:'Like event ended',likeEventLoading:'Loading like event…',likeEventProgress:'{likes} / {target} likes · 3 × 0.2 TON',likeEventTestProgress:'TEST {likes}/{target} · no TON',likeEventJoin:'Tap to like and enter the draw',likeEventLiked:'Like counted!',likeEventWinners:'Winners: {names}',likeEventResult:'Like goal reached! {names} won 0.2 TON each 🎉',likeEventPodiumReward:'3 winners · 0.2 TON each',likeEventError:'Could not count your like'});
+Object.assign(I18N.fa,{likeEventStarts:'رویداد لایک شروع می‌شود در {time}',likeEventEnds:'زمان باقی‌مانده رویداد لایک: {time}',likeEventDone:'رویداد لایک تمام شد',likeEventLoading:'در حال بارگذاری رویداد لایک…',likeEventProgress:'{likes} / {target} · ۳ برنده × ۰٫۲ TON',likeEventTestProgress:'تست {likes}/{target} · بدون TON',likeEventJoin:'برای لایک و شرکت در قرعه‌کشی بزن',likeEventLiked:'لایک ثبت شد!',likeEventWinners:'برندگان: {names}',likeEventResult:'رویداد کامل شد! {names} هر کدام ۰٫۲ TON بردند 🎉',likeEventPodiumReward:'۳ برنده · هر نفر ۰٫۲ TON',likeEventChatLocked:'در زمان چالش فقط می‌توان لایک کرد',likeEventError:'ثبت لایک ناموفق بود'});
+Object.assign(I18N.de,{likeEventStarts:'Like-Event startet in {time}',likeEventEnds:'Like-Event endet in {time}',likeEventDone:'Like-Event beendet',likeEventLoading:'Like-Event wird geladen …',likeEventProgress:'{likes} / {target} Likes · 3 × 0,2 TON',likeEventTestProgress:'TEST {likes}/{target} · kein TON',likeEventJoin:'Tippen zum Liken und Mitmachen',likeEventLiked:'Like gezählt!',likeEventWinners:'Gewinner: {names}',likeEventResult:'Like-Ziel erreicht! {names} gewinnen je 0,2 TON 🎉',likeEventPodiumReward:'3 Gewinner · je 0,2 TON',likeEventChatLocked:'Während der Challenge ist der Chat geschlossen – nur Likes sind möglich.',likeEventError:'Like konnte nicht gezählt werden'});
+Object.assign(I18N.en,{likeEventStarts:'Like event starts in {time}',likeEventEnds:'Like event ends in {time}',likeEventDone:'Like event ended',likeEventLoading:'Loading like event…',likeEventProgress:'{likes} / {target} likes · 3 × 0.2 TON',likeEventTestProgress:'TEST {likes}/{target} · no TON',likeEventJoin:'Tap to like and enter the draw',likeEventLiked:'Like counted!',likeEventWinners:'Winners: {names}',likeEventResult:'Like goal reached! {names} won 0.2 TON each 🎉',likeEventPodiumReward:'3 winners · 0.2 TON each',likeEventChatLocked:'Chat is closed during the challenge — Likes only.',likeEventError:'Could not count your like'});
 Object.assign(I18N.fa,{lvInfoTitle:'راننده لول {n}',lvInfoSoon:'اطلاعات این راننده به‌زودی اضافه می‌شود.'});
 Object.assign(I18N.de,{lvInfoTitle:'Fahrer Level {n}',lvInfoSoon:'Infos zu diesem Fahrer folgen in Kürze.'});
 Object.assign(I18N.en,{lvInfoTitle:'Level {n} driver',lvInfoSoon:'Details about this driver are coming soon.'});
@@ -1046,6 +1054,11 @@ let CHAT_ENABLED=true;
 const randomPromoTimer=document.getElementById('randomPromoTimer');
 let chatLikeEventData=null;
 let chatLikeBusy=false;
+function isChatLikeRoundActive(){
+  if(!chatLikeEventData) return false;
+  if(chatLikeEventData.testMode) return chatLikeEventData.status==='active';
+  return Array.isArray(chatLikeEventData.rounds)&&chatLikeEventData.rounds.some(round=>round.status==='active');
+}
 function formatPromoTime(ms){
   const total=Math.max(0,Math.floor(ms/1000));
   const d=Math.floor(total/86400), h=Math.floor(total%86400/3600), m=Math.floor(total%3600/60), s=total%60;
@@ -1151,6 +1164,7 @@ TT.setChatLikeEvent=data=>{
   chatLikeEventData=data;
   renderRandomPromoTimer();
   renderChatLikeMessages();
+  renderMyState();
 };
 const chatToggle=document.getElementById('chatToggle');
 const canManageChat=()=>typeof TT.isChatAdmin==='function'?!!TT.isChatAdmin():isAdmin();
@@ -1159,15 +1173,20 @@ TT.setChatEnabled=enabled=>{ CHAT_ENABLED=enabled!==false; renderMyState(); };
 function myMuted(){ return MY.muted===true || (typeof MY.muted==='number' && MY.muted>Date.now()); }
 function chatBlocked(){
   if(!CHAT_ENABLED&&!canManageChat()){ toast(T().chatClosed); return true; }
+  if(isChatLikeRoundActive()){ toast(T().likeEventChatLocked); return true; }
   if(MY.banned){ toast(T().youBanned); return true; }
   if(myMuted()){ toast(T().youMuted); return true; }
   return false;
 }
 function renderMyState(){
-  const manager=canManageChat(), closed=!CHAT_ENABLED&&!manager, off=closed||MY.banned||myMuted();
+  const manager=canManageChat(), closed=!CHAT_ENABLED&&!manager;
+  const likeLocked=isChatLikeRoundActive();
+  const off=closed||likeLocked||MY.banned||myMuted();
   const guessing=chatGuessCooldownUntil>Date.now();
   chatText.disabled=off||guessing; document.getElementById('chatSend').disabled=off||guessing;
-  chatText.placeholder=closed?T().chatClosed:MY.banned?T().youBanned:off?T().youMuted:T().chatPh;
+  chatText.placeholder=closed?T().chatClosed:MY.banned?T().youBanned:myMuted()?T().youMuted:likeLocked?T().likeEventChatLocked:T().chatPh;
+  document.body.classList.toggle('like-event-chat-locked',likeLocked);
+  if(likeLocked) closePicker();
   chatToggle.hidden=!manager;
   chatToggle.textContent=CHAT_ENABLED?T().chatClose:T().chatOpen;
   chatToggle.classList.toggle('open',!CHAT_ENABLED);

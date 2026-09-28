@@ -730,7 +730,7 @@
     setInterval(loadOnline, 20000);       // ~20-30s cadence, matches root app.js
     setInterval(loadLeaderboard, 20000);  // weekly leaderboard refresh
     setInterval(loadInviteLeaderboard, 10000); // matches root app.js's invite-campaign polling cadence
-    setInterval(loadChatLikeEvent, 5000);
+    setInterval(loadChatLikeEvent, 2000);
   }
 
   if (document.readyState === 'loading') {
