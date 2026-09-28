@@ -378,6 +378,7 @@ let chatLikeEventState = {
   campaignId: null,
   rounds: [],
   nextDropAt: 0,
+  immediateDropDeployment: null,
 };
 try {
   if (fs.existsSync(CHAT_LIKE_EVENT_FILE)) {
@@ -395,6 +396,8 @@ try {
         legacyRewardKey: round.legacyRewardKey === true,
       })).filter((round) => round.roundId && round.messageId) : [],
       nextDropAt: Number.isSafeInteger(loaded.nextDropAt) ? loaded.nextDropAt : 0,
+      immediateDropDeployment: typeof loaded.immediateDropDeployment === 'string'
+        ? loaded.immediateDropDeployment : null,
     };
     if (!chatLikeEventState.rounds.length && Number.isSafeInteger(loaded.messageId) && loaded.messageId > 0) {
       chatLikeEventState.rounds.push({
@@ -591,18 +594,22 @@ function ensureChatLikeEventWinnerMessage(round) {
 }
 
 const chatLikeEventCampaignId = String(CHAT_LIKE_EVENT_START_MS);
+const CHAT_LIKE_IMMEDIATE_DROP_DEPLOYMENT = '2026-09-28-first-drop-now';
 if (chatLikeEventState.campaignId !== chatLikeEventCampaignId) {
   chatLikeEventState = {
     campaignId: chatLikeEventCampaignId,
     rounds: [],
-    nextDropAt: CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1),
+    nextDropAt: CHAT_LIKE_EVENT_START_MS,
+    immediateDropDeployment: null,
   };
   persistChatLikeEventState();
 }
 if (!chatLikeEventState.nextDropAt) {
-  chatLikeEventState.nextDropAt = Date.now() < CHAT_LIKE_EVENT_START_MS
-    ? CHAT_LIKE_EVENT_START_MS + crypto.randomInt(15 * 60 * 1000, 45 * 60 * 1000 + 1)
-    : Date.now();
+  chatLikeEventState.nextDropAt = CHAT_LIKE_EVENT_START_MS;
+}
+if (chatLikeEventState.immediateDropDeployment !== CHAT_LIKE_IMMEDIATE_DROP_DEPLOYMENT) {
+  chatLikeEventState.immediateDropDeployment = CHAT_LIKE_IMMEDIATE_DROP_DEPLOYMENT;
+  chatLikeEventState.nextDropAt = Math.max(CHAT_LIKE_EVENT_START_MS, Date.now());
   persistChatLikeEventState();
 }
 applyChatLikeEventPayouts();
