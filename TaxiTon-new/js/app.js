@@ -1080,7 +1080,6 @@ function renderChatLikeMessages(){
     const progress=(Math.min(1,likes/target)*66)+'%';
     const active=round.status==='active'||
       (chatLikeEventData.testMode&&round.status==='complete');
-    const liked=round.userLiked===true;
     const label=(chatLikeEventData.testMode?T().likeEventTestProgress:T().likeEventProgress)
       .replace('{likes}',String(likes)).replace('{target}',String(target));
     const winners=Array.isArray(round.winners)?round.winners:[];
@@ -1112,9 +1111,9 @@ function renderChatLikeMessages(){
     if(fill) fill.style.width=progress;
     if(counter) counter.textContent=label;
     if(action){
-      action.disabled=!active||liked||chatLikeBusy;
-      action.setAttribute('aria-label',liked?T().likeEventLiked:T().likeEventJoin);
-      action.title=liked?T().likeEventLiked:T().likeEventJoin;
+      action.disabled=!active||chatLikeBusy;
+      action.setAttribute('aria-label',T().likeEventJoin);
+      action.title=T().likeEventJoin;
     }
   });
 }
@@ -1132,8 +1131,7 @@ chatList.addEventListener('click',async event=>{
       ? chatLikeEventData.rounds.find(item=>String(item.roundId)===message?.dataset.likeEventRoundId)
       : null;
   if(chatLikeBusy||!round||
-     (round.status!=='active'&&!chatLikeEventData.testMode)||
-     (round.userLiked&&!chatLikeEventData.testMode)) return;
+     (round.status!=='active'&&!chatLikeEventData.testMode)) return;
   if(typeof TT.likeChatEvent!=='function'){ toast(T().likeEventError); return; }
   chatLikeBusy=true; renderChatLikeMessages();
   try{

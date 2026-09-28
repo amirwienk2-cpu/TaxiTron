@@ -389,6 +389,10 @@ try {
         roundId: String(round.roundId || round.messageId || ''),
         target: Number.isSafeInteger(round.target) ? round.target : 0,
         likers: Array.isArray(round.likers) ? [...new Set(round.likers.map(String))] : [],
+        entryCounts: round.entryCounts && typeof round.entryCounts === 'object'
+          ? Object.fromEntries(Object.entries(round.entryCounts).map(([uid, count]) => [String(uid), Math.max(0, Number(count) || 0)]))
+          : Object.fromEntries((Array.isArray(round.likers) ? [...new Set(round.likers.map(String))] : []).map((uid) => [uid, 1])),
+        likes: Number.isSafeInteger(round.likes) ? round.likes : (Array.isArray(round.likers) ? [...new Set(round.likers.map(String))].length : 0),
         settled: round.settled === true,
         winners: Array.isArray(round.winners) ? round.winners : [],
         messageId: Number.isSafeInteger(round.messageId) ? round.messageId : 0,
@@ -404,6 +408,8 @@ try {
         roundId: String(loaded.messageId),
         target: Number.isSafeInteger(loaded.target) ? loaded.target : 0,
         likers: Array.isArray(loaded.likers) ? [...new Set(loaded.likers.map(String))] : [],
+        entryCounts: Object.fromEntries((Array.isArray(loaded.likers) ? [...new Set(loaded.likers.map(String))] : []).map((uid) => [uid, 1])),
+        likes: Array.isArray(loaded.likers) ? [...new Set(loaded.likers.map(String))].length : 0,
         settled: loaded.settled === true,
         winners: Array.isArray(loaded.winners) ? loaded.winners : [],
         messageId: loaded.messageId,
@@ -460,8 +466,7 @@ function publicChatLikeRound(round, uid) {
     endsAt: CHAT_LIKE_EVENT_END_MS,
     status,
     target: round.target,
-    likes: round.likers.length,
-    userLiked: uid != null && round.likers.includes(String(uid)),
+    likes: Number.isSafeInteger(round.likes) ? round.likes : round.likers.length,
     messageId: round.messageId,
     winners: round.winners.map((winner) => ({
       name: winner.name,
@@ -483,7 +488,6 @@ function publicChatLikeEvent(uid) {
     nextDropAt: chatLikeEventState.nextDropAt,
     target: currentRoundData ? currentRoundData.target : 0,
     likes: currentRoundData ? currentRoundData.likes : 0,
-    userLiked: currentRoundData ? currentRoundData.userLiked : false,
     messageId: currentRoundData ? currentRoundData.messageId : 0,
     winners: currentRoundData ? currentRoundData.winners : [],
     rounds: chatLikeEventState.rounds.map((round) => publicChatLikeRound(round, uid)),
@@ -502,6 +506,8 @@ function ensureChatLikeEventDrop() {
     roundId: String(messageId),
     target: crypto.randomInt(100, 1001),
     likers: [],
+    entryCounts: {},
+    likes: 0,
     settled: false,
     winners: [],
     messageId,
@@ -2372,44 +2378,56 @@ app.post('/api/chat/like-event/like', requireUserFromBody, rejectBannedUser, (re
   }
 
   const uid = String(req.uid);
-  const alreadyLiked = targetRound.likers.includes(uid);
-  if (!alreadyLiked) {
-    const previousState = JSON.parse(JSON.stringify(chatLikeEventState));
-    targetRound.likers.push(uid);
-    if (targetRound.likers.length >= targetRound.target) {
-      const selected = targetRound.likers.slice();
-      for (let i = 0; i < 3; i += 1) {
-        const j = i + crypto.randomInt(selected.length - i);
-        [selected[i], selected[j]] = [selected[j], selected[i]];
+  const previousState = JSON.parse(JSON.stringify(chatLikeEventState));
+  targetRound.likes = (Number(targetRound.likes) || targetRound.likers.length) + 1;
+  targetRound.entryCounts[uid] = (Number(targetRound.entryCounts[uid]) || 0) + 1;
+  if (!targetRound.likers.includes(uid)) targetRound.likers.push(uid);
+  const eligibleUids = Object.keys(targetRound.entryCounts).filter((entryUid) => targetRound.entryCounts[entryUid] > 0);
+  if (targetRound.likes >= targetRound.target && eligibleUids.length >= 3) {
+    const remaining = Object.assign({}, targetRound.entryCounts);
+    let remainingEntries = Object.values(remaining).reduce((sum, count) => sum + count, 0);
+    targetRound.winners = [];
+    for (let i = 0; i < 3; i += 1) {
+      let roll = crypto.randomInt(remainingEntries);
+      let winnerUid = null;
+      for (const [entryUid, count] of Object.entries(remaining)) {
+        if (roll < count) {
+          winnerUid = entryUid;
+          break;
+        }
+        roll -= count;
       }
-      targetRound.winners = selected.slice(0, 3).map((winnerUid) => ({
+      if (winnerUid === null) throw new Error('[chat-like-event] weighted winner selection failed');
+      targetRound.winners.push({
         uid: winnerUid,
         name: users[winnerUid] && users[winnerUid].name || ('Player ' + winnerUid),
         photoUrl: users[winnerUid] && users[winnerUid].photoUrl || '',
         reward: 0.2,
-      }));
-      targetRound.settled = true;
+      });
+      remainingEntries -= remaining[winnerUid];
+      delete remaining[winnerUid];
     }
-    if (!persistChatLikeEventState()) {
-      chatLikeEventState = previousState;
-      return res.status(500).json({ error: 'like-event-save-failed' });
-    }
-    applyChatLikeEventPayouts();
-    ensureChatLikeEventWinnerMessage(targetRound);
-    broadcastChatEvent('like-event', {
-      event: publicChatLikeEvent(null),
-      winnerBalances: targetRound.winners.map((winner) => ({
-        uid: winner.uid,
-        ton: Number(users[winner.uid] && users[winner.uid].ton || 0),
-      })),
-      roundId: targetRound.roundId,
-    });
+    targetRound.settled = true;
   }
+  if (!persistChatLikeEventState()) {
+    chatLikeEventState = previousState;
+    return res.status(500).json({ error: 'like-event-save-failed' });
+  }
+  applyChatLikeEventPayouts();
+  ensureChatLikeEventWinnerMessage(targetRound);
+  broadcastChatEvent('like-event', {
+    event: publicChatLikeEvent(null),
+    winnerBalances: targetRound.winners.map((winner) => ({
+      uid: winner.uid,
+      ton: Number(users[winner.uid] && users[winner.uid].ton || 0),
+    })),
+    roundId: targetRound.roundId,
+  });
 
   res.json({
     event: publicChatLikeEvent(uid),
     state: publicState(req.user),
-    alreadyLiked,
+    alreadyLiked: false,
   });
 });
 
