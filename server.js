@@ -2090,46 +2090,44 @@ setInterval(()=>{if(secret())pollMoneyEvents()},15000);
 </script>
 <script>
 (() => {
-  const list = document.getElementById('list');
-  const attachTtControls = () => {
-    list.querySelectorAll('.player-row').forEach((row) => {
-      if (row.dataset.ttAdjustButton === '1') return;
-      const uid = String(row.dataset.uid || '');
-      const actionCell = row.lastElementChild;
-      if (!uid || !actionCell) return;
-      const name = (row.firstElementChild && row.firstElementChild.textContent.split('\n')[0].trim()) || uid;
-      const button = document.createElement('button');
-      button.className = 'reset-attempts';
-      button.textContent = '🪙 TT korrigieren';
-      button.onclick = async () => {
-        const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
-        if (value === null) return;
-        const delta = Number(value.replace(',', '.'));
-        if (!Number.isFinite(delta) || delta === 0) { alert('Ungültiger Wert.'); return; }
-        const action = delta > 0 ? 'hinzufügen' : 'abziehen';
-        if (!confirm(Math.abs(delta).toFixed(6) + ' TT bei ' + name + ' ' + action + '?')) return;
-        button.disabled = true;
-        try {
-          const response = await fetch('/admin/users/' + encodeURIComponent(uid) + '/adjust-tt', {
-            method: 'POST',
-            headers: {'x-admin-secret': secret(), 'Content-Type': 'application/json'},
-            body: JSON.stringify({delta})
-          });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || 'Update failed');
-          status(name + 's TT-Guthaben wurde auf ' + Number(data.ttBalance).toFixed(6) + ' TT korrigiert.');
-        } catch (error) {
-          status(error.message);
-        } finally {
-          button.disabled = false;
-        }
-      };
-      actionCell.prepend(button);
-      row.dataset.ttAdjustButton = '1';
+  const toolbar = document.querySelector('body > .toolbar');
+  if (!toolbar || document.getElementById('adjustTtTop')) return;
+  const button = document.createElement('button');
+  button.id = 'adjustTtTop';
+  button.className = 'small-btn';
+  button.textContent = '🪙 TT geben / nehmen';
+  button.onclick = async () => {
+    const query = prompt('Spielername oder Telegram-UID eingeben:');
+    if (!query || !query.trim()) return;
+    const playerRow = [...document.querySelectorAll('.player-row')].find((row) => {
+      return row.dataset.uid === query.trim() || (row.dataset.search || '').includes(query.trim().toLocaleLowerCase());
     });
+    if (!playerRow) { alert('Spieler nicht gefunden. Bitte zuerst „Load players“ ausführen und nach Name/UID suchen.'); return; }
+    const uid = String(playerRow.dataset.uid || '');
+    const name = (playerRow.firstElementChild && playerRow.firstElementChild.textContent.split('\n')[0].trim()) || uid;
+    const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
+    if (value === null) return;
+    const delta = Number(value.replace(',', '.'));
+    if (!Number.isFinite(delta) || delta === 0) { alert('Ungültiger Wert.'); return; }
+    const action = delta > 0 ? 'hinzufügen' : 'abziehen';
+    if (!confirm(Math.abs(delta).toFixed(6) + ' TT bei ' + name + ' ' + action + '?')) return;
+    button.disabled = true;
+    try {
+      const response = await fetch('/admin/users/' + encodeURIComponent(uid) + '/adjust-tt', {
+        method: 'POST',
+        headers: {'x-admin-secret': document.getElementById('secret').value, 'Content-Type': 'application/json'},
+        body: JSON.stringify({delta})
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Update failed');
+      status(name + 's TT-Guthaben wurde auf ' + Number(data.ttBalance).toFixed(6) + ' TT korrigiert.');
+    } catch (error) {
+      status(error.message);
+    } finally {
+      button.disabled = false;
+    }
   };
-  new MutationObserver(attachTtControls).observe(list, {childList: true, subtree: true});
-  attachTtControls();
+  toolbar.appendChild(button);
 })();
 </script></body></html>`);
 });
