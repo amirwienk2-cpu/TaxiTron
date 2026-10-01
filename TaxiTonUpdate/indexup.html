@@ -2948,7 +2948,7 @@
           <img class="whead" src="assets/dephead.webp" alt="">
           <div class="dephd"><h3 data-t="dep_t">Deposit TON</h3><img src="assets/tticon.webp" alt=""></div>
           <p class="muted" data-t="dep_d">To add in-game balance, send TON to this address.</p>
-          <div class="addr"><span class="num" id="depAddr">UQD2uyyNj1ZqCz59z1M7ej5aPr6raYoiTgbUP9bVeWlsbpPt</span><button class="cpy" data-copy="#depAddr" aria-label="Copy address"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M5 16V5.5A2.5 2.5 0 0 1 7.5 3H15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+          <div class="addr"><span class="num" id="depAddr">UQD2uyyNj1ZqCz59zlM7ej5aPr6raYoiTgbUP9bVeWlsbpPt</span><button class="cpy" data-copy="#depAddr" aria-label="Copy address"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M5 16V5.5A2.5 2.5 0 0 1 7.5 3H15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
           <button class="bigbtn purple" data-copy="#depAddr"><svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M5 16V5.5A2.5 2.5 0 0 1 7.5 3H15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> <span data-t="dep_copy">Copy address</span></button>
           <div class="memo"><div class="row" style="align-items:flex-start;gap:10px"><div class="info">i</div>
             <p><b data-t="dep_imp">Important:</b> <span data-t="dep_memo">Enter this code as the comment (memo) of your transfer, otherwise your deposit will not be added to your account automatically.</span></p></div>
@@ -3490,6 +3490,7 @@ async function loadShopAccount(){
     if (!response.ok || !data.token || !data.state) throw new Error(data.error || 'shop-auth-failed');
     SHOP_ACCOUNT.token = data.token;
     applyShopAccountState(data.state);
+    await loadDepositAddress();
     loadOnlinePlayers();
   } catch(e) { SHOP_ACCOUNT.online = false; }
   await limRefresh();
@@ -3499,6 +3500,14 @@ async function loadOnlinePlayers(){
     const response=await fetch('/api/online-users',{cache:'no-store'}),data=await response.json();
     if(response.ok&&Array.isArray(data.users)){SHOP_ACCOUNT.onlineUsers=data.users; if(current==='chat')renderChat();}
   }catch(e){}
+}
+async function loadDepositAddress(){
+  if (!SHOP_ACCOUNT.token) return;
+  try {
+    const response = await fetch(`/api/deposit-info?token=${encodeURIComponent(SHOP_ACCOUNT.token)}`, {cache:'no-store'});
+    const data = await response.json();
+    if (response.ok && typeof data.address === 'string' && data.address.trim()) $('#depAddr').textContent = data.address.trim();
+  } catch (e) {}
 }
 async function refreshShopAccount(){
   if (!SHOP_ACCOUNT.token) return loadShopAccount();
