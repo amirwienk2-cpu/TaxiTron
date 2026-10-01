@@ -2127,7 +2127,9 @@ setInterval(()=>{if(secret())pollMoneyEvents()},15000);
       button.disabled = false;
     }
   };
-  toolbar.appendChild(button);
+  const loadPlayersButton = document.getElementById('load');
+  if (loadPlayersButton && loadPlayersButton.parentElement === toolbar) loadPlayersButton.after(button);
+  else toolbar.prepend(button);
 })();
 </script></body></html>`);
 });
