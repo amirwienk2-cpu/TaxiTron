@@ -5,15 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script>
   // Direct visits to the historical entry file must open the redesigned shell.
-  // /legacy-game.html intentionally remains available for the embedded game iframe.
-  if (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
-    window.location.replace('/TaxiTon-new/index-new.html?v=20260922' + window.location.search);
+  // Embedded callers need the original game screens from this file.
+  const embeddedGame = new URLSearchParams(window.location.search).get('embedded') === '1';
+  if (!embeddedGame && (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html'))) {
+    window.location.replace('/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001' + window.location.search);
   }
 </script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <title>Coin Runner 3D</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=level2-slow-nitro-large-stack-20261001">
 </head>
 <body>
 <div id="appShell">
@@ -325,6 +326,8 @@
 
       <div id="hud">
         <div id="hudPill">
+          <img id="hudLevelCar" class="hud-level-car" alt="">
+          <canvas id="hudLevelCarVideo" class="hud-level-car-video" aria-hidden="true"></canvas>
           <span class="hud-seg hud-zombies-val" id="hudZombiesWrap"><b id="hudZombies">0</b></span>
           <span class="hud-seg hud-distance-val" id="hudDistance">0 m</span>
           <span class="hud-seg hud-level">
@@ -335,20 +338,21 @@
       </div>
       <div id="weaponHud" style="display:none;">x2 <span id="weaponTimerVal">15</span>s</div>
 
-      <div id="hackHud" style="display:none;"><img id="hackHudImg" src="sprites/xx2.png" alt="" /><span id="hackHudTimerVal">10s</span></div>
+      <div id="hackHud" style="display:none;"><img id="hackHudImg" src="sprites/x22.png" alt="" /><span id="hackHudTimerVal">10s</span></div>
 
       <div id="ghostHud" style="display:none;"><img src="sprites/ghost.png" alt="Ghost" /><span id="ghostTimerVal">5s</span></div>
 
       <div id="powerBtns">
-        <button id="nitroBtn" class="nitro-btn" title="Nitro"><img src="sprites/nitro.png" alt="Nitro" /><span id="nitroTimerVal"></span></button>
+        <button id="shieldBtn" class="nitro-btn shield-btn" title="Shield"><img src="sprites/schutz.png" alt="Shield" /><span id="shieldHitsVal">3</span></button>
+        <button id="nitroBtn" class="nitro-btn" title="Nitro"><img src="sprites/nitro3.png" alt="Nitro" /><span id="nitroTimerVal"></span></button>
 
-        <button id="hackBtn" class="nitro-btn slow-btn" title="Hack" style="display:none;"><img src="sprites/ghofl.png" alt="Hack" /><span id="hackTimerVal"></span></button>
+        <button id="hackBtn" class="nitro-btn slow-btn" title="Hack" style="display:none;"><img src="sprites/hack.png" alt="Hack" /><span id="hackTimerVal"></span></button>
 
-        <button id="mult4Btn" class="nitro-btn lvl4-btn" title="x4" style="display:none;"><img src="sprites/xx4.png" alt="x4" /><span id="mult4TimerVal"></span></button>
+        <button id="mult4Btn" class="nitro-btn lvl4-btn" title="x4" style="display:none;"><img src="sprites/x44.png" alt="x4" /><span id="mult4TimerVal"></span></button>
 
-        <button id="mult2Btn" class="nitro-btn lvl4-btn" title="x2" style="display:none;"><img src="sprites/xx2.png" alt="x2" /><span id="mult2TimerVal"></span></button>
+        <button id="mult2Btn" class="nitro-btn lvl4-btn" title="x2" style="display:none;"><img src="sprites/x22.png" alt="x2" /><span id="mult2TimerVal"></span></button>
 
-        <button id="slowBtn" class="nitro-btn slow-btn" title="Slow" style="display:none;"><img src="sprites/soratgir.png" alt="Slow" /><span id="slowTimerVal"></span></button>
+        <button id="slowBtn" class="nitro-btn slow-btn" title="Slow" style="display:none;"><img src="sprites/slow.png" alt="Slow" /><span id="slowTimerVal"></span></button>
       </div>
 
       <div id="gameOverScreen">
@@ -361,7 +365,6 @@
         <button class="btn" id="goHomeBtn" style="margin-top:12px;background:linear-gradient(180deg,#3a3750,#26243a);color:#fff;box-shadow:0 6px 0 #17162280;" data-i18n="goHome">Back to Home</button>
       </div>
 
-      <div class="hint" id="hint" data-i18n="hint">◀ ▶ Arrow keys, A/D or swipe</div>
     </div>
   </main>
 
@@ -382,6 +385,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>window.TAXITRON_BOT_USERNAME = 'TaxiTronBot';</script>
-<script src="app.js?v=chat-admin-toggle-20260917"></script>
+<script src="app.js?v=level1-nitro-only-20261001"></script>
 </body>
 </html>

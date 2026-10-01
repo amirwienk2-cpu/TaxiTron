@@ -62,7 +62,7 @@ const PLAY_GAME_URL = process.env.PLAY_GAME_URL || 'https://t.me/TaxiiTonBot';
 const NEWS_CHANNEL_URL = process.env.NEWS_CHANNEL_URL || 'https://t.me/TaxiiTon';
 const TON_EXPLORER_URL = process.env.TON_EXPLORER_URL || 'https://tonviewer.com/transaction/';
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://taxitron-production.up.railway.app';
-const TELEGRAM_MINI_APP_URL = new URL('/TaxiTon-new/index-new.html?v=2026092405', MINI_APP_URL).toString();
+const TELEGRAM_MINI_APP_URL = new URL('/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001', MINI_APP_URL).toString();
 const TON_USD_RATE = Number(process.env.TON_USD_RATE || 0);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
@@ -191,9 +191,40 @@ const LEVEL_MULTIPLIER = 1; // server only ever applies the Level 1 base rate
 const DAILY_PTS_CAP = 1; // TON per day at level 1
 const LEVEL_TWO_DAILY_PTS_CAP = 0.067;
 const LEVEL_THREE_DAILY_PTS_CAP = 0.2;
-const LEVEL_FOUR_DAILY_PTS_CAP = 0.66;
+const LEVEL_FOUR_DAILY_PTS_CAP = 0.67;
+const LEVEL_FIVE_DAILY_PTS_CAP = 1.66;
+const LIMITED_SKIN_OFFERS = { luna: { price: 25, level: 5, dailyReward: 1.67, rewardDays: 30, max: 20 } };
+const FIGURE_PACKS = {
+  red: { price: 0.5, weights: { sara: 800, nova: 120, zero: 75, berlin: 5, luna: 0 } },
+  purple: { price: 1, weights: { sara: 700, nova: 149, zero: 130, berlin: 20, luna: 1 } },
+  gold: { price: 2, weights: { sara: 250, nova: 350, zero: 375, berlin: 20, luna: 5 } },
+};
+const FIGURE_IDS = ['sara', 'nova', 'zero', 'berlin', 'luna'];
+const FIGURE_MINING_RATES = { sara: 100, nova: 250, zero: 600, berlin: 1200, luna: 2500 };
+const LUNA_MINING_BONUS = 5000;
+const TT_PER_USD = 10000;
+const TT_SHOP_AMOUNTS_USD = [3, 5, 10, 25];
+const TT_SHOP_COINS = new Set(['ton', 'usdt', 'trx', 'bnb', 'ltc', 'shib']);
+const TT_SHOP_TON_ADDRESS = /^(?:[EU]Q[A-Za-z0-9_-]{46}|-?[0-9]:[0-9a-fA-F]{64})$/;
+const TT_SHOP_TRON_ADDRESS = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
+const TT_SHOP_EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
+const TT_SHOP_LTC_ADDRESS = /^(?:[LM3][1-9A-HJ-NP-Za-km-z]{25,34}|ltc1[ac-hj-np-z02-9]{39,59})$/i;
+const TT_CHAT_ITEMS = {
+  bub: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000 },
+  frm: { none: 0, autumn: 2000, cozy: 2000, fox: 2000 },
+  ban: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000 },
+  stk: { sara: 5000, berlin: 5000, zero: 5000, nova: 5000, luna: 5000, nikto: 5000, zombie: 5000, autumn: 5000 },
+};
+function dailyTonCapForLevel(level) {
+  const normalized = Number(level) || 1;
+  return normalized >= 5 ? LEVEL_FIVE_DAILY_PTS_CAP
+    : normalized >= 4 ? LEVEL_FOUR_DAILY_PTS_CAP
+      : normalized >= 3 ? LEVEL_THREE_DAILY_PTS_CAP
+        : normalized >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
+}
 const MIN_WITHDRAW = 1; // TON
 const WITHDRAWAL_FEE_RATE = 0.01;
+const WITHDRAWAL_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const INIT_DATA_MAX_AGE_MS = 24 * 60 * 60 * 1000; // reject stale Telegram auth payloads
 const MAX_ZOMBIES_PER_CALL = 10000; // basic anti-cheat ceiling
@@ -742,11 +773,21 @@ function newUser(id, name) {
     id,
     name: name || ('Player ' + id),
     photoUrl: '',
+    profileImage: '',
     coins: 0,
     ton: 0,
     ttBalance: 0,
+    chatItems: { bub: [], frm: [], ban: [], eq: { bub: 'classic', frm: 'none', ban: 'classic' } },
+    stickerPacks: [],
+    friends: [],
+    friendRequestsIn: [],
+    friendRequestsOut: [],
+    directMessages: {},
+    figCount: {},
+    mine: { last: Date.now(), acc: 0 },
+    ttOrders: [],
     tonToday: 0,
-    tonTodayByLevel: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    tonTodayByLevel: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
     tonDate: '',
     best: 0,
     runs: 0,
@@ -774,6 +815,7 @@ function newUser(id, name) {
     purchases: [],
     withdrawals: [],
     lastWithdrawalDay: '',
+    lastWithdrawalAt: 0,
     referralCount: 0,
     referralRewardCount: 0,
     referralPendingZombies: 0,
@@ -983,18 +1025,18 @@ function daysBetweenDayKeys(fromKey, toKey) {
 function ensureDailyReset(user) {
   const today = berlinDayKey();
   if (!user.tonTodayByLevel || typeof user.tonTodayByLevel !== 'object') {
-    user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    const legacyLevel = Math.max(1, Math.min(4, Number(user.level) || 1));
+    user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const legacyLevel = Math.max(1, Math.min(5, Number(user.level) || 1));
     user.tonTodayByLevel[legacyLevel] = Number(user.tonToday) || 0;
   }
-  [1, 2, 3, 4].forEach((level) => {
+  [1, 2, 3, 4, 5].forEach((level) => {
     const value = Number(user.tonTodayByLevel[level]);
     user.tonTodayByLevel[level] = Number.isFinite(value) ? Math.max(0, value) : 0;
   });
   if (user.tonDate !== today) {
     user.tonDate = today;
     user.tonToday = 0;
-    user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   }
   if (user.adVideoDay !== today) {
     user.adVideoDay = today;
@@ -1056,7 +1098,7 @@ function nextBerlinMidnightTimestamp() {
   return target;
 }
 function ensureAttemptState(user, level) {
-  const normalizedLevel = Math.max(1, Math.min(4, Number(level) || 1));
+  const normalizedLevel = Math.max(1, Math.min(5, Number(level) || 1));
   const max = attemptLimitForLevel(normalizedLevel);
   const today = berlinDayKey();
   if (!user.attemptsByLevel || typeof user.attemptsByLevel !== 'object') user.attemptsByLevel = {};
@@ -1093,7 +1135,7 @@ function ensureAttemptState(user, level) {
 }
 function publicAttemptsByLevel(user) {
   const result = {};
-  [1, 2, 3, 4].forEach((level) => {
+  [1, 2, 3, 4, 5].forEach((level) => {
     const state = ensureAttemptState(user, level);
     result[level] = { left: state.left, resetAt: state.resetAt, resetDay: state.resetDay };
   });
@@ -1101,11 +1143,11 @@ function publicAttemptsByLevel(user) {
 }
 function highestOwnedLevel(user) {
   const owned = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
-  return owned.includes('green') ? 4 : owned.includes('white') ? 3 : owned.includes('red') ? 2 : 1;
+  return owned.includes('luna') ? 5 : owned.includes('green') ? 4 : owned.includes('white') ? 3 : owned.includes('red') ? 2 : 1;
 }
 function resolvePlayableLevel(user, requestedLevel) {
-  const requested = Math.max(1, Math.min(4, Number(requestedLevel) || highestOwnedLevel(user)));
-  const skin = requested >= 4 ? 'green' : requested >= 3 ? 'white' : requested >= 2 ? 'red' : 'yellow';
+  const requested = Math.max(1, Math.min(5, Number(requestedLevel) || highestOwnedLevel(user)));
+  const skin = requested >= 5 ? 'luna' : requested >= 4 ? 'green' : requested >= 3 ? 'white' : requested >= 2 ? 'red' : 'yellow';
   const owned = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
   if (!owned.includes(skin)) return highestOwnedLevel(user);
   if (requested === 1 && highestOwnedLevel(user) >= 2) return highestOwnedLevel(user);
@@ -1130,9 +1172,31 @@ function publicState(user) {
   const ownedSkins = Array.isArray(user.ownedSkins) ? user.ownedSkins : ['yellow'];
   if (ownedSkins.indexOf('yellow') === -1) ownedSkins.unshift('yellow');
   user.ownedSkins = ownedSkins;
-  user.level = ownedSkins.indexOf('green') !== -1 ? 4 : ownedSkins.indexOf('white') !== -1 ? 3 : ownedSkins.indexOf('red') !== -1 ? 2 : 1;
+  if (!user.figCount || typeof user.figCount !== 'object') user.figCount = {};
+  FIGURE_IDS.forEach((id) => {
+    user.figCount[id] = Math.max(0, Math.floor(Number(user.figCount[id]) || 0));
+  });
+  if (!user.chatItems || typeof user.chatItems !== 'object') user.chatItems = {};
+  ['bub', 'frm', 'ban'].forEach((kind) => {
+    const freeId = kind === 'bub' ? 'classic' : kind === 'frm' ? 'none' : 'classic';
+    if (!Array.isArray(user.chatItems[kind])) user.chatItems[kind] = [];
+    user.chatItems[kind] = [...new Set(user.chatItems[kind].filter((id) => Object.hasOwn(TT_CHAT_ITEMS[kind], id)))];
+    if (!user.chatItems.eq || typeof user.chatItems.eq !== 'object') user.chatItems.eq = {};
+    if (!user.chatItems[kind].includes(freeId)) user.chatItems[kind].unshift(freeId);
+    if (!user.chatItems[kind].includes(user.chatItems.eq[kind])) user.chatItems.eq[kind] = freeId;
+  });
+  if (!Array.isArray(user.stickerPacks)) user.stickerPacks = [];
+  user.stickerPacks = [...new Set(user.stickerPacks.filter((id) => Object.hasOwn(TT_CHAT_ITEMS.stk, id)))];
+  if (!Array.isArray(user.friends)) user.friends = [];
+  if (!Array.isArray(user.friendRequestsIn)) user.friendRequestsIn = [];
+  if (!Array.isArray(user.friendRequestsOut)) user.friendRequestsOut = [];
+  if (!user.directMessages || typeof user.directMessages !== 'object') user.directMessages = {};
+  if (!user.mine || typeof user.mine !== 'object') user.mine = { last: Date.now(), acc: 0 };
+  user.mine.last = Math.max(0, Number(user.mine.last) || Date.now());
+  user.mine.acc = Math.max(0, Number(user.mine.acc) || 0);
+  user.level = ownedSkins.indexOf('luna') !== -1 ? 5 : ownedSkins.indexOf('green') !== -1 ? 4 : ownedSkins.indexOf('white') !== -1 ? 3 : ownedSkins.indexOf('red') !== -1 ? 2 : 1;
   if (!user.skinRewards || typeof user.skinRewards !== 'object') user.skinRewards = {};
-  const rewardDays = { red:30, white:30, green:30 };
+  const rewardDays = { red:30, white:30, green:30, luna:LIMITED_SKIN_OFFERS.luna.rewardDays };
   const today = berlinDayKey();
   Object.keys(rewardDays).forEach((key) => {
     if (ownedSkins.includes(key) && !user.skinRewards[key]) {
@@ -1159,12 +1223,37 @@ function publicState(user) {
   });
   return {
     uid: String(user.id),
+    profilePhoto: user.profileImage || user.photoUrl || '',
     coins: user.coins,
     ton: user.ton,
+    totalWithdrawnTon: (Array.isArray(user.withdrawals) ? user.withdrawals : [])
+      .filter((withdrawal) => withdrawal.status === 'completed')
+      .reduce((sum, withdrawal) => sum + Number(withdrawal.grossAmount ?? withdrawal.amount ?? 0), 0),
     ttBalance: Number(user.ttBalance || 0),
+    chatItems: {
+      bub: user.chatItems.bub.slice(), frm: user.chatItems.frm.slice(), ban: user.chatItems.ban.slice(),
+      eq: { ...user.chatItems.eq },
+    },
+    stickerPacks: user.stickerPacks.slice(),
+    friends: user.friends.map((uid) => users[String(uid)]).filter(Boolean).map((friend) => ({
+      uid: String(friend.id), name: friend.name || ('Player ' + friend.id), photoUrl: friend.profileImage || friend.photoUrl || '',
+      chatItems: friend.chatItems && friend.chatItems.eq ? { ...friend.chatItems.eq } : { bub: 'classic', frm: 'none', ban: 'classic' },
+    })),
+    friendRequestsIn: user.friendRequestsIn.map((uid) => users[String(uid)]).filter(Boolean).map((friend) => ({
+      uid: String(friend.id), name: friend.name || ('Player ' + friend.id), photoUrl: friend.profileImage || friend.photoUrl || '',
+      chatItems: friend.chatItems && friend.chatItems.eq ? { ...friend.chatItems.eq } : { bub: 'classic', frm: 'none', ban: 'classic' },
+    })),
+    friendRequestsOut: user.friendRequestsOut.map((uid) => users[String(uid)]).filter(Boolean).map((friend) => ({
+      uid: String(friend.id), name: friend.name || ('Player ' + friend.id), photoUrl: friend.profileImage || friend.photoUrl || '',
+      chatItems: friend.chatItems && friend.chatItems.eq ? { ...friend.chatItems.eq } : { bub: 'classic', frm: 'none', ban: 'classic' },
+    })),
+    ttOrders: Array.isArray(user.ttOrders) ? user.ttOrders.slice(-50).reverse() : [],
+    figCount: user.figCount,
+    mine: { last: user.mine.last, acc: user.mine.acc },
     tonToday: user.tonToday,
     tonTodayByLevel: user.tonTodayByLevel,
     lastWithdrawalDay: user.lastWithdrawalDay || '',
+    lastWithdrawalAt: latestWithdrawalAt(user),
     best: user.best,
     runs: user.runs,
     level: user.level,
@@ -1194,21 +1283,29 @@ function publicState(user) {
   };
 }
 
+function hasActiveLevelReward(user, level) {
+  const skinByLevel = { 2: 'red', 3: 'white', 4: 'green', 5: 'luna' };
+  const skin = skinByLevel[Number(level)];
+  if (!skin) return true;
+  if (!Array.isArray(user.ownedSkins) || !user.ownedSkins.includes(skin)) return false;
+  publicState(user);
+  return Number(user.skinRewards && user.skinRewards[skin] && user.skinRewards[skin].remainingDays) > 0;
+}
+
 function canModerateChat(user) {
   return user && (user.isChatAdmin === true || user.isDesigner === true);
 }
 
-function hasWithdrawnToday(user) {
-  if (!user) return false;
-  const todayKey = berlinDayKey();
-  if (user.lastWithdrawalDay === todayKey) return true;
-  if (!Array.isArray(user.withdrawals)) return false;
-  return user.withdrawals.some((w) => {
-    if (!w || !w.ts) return false;
-    const d = new Date(Number(w.ts));
-    if (Number.isNaN(d.getTime())) return false;
-    return berlinDayKey(d) === todayKey;
-  });
+function latestWithdrawalAt(user) {
+  const recorded = Number(user && user.lastWithdrawalAt) || 0;
+  const fromHistory = Array.isArray(user && user.withdrawals)
+    ? user.withdrawals.reduce((latest, withdrawal) => Math.max(latest, Number(withdrawal && withdrawal.ts) || 0), 0)
+    : 0;
+  return Math.max(recorded, fromHistory);
+}
+function withdrawalCooldownMs(user, now = Date.now()) {
+  const lastWithdrawalAt = latestWithdrawalAt(user);
+  return lastWithdrawalAt ? Math.max(0, lastWithdrawalAt + WITHDRAWAL_COOLDOWN_MS - now) : 0;
 }
 
 const RPS_CHOICES = new Set(['rock', 'paper', 'scissors']);
@@ -1763,6 +1860,7 @@ function requireUser(getToken) {
     req.uid = String(payload.uid);
     req.user = users[req.uid];
     if (!req.user) return res.status(401).json({ error: 'unknown-user' });
+    req.user.lastSeenAt = Date.now();
     if (syncCampaignInvite(req.user)) persist();
     next();
   };
@@ -1797,7 +1895,7 @@ app.get(['/','/index.html'], (req, res) => {
     Expires: '0'
   });
   const query = req.originalUrl.split('?')[1];
-  const target = '/TaxiTon-new/index-new.html?v=20260922' + (query ? '&' + query : '');
+  const target = '/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001' + (query ? '&' + query : '');
   res.redirect(302, target);
 });
 app.get(['/magic-tower-hilo.html', '/zombie.html'], (req, res) => {
@@ -1819,7 +1917,7 @@ app.get('/legacy-game.html', (req, res) => {
     Expires: '0'
   });
   if (req.query.embedded !== '1') {
-    return res.redirect(302, '/TaxiTon-new/index-new.html?v=20260922');
+    return res.redirect(302, '/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001');
   }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -2286,6 +2384,15 @@ function publicChatMessage(message, viewerUid) {
     giftNumber, giftPrizeTon: secretGiftPrizeTon, giftClaimed, giftExpired, giftWinnerUid,
     giftWinnerName, ...publicMessage
   } = message;
+  const author = users[String(message.uid)];
+  const equipped = author && author.chatItems && author.chatItems.eq && typeof author.chatItems.eq === 'object'
+    ? author.chatItems.eq : {};
+  publicMessage.chatItems = {
+    bub: Object.hasOwn(TT_CHAT_ITEMS.bub, equipped.bub) ? equipped.bub : 'classic',
+    frm: Object.hasOwn(TT_CHAT_ITEMS.frm, equipped.frm) ? equipped.frm : 'none',
+    ban: Object.hasOwn(TT_CHAT_ITEMS.ban, equipped.ban) ? equipped.ban : 'classic',
+  };
+  publicMessage.photoUrl = author ? author.profileImage || author.photoUrl || '' : '';
   publicMessage.isAdmin = users[String(message.uid)]
     ? users[String(message.uid)].isChatAdmin === true : message.isAdmin === true;
   publicMessage.adminBadge = users[String(message.uid)]
@@ -2315,8 +2422,13 @@ function publicChatMessage(message, viewerUid) {
 
 app.get('/api/online-count', (req, res) => {
   const now = Date.now();
-  const count = Object.values(users).filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS).length;
-  res.json({ online: count });
+  const activeUsers = Object.values(users).filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS);
+  const rooms = { en: 0, fa: 0, de: 0 };
+  activeUsers.forEach((user) => {
+    const room = user.lastChatRoom;
+    if (Object.hasOwn(rooms, room) && now - Number(user.chatLastSeenAt || 0) < ONLINE_WINDOW_MS) rooms[room]++;
+  });
+  res.json({ online: activeUsers.length, rooms });
 });
 
 // Lightweight list of currently online users (name + TON balance) for the Home chat sidebar.
@@ -2335,7 +2447,7 @@ app.get('/api/online-users', (req, res) => {
     .map((user) => ({
       uid: String(user.id),
       name: user.name || ('Player ' + user.id),
-      photoUrl: user.photoUrl || '',
+      photoUrl: user.profileImage || user.photoUrl || '',
       ton: Number(user.ton || 0),
       isChatAdmin: user.isChatAdmin === true,
       adminBadge: user.adminBadge === 'girl' ? 'girl' : 'boy',
@@ -2350,9 +2462,25 @@ app.get('/api/online-users', (req, res) => {
 // GET returns messages newer than ?after=<id> (or the last ~50 if omitted), for polling.
 app.get('/api/chat/messages', (req, res) => {
   const after = Number(req.query.after) || 0;
+  const requestedRoom = String(req.query.room || '').toLowerCase();
+  const room = ['en', 'fa', 'de'].includes(requestedRoom) ? requestedRoom : '';
   const viewerPayload = verifyToken(req.query.token);
   const viewerUid = viewerPayload ? String(viewerPayload.uid) : null;
-  const storedMessages = after > 0 ? chatMessages.filter((m) => m.id > after) : chatMessages.slice(-50);
+  const viewer = viewerUid ? users[viewerUid] : null;
+  if (viewer) {
+    viewer.lastSeenAt = Date.now();
+    if (room) {
+      viewer.lastChatRoom = room;
+      viewer.chatLastSeenAt = Date.now();
+    }
+  }
+  // Requests with no room keep the legacy global-chat behavior.
+  const roomMessages = room
+    ? chatMessages.filter((message) => (message.room || 'en') === room)
+    : chatMessages;
+  const storedMessages = after > 0
+    ? roomMessages.filter((message) => message.id > after)
+    : roomMessages.slice(-50);
   const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
   res.json({ messages, enabled: chatEnabled });
 });
@@ -2480,7 +2608,15 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     .replace(/\r\n?/g, '\n')
     .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '')
     .trim();
-  if (!raw) return res.status(400).json({ error: 'empty-message' });
+  const sticker = String(req.body && req.body.sticker || '').trim();
+  const requestedRoom = String(req.body && req.body.room || 'en').toLowerCase();
+  if (!['en', 'fa', 'de'].includes(requestedRoom)) return res.status(400).json({ error: 'invalid-chat-room' });
+  const stickerMatch = sticker.match(/^([a-z]+)-([1-6])$/);
+  const stickerPack = stickerMatch && stickerMatch[1];
+  if (sticker && (!stickerMatch || !Object.hasOwn(TT_CHAT_ITEMS.stk, stickerPack) || !Array.isArray(req.user.stickerPacks) || !req.user.stickerPacks.includes(stickerPack))) {
+    return res.status(403).json({ error: 'sticker-not-owned' });
+  }
+  if (!raw && !sticker) return res.status(400).json({ error: 'empty-message' });
   const now = Date.now();
   const normalizedGuess = normalizeChatGuess(raw);
   const isGiftGuess = /^(?:[1-9]|[1-4][0-9]|50)$/.test(normalizedGuess) &&
@@ -2534,7 +2670,9 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     id: chatNextId++,
     uid: req.uid,
     name: req.user.name || ('Player ' + req.uid),
-    text,
+    text: sticker ? '' : text,
+    room: requestedRoom,
+    ...(sticker ? { stk: sticker } : {}),
     ts: Date.now(),
     isAdmin: req.user.isChatAdmin === true,
     isDesigner: req.user.isDesigner === true,
@@ -2627,26 +2765,110 @@ app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
   });
 });
 
+function limitedSkinSoldCount(key) {
+  return Object.values(users).filter((user) => Array.isArray(user.ownedSkins) && user.ownedSkins.includes(key)).length;
+}
+
+app.get('/api/limited/:key', (req, res) => {
+  const offer = LIMITED_SKIN_OFFERS[String(req.params.key || '')];
+  if (!offer) return res.status(404).json({ error: 'limited-offer-not-found' });
+  res.set('Cache-Control', 'no-store');
+  res.json({ sold: limitedSkinSoldCount(req.params.key), max: offer.max });
+});
+
 app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
   const key = String(req.body && req.body.key || '');
-  const prices = { red: 1, white: 3, green: 10 };
-  const levels = { red: 2, white: 3, green: 4 };
+  const prices = { red: 1, white: 3, green: 10, luna: LIMITED_SKIN_OFFERS.luna.price };
+  const levels = { red: 2, white: 3, green: 4, luna: LIMITED_SKIN_OFFERS.luna.level };
   const price = prices[key];
   if (!price) return res.status(400).json({ error: 'invalid-skin' });
   const user = req.user;
   if (!Array.isArray(user.ownedSkins)) user.ownedSkins = ['yellow'];
   if (user.ownedSkins.indexOf(key) !== -1) return res.status(409).json({ error: 'skin-already-owned' });
+  const offer = LIMITED_SKIN_OFFERS[key];
+  if (offer) {
+    const sold = limitedSkinSoldCount(key);
+    if (sold >= offer.max) return res.status(409).json({ error: 'sold-out', sold, max: offer.max });
+  }
   if (user.ton < price) return res.status(400).json({ error: 'insufficient-funds' });
   user.ton -= price;
   user.ownedSkins.push(key);
   user.level = Math.max(user.level || 1, levels[key]);
   if (!user.skinRewards || typeof user.skinRewards !== 'object') user.skinRewards = {};
-  user.skinRewards[key] = { remainingDays: 30, expiresAt: Date.now() + 30 * 86400000, lastCreditDate: berlinDayKey(), lastEarnedDate: '' };
+  const rewardDays = offer ? offer.rewardDays : 30;
+  user.skinRewards[key] = { remainingDays: rewardDays, expiresAt: Date.now() + rewardDays * 86400000, lastCreditDate: berlinDayKey(), lastEarnedDate: '' };
   if (!Array.isArray(user.purchases)) user.purchases = [];
   user.purchases.push({ ts: Date.now(), key, price, level: levels[key] });
   if (user.purchases.length > 200) user.purchases = user.purchases.slice(-200);
   persist();
   res.json({ state: publicState(user) });
+});
+
+function ensureFigureState(user) {
+  if (!user.figCount || typeof user.figCount !== 'object') user.figCount = {};
+  FIGURE_IDS.forEach((id) => { user.figCount[id] = Math.max(0, Math.floor(Number(user.figCount[id]) || 0)); });
+  if (!user.mine || typeof user.mine !== 'object') user.mine = { last: Date.now(), acc: 0 };
+  user.mine.last = Math.max(0, Number(user.mine.last) || Date.now());
+  user.mine.acc = Math.max(0, Number(user.mine.acc) || 0);
+}
+
+function userMiningRate(user) {
+  ensureFigureState(user);
+  const figureRate = FIGURE_IDS.reduce((sum, id) => sum + (user.figCount[id] > 0 ? FIGURE_MINING_RATES[id] : 0), 0);
+  return figureRate + (user.figCount.luna > 0 ? LUNA_MINING_BONUS : 0);
+}
+
+function accrueUserMining(user, now = Date.now()) {
+  ensureFigureState(user);
+  const rate = userMiningRate(user);
+  const elapsed = Math.max(0, now - user.mine.last);
+  user.mine.acc = Math.min(rate, user.mine.acc + rate * elapsed / 86400000);
+  user.mine.last = now;
+  return rate;
+}
+
+function pickPackFigure(pack) {
+  const entries = Object.entries(pack.weights);
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = crypto.randomInt(total);
+  for (const [id, weight] of entries) {
+    roll -= weight;
+    if (roll < 0) return id;
+  }
+  return entries[0][0];
+}
+
+app.post('/api/packs/buy', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const packId = String(req.body && req.body.packId || '');
+  const pack = FIGURE_PACKS[packId];
+  if (!pack) return res.status(400).json({ error: 'invalid-pack' });
+  const user = req.user;
+  if (Number(user.ton || 0) + 1e-9 < pack.price) {
+    return res.status(400).json({ error: 'insufficient-funds', state: publicState(user) });
+  }
+
+  const now = Date.now();
+  accrueUserMining(user, now);
+  const figureId = pickPackFigure(pack);
+  const previousCount = user.figCount[figureId] || 0;
+  user.ton = Number((Number(user.ton || 0) - pack.price).toFixed(9));
+  user.figCount[figureId] = previousCount + 1;
+  if (!Array.isArray(user.purchases)) user.purchases = [];
+  user.purchases.push({ ts: now, type: 'figure-pack', key: packId, price: pack.price, figureId });
+  if (user.purchases.length > 200) user.purchases = user.purchases.slice(-200);
+  persist();
+  res.json({ state: publicState(user), reward: { kind: 'char', id: figureId, dup: previousCount > 0, n: previousCount + 1 } });
+});
+
+app.post('/api/mining/claim', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const rate = accrueUserMining(user);
+  const amount = Math.floor((Number(user.mine.acc) + 1e-9) * 100) / 100;
+  if (amount < 0.01) return res.status(400).json({ error: 'mining-not-ready', state: publicState(user) });
+  user.mine.acc = Math.max(0, Number((user.mine.acc - amount).toFixed(9)));
+  user.ttBalance = Number((Number(user.ttBalance || 0) + amount).toFixed(2));
+  persist();
+  res.json({ amount, rate, state: publicState(user) });
 });
 
 app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
@@ -2671,6 +2893,7 @@ app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
 
     user.taskChannelRewardClaimed = true;
     user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
+    syncCampaignInvite(user);
     let referralReward = 0;
     if (user.referredBy && !user.referralRewardClaimed) {
       const inviter = users[String(user.referredBy)];
@@ -2733,6 +2956,7 @@ app.post('/api/tasks/withdraw-channel-claim', requireUserFromBody, async (req, r
     if (!joined) return res.status(403).json({ error: 'withdraw-channel-membership-required', joined: false });
     user.withdrawChannelTaskRewardClaimed = true;
     user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
+    syncCampaignInvite(user);
     persist();
     res.json({ claimed: true, joined: true, rewardTT: 5, state: publicState(user) });
   } catch (e) {
@@ -2761,6 +2985,7 @@ app.post('/api/tasks/third-channel-claim', requireUserFromBody, async (req, res)
     if (!joined) return res.status(403).json({ error: 'third-channel-membership-required', joined: false });
     user.thirdChannelTaskRewardClaimed = true;
     user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
+    syncCampaignInvite(user);
     persist();
     res.json({ claimed: true, joined: true, rewardTT: 5, state: publicState(user) });
   } catch (e) {
@@ -2983,10 +3208,11 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
   ensureDailyReset(user);
 
   const level = resolvePlayableLevel(user, req.body && req.body.level);
+  const hasLevelReward = hasActiveLevelReward(user, level);
   const coinsPerZombie = level >= 4 ? LEVEL_FOUR_COINS_PER_ZOMBIE : level >= 3 ? LEVEL_THREE_COINS_PER_ZOMBIE : level >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
-  const dailyCap = level >= 4 ? LEVEL_FOUR_DAILY_PTS_CAP : level >= 3 ? LEVEL_THREE_DAILY_PTS_CAP : level >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
+  const dailyCap = hasLevelReward ? dailyTonCapForLevel(level) : 0;
   const levelToday = Number(user.tonTodayByLevel[level] || 0);
-  if (level >= 2 && levelToday >= dailyCap - 1e-9) {
+  if (level >= 2 && hasLevelReward && levelToday >= dailyCap - 1e-9) {
     persist();
     return res.json({ state: publicState(user), acceptedZombies: 0, error: 'daily-earn-cap-reached', level });
   }
@@ -2996,8 +3222,9 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
   const rawGain = (coinsGained / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
   const allowed = Math.max(0, dailyCap - levelToday);
   const gain = Math.min(rawGain, allowed);
-  user.ton += gain;
-  user.tonTodayByLevel[level] = levelToday + gain;
+  const updatedToday = levelToday + gain;
+  if (updatedToday >= dailyCap - 1e-9 && levelToday < dailyCap - 1e-9) user.ton += dailyCap;
+  user.tonTodayByLevel[level] = updatedToday;
   user.tonToday = user.tonTodayByLevel[level];
 
   user.runs += 1;
@@ -3007,6 +3234,14 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
   // acceptedZombies tells the client how many were actually credited, so anything
   // above the per-call ceiling stays pending on the client instead of being lost
   res.json({ state: publicState(user), acceptedZombies: zombies });
+});
+
+app.post('/api/tt/pickup', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const amount = Math.max(1, Math.min(1, Math.floor(Number(req.body && req.body.amount) || 1)));
+  user.ttBalance = Number((Number(user.ttBalance || 0) + amount).toFixed(6));
+  persist();
+  res.json({ amount, state: publicState(user) });
 });
 
 // ---- Player-versus-player rock-paper-scissors ----
@@ -3212,18 +3447,223 @@ app.post('/api/withdraw', requireUserFromBody, rejectBannedUser, (req, res) => {
   if (memo.length > 120) return res.status(400).json({ error: 'memo-too-long' });
   if (!amt || amt < MIN_WITHDRAW) return res.status(400).json({ error: 'amount-too-small' });
   if (amt > user.ton) return res.status(400).json({ error: 'insufficient-funds' });
-  if (hasWithdrawnToday(user)) return res.status(409).json({ error: 'already-withdrawn-today' });
+  const retryAfterMs = withdrawalCooldownMs(user);
+  if (retryAfterMs > 0) {
+    return res.status(409).json({ error: 'withdrawal-cooldown', retryAfterMs, nextAllowedAt: Date.now() + retryAfterMs, state: publicState(user) });
+  }
 
   const fee = Number((amt * WITHDRAWAL_FEE_RATE).toFixed(6));
   const netAmount = Number((amt - fee).toFixed(6));
+  const now = Date.now();
   user.ton -= amt;
   user.lastWithdrawalDay = berlinDayKey();
-  const withdrawal = { ts: Date.now(), address: String(address).trim(), memo, amount: netAmount, grossAmount: amt, fee, status: 'pending' };
+  user.lastWithdrawalAt = now;
+  const withdrawal = { ts: now, address: String(address).trim(), memo, amount: netAmount, grossAmount: amt, fee, status: 'pending' };
   user.withdrawals.push(withdrawal);
   if (user.withdrawals.length > 200) user.withdrawals = user.withdrawals.slice(-200);
 
   persist();
   res.json({ state: publicState(user), withdrawal });
+});
+
+function isValidTtPayoutAddress(coin, address) {
+  if (coin === 'ton') return TT_SHOP_TON_ADDRESS.test(address);
+  if (coin === 'usdt' || coin === 'trx') return TT_SHOP_TRON_ADDRESS.test(address);
+  if (coin === 'bnb' || coin === 'shib') return TT_SHOP_EVM_ADDRESS.test(address);
+  if (coin === 'ltc') return TT_SHOP_LTC_ADDRESS.test(address);
+  return false;
+}
+
+app.post('/api/tt-shop/order', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const coin = String(req.body && req.body.coin || '').toLowerCase();
+  const usd = Number(req.body && req.body.usd);
+  const address = String(req.body && req.body.address || '').trim();
+  const memo = String(req.body && req.body.memo || '').trim();
+  if (!TT_SHOP_COINS.has(coin)) return res.status(400).json({ error: 'unsupported-coin' });
+  if (!Number.isInteger(usd) || !TT_SHOP_AMOUNTS_USD.includes(usd) || usd < 3) {
+    return res.status(400).json({ error: 'amount-too-small', minimumUsd: 3 });
+  }
+  if (!isValidTtPayoutAddress(coin, address)) return res.status(400).json({ error: 'invalid-address' });
+  if (coin === 'ton' && memo.length > 120) return res.status(400).json({ error: 'memo-too-long' });
+  const ttCost = usd * TT_PER_USD;
+  if (Number(user.ttBalance || 0) < ttCost) return res.status(400).json({ error: 'insufficient-tt' });
+
+  const order = { ts: Date.now(), coin, usd, tt: ttCost, address, memo: coin === 'ton' ? memo : '', status: 'pending' };
+  user.ttBalance = Number((Number(user.ttBalance || 0) - ttCost).toFixed(6));
+  if (!Array.isArray(user.ttOrders)) user.ttOrders = [];
+  user.ttOrders.unshift(order);
+  if (user.ttOrders.length > 200) user.ttOrders = user.ttOrders.slice(0, 200);
+  persist();
+  res.json({ ok: true, order, state: publicState(user) });
+});
+
+app.post('/api/items/buy', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const kind = String(req.body && req.body.kind || '');
+  const id = String(req.body && req.body.id || '');
+  const catalog = TT_CHAT_ITEMS[kind];
+  if (!catalog || !Object.hasOwn(catalog, id)) return res.status(400).json({ error: 'invalid-item' });
+  const price = catalog[id];
+  if (price <= 0) return res.status(400).json({ error: 'item-is-free' });
+  publicState(user);
+  const collection = kind === 'stk' ? user.stickerPacks : user.chatItems[kind];
+  if (collection.includes(id)) return res.status(409).json({ error: 'item-already-owned', state: publicState(user) });
+  if (Number(user.ttBalance || 0) < price) return res.status(400).json({ error: 'insufficient-tt', state: publicState(user) });
+  user.ttBalance = Number((Number(user.ttBalance || 0) - price).toFixed(6));
+  collection.push(id);
+  if (kind !== 'stk') user.chatItems.eq[kind] = id;
+  if (!Array.isArray(user.purchases)) user.purchases = [];
+  user.purchases.push({ ts: Date.now(), type: 'chat-item', kind, key: id, price });
+  if (user.purchases.length > 200) user.purchases = user.purchases.slice(-200);
+  persist();
+  res.json({ ok: true, item: { kind, id }, state: publicState(user) });
+});
+
+app.post('/api/items/equip', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const kind = String(req.body && req.body.kind || '');
+  const id = String(req.body && req.body.id || '');
+  if (!['bub', 'frm', 'ban'].includes(kind) || !Object.hasOwn(TT_CHAT_ITEMS[kind], id)) {
+    return res.status(400).json({ error: 'invalid-item' });
+  }
+  publicState(user);
+  if (!user.chatItems[kind].includes(id)) return res.status(403).json({ error: 'item-not-owned' });
+  user.chatItems.eq[kind] = id;
+  persist();
+  res.json({ ok: true, state: publicState(user) });
+});
+
+const PROFILE_PRESET_IMAGES = new Set(['assets/av-berlin.webp','assets/av-luna.webp','assets/av-nikto.webp','assets/av-nova.webp','assets/av-sara.webp','assets/av-zero.webp','assets/av-zombie.webp']);
+app.post('/api/profile/photo', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const photo = String(req.body && req.body.photo || '');
+  if (photo && !PROFILE_PRESET_IMAGES.has(photo)) {
+    const match = photo.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/);
+    if (!match || Buffer.from(match[1], 'base64').length > 48 * 1024) {
+      return res.status(400).json({ error: 'invalid-profile-image' });
+    }
+  }
+  req.user.profileImage = photo;
+  persist();
+  res.json({ ok: true, state: publicState(req.user) });
+});
+
+function ensureFriendState(user) {
+  if (!Array.isArray(user.friends)) user.friends = [];
+  if (!Array.isArray(user.friendRequestsIn)) user.friendRequestsIn = [];
+  if (!Array.isArray(user.friendRequestsOut)) user.friendRequestsOut = [];
+  if (!user.directMessages || typeof user.directMessages !== 'object') user.directMessages = {};
+}
+function makeFriends(first, second) {
+  ensureFriendState(first); ensureFriendState(second);
+  const firstId = String(first.id), secondId = String(second.id);
+  if (!first.friends.includes(secondId)) first.friends.push(secondId);
+  if (!second.friends.includes(firstId)) second.friends.push(firstId);
+  first.friendRequestsIn = first.friendRequestsIn.filter((id) => String(id) !== secondId);
+  first.friendRequestsOut = first.friendRequestsOut.filter((id) => String(id) !== secondId);
+  second.friendRequestsIn = second.friendRequestsIn.filter((id) => String(id) !== firstId);
+  second.friendRequestsOut = second.friendRequestsOut.filter((id) => String(id) !== firstId);
+}
+
+app.post('/api/friends/request', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const targetUid = String(req.body && req.body.targetUid || '').trim();
+  const target = users[targetUid];
+  if (!target) return res.status(404).json({ error: 'user-not-found' });
+  if (targetUid === String(user.id)) return res.status(400).json({ error: 'cannot-friend-self' });
+  ensureFriendState(user); ensureFriendState(target);
+  if (user.friends.includes(targetUid)) return res.status(409).json({ error: 'already-friends', state: publicState(user) });
+  if (user.friendRequestsIn.includes(targetUid)) return res.status(409).json({ error: 'request-received', state: publicState(user) });
+  if (user.friendRequestsOut.includes(targetUid)) return res.status(409).json({ error: 'request-already-sent', state: publicState(user) });
+  user.friendRequestsOut.push(targetUid);
+  target.friendRequestsIn.push(String(user.id));
+  persist();
+  res.json({ ok: true, state: publicState(user), target: publicState(target) });
+});
+
+app.post('/api/friends/cancel', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const targetUid = String(req.body && req.body.targetUid || '').trim();
+  const target = users[targetUid];
+  if (!target) return res.status(404).json({ error: 'user-not-found' });
+  ensureFriendState(user); ensureFriendState(target);
+  if (!user.friendRequestsOut.includes(targetUid)) return res.status(404).json({ error: 'request-not-found' });
+  user.friendRequestsOut = user.friendRequestsOut.filter((id) => String(id) !== targetUid);
+  target.friendRequestsIn = target.friendRequestsIn.filter((id) => String(id) !== String(user.id));
+  persist();
+  res.json({ ok: true, state: publicState(user) });
+});
+
+app.post('/api/friends/accept', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const requesterUid = String(req.body && req.body.requesterUid || '').trim();
+  const requester = users[requesterUid];
+  if (!requester) return res.status(404).json({ error: 'user-not-found' });
+  ensureFriendState(user); ensureFriendState(requester);
+  if (!user.friendRequestsIn.includes(requesterUid)) return res.status(404).json({ error: 'request-not-found' });
+  makeFriends(user, requester);
+  persist();
+  res.json({ ok: true, state: publicState(user), requester: publicState(requester) });
+});
+
+app.post('/api/friends/decline', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const requesterUid = String(req.body && req.body.requesterUid || '').trim();
+  ensureFriendState(user);
+  const requester = users[requesterUid];
+  if (!requester || !user.friendRequestsIn.includes(requesterUid)) return res.status(404).json({ error: 'request-not-found' });
+  ensureFriendState(requester);
+  user.friendRequestsIn = user.friendRequestsIn.filter((id) => id !== requesterUid);
+  requester.friendRequestsOut = requester.friendRequestsOut.filter((id) => String(id) !== String(user.id));
+  persist();
+  res.json({ ok: true, state: publicState(user) });
+});
+
+app.post('/api/friends/remove', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const friendUid = String(req.body && req.body.friendUid || '').trim();
+  const friend = users[friendUid];
+  if (!friend) return res.status(404).json({ error: 'user-not-found' });
+  ensureFriendState(user); ensureFriendState(friend);
+  user.friends = user.friends.filter((id) => String(id) !== friendUid);
+  friend.friends = friend.friends.filter((id) => String(id) !== String(user.id));
+  persist();
+  res.json({ ok: true, state: publicState(user) });
+});
+
+app.get('/api/friends/dm', requireUserFromQuery, (req, res) => {
+  const user = req.user, friendUid = String(req.query.with || '').trim();
+  ensureFriendState(user);
+  if (!user.friends.includes(friendUid)) return res.status(403).json({ error: 'not-friends' });
+  res.json({ messages: (user.directMessages[friendUid] || []).slice(-100).map((message) => ({
+    ...message,
+    chatItems: message.chatItems || {},
+  })) });
+});
+
+app.post('/api/friends/dm', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user, friendUid = String(req.body && req.body.toUid || '').trim();
+  const friend = users[friendUid];
+  if (!friend) return res.status(404).json({ error: 'user-not-found' });
+  ensureFriendState(user); ensureFriendState(friend);
+  if (!user.friends.includes(friendUid) || !friend.friends.includes(String(user.id))) return res.status(403).json({ error: 'not-friends' });
+  const text = String(req.body && req.body.text || '').replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '').trim().slice(0, 500);
+  const image = String(req.body && req.body.image || '');
+  if (image) {
+    const match = image.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/);
+    if (!match || Buffer.from(match[1], 'base64').length > 48 * 1024) return res.status(400).json({ error: 'invalid-image' });
+  }
+  if (!text && !image) return res.status(400).json({ error: 'empty-message' });
+  const message = {
+    id: crypto.randomUUID(), fromUid: String(user.id), toUid: friendUid, text: image ? '' : text,
+    ...(image ? { img: image } : {}), ts: Date.now(),
+    photoUrl: user.profileImage || user.photoUrl || '',
+    chatItems: { ...user.chatItems.eq },
+  };
+  user.directMessages[friendUid] = [...(user.directMessages[friendUid] || []), message].slice(-100);
+  friend.directMessages[String(user.id)] = [...(friend.directMessages[String(user.id)] || []), message].slice(-100);
+  persist();
+  res.json({ ok: true, message });
 });
 
 // ---- Withdrawal history / status polling ----
@@ -3334,8 +3774,8 @@ app.post('/api/referrals/exchange', requireUserFromBody, rejectBannedUser, (req,
   // Referral rewards now also pay out TON, at the same base rate and subject
   // to the same daily per-level cap as regular run exchanges, so this can't
   // be used to bypass the daily TON limit.
-  const level = Math.max(1, Math.min(4, Number(user.level) || 1));
-  const dailyCap = level >= 4 ? LEVEL_FOUR_DAILY_PTS_CAP : level >= 3 ? LEVEL_THREE_DAILY_PTS_CAP : level >= 2 ? LEVEL_TWO_DAILY_PTS_CAP : DAILY_PTS_CAP;
+  const level = Math.max(1, Math.min(5, Number(user.level) || 1));
+  const dailyCap = hasActiveLevelReward(user, level) ? dailyTonCapForLevel(level) : 0;
   const levelToday = Number(user.tonTodayByLevel[level] || 0);
   const rawGain = (coinsGained / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
   const allowed = Math.max(0, dailyCap - levelToday);
@@ -3486,8 +3926,8 @@ app.get('/admin/players', requireAdmin, (req, res) => {
     ton: Number(user.ton) || 0,
     coins: Number(user.coins) || 0,
     level: Number(user.level) || 1,
-    ownedLevels: [1, 2, 3, 4].filter((level) => {
-      const skinByLevel = { 1: 'yellow', 2: 'red', 3: 'white', 4: 'green' };
+    ownedLevels: [1, 2, 3, 4, 5].filter((level) => {
+      const skinByLevel = { 1: 'yellow', 2: 'red', 3: 'white', 4: 'green', 5: 'luna' };
       return Array.isArray(user.ownedSkins) && user.ownedSkins.includes(skinByLevel[level]);
     }),
     runs: Number(user.runs) || 0,
@@ -3613,6 +4053,50 @@ app.get('/admin/purchases', requireAdmin, (req, res) => {
   res.json({ purchases: out });
 });
 
+app.get('/admin/tt-orders', requireAdmin, (req, res) => {
+  const status = String(req.query.status || '');
+  const orders = [];
+  Object.values(users).forEach((user) => (user.ttOrders || []).forEach((order) => {
+    if (!status || order.status === status) orders.push({ uid: user.id, name: user.name, ...order });
+  }));
+  orders.sort((a, b) => b.ts - a.ts);
+  res.json({ orders: orders.slice(0, 200) });
+});
+
+app.post('/admin/tt-orders/complete', requireAdmin, (req, res) => {
+  const uid = String(req.body && req.body.uid || '');
+  const ts = Number(req.body && req.body.ts);
+  const txId = String(req.body && req.body.txId || '').trim();
+  const user = users[uid];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const order = (user.ttOrders || []).find((item) => Number(item.ts) === ts);
+  if (!order) return res.status(404).json({ error: 'unknown-tt-order' });
+  if (order.status !== 'pending') return res.status(409).json({ error: 'tt-order-already-resolved' });
+  if (!txId || txId.length > 200) return res.status(400).json({ error: 'invalid-transaction-id' });
+  order.status = 'completed';
+  order.txId = txId;
+  order.completedAt = Date.now();
+  persist();
+  res.json({ ok: true, order });
+});
+
+app.post('/admin/tt-orders/reject', requireAdmin, (req, res) => {
+  const uid = String(req.body && req.body.uid || '');
+  const ts = Number(req.body && req.body.ts);
+  const reason = String(req.body && req.body.reason || '').trim().slice(0, 200);
+  const user = users[uid];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const order = (user.ttOrders || []).find((item) => Number(item.ts) === ts);
+  if (!order) return res.status(404).json({ error: 'unknown-tt-order' });
+  if (order.status !== 'pending') return res.status(409).json({ error: 'tt-order-already-resolved' });
+  user.ttBalance = Number((Number(user.ttBalance || 0) + Number(order.tt || 0)).toFixed(6));
+  order.status = 'rejected';
+  order.reason = reason;
+  order.rejectedAt = Date.now();
+  persist();
+  res.json({ ok: true, order, state: publicState(user) });
+});
+
 app.post('/admin/withdrawals/complete', requireAdmin, (req, res) => {
   const { uid, ts, txId, currency, usdValue } = req.body || {};
   const normalizedTxId = String(txId || '').trim().toLowerCase();
@@ -3669,7 +4153,7 @@ app.post('/admin/users/:uid/reset-attempts', requireAdmin, (req, res) => {
   user.attemptsLeft = ATTEMPT_LIMIT_LEVEL_ONE;
   user.attemptsResetAt = null;
   user.attemptsByLevel = {};
-  [1, 2, 3, 4].forEach((level) => ensureAttemptState(user, level));
+  [1, 2, 3, 4, 5].forEach((level) => ensureAttemptState(user, level));
   user.attemptResetVersion = Date.now();
   persist();
   res.json({ ok: true, uid: user.id, attemptsByLevel: publicAttemptsByLevel(user), attemptResetVersion: user.attemptResetVersion });
@@ -3704,9 +4188,9 @@ app.post('/admin/users/:uid/set-level', requireAdmin, (req, res) => {
   if (!user) return res.status(404).json({ error: 'unknown-user' });
   const level = Number(req.body && req.body.level);
   const owned = req.body && req.body.owned === true;
-  const skinsByLevel = { 1: 'yellow', 2: 'red', 3: 'white', 4: 'green' };
+  const skinsByLevel = { 1: 'yellow', 2: 'red', 3: 'white', 4: 'green', 5: 'luna' };
   const skin = skinsByLevel[level];
-  if (!skin || !Number.isInteger(level) || level < 1 || level > 4) {
+  if (!skin || !Number.isInteger(level) || level < 1 || level > 5) {
     return res.status(400).json({ error: 'invalid-level' });
   }
   if (!Array.isArray(user.ownedSkins)) user.ownedSkins = ['yellow'];
@@ -3730,7 +4214,7 @@ app.post('/admin/users/:uid/set-level', requireAdmin, (req, res) => {
     user.ownedSkins = user.ownedSkins.filter((ownedSkin) => ownedSkin !== skin);
     if (user.skinRewards && typeof user.skinRewards === 'object') delete user.skinRewards[skin];
   }
-  const ownedLevels = [1, 2, 3, 4].filter((candidate) => user.ownedSkins.includes(skinsByLevel[candidate]));
+  const ownedLevels = [1, 2, 3, 4, 5].filter((candidate) => user.ownedSkins.includes(skinsByLevel[candidate]));
   user.level = Math.max(...ownedLevels);
   user.adminCorrections = Array.isArray(user.adminCorrections) ? user.adminCorrections : [];
   user.adminCorrections.push({
@@ -3789,7 +4273,7 @@ app.post('/admin/users/:uid/correct-duplicate-deposit', requireAdmin, (req, res)
   user.level = 1;
   user.ownedSkins = ['yellow'];
   user.tonToday = 0;
-  user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   user.tonDate = '';
   user.attemptsLeft = ATTEMPT_LIMIT_LEVEL_ONE;
   user.attemptsResetAt = null;
@@ -3823,7 +4307,7 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.coins = 0;
     user.ton = 0;
     user.tonToday = 0;
-    user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     user.tonDate = '';
     user.best = 0;
     user.runs = 0;
@@ -3838,6 +4322,8 @@ app.post('/admin/reset-users', requireAdmin, async (req, res) => {
     user.tournamentDistance = 0;
     user.tournamentWeekKey = '';
     user.withdrawals = [];
+    user.lastWithdrawalDay = '';
+    user.lastWithdrawalAt = 0;
     user.taskChannelRewardClaimed = false;
     user.withdrawChannelTaskRewardClaimed = false;
     user.thirdChannelTaskRewardClaimed = false;
