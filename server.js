@@ -62,7 +62,7 @@ const PLAY_GAME_URL = process.env.PLAY_GAME_URL || 'https://t.me/TaxiiTonBot';
 const NEWS_CHANNEL_URL = process.env.NEWS_CHANNEL_URL || 'https://t.me/TaxiiTon';
 const TON_EXPLORER_URL = process.env.TON_EXPLORER_URL || 'https://tonviewer.com/transaction/';
 const MINI_APP_URL = process.env.MINI_APP_URL || 'https://taxitron-production.up.railway.app';
-const TELEGRAM_MINI_APP_URL = new URL('/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001', MINI_APP_URL).toString();
+const TELEGRAM_MINI_APP_URL = new URL('/TaxiTonUpdate/indexup.html?v=taxiton-admin-badges-20261001', MINI_APP_URL).toString();
 const TON_USD_RATE = Number(process.env.TON_USD_RATE || 0);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
@@ -1898,7 +1898,7 @@ app.get(['/','/index.html'], (req, res) => {
     return res.sendFile(path.join(__dirname, 'index.html'));
   }
   const query = req.originalUrl.split('?')[1];
-  const target = '/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001' + (query ? '&' + query : '');
+  const target = '/TaxiTonUpdate/indexup.html?v=taxiton-admin-badges-20261001' + (query ? '&' + query : '');
   res.redirect(302, target);
 });
 app.get(['/magic-tower-hilo.html', '/zombie.html'], (req, res) => {
@@ -1920,7 +1920,7 @@ app.get('/legacy-game.html', (req, res) => {
     Expires: '0'
   });
   if (req.query.embedded !== '1') {
-    return res.redirect(302, '/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001');
+    return res.redirect(302, '/TaxiTonUpdate/indexup.html?v=taxiton-admin-badges-20261001');
   }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
