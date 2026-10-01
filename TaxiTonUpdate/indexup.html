@@ -3616,10 +3616,13 @@ const CHAT_USERS = [
 ];
 function badgeFor(u){
   const fa = S.lang === 'fa';
-  if (u.role === 'admin1') return {src:'assets/role-admin-boy.webp', alt:'Admin', staff:true};
-  if (u.role === 'admin2') return {src:'assets/role-admin-girl.webp', alt:'Admin', staff:true};
+  if (u.isChatAdmin || u.isAdmin || u.role === 'admin1' || u.role === 'admin2') {
+    const girl = u.adminBadge === 'girl' || u.role === 'admin2';
+    return {src:girl ? 'assets/role-admin-girl.webp' : 'assets/role-admin-boy.webp', alt:'Admin', staff:true};
+  }
+  if (u.isDesigner || u.role === 'design') return {src:'assets/role-design.webp', alt:'Design', staff:true};
   if (u.role === 'support') return {src:'assets/role-support.webp', alt:'Support', staff:true};
-  if (u.role === 'design') return {src:'assets/role-design.webp', alt:'Design', staff:true};
+  if (u.badge4) return {src:'../sprites/badge4.png', alt:'Badge 4', staff:true};
   const cars = u.mine ? S.cars : [u.car];
   if (cars.includes('luna')) return {src:'assets/badge-lvl5.webp', alt:'Level 5'};
   if (cars.includes('berlin')) return {src:'assets/badge-lvl4.webp', alt:'Level 4'};
@@ -3705,7 +3708,7 @@ const meUser = () => ({n: t('you'), c:'#2d6bff', lvl: pLv().l, img: typeof S.ava
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},isAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -3743,7 +3746,7 @@ function renderChat(){
   $('#tabChat').setAttribute('aria-selected', chatTab==='chat'); $('#tabOnline').setAttribute('aria-selected', chatTab==='on'); $('#tabFr').setAttribute('aria-selected', chatTab==='fr'); $('#tabMe').innerHTML = avatar(meUser(), true) + '<span class="medot"></span>';
   $('#chatPane').hidden = chatTab !== 'chat'; $('#onPane').hidden = chatTab !== 'on'; $('#frPane').hidden = chatTab !== 'fr'; renderFriends();
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
-    ? SHOP_ACCOUNT.onlineUsers.filter(u => String(u.uid) !== SHOP_ACCOUNT.uid).map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara'}))
+    ? SHOP_ACCOUNT.onlineUsers.filter(u => String(u.uid) !== SHOP_ACCOUNT.uid).map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,badge4:u.badge4===true}))
     : [];
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}"><span class="dot"></span>
       <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">Lv ${u.lvl}</span></div>
@@ -3761,7 +3764,7 @@ function renderChat(){
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
   $('#chatlog').innerHTML = msgs.map((m, i) => {
-    const mine = !!m.mine, u = mine ? meUser() : {...userOf(m.who), ...(m.photoUrl ? {img:m.photoUrl} : {})};
+    const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, badge4:m.badge4===true||peer.badge4===true};
     const chatStyle = m.chatItems && typeof m.chatItems === 'object' ? m.chatItems : {};
     const messageFrame = mine ? eqItem('frm') : chatStyle.frm;
     const messageBubble = mine ? eqItem('bub') : chatStyle.bub;
