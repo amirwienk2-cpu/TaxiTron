@@ -2124,7 +2124,7 @@ setInterval(()=>{if(secret())pollMoneyEvents()},15000);
           button.disabled = false;
         }
       };
-      actionCell.appendChild(button);
+      actionCell.prepend(button);
       row.dataset.ttAdjustButton = '1';
     });
   };
