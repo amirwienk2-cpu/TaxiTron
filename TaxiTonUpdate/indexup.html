@@ -3880,16 +3880,17 @@ function walletDailyGoal(){
   const totalByLevel = {1:1000000, 2:9572, 3:10000, 4:13000, 5:16600};
   let earnedTon = Math.max(0, Number(SHOP_ACCOUNT.tonTodayByLevel[lvl] || 0));
   let pendingZombies = 0;
-  if (!SHOP_ACCOUNT.online) {
-    try {
-      const uid = localStorage.getItem('cr3d_serverUid');
+  try {
+    const uid = localStorage.getItem('cr3d_serverUid') || SHOP_ACCOUNT.uid;
+    const pendingKey = uid ? `cr3d_pendingZombiesByLevel_${uid}` : 'cr3d_pendingZombiesByLevel';
+    const pending = JSON.parse(localStorage.getItem(pendingKey) || '{}');
+    pendingZombies = Math.max(0, Number(pending[lvl] || 0));
+    if (!SHOP_ACCOUNT.online) {
       const key = uid ? `cr3d_pointsTodayByLevel_${uid}` : 'cr3d_pointsTodayByLevel';
       const localPoints = JSON.parse(localStorage.getItem(key) || localStorage.getItem('cr3d_pointsTodayByLevel') || '{}');
       earnedTon = Math.max(earnedTon, Number(localPoints[lvl] || 0));
-      const pending = JSON.parse(localStorage.getItem(uid ? `cr3d_pendingZombiesByLevel_${uid}` : 'cr3d_pendingZombiesByLevel') || '{}');
-      pendingZombies = Math.max(0, Number(pending[lvl] || 0));
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
   const tonPerZombie = rate / 1000000;
   const totalZombies = totalByLevel[lvl] || totalByLevel[1];
   const dailyCap = ({1:1, 2:0.067, 3:0.2, 4:0.67, 5:1.66})[lvl] || 1;
