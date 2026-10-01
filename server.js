@@ -2090,46 +2090,49 @@ setInterval(()=>{if(secret())pollMoneyEvents()},15000);
 </script>
 <script>
 (() => {
-  const toolbar = document.querySelector('body > .toolbar');
-  if (!toolbar || document.getElementById('adjustTtTop')) return;
-  const button = document.createElement('button');
-  button.id = 'adjustTtTop';
-  button.className = 'small-btn';
-  button.textContent = '🪙 TT geben / nehmen';
-  button.onclick = async () => {
-    const query = prompt('Spielername oder Telegram-UID eingeben:');
-    if (!query || !query.trim()) return;
-    const playerRow = [...document.querySelectorAll('.player-row')].find((row) => {
-      return row.dataset.uid === query.trim() || (row.dataset.search || '').includes(query.trim().toLocaleLowerCase());
-    });
-    if (!playerRow) { alert('Spieler nicht gefunden. Bitte zuerst „Load players“ ausführen und nach Name/UID suchen.'); return; }
-    const uid = String(playerRow.dataset.uid || '');
-    const name = (playerRow.firstElementChild && playerRow.firstElementChild.textContent.split('\n')[0].trim()) || uid;
-    const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
-    if (value === null) return;
-    const delta = Number(value.replace(',', '.'));
-    if (!Number.isFinite(delta) || delta === 0) { alert('Ungültiger Wert.'); return; }
-    const action = delta > 0 ? 'hinzufügen' : 'abziehen';
-    if (!confirm(Math.abs(delta).toFixed(6) + ' TT bei ' + name + ' ' + action + '?')) return;
-    button.disabled = true;
-    try {
-      const response = await fetch('/admin/users/' + encodeURIComponent(uid) + '/adjust-tt', {
-        method: 'POST',
-        headers: {'x-admin-secret': document.getElementById('secret').value, 'Content-Type': 'application/json'},
-        body: JSON.stringify({delta})
+  const list = document.getElementById('list');
+  const addTtButton = () => {
+    const toolbar = list.querySelector('.toolbar');
+    if (!toolbar || document.getElementById('adjustTtTop')) return;
+    const button = document.createElement('button');
+    button.id = 'adjustTtTop';
+    button.className = 'small-btn';
+    button.textContent = '🪙 TT geben / nehmen';
+    button.onclick = async () => {
+      const query = prompt('Spielername oder Telegram-UID eingeben:');
+      if (!query || !query.trim()) return;
+      const playerRow = [...document.querySelectorAll('.player-row')].find((row) => {
+        return row.dataset.uid === query.trim() || (row.dataset.search || '').includes(query.trim().toLocaleLowerCase());
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Update failed');
-      status(name + 's TT-Guthaben wurde auf ' + Number(data.ttBalance).toFixed(6) + ' TT korrigiert.');
-    } catch (error) {
-      status(error.message);
-    } finally {
-      button.disabled = false;
-    }
+      if (!playerRow) { alert('Spieler nicht gefunden. Bitte zuerst „Load players“ ausführen und nach Name/UID suchen.'); return; }
+      const uid = String(playerRow.dataset.uid || '');
+      const name = (playerRow.firstElementChild && playerRow.firstElementChild.textContent.split('\n')[0].trim()) || uid;
+      const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
+      if (value === null) return;
+      const delta = Number(value.replace(',', '.'));
+      if (!Number.isFinite(delta) || delta === 0) { alert('Ungültiger Wert.'); return; }
+      const action = delta > 0 ? 'hinzufügen' : 'abziehen';
+      if (!confirm(Math.abs(delta).toFixed(6) + ' TT bei ' + name + ' ' + action + '?')) return;
+      button.disabled = true;
+      try {
+        const response = await fetch('/admin/users/' + encodeURIComponent(uid) + '/adjust-tt', {
+          method: 'POST',
+          headers: {'x-admin-secret': document.getElementById('secret').value, 'Content-Type': 'application/json'},
+          body: JSON.stringify({delta})
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Update failed');
+        status(name + 's TT-Guthaben wurde auf ' + Number(data.ttBalance).toFixed(6) + ' TT korrigiert.');
+      } catch (error) {
+        status(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    };
+    toolbar.prepend(button);
   };
-  const loadPlayersButton = document.getElementById('load');
-  if (loadPlayersButton && loadPlayersButton.parentElement === toolbar) loadPlayersButton.after(button);
-  else toolbar.prepend(button);
+  new MutationObserver(addTtButton).observe(list, {childList: true, subtree: true});
+  addTtButton();
 })();
 </script></body></html>`);
 });
