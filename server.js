@@ -2087,6 +2087,50 @@ document.getElementById('loadChatAdmin').onclick=loadChatAdmin;
 document.getElementById('reset').onclick=async()=>{const s=secret();if(!s){status('Enter the admin secret.');return}if(!confirm("WARNING: This resets all players' coins, TON, level, skins, stats, and withdrawals. Deposits and one-time invite reward claims remain protected. Continue?"))return;status('Resetting all players...');const r=await fetch('/admin/reset-users',{method:'POST',headers:{'x-admin-secret':s}});const d=await r.json();status(r.ok?'Reset complete for '+d.count+' players.':(d.error||'Reset failed'));if(r.ok)load()};
 setInterval(()=>{if(secret())loadWithdrawals({silent:true})},15000);
 setInterval(()=>{if(secret())pollMoneyEvents()},15000);
+</script>
+<script>
+(() => {
+  const list = document.getElementById('list');
+  const attachTtControls = () => {
+    list.querySelectorAll('.player-row').forEach((row) => {
+      if (row.dataset.ttAdjustButton === '1') return;
+      const uid = String(row.dataset.uid || '');
+      const actionCell = row.lastElementChild;
+      if (!uid || !actionCell) return;
+      const name = (row.firstElementChild && row.firstElementChild.textContent.split('\n')[0].trim()) || uid;
+      const button = document.createElement('button');
+      button.className = 'reset-attempts';
+      button.textContent = '🪙 TT korrigieren';
+      button.onclick = async () => {
+        const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
+        if (value === null) return;
+        const delta = Number(value.replace(',', '.'));
+        if (!Number.isFinite(delta) || delta === 0) { alert('Ungültiger Wert.'); return; }
+        const action = delta > 0 ? 'hinzufügen' : 'abziehen';
+        if (!confirm(Math.abs(delta).toFixed(6) + ' TT bei ' + name + ' ' + action + '?')) return;
+        button.disabled = true;
+        try {
+          const response = await fetch('/admin/users/' + encodeURIComponent(uid) + '/adjust-tt', {
+            method: 'POST',
+            headers: {'x-admin-secret': secret(), 'Content-Type': 'application/json'},
+            body: JSON.stringify({delta})
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Update failed');
+          status(name + 's TT-Guthaben wurde auf ' + Number(data.ttBalance).toFixed(6) + ' TT korrigiert.');
+        } catch (error) {
+          status(error.message);
+        } finally {
+          button.disabled = false;
+        }
+      };
+      actionCell.appendChild(button);
+      row.dataset.ttAdjustButton = '1';
+    });
+  };
+  new MutationObserver(attachTtControls).observe(list, {childList: true, subtree: true});
+  attachTtControls();
+})();
 </script></body></html>`);
 });
 
@@ -3927,6 +3971,7 @@ app.get('/admin/players', requireAdmin, (req, res) => {
     uid: String(user.id),
     name: user.name || ('Player ' + user.id),
     ton: Number(user.ton) || 0,
+    ttBalance: Number(user.ttBalance) || 0,
     coins: Number(user.coins) || 0,
     level: Number(user.level) || 1,
     ownedLevels: [1, 2, 3, 4, 5].filter((level) => {
@@ -4250,6 +4295,20 @@ app.post('/admin/users/:uid/adjust-ton', requireAdmin, (req, res) => {
   persist();
   console.log('[admin] adjusted TON for user ' + user.id + ': ' + before + ' -> ' + user.ton + ' (delta ' + delta + ')');
   res.json({ ok: true, uid: user.id, ton: user.ton });
+});
+
+app.post('/admin/users/:uid/adjust-tt', requireAdmin, (req, res) => {
+  const user = users[String(req.params.uid)];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const delta = Number(req.body && req.body.delta);
+  if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ error: 'invalid-delta' });
+  const before = Number(user.ttBalance) || 0;
+  user.ttBalance = Number(Math.max(0, before + delta).toFixed(6));
+  user.adminCorrections = Array.isArray(user.adminCorrections) ? user.adminCorrections : [];
+  user.adminCorrections.push({ type: 'admin-adjust-tt', ts: Date.now(), before, after: user.ttBalance, requestedDelta: delta });
+  persist();
+  console.log('[admin] adjusted TT for user ' + user.id + ': ' + before + ' -> ' + user.ttBalance + ' (delta ' + delta + ')');
+  res.json({ ok: true, uid: user.id, ttBalance: user.ttBalance });
 });
 
 // One-time-safe correction for the duplicate deposit case: restore Level 1
