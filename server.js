@@ -1894,6 +1894,9 @@ app.get(['/','/index.html'], (req, res) => {
     Pragma: 'no-cache',
     Expires: '0'
   });
+  if (req.query.embedded === '1') {
+    return res.sendFile(path.join(__dirname, 'index.html'));
+  }
   const query = req.originalUrl.split('?')[1];
   const target = '/TaxiTonUpdate/indexup.html?v=taxiton-update-20261001' + (query ? '&' + query : '');
   res.redirect(302, target);
