@@ -2250,13 +2250,16 @@
     if (!store.withdrawals || !store.withdrawals.length) return;
     withdrawSyncInFlight = true;
     try {
-      const res = await fetch(SERVER_URL + '/api/withdrawals?token=' + encodeURIComponent(serverSession.token));
+      const res = await fetch(SERVER_URL + '/api/withdrawals?token=' + encodeURIComponent(serverSession.token), { cache:'no-store' });
       if (res.ok){
         const data = await res.json();
         const serverList = (data && data.withdrawals) || [];
+        const serverByTimestamp = new Map(serverList
+          .filter(withdrawal => Number.isFinite(Number(withdrawal.ts)))
+          .map(withdrawal => [Number(withdrawal.ts), withdrawal]));
         let changed = false;
         store.withdrawals.forEach(local => {
-          const match = serverList.find(sw => sw.ts === local.ts);
+          const match = serverByTimestamp.get(Number(local.ts));
           if (match && match.status !== local.status){
             local.status = match.status;
             changed = true;
