@@ -3437,7 +3437,7 @@ const CARS = [
   {id:'luna',   lvl:5, skin:'luna',   price:25, dailyReward:1.66, rewardDays:30, limit:20, body:'#eee8ff', trim:'#b83cff', bonus:45},
   {id:'nikto',  lvl:6, soon:true, price:0, body:'#1a1f4a', trim:'#ff3b4e', bonus:60},
 ];
-const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,isDesigner:false,chatMuted:false,online:false};
+const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,badge4:false,chatMuted:false,online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
 const PROFILE_BIO_SYNCING = new Set();
 const profileBioSyncKey = uid => 'taxiton.profileBioSynced_' + String(uid);
@@ -3526,7 +3526,9 @@ function applyShopAccountState(state, preferredCar){
   if (!SHOP_ACCOUNT.ownedSkins.includes('yellow')) SHOP_ACCOUNT.ownedSkins.unshift('yellow');
   SHOP_ACCOUNT.skinRewards = state.skinRewards && typeof state.skinRewards === 'object' ? state.skinRewards : {};
   SHOP_ACCOUNT.isChatAdmin = state.isChatAdmin === true;
+  SHOP_ACCOUNT.adminBadge = state.adminBadge === 'girl' ? 'girl' : 'boy';
   SHOP_ACCOUNT.isDesigner = state.isDesigner === true;
+  SHOP_ACCOUNT.badge4 = state.badge4 === true;
   SHOP_ACCOUNT.chatMuted = state.chatMuted === true;
   SHOP_ACCOUNT.tonTodayByLevel = state.tonTodayByLevel && typeof state.tonTodayByLevel === 'object' ? state.tonTodayByLevel : {};
   SHOP_ACCOUNT.attemptsByLevel = state.attemptsByLevel && typeof state.attemptsByLevel === 'object' ? state.attemptsByLevel : {};
@@ -3815,7 +3817,7 @@ function friendTargetByName(name){
 }
 const initials = n => n.replace(/[^A-Za-z]/g,'').slice(0,2).toUpperCase() || n.slice(0,1);
 const hhmm = ts => new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-const meUser = () => ({n: t('you'), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null});
+const meUser = () => ({n: t('you'), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null, isChatAdmin: SHOP_ACCOUNT.isChatAdmin===true, adminBadge: SHOP_ACCOUNT.adminBadge, isDesigner: SHOP_ACCOUNT.isDesigner===true, badge4: SHOP_ACCOUNT.badge4===true});
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
