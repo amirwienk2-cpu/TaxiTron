@@ -1998,6 +1998,10 @@
   .dmhead #dmAv{cursor:pointer}
   .dmhead b{display:block;font-size:14px} .dmhead small{font-size:11px;color:#2ee07a}
   .dmview .chatlog{flex:1;min-height:0}
+  .dmview .mrow.mine{align-self:flex-end}
+  .dmview .mrow:not(.mine){align-self:flex-start}
+  #app[dir="rtl"] .dmview .mrow.mine{align-self:flex-start}
+  #app[dir="rtl"] .dmview .mrow:not(.mine){align-self:flex-end}
   .dmview .composer{margin:0;padding:8px;border-top:1px solid rgba(var(--gl1),.35);background:var(--db10);gap:8px;align-items:flex-end}
   .dmview .composer textarea{flex:1;min-width:0;resize:none;border-radius:20px;padding:10px 14px;background:var(--db32);border:1.5px solid var(--edge-soft);color:var(--ink);font:inherit;font-size:16px;line-height:1.35;max-height:120px}
   .dmview .mrow .uav.ghost{width:0}
