@@ -771,6 +771,7 @@ function persistChat() {
 
 let cardEventStartTimer = null;
 let cardEventFinishTimer = null;
+let cardEventNextStartAt = 0;
 function persistCardEventState() {
   const tmp = CARD_EVENT_FILE + '.tmp';
   try {
@@ -784,7 +785,7 @@ function persistCardEventState() {
 }
 function publicCardEvent(uid) {
   const event = cardEventState;
-  if (!event) return null;
+  if (!event) return cardEventNextStartAt ? { status: 'scheduled', nextStartAt: cardEventNextStartAt, counts: [0, 0, 0], choice: 0 } : null;
   const counts = [0, 0, 0];
   Object.values(event.votes || {}).forEach((card) => {
     const index = Number(card) - 1;
@@ -798,6 +799,7 @@ function publicCardEvent(uid) {
     counts,
     choice: uid ? Number(event.votes && event.votes[String(uid)]) || 0 : 0,
   };
+  if (cardEventNextStartAt) result.nextStartAt = cardEventNextStartAt;
   if (event.status === 'complete') {
     result.rewards = event.rewards.slice();
     result.voterNames = event.voterNames.map((names) => names.slice());
@@ -820,10 +822,12 @@ function shuffledCardRewards() {
 function scheduleNextCardEvent() {
   if (cardEventStartTimer) clearTimeout(cardEventStartTimer);
   const delay = crypto.randomInt(CARD_EVENT_MIN_INTERVAL_MS, CARD_EVENT_MAX_INTERVAL_MS + 1);
+  cardEventNextStartAt = Date.now() + delay;
   cardEventStartTimer = setTimeout(startScheduledCardEvent, delay);
 }
 function startScheduledCardEvent() {
   if (isCardEventActive()) return;
+  cardEventNextStartAt = 0;
   const now = Date.now();
   const event = cardEventState = {
     id: 'card-' + now + '-' + crypto.randomBytes(6).toString('hex'),
@@ -890,9 +894,9 @@ async function finishCardEvent(eventId) {
   }
   persistCardEventState();
   persistChat();
+  scheduleNextCardEvent();
   broadcastChatEvent('card-event-finished', { event: publicCardEvent(null) });
   broadcastChatEvent('message');
-  scheduleNextCardEvent();
 }
 function startCardEventScheduler() {
   if (cardEventState && ['active', 'settling'].includes(cardEventState.status)) {

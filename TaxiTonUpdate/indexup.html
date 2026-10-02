@@ -3821,12 +3821,20 @@ function updateServerCardEvent(event){
   }
 }
 setInterval(()=>{
-  if(serverCardEvent?.status!=='active')return;
-  const timer=document.querySelector('[data-live-card-timer]');
-  if(!timer)return;
-  const remaining=Math.max(0,Math.ceil((Number(serverCardEvent.endsAt||0)-Date.now())/1000));
-  timer.textContent=remaining+' ثانیه';
-  if(!remaining)document.querySelectorAll('[data-server-card-vote]').forEach(button=>button.disabled=true);
+  if(chatRoom!=='fa')return;
+  const active=serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
+  if(active){
+    const timer=document.querySelector('[data-live-card-timer]');
+    if(timer)timer.textContent=Math.max(0,Math.ceil((Number(serverCardEvent.endsAt)-Date.now())/1000))+' ثانیه';
+    if(Date.now()>=Number(serverCardEvent.endsAt))document.querySelectorAll('[data-server-card-vote]').forEach(button=>button.disabled=true);
+  }
+  const box=$('#cardEventCountdown');
+  if(!box||box.hidden||CARD_EVENT_TEST)return;
+  const targetAt=active?Number(serverCardEvent.endsAt):Number(serverCardEvent?.nextStartAt||0);
+  if(!targetAt)return;
+  const remaining=Math.max(0,targetAt-Date.now());
+  $('#cardEventCountdownLabel').textContent=active?(S.lang==='de'?'Abstimmung endet':S.lang==='fa'?'پایان رأی‌گیری':'Vote ends'):(S.lang==='de'?'Nächste Karten':S.lang==='fa'?'کارت بعدی':'Next cards');
+  $('#cardEventCountdownValue').textContent=cardEventCountdownText(remaining);
 },500);
 async function pollServerChat(){
   if(!SHOP_ACCOUNT.token||!chatRoom||serverChatBusy) return;
@@ -4019,11 +4027,17 @@ function renderChat(){
   const cardEventCountdown=$('#cardEventCountdown');
   if(cardEventCountdown){
     const testEventVisible=CARD_EVENT_TEST&&chatRoom==='fa';
-    cardEventCountdown.hidden=!testEventVisible;
+    const liveEventVisible=!CARD_EVENT_TEST&&chatRoom==='fa'&&(cardEventActive||Number(serverCardEvent?.nextStartAt||0)>0);
+    cardEventCountdown.hidden=!(testEventVisible||liveEventVisible);
     if(testEventVisible){
       if(!cardEventTestEndsAt)cardEventTestEndsAt=Date.now()+CARD_EVENT_TEST_DURATION_MS;
       if(!cardEventTest&&!cardEventNextStartAt)scheduleNextCardEventTest();
       updateCardEventTestCountdown();
+    }else if(liveEventVisible){
+      const targetAt=cardEventActive?Number(serverCardEvent.endsAt):Number(serverCardEvent.nextStartAt);
+      const remaining=Math.max(0,targetAt-Date.now());
+      $('#cardEventCountdownLabel').textContent=cardEventActive?(S.lang==='de'?'Abstimmung endet':S.lang==='fa'?'پایان رأی‌گیری':'Vote ends'):(S.lang==='de'?'Nächste Karten':S.lang==='fa'?'کارت بعدی':'Next cards');
+      $('#cardEventCountdownValue').textContent=cardEventCountdownText(remaining);
     }
   }
   document.querySelectorAll('[data-flag]').forEach(el => { if (!el.innerHTML) el.innerHTML = flagSvg(el.dataset.flag); });
