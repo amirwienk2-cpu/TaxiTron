@@ -1719,6 +1719,7 @@
     const accountChanged = state.uid && previousUid !== String(state.uid);
     if (accountChanged){
       localStorage.setItem('cr3d_serverUid', String(state.uid));
+      store.withdrawals = [];
       loadAccountAttempts();
       try { pendingZombiesByLevel = JSON.parse(localStorage.getItem(accountStorageKey('cr3d_pendingZombiesByLevel')) || '{}') || {}; } catch (e) { pendingZombiesByLevel = {}; }
       if (!pendingZombiesByLevel || typeof pendingZombiesByLevel !== 'object') pendingZombiesByLevel = {};
@@ -2247,25 +2248,23 @@
   async function syncWithdrawalStatuses(){
     if (withdrawSyncInFlight) return;
     if (!serverSession.online || !serverSession.token) return;
-    if (!store.withdrawals || !store.withdrawals.length) return;
     withdrawSyncInFlight = true;
     try {
       const res = await fetch(SERVER_URL + '/api/withdrawals?token=' + encodeURIComponent(serverSession.token), { cache:'no-store' });
       if (res.ok){
         const data = await res.json();
-        const serverList = (data && data.withdrawals) || [];
-        const serverByTimestamp = new Map(serverList
-          .filter(withdrawal => Number.isFinite(Number(withdrawal.ts)))
-          .map(withdrawal => [Number(withdrawal.ts), withdrawal]));
-        let changed = false;
-        store.withdrawals.forEach(local => {
-          const match = serverByTimestamp.get(Number(local.ts));
-          if (match && match.status !== local.status){
-            local.status = match.status;
-            changed = true;
-          }
-        });
+        const serverList = Array.isArray(data && data.withdrawals) ? data.withdrawals : [];
+        const normalized = serverList.map(withdrawal => ({
+          ...withdrawal,
+          ts: Number(withdrawal.ts) || 0,
+          amount: Number(withdrawal.amount) || 0,
+          grossAmount: Number(withdrawal.grossAmount ?? withdrawal.amount) || 0,
+          fee: Number(withdrawal.fee) || 0,
+          status: withdrawal.status || 'pending'
+        }));
+        const changed = JSON.stringify(store.withdrawals || []) !== JSON.stringify(normalized);
         if (changed){
+          store.withdrawals = normalized;
           saveStore();
           renderWithdrawUI();
         }
