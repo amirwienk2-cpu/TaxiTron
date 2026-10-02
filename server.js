@@ -2186,6 +2186,31 @@ if(hadFocus){withdrawSearch.focus();if(previousCursor!==null)withdrawSearch.setS
 if(!silent)status(d.withdrawals.length+' offene Auszahlung(en) geladen.');
 if(newlyArrived.length){playAlertSound();startTitleBlink();if(!silent)status(newlyArrived.length+' neue Auszahlung(en) eingegangen!')}
 }
+async function loadCompletedWithdrawals(){
+  currentView='completedWithdrawals';
+  const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
+  status('Abgeschlossene Auszahlungen werden geladen...');
+  let response,data;
+  try{response=await fetch('/admin/withdrawals?status=completed',{headers:{'x-admin-secret':s},cache:'no-store'});data=await response.json();}
+  catch(error){status('Request failed');return}
+  if(!response.ok){status(data.error||'Request failed');return}
+  const list=document.getElementById('list');
+  list.innerHTML=data.withdrawals.length?'':'<div>Keine abgeschlossenen Auszahlungen.</div>';
+  data.withdrawals.forEach(withdrawal=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding:14px 0;border-bottom:1px solid #302d40';
+    const addCell=(label,value)=>{const cell=document.createElement('div'),title=document.createElement('b'),content=document.createElement('div');title.textContent=label;content.textContent=value;cell.append(title,content);row.appendChild(cell);};
+    addCell('Spieler / UID',String(withdrawal.name||'Unbekannt')+' / '+String(withdrawal.uid||''));
+    addCell('Auszahlung',Number(withdrawal.amount||0).toFixed(6)+' '+String(withdrawal.currency||'TON'));
+    addCell('Adresse',String(withdrawal.address||''));
+    addCell('Abgeschlossen',new Date(Number(withdrawal.completedAt)||Number(withdrawal.ts)||0).toLocaleString());
+    const txCell=document.createElement('div'),txTitle=document.createElement('b'),txLink=document.createElement('a'),txId=String(withdrawal.txId||'');
+    txTitle.textContent='Transaktions-ID';txLink.textContent=txId||'Keine TxID';
+    if(txId){txLink.href='https://tonviewer.com/transaction/'+encodeURIComponent(txId);txLink.target='_blank';txLink.rel='noopener noreferrer';}
+    txCell.append(txTitle,document.createElement('br'),txLink);row.appendChild(txCell);list.appendChild(row);
+  });
+  status(data.withdrawals.length+' abgeschlossene Auszahlung(en) geladen.');
+}
 async function loadRejectedWithdrawals(){currentView='rejectedWithdrawals';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Abgelehnte Auszahlungen werden geladen...');const r=await fetch('/admin/withdrawals?status=rejected',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'Keine abgelehnten Auszahlungen.';d.withdrawals.forEach(w=>{const row=document.createElement('div');row.className='row';const gross=Number(w.grossAmount!=null?w.grossAmount:w.amount);row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span><b>'+gross.toFixed(6)+' TON</b><br><span class="muted">Wegen Betrug abgelehnt</span></span><span>'+w.address+'</span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><button class="sound-on">↩ Zurückholen</button>';const memo=document.createElement('div');memo.className='muted withdrawal-memo';memo.textContent='Memo: '+(w.memo||'?');row.children[2].appendChild(memo);row.querySelector('button').onclick=async()=>{if(!confirm('Diese Auszahlung wieder als offen markieren?'))return;const rr=await fetch('/admin/withdrawals/restore',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts})});const dd=await rr.json();if(rr.ok){status('Auszahlung wurde zurückgeholt und ist wieder offen.');loadRejectedWithdrawals()}else status(dd.error||'Request failed')};list.appendChild(row)});status(d.withdrawals.length+' abgelehnte Auszahlung(en) geladen.')}
 async function loadPurchases(){currentView='purchases';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Level-Käufe werden geladen...');const r=await fetch('/admin/purchases',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML='<div class="row purchase-row"><b>Nutzer</b><b>Level</b><b>Preis</b><b>Gekauft am</b></div>';if(!d.purchases.length){list.innerHTML+='<p>Keine Level-Käufe gespeichert.</p>'}d.purchases.forEach(p=>{const row=document.createElement('div');row.className='row purchase-row';const level=Number(p.level)||'?';const price=Number(p.price);const date=p.ts?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'medium',timeZone:'Europe/Berlin'}).format(new Date(p.ts)):'Nicht erfasst';row.innerHTML='<span><b>'+String(p.name||'Unbekannt')+'</b><br><span class="muted">UID '+String(p.uid)+'</span></span><span>Level '+level+'<br><span class="muted">'+String(p.key||'')+'</span></span><span>'+(Number.isFinite(price)?price.toFixed(6):'?')+' TON</span><span>'+date+'</span>';list.appendChild(row)});status(d.purchases.length+' Level-Käufe geladen.')}
 function addLevelControls(row){
@@ -2241,6 +2266,7 @@ document.querySelectorAll('.player-row').forEach(addLevelControls);
 document.getElementById('load').onclick=load;
 document.getElementById('loadPurchases').onclick=loadPurchases;
 document.getElementById('loadWithdrawals').onclick=()=>loadWithdrawals();
+const completedWithdrawalsButton=document.createElement('button');completedWithdrawalsButton.textContent='Completed withdrawals';document.getElementById('loadWithdrawals').insertAdjacentElement('afterend',completedWithdrawalsButton);completedWithdrawalsButton.onclick=loadCompletedWithdrawals;
 document.getElementById('loadRejectedWithdrawals').onclick=loadRejectedWithdrawals;
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
 const list=document.getElementById('list');
