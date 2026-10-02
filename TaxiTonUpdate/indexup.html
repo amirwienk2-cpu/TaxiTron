@@ -4106,7 +4106,25 @@ function withdrawalRuleText(){
   if (S.lang === 'fa') return 'هر ۲۴ ساعت فقط یک برداشت؛ برداشت بعدی ۲۴ ساعت پس از درخواست قبلی ممکن است.';
   return 'One withdrawal every 24 hours. The next request is available 24 hours after your last one.';
 }
+function withdrawalStatusText(status){
+  if(status==='completed')return S.lang==='de'?'Abgeschlossen':S.lang==='fa'?'انجام شد':'Completed';
+  if(status==='rejected')return S.lang==='de'?'Abgelehnt':S.lang==='fa'?'رد شد':'Rejected';
+  return S.lang==='de'?'Ausstehend':S.lang==='fa'?'در انتظار':'Pending';
+}
+let withdrawalStatusSyncBusy=false,withdrawalStatusSyncAt=0;
+async function refreshWithdrawalStatuses(){
+  if(!SHOP_ACCOUNT.token||withdrawalStatusSyncBusy||Date.now()-withdrawalStatusSyncAt<10000)return;
+  withdrawalStatusSyncBusy=true;withdrawalStatusSyncAt=Date.now();
+  try{
+    const response=await fetch(`/api/withdrawals?token=${encodeURIComponent(SHOP_ACCOUNT.token)}`,{cache:'no-store'}),data=await response.json();
+    if(!response.ok||!Array.isArray(data.withdrawals))return;
+    const orders=data.withdrawals.slice(-20).reverse().map(withdrawal=>({amt:Number(withdrawal.grossAmount??withdrawal.amount)||0,fee:Number(withdrawal.fee)||0,addr:withdrawal.address||'',memo:withdrawal.memo||'',at:Number(withdrawal.ts)||0,status:withdrawal.status||'pending'}));
+    if(JSON.stringify(orders)!==JSON.stringify(S.wdOrders||[])){S.wdOrders=orders;save();if(current==='wallet')renderWd();}
+  }catch(error){}finally{withdrawalStatusSyncBusy=false;}
+}
+setInterval(()=>{if(current==='wallet')void refreshWithdrawalStatuses();},10000);
 function renderWd(){
+  void refreshWithdrawalStatuses();
   $('#segDep').setAttribute('aria-selected', dwTab==='dep'); $('#segWd').setAttribute('aria-selected', dwTab==='wd');
   $('#depCard').hidden = dwTab !== 'dep'; $('#wdCard').hidden = dwTab !== 'wd';
   document.querySelectorAll('[data-ph]').forEach(i => i.placeholder = t(i.dataset.ph));
@@ -4121,7 +4139,7 @@ function renderWd(){
   const b = $('#wdBtn'); b.disabled = cooldown > 0 || !(addrOk && amtOk);
   b.querySelector('[data-t]').textContent = cooldown > 0 ? withdrawalCooldownText(cooldown) : S.ton < WD_MIN ? t('wd_low') : !addrOk && $('#wdAddr').value ? t('wd_badaddr') : amt && amt < WD_MIN ? t('wd_min1') : amt > S.ton ? t('wd_over') : t('wd_btn');
   const L = S.wdOrders || [];
-  $('#wdList').innerHTML = L.length ? `<div class="ttorders"><b class="pkkick">${esc(t('wd_mine'))}</b>${L.slice(0,5).map(o => `<div class="ttord"><img src="assets/ton-logo.webp" alt=""><span class="grow">${o.amt} TON → ${esc(o.addr.slice(0,6))}…${esc(o.addr.slice(-4))}<small class="muted">${new Date(o.at).toLocaleString()}</small></span><span class="pend">${esc(t('tt_pending'))}</span></div>`).join('')}</div>` : '';
+  $('#wdList').innerHTML = L.length ? `<div class="ttorders"><b class="pkkick">${esc(t('wd_mine'))}</b>${L.slice(0,5).map(o => `<div class="ttord"><img src="assets/ton-logo.webp" alt=""><span class="grow">${o.amt} TON → ${esc(o.addr.slice(0,6))}…${esc(o.addr.slice(-4))}<small class="muted">${new Date(o.at).toLocaleString()}</small></span><span class="pend">${esc(withdrawalStatusText(o.status))}</span></div>`).join('')}</div>` : '';
 }
 function memoCode(){
   let id = null; try { id = window.Telegram?.WebApp?.initDataUnsafe?.user?.id; } catch(e){}
