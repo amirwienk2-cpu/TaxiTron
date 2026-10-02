@@ -2857,7 +2857,6 @@
         <div class="rphero">
           <img src="assets/chat.webp" alt="">
           <div class="grow"><h3 data-t="rp_t">Choose your chat</h3><p class="muted" data-t="rp_d">Pick a room to talk with drivers in your language.</p></div>
-          <span class="demo" data-t="ch_demo" hidden>Demo</span>
         </div>
         <div class="rplabel"><span data-t="rp_servers">Chat servers</span><span class="rptotal"><span class="dot"></span> <b class="num" id="rpTotal">0</b> <span data-t="ch_online">online</span></span></div>
         <button class="srv" data-room="en" style="--a:#3d6bff;--b:#e8323c">
@@ -2904,7 +2903,7 @@
         </div>
       </div>
       <div class="onpane" id="onPane" hidden>
-        <div class="onhead"><span class="dot"></span><b class="num" id="onCount2">0</b> <span data-t="ch_online">online</span><span class="demo" data-t="ch_demo" hidden>Demo</span></div>
+        <div class="onhead"><span class="dot"></span><b class="num" id="onCount2">0</b> <span data-t="ch_online">online</span></div>
         <div class="onlist" id="onList"></div>
       </div>
       <div class="chwrap" id="chatPane">
@@ -2914,7 +2913,6 @@
             <b><span data-t="ch_room">TaxiTon Chat</span> <span id="roomName"></span></b>
             <div class="chstat"><span class="dot"></span><span class="num" id="onCount">0</span> <span data-t="ch_online">online</span></div>
           </div>
-          <span class="demo" data-t="ch_demo" hidden>Demo</span>
         </div>
         <div class="chatlog" id="chatlog"></div>
         <div class="typing" id="typing" hidden><span class="tdots"><i></i><i></i><i></i></span><span id="typingTxt"></span></div>
@@ -3710,7 +3708,7 @@ function renderOnlineCounts(){
   });
   const roomCount = chatRoom ? onlineCounts[chatRoom] || 0 : 0;
   $('#onCount').textContent = fmt(roomCount);
-  $('#onCount2').textContent = fmt(roomCount);
+  $('#onCount2').textContent = fmt(Math.max(0, onlineN - (SHOP_ACCOUNT.token ? 1 : 0)));
 }
 async function refreshOnlineCounts(force = false){
   if (!SHOP_ACCOUNT.token) {
@@ -3729,7 +3727,11 @@ async function refreshOnlineCounts(force = false){
     }
   } catch (e) {} finally { onlineCountBusy = false; }
 }
-setInterval(() => { if (SHOP_ACCOUNT.token && !document.hidden) refreshOnlineCounts(true); }, 15000);
+setInterval(() => {
+  if (!SHOP_ACCOUNT.token || document.hidden) return;
+  refreshOnlineCounts(true);
+  if (current === 'chat' && chatTab === 'on') loadOnlinePlayers();
+}, 15000);
 const userOf = n => {
   const sample=CHAT_USERS.find(u=>u.n===n); if(sample)return sample;
   const online=SHOP_ACCOUNT.onlineUsers.find(u=>u.name===n);
