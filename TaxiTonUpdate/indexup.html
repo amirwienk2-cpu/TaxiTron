@@ -3414,9 +3414,9 @@ async function migrateLegacyProfileBio(uid, bio){
 }
 const ALL_LEVELS_TEST = new URLSearchParams(window.location.search).get('all-levels-test') === '1';
 const SHOP_WORDS = {
-  en:{day:'day',days:'days',left:'left',today:'Today',offer:'Daily earning limit',active:'Daily limit active',offline:'Open in Telegram to buy'},
-  de:{day:'Tag',days:'Tage',left:'übrig',today:'Heute',offer:'Tägliches Verdienstlimit',active:'Tageslimit aktiv',offline:'Zum Kaufen in Telegram öffnen'},
-  fa:{day:'روز',days:'روز',left:'باقی‌مانده',today:'امروز',offer:'سقف درآمد روزانه',active:'سقف روزانه فعال',offline:'برای خرید در تلگرام باز کنید'}
+  en:{day:'day',days:'days',left:'left',today:'Today',offer:'Daily earning limit',active:'Daily limit active',offline:'Open in Telegram to buy',levelUnavailable:'Unavailable'},
+  de:{day:'Tag',days:'Tage',left:'übrig',today:'Heute',offer:'Tägliches Verdienstlimit',active:'Tageslimit aktiv',offline:'Zum Kaufen in Telegram öffnen',levelUnavailable:'Nicht verfügbar'},
+  fa:{day:'روز',days:'روز',left:'باقی‌مانده',today:'امروز',offer:'سقف درآمد روزانه',active:'سقف روزانه فعال',offline:'برای خرید در تلگرام باز کنید',levelUnavailable:'غیرفعال'}
 };
 const skinForCar = id => CARS.find(c => c.id === id)?.skin || 'yellow';
 const carForSkin = skin => CARS.find(c => c.skin === skin && !c.soon);
@@ -3584,6 +3584,7 @@ window.addEventListener('message', event => {
 function setActiveShopCar(id){
   const car = CARS.find(c => c.id === id);
   if (!car || car.soon || !SHOP_ACCOUNT.ownedSkins.includes(car.skin)) return;
+  if (car.lvl === 1 && SHOP_ACCOUNT.ownedSkins.some(skin => skin !== 'yellow')) return;
   S.car = car.id;
   localStorage.setItem('tt_active_level', String(car.lvl));
   if (SHOP_ACCOUNT.uid) localStorage.setItem(`taxiton_shop_level_${SHOP_ACCOUNT.uid}`, String(car.lvl));
@@ -4402,6 +4403,7 @@ function renderShop(){
       let act, state = '';
       if (c.soon) { act = `<button class="lvbtn dis" disabled>${esc(t('comingSoon'))}</button>`; state = 'soon'; }
       else if (on) { act = `<button class="lvbtn on" disabled>✓ ${esc(t('driving'))}</button>`; state = 'on'; }
+      else if (c.lvl === 1 && SHOP_ACCOUNT.ownedSkins.some(skin => skin !== 'yellow')) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.levelUnavailable || SHOP_WORDS.en.levelUnavailable)}</button>`; state = 'locked'; }
       else if (own) { act = `<button class="lvbtn sel" data-drive="${c.id}">${esc(t('select'))}</button>`; state = 'own'; }
       else if (c.limit && !LIM[c.id]) { act = `<button class="lvbtn dis" disabled>${esc(t('lim_off'))}</button>`; state = 'buy'; }
       else if (c.limit && LIM[c.id].sold >= LIM[c.id].max) { act = `<button class="lvbtn dis" disabled>${esc(t('lim_out'))}</button>`; state = 'soon'; }

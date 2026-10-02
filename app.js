@@ -1704,6 +1704,8 @@
     const level = Number(params.get('level'));
     const skin = ({1:'yellow',2:'red',3:'white',4:'green',5:'luna'})[level];
     const shopOwned = (params.get('shopOwned') || '').split(',');
+    const hasPremium = (Array.isArray(ownedSkins) && ownedSkins.some(item => item !== 'yellow')) || shopOwned.some(item => item && item !== 'yellow');
+    if (level === 1 && hasPremium) return null;
     return skin && ((Array.isArray(ownedSkins) && ownedSkins.includes(skin)) || shopOwned.includes(skin)) ? skin : null;
   }
 
