@@ -5669,7 +5669,8 @@ function openGame(){
   $('#realGameRetry').hidden = true;
   frame.onload = () => activateLegacyGame(0, loadId);
   const gamePath = window.location.protocol === 'file:' ? '../index.html' : '/legacy-game.html';
-  frame.src = `${gamePath}?embedded=1&v=slow-vpn-game-load-20261002&retry=${loadId}`;
+  const selectedLevel = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
+  frame.src = `${gamePath}?embedded=1&level=${selectedLevel}&v=level-selection-sync-20261002&retry=${loadId}`;
   activateLegacyGame(0, loadId);
   gameLoadTimer = setTimeout(() => {
     if (game.hidden || gameLoadId !== loadId || $('#realGameLoading').hidden) return;

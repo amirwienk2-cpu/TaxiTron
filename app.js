@@ -1699,6 +1699,12 @@
     }
   });
 
+  function requestedGameSkin(ownedSkins){
+    const level = Number(new URLSearchParams(window.location.search).get('level'));
+    const skin = ({1:'yellow',2:'red',3:'white',4:'green',5:'luna'})[level];
+    return skin && Array.isArray(ownedSkins) && ownedSkins.includes(skin) ? skin : null;
+  }
+
   function applyServerState(state){
     if (typeof state.isChatAdmin === 'boolean') serverSession.isChatAdmin = state.isChatAdmin;
     if (typeof state.isDesigner === 'boolean') serverSession.isDesigner = state.isDesigner;
@@ -1716,7 +1722,7 @@
       lastDistance = parseFloat(localStorage.getItem(accountStorageKey('cr3d_pendingDistance')) || '0');
       store.skinRewards = {};
       const accountSkins = Array.isArray(state.ownedSkins) ? state.ownedSkins : ['yellow'];
-      store.skin = accountSkins.indexOf('luna') !== -1 ? 'luna' : accountSkins.indexOf('green') !== -1 ? 'green' : accountSkins.indexOf('white') !== -1 ? 'white' : accountSkins.indexOf('red') !== -1 ? 'red' : 'yellow';
+      store.skin = requestedGameSkin(accountSkins) || (accountSkins.indexOf('luna') !== -1 ? 'luna' : accountSkins.indexOf('green') !== -1 ? 'green' : accountSkins.indexOf('white') !== -1 ? 'white' : accountSkins.indexOf('red') !== -1 ? 'red' : 'yellow');
     }
     if (state.uid && !accountChanged) loadAccountAttempts();
     const resetKey = state.uid ? 'cr3d_attemptResetVersion_' + String(state.uid) : '';
@@ -1772,6 +1778,8 @@
         store.skin = store.ownedSkins.indexOf('luna') !== -1 ? 'luna' : store.ownedSkins.indexOf('green') !== -1 ? 'green' : store.ownedSkins.indexOf('white') !== -1 ? 'white' : store.ownedSkins.indexOf('red') !== -1 ? 'red' : 'yellow';
       }
     }
+    const requestedSkin = requestedGameSkin(state.ownedSkins || store.ownedSkins);
+    if (requestedSkin) store.skin = requestedSkin;
     if (state.skinRewards && typeof state.skinRewards === 'object') {
       store.skinRewards = JSON.parse(JSON.stringify(state.skinRewards));
     }
