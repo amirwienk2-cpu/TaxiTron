@@ -3667,7 +3667,7 @@ function applyLang(){
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
   $('#chatIn').placeholder = t('ch_ph');
 }
-function maxTries(){ return (Number(CARS.find(c => c.id === S.car)?.lvl) || 1) === 1 ? 10 : 20; }
+function maxTries(){ return (Number(CARS.find(c => c.id === S.car)?.lvl) || 1) === 1 ? 10 : 15; }
 function triesLeft(){ if (!S.tries || S.tries.date !== today()) S.tries = {date: today(), used: 0}; return Math.max(0, maxTries() - S.tries.used); }
 function renderTries(){
   const left = triesLeft();
