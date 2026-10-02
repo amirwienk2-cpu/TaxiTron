@@ -2145,6 +2145,7 @@
   .eqr{align-self:center;margin:2px 0 8px;font-size:8.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--rc)}
   /* Bio */
   .pfbio{margin:8px 0 0;padding:7px 10px;border-radius:12px;background:var(--db33);border:1px solid rgba(var(--gl3),.2);text-align:center}
+  .pfbiosync{display:block;margin:0 8px 5px;color:var(--ink-dim);font-size:10.5px;line-height:1.35}
   .pfbio p{margin:0;font-size:12px;line-height:1.4;color:#dfe6ff;white-space:pre-wrap;overflow-wrap:anywhere}
   .pfbio p.ph{color:var(--ink-dim);font-style:italic;cursor:pointer}
   .pfbio .biov{position:relative;padding:0 22px}
@@ -3402,7 +3403,7 @@ async function migrateLegacyProfileBio(uid, bio){
   try {
     const response = await fetch('/api/profile/bio', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,bio})});
     const data = await response.json();
-    if (response.ok && data.state) localStorage.setItem(key, '1');
+    if (response.ok && data.state) { localStorage.setItem(key, '1'); SHOP_ACCOUNT.bioNeedsSync = false; }
   } catch (e) {} finally { PROFILE_BIO_SYNCING.delete(uid); }
 }
 const ALL_LEVELS_TEST = new URLSearchParams(window.location.search).get('all-levels-test') === '1';
@@ -3452,12 +3453,14 @@ function applyShopAccountState(state, preferredCar){
   const bioSyncKey = profileBioSyncKey(SHOP_ACCOUNT.uid);
   const legacyBio = typeof S.bio === 'string' ? S.bio.replace(/\s+/g, ' ').trim().slice(0, BIO_MAX) : '';
   const sameLocalAccount = String(localStorage.getItem('cr3d_serverUid') || '') === SHOP_ACCOUNT.uid;
+  const bioAlreadySynced = localStorage.getItem(bioSyncKey) === '1';
+  SHOP_ACCOUNT.bioNeedsSync = !serverBio && !!legacyBio && !bioAlreadySynced;
   if (serverBio) {
     S.bio = serverBio;
     localStorage.setItem(bioSyncKey, '1');
-  } else if (legacyBio && sameLocalAccount && localStorage.getItem(bioSyncKey) !== '1') {
+  } else if (legacyBio && !bioAlreadySynced) {
     S.bio = legacyBio;
-    void migrateLegacyProfileBio(SHOP_ACCOUNT.uid, legacyBio);
+    if (sameLocalAccount) void migrateLegacyProfileBio(SHOP_ACCOUNT.uid, legacyBio);
   } else {
     S.bio = serverBio;
   }
@@ -4638,7 +4641,7 @@ function profileOf(who, liveProfile){
   if (who === '@me') {
     const I = itInv();
     return {u:meUser(), me:true, ton:SHOP_ACCOUNT.online?SHOP_ACCOUNT.ton:S.ton, tt:SHOP_ACCOUNT.online?SHOP_ACCOUNT.tt:(S.tt||0),
-      paid:SHOP_ACCOUNT.online?SHOP_ACCOUNT.totalWithdrawnTon:(S.wdOrders||[]).reduce((a,o) => a + (+o.amt||0), 0), stk:STK_PACKS.filter(p => ownStk(p.id)).map(p => p.id), bub:I.eq.bub, frm:I.eq.frm, own:{bub:BUBBLES.filter(x => ownItem('bub', x.id)).map(x => x.id), frm:FRAMES.filter(x => ownItem('frm', x.id)).map(x => x.id), ban:BANNERS.filter(x => ownItem('ban', x.id)).map(x => x.id)}, gen: S.gender === 'frau' ? 'frau' : 'junge', ban:I.eq.ban, bio: typeof S.bio === 'string' ? S.bio : ''};
+      paid:SHOP_ACCOUNT.online?SHOP_ACCOUNT.totalWithdrawnTon:(S.wdOrders||[]).reduce((a,o) => a + (+o.amt||0), 0), stk:STK_PACKS.filter(p => ownStk(p.id)).map(p => p.id), bub:I.eq.bub, frm:I.eq.frm, own:{bub:BUBBLES.filter(x => ownItem('bub', x.id)).map(x => x.id), frm:FRAMES.filter(x => ownItem('frm', x.id)).map(x => x.id), ban:BANNERS.filter(x => ownItem('ban', x.id)).map(x => x.id)}, gen: S.gender === 'frau' ? 'frau' : 'junge', ban:I.eq.ban, bio: typeof S.bio === 'string' ? S.bio : '', bioNeedsSync: SHOP_ACCOUNT.bioNeedsSync === true};
   }
   const u = userOf(who), h = hashStr(u.n), L = u.lvl || 1;
   const pick = (arr, salt) => { const max = Math.min(arr.length - 1, Math.floor(L / 5) + (u.role ? 3 : 0)); return arr[(h >>> salt) % (max + 1)].id; };
@@ -5070,8 +5073,10 @@ const BIO_SAMPLES = ['Zombie hunter 🧟 · night shift driver 🚕', 'Collectin
 function bioHtml(P){
   const txt = P.bio || '';
   const sk = `bub biobub ${bubCls(P.bub)}`;
-  if (!P.me) return txt ? `<div class="pfbio ${sk}"><p class="bt" dir="auto">${esc(txt)}</p></div>` : '';
+  if (!P.me) return `<div class="pfbio ${sk}"><p class="bt" dir="auto">${txt ? esc(txt) : P.profileLoaded === false ? (S.lang === 'de' ? 'Bio wird geladen…' : S.lang === 'fa' ? 'بیو در حال بارگذاری است…' : 'Loading bio…') : (S.lang === 'de' ? 'Noch keine Bio geteilt.' : S.lang === 'fa' ? 'هنوز بیویی به اشتراک گذاشته نشده.' : 'No bio shared yet.')}</p></div>`;
+  const syncNote = P.bioNeedsSync ? `<small class="pfbiosync">${S.lang === 'de' ? 'Nur lokal gespeichert. Speichern, damit andere deine Bio sehen.' : S.lang === 'fa' ? 'فقط محلی ذخیره شده؛ برای نمایش به دیگران ذخیره کن.' : 'Saved only on this device. Save to share it with others.'}</small>` : '';
   return `<div class="pfbio mine ${sk}" id="bioBox">
+    ${syncNote}
     <div class="biov"><p dir="auto" id="bioShow" class="bt ${txt ? '' : 'ph'}">${esc(txt || t('bio_ph'))}</p><button class="bioed" id="bioEdit" aria-label="${esc(t('bio_edit'))}">✎</button></div>
     <div class="bioe"><textarea id="bioIn" maxlength="${BIO_MAX}" rows="3" dir="auto" placeholder="${esc(t('bio_ph'))}">${esc(txt)}</textarea>
       <div class="biob"><span class="muted num" id="bioCnt">${txt.length}/${BIO_MAX}</span><button class="btn bioc" id="bioCancel">${esc(t('bio_cancel'))}</button><button class="btn" id="bioSave">${esc(t('bio_save'))}</button></div></div>
