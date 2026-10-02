@@ -2820,7 +2820,11 @@
       window.parent.postMessage({ type:'tt-game-start-rejected', reason }, '*');
     }
   }
-  async function consumeRunStartAttempt(){
+  // Checks (without consuming) whether a run is allowed to start. The attempt
+  // itself is only ever spent on an actual crash - see reportRunCrash(), called
+  // from gameOver() - so starting a run (or exiting it early without crashing)
+  // never costs a try.
+  async function checkRunStartEligible(){
     if (SERVER_URL && (!serverSession.online || !serverSession.token)) {
       await initServerSession();
     }
@@ -2840,7 +2844,30 @@
     }
     const telegramInitData = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
     if (telegramInitData) return false;
-    return consumeAttempt();
+    return hasAttemptsLeft();
+  }
+  // Spends exactly one attempt for the level just crashed in. Called only from
+  // gameOver() - a voluntary early exit (exitRunBtn) never reaches this, so it
+  // never costs a try.
+  async function reportRunCrash(){
+    if (SERVER_URL && serverSession.online && serverSession.token) {
+      try {
+        const response = await fetch(SERVER_URL + '/api/run/crash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: serverSession.token, level: activeAttemptLevel() })
+        });
+        const data = await response.json();
+        if (data.state) applyServerState(data.state);
+      } catch (error) {
+        // best-effort: a failed request here just means this crash didn't cost
+        // an attempt, which is harmless (favors the player, never the house)
+      }
+      return;
+    }
+    const telegramInitData = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+    if (telegramInitData) return;
+    consumeAttempt();
   }
   async function enterGame(){
     if (runStartPending) return;
@@ -2854,7 +2881,7 @@
       showScreen('home');
       return;
     }
-    const started = await consumeRunStartAttempt();
+    const started = await checkRunStartEligible();
     runStartPending = false;
     if (!started) {
       renderAttemptsUI();
@@ -4415,10 +4442,11 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     }
   }
 
-  function gameOver(){
+  async function gameOver(){
     running = false;
     spawnParticles(playerCar.position.x, 0.6, playerCar.position.z, 0xff6b6b);
     commitRun();
+    await reportRunCrash();
     document.getElementById('finalScore').textContent = personScore;
     document.getElementById('bestScoreText').textContent = t('bestScoreText').replace('{best}', best);
     const artEl = document.getElementById('gameOverArt');
@@ -4445,7 +4473,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     runStartPending = true;
     const retryBtn = document.getElementById('retryBtn');
     retryBtn.disabled = true;
-    const started = await consumeRunStartAttempt();
+    const started = await checkRunStartEligible();
     runStartPending = false;
     if (!started) {
       renderAttemptsUI();

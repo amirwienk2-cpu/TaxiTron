@@ -6,7 +6,8 @@
  *   POST /api/auth                 { initData }
  *   GET  /api/deposit-info         ?token=
  *   POST /api/run/start            { token, level }
- *   POST /api/run                  { token, distance, zombies }
+  *   POST /api/run/crash            { token, level }
+  *   POST /api/run                  { token, distance, zombies }
  *   POST /api/withdraw             { token, address, amount }
  *   GET  /api/withdrawals          ?token=
  *   POST /api/submit-score         { token, distance, zombies }
@@ -3511,16 +3512,32 @@ app.post('/api/deposit/claim', requireUserFromBody, async (req, res) => {
   });
 });
 
-// ---- Atomically consumes this Telegram account's level-specific attempt and
-//      marks the run start for tournament anti-cheat timing. -------------------
+// ---- Checks (without consuming) that this Telegram account has a free attempt for
+//      this level, and marks the run start for tournament anti-cheat timing. The
+//      attempt itself is only spent on an actual crash - see /api/run/crash below -
+//      so starting a run (or quitting early without crashing) never costs a try. ---
 app.post('/api/run/start', requireUserFromBody, rejectBannedUser, (req, res) => {
   const level = resolvePlayableLevel(req.user, req.body && req.body.level);
-  if (!consumeServerAttempt(req.user, level)) {
+  const state = ensureAttemptState(req.user, level);
+  if (state.left <= 0) {
     persist();
     return res.status(409).json({ error: 'no-attempts-left', level, state: publicState(req.user) });
   }
   req.user.runStartedAt = Date.now();
   req.user.runStartedLevel = level;
+  persist();
+  res.json({ ok: true, level, state: publicState(req.user) });
+});
+
+// ---- Spends exactly one attempt for the level just crashed in. Called only when
+//      a run actually ends in a crash (see app.js gameOver()), never for a
+//      voluntary early exit. ------------------------------------------------------
+app.post('/api/run/crash', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const level = resolvePlayableLevel(req.user, req.body && req.body.level);
+  if (!consumeServerAttempt(req.user, level)) {
+    persist();
+    return res.status(409).json({ error: 'no-attempts-left', level, state: publicState(req.user) });
+  }
   persist();
   res.json({ ok: true, level, state: publicState(req.user) });
 });
