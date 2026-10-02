@@ -1972,7 +1972,7 @@ let knownWithdrawalKeys=null;
       return;
     }
     const row = matches[0], uid = String(row.dataset.uid || '');
-    const name = (row.firstElementChild && row.firstElementChild.textContent.split(String.fromCharCode(10))[0].trim()) || uid;
+    const name = (row.firstElementChild && row.firstElementChild.textContent.split('\n')[0].trim()) || uid;
     const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
     if (value === null) return;
     const delta = Number(value.replace(',', '.'));
@@ -2097,7 +2097,7 @@ setInterval(()=>{if(secret())pollMoneyEvents()},15000);
       });
       if (!playerRow) { alert('Spieler nicht gefunden. Bitte zuerst „Load players“ ausführen und nach Name/UID suchen.'); return; }
       const uid = String(playerRow.dataset.uid || '');
-      const name = (playerRow.firstElementChild && playerRow.firstElementChild.textContent.split(String.fromCharCode(10))[0].trim()) || uid;
+      const name = (playerRow.firstElementChild && playerRow.firstElementChild.textContent.split('\n')[0].trim()) || uid;
       const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
       if (value === null) return;
       const delta = Number(value.replace(',', '.'));
