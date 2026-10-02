@@ -3636,6 +3636,39 @@ app.post('/api/items/equip', requireUserFromBody, rejectBannedUser, (req, res) =
 });
 
 const PROFILE_PRESET_IMAGES = new Set(['assets/av-berlin.webp','assets/av-luna.webp','assets/av-nikto.webp','assets/av-nova.webp','assets/av-sara.webp','assets/av-zero.webp','assets/av-zombie.webp']);
+app.get('/api/profile/:uid', requireUserFromQuery, (req, res) => {
+  const target = users[String(req.params.uid || '')];
+  if (!target) return res.status(404).json({ error: 'profile-not-found' });
+  const kinds = { bub: 'classic', frm: 'none', ban: 'classic' };
+  const sourceItems = target.chatItems && typeof target.chatItems === 'object' ? target.chatItems : {};
+  const equipped = sourceItems.eq && typeof sourceItems.eq === 'object' ? sourceItems.eq : {};
+  const owned = Object.fromEntries(Object.entries(kinds).map(([kind, freeId]) => {
+    const ids = Array.isArray(sourceItems[kind]) ? sourceItems[kind] : [freeId];
+    return [kind, [...new Set(ids.filter((id) => Object.hasOwn(TT_CHAT_ITEMS[kind], id)))]];
+  }));
+  const selected = Object.fromEntries(Object.entries(kinds).map(([kind, freeId]) => [
+    kind,
+    owned[kind].includes(equipped[kind]) ? equipped[kind] : freeId,
+  ]));
+  const withdrawals = Array.isArray(target.withdrawals) ? target.withdrawals : [];
+  res.json({ profile: {
+    name: target.name || ('Player ' + target.id),
+    photoUrl: target.profileImage || target.photoUrl || '',
+    ton: Number(target.ton) || 0,
+    tt: Number(target.ttBalance) || 0,
+    paid: withdrawals.filter((item) => item.status === 'completed')
+      .reduce((sum, item) => sum + Number(item.grossAmount ?? item.amount ?? 0), 0),
+    level: Number(target.level) || 1,
+    bub: selected.bub,
+    frm: selected.frm,
+    ban: selected.ban,
+    own: owned,
+    stk: Array.isArray(target.stickerPacks)
+      ? [...new Set(target.stickerPacks.filter((id) => Object.hasOwn(TT_CHAT_ITEMS.stk, id)))]
+      : [],
+    bio: '',
+  } });
+});
 app.post('/api/profile/photo', requireUserFromBody, rejectBannedUser, (req, res) => {
   const photo = String(req.body && req.body.photo || '');
   if (photo && !PROFILE_PRESET_IMAGES.has(photo)) {

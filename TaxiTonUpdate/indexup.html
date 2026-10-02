@@ -4608,7 +4608,9 @@ $('#tgToLobby').onclick = () => { $('#tgRes').hidden = true; $('#twGame').hidden
 $('#tgNewRoom').onclick = () => { $('#tgRes').hidden = true; $('#twGame').hidden = true; clearInterval(tgTick); if (S.twLast) twStake = S.twLast.stake; renderTower(); $('#twGo').click(); };
 /* ---- User popover & profile ---- */
 function hashStr(str){ let h = 2166136261; for (const ch of str) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
-function profileOf(who){
+const PROFILE_CACHE = new Map(), PROFILE_PENDING = new Set();
+let activeProfileUid = '';
+function profileOf(who, liveProfile){
   if (who === '@me') {
     const I = itInv();
     return {u:meUser(), me:true, ton:SHOP_ACCOUNT.online?SHOP_ACCOUNT.ton:S.ton, tt:SHOP_ACCOUNT.online?SHOP_ACCOUNT.tt:(S.tt||0),
@@ -4621,6 +4623,16 @@ function profileOf(who){
     stk: STK_PACKS.filter((p, i) => ((h >>> i) & 1) && i < 3 + L / 4).map(p => p.id), bub: pick(BUBBLES, 5), frm: pick(FRAMES, 9), ban: pick(BANNERS, 13), bio: u.role ? t('bio_staff') : BIO_SAMPLES[h % BIO_SAMPLES.length]};
   P.gen = (h >>> 4) & 1 ? 'frau' : 'junge';
   P.own = {bub: ownOf(BUBBLES, P.bub, 2), frm: ownOf(FRAMES, P.frm, 7), ban: ownOf(BANNERS, P.ban, 11)};
+  if (liveProfile){
+    P.u = {...u,n:liveProfile.name || u.n,img:liveProfile.photoUrl || u.img,lvl:Number(liveProfile.level) || 1};
+    P.ton = Number(liveProfile.ton) || 0; P.tt = Number(liveProfile.tt) || 0; P.paid = Number(liveProfile.paid) || 0;
+    P.bub = liveProfile.bub || 'classic'; P.frm = liveProfile.frm || 'none'; P.ban = liveProfile.ban || 'classic';
+    P.own = liveProfile.own || {bub:[P.bub],frm:[P.frm],ban:[P.ban]};
+    P.stk = Array.isArray(liveProfile.stk) ? liveProfile.stk : []; P.bio = liveProfile.bio || ''; P.profileLoaded = true;
+  } else if (SHOP_ACCOUNT.online){
+    P.ton = null; P.tt = null; P.paid = null; P.stk = []; P.bub = 'classic'; P.frm = 'none'; P.ban = 'classic';
+    P.own = {bub:['classic'],frm:['none'],ban:['classic']}; P.bio = ''; P.profileLoaded = false;
+  }
   return P;
 }
 /* ---- Profile level: XP from activity & chat ---- */
@@ -5011,7 +5023,9 @@ const PFig = (() => {
 /* ---- Profile: all items ---- */
 const ownCount = P => P.own.bub.length + P.own.frm.length + P.own.ban.length + P.stk.length;
 function openAllItems(who){
-  const P = profileOf(who), u = P.u, tick = on => on ? `<span class="aiq">✓</span>` : '';
+  const target = who === '@me' ? null : friendTargetByName(who);
+  const cachedProfile = target && target.uid ? PROFILE_CACHE.get(String(target.uid)) : null;
+  const P = profileOf(who, cachedProfile), u = P.u, tick = on => on ? `<span class="aiq">✓</span>` : '';
   const grp = (k, list, tile) => `<div class="aigrp"><h4>${esc(t(k))}<span class="num">${list.length}</span></h4>${list.length ? `<div class="aigrid ${k}">${list.map(tile).join('')}</div>` : `<div class="pfnone">–</div>`}</div>`;
   const it = (arr, id) => arr.find(x => x.id === id);
   $('#profSheet').innerHTML = `<div class="aihead"><button class="aiback" id="aiBack" aria-label="Back">‹</button><div class="grow"><b>${esc(t('pf_all'))}</b><small>${esc(u.n)} · <span class="num">${ownCount(P)}</span></small></div><button class="pfx ai" id="pfClose" aria-label="Close">✕</button></div>
@@ -5086,8 +5100,12 @@ document.addEventListener('click', e => {
 }, true);
 $('#chatlog').addEventListener('scroll', hidePop);
 $('#uPopBtn').onclick = () => { const w = popWho; hidePop(); if (w) openProfile(w); };
-function openProfile(who){
-  const P = profileOf(who), u = P.u, h = hashStr(u.n);
+function openProfile(who, liveProfile, profileResolved){
+  const target = who === '@me' ? null : friendTargetByName(who);
+  const uid = target && target.uid ? String(target.uid) : '';
+  const cachedProfile = uid ? PROFILE_CACHE.get(uid) : null;
+  activeProfileUid = uid;
+  const P = profileOf(who, liveProfile || cachedProfile), u = P.u, h = hashStr(u.n);
   const bub = BUBBLES.find(b => b.id === P.bub), frm = FRAMES.find(f => f.id === P.frm);
   const pl = P.me ? pLv() : null, xp = P.me ? pl.p : (h % 83) + 8;
   let pid = '#' + (100000 + h % 900000); if (P.me) { try { const id = window.Telegram?.WebApp?.initDataUnsafe?.user?.id; if (id) pid = '#' + id; } catch(e){} }
@@ -5107,11 +5125,11 @@ function openProfile(who){
         <div class="pfpbtns"><label class="btn pfup">⬆ ${esc(t('pf_upload'))}<input type="file" accept="image/*" id="pfFile" hidden></label>
           ${u.img ? `<button class="btn pfrm" data-avset="-1">${esc(t('pf_remove'))}</button>` : ''}</div></div>` : ''}
     <div class="pfstats">
-      ${stat('<img src="assets/ton-logo.webp" alt="">', (+P.ton.toFixed(2)), '', 'pf_ton')}
-      ${stat('<img src="assets/tticon.webp" alt="">', fmt(P.tt), '', 'pf_tt')}
-      ${stat('<span class="wdic">↗</span>', (+P.paid.toFixed(2)), 'TON', 'pf_paid')}
+      ${stat('<img src="assets/ton-logo.webp" alt="">', P.ton === null ? '...' : Number(P.ton).toFixed(2), '', 'pf_ton')}
+      ${stat('<img src="assets/tticon.webp" alt="">', P.tt === null ? '...' : fmt(P.tt), '', 'pf_tt')}
+      ${stat('<span class="wdic">↗</span>', P.paid === null ? '...' : Number(P.paid).toFixed(2), 'TON', 'pf_paid')}
     </div>
-    <div class="pfsec pfeqs"><div class="eqhd"><h4>${esc(t('pf_eq'))}</h4><button class="eqall" id="pfAll">${esc(t('pf_all'))} <b class="num">${ownCount(P)}</b><i>›</i></button></div>
+    <div class="pfsec pfeqs"><div class="eqhd"><h4>${esc(t('pf_eq'))}</h4><button class="eqall" id="pfAll" ${P.profileLoaded === false && SHOP_ACCOUNT.online ? 'disabled' : ''}>${esc(t('pf_all'))} <b class="num">${ownCount(P)}</b><i>›</i></button></div>
       <div class="eqgrid">${[
         ['it_bub', bub, `<div class="bub ${bubCls(bub.id)} ibub"><div class="bt">${esc(t('it_hi'))}</div></div>`, 'it_bub_' + bub.id],
         ['it_frm', frm, avatar(u, true, frm.id), 'it_frm_' + frm.id],
@@ -5133,6 +5151,13 @@ function openProfile(who){
     $('#bioSave').onclick = () => { S.bio = $('#bioIn').value.replace(/\s+/g, ' ').trim().slice(0, BIO_MAX); save(); openProfile('@me'); toast(t('bio_saved')); };
   }
   bindFrButtons(who);
+  if (!P.me && SHOP_ACCOUNT.token && uid && !profileResolved && !PROFILE_PENDING.has(uid)){
+    PROFILE_PENDING.add(uid);
+    fetch(`/api/profile/${encodeURIComponent(uid)}?token=${encodeURIComponent(SHOP_ACCOUNT.token)}`, {cache:'no-store'})
+      .then(async response => { const data = await response.json(); if (!response.ok || !data.profile) throw new Error('profile-unavailable'); PROFILE_CACHE.set(uid, data.profile); if (activeProfileUid === uid && !$('#profOv').hidden) openProfile(who, data.profile, true); })
+      .catch(() => {})
+      .finally(() => PROFILE_PENDING.delete(uid));
+  }
   if (P.me) {
     $('#pfPhoto').onclick = () => { $('#pfPick').hidden = !$('#pfPick').hidden; };
     $('#pfPick').addEventListener('click', e => { const b = e.target.closest('[data-avset]'); if (!b) return; const i = +b.dataset.avset; setAvatar(i >= 0 ? AV_PRESETS[i] : null); });
