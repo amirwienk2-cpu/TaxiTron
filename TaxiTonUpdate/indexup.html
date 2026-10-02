@@ -3827,15 +3827,22 @@ function chatReactionMarkup(message){
   return `<div class="chat-reactions">${pills}<button type="button" class="chat-react-add" data-react-open="${esc(String(message.id))}" aria-label="Add reaction" title="Add reaction"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 14s1.4 2 4 2 4-2 4-2M9 9h.01M15 9h.01"></path></svg></button>${picker}</div>`;
 }
 async function toggleChatReaction(messageId,emoji){
-  if(!SHOP_ACCOUNT.token)return;
+  if(!SHOP_ACCOUNT.token){toast(t('lim_tg'));return;}
   const message=serverChat.find(item=>String(item.id)===String(messageId));
-  if(!message)return;
+  if(!message){toast(t('lim_err'));return;}
+  const previous={counts:{...(message.reactions?.counts||{})},mine:message.reactions?.mine||null};
+  const on=previous.mine!==emoji,counts={...previous.counts};
+  if(previous.mine&&Number(counts[previous.mine])>0){counts[previous.mine]--;if(!counts[previous.mine])delete counts[previous.mine];}
+  if(on)counts[emoji]=(Number(counts[emoji])||0)+1;
+  message.reactions={counts,mine:on?emoji:null};
+  reactionPickerMessageId=null;
+  renderChat();
   try{
-    const response=await fetch('/api/chat/react',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,messageId:Number(messageId),emoji,on:message.reactions?.mine!==emoji})});
+    const response=await fetch('/api/chat/react',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,messageId:Number(messageId),emoji,on})});
     const data=await response.json();
-    if(!response.ok||!data.reactions){toast(data.error==='like-event-chat-locked'?'Chat reactions are paused during the like event.':t('lim_err'));return;}
-    message.reactions=data.reactions;reactionPickerMessageId=null;renderChat();
-  }catch(e){toast(t('lim_err'));}
+    if(!response.ok||!data.reactions)throw new Error(data.error||'reaction-failed');
+    message.reactions=data.reactions;renderChat();
+  }catch(e){message.reactions=previous;renderChat();toast(e.message==='like-event-chat-locked'?'Chat reactions are paused during the like event.':t('lim_err'));}
 }
 $('#chatlog').addEventListener('click',event=>{
   const toggle=event.target.closest('[data-react-open]');
