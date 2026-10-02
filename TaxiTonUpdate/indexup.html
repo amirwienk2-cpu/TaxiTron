@@ -3840,7 +3840,7 @@ $('#chatlog').addEventListener('click',event=>{
   const toggle=event.target.closest('[data-react-open]');
   if(toggle){event.stopPropagation();const id=String(toggle.dataset.reactOpen);reactionPickerMessageId=reactionPickerMessageId===id?null:id;renderChat();return;}
   const reaction=event.target.closest('[data-react]');
-  if(reaction){event.stopPropagation();void toggleChatReaction(reaction.dataset.messageId,reaction.dataset.react);}
+  if(reaction){event.stopPropagation();void toggleChatReaction(reaction.dataset.reactionMessage,reaction.dataset.react);}
 });
 function renderChat(){
   const liveChat = !!SHOP_ACCOUNT.token;
