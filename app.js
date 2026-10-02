@@ -2819,14 +2819,16 @@
   }
   async function enterGame(){
     if (runStartPending) return;
+    runStartPending = true;
+    if (SERVER_URL && (!serverSession.online || !serverSession.token)) await initServerSession();
     syncActiveLevelFromShop();
     if (serverSession.isBanned || (!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
+      runStartPending = false;
       const reason = serverSession.isBanned ? 'banned' : dailyEarningsComplete() ? 'daily-cap' : 'no-attempts';
       notifyEmbeddedStartRejected(reason);
       showScreen('home');
       return;
     }
-    runStartPending = true;
     const started = await consumeRunStartAttempt();
     runStartPending = false;
     if (!started) {
@@ -3597,10 +3599,14 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   // with the wrong/stale skin and only pick up the real selection later - mid-drive - once
   // a background resync message finally landed. Called right before every run start.
   function syncActiveLevelFromShop(){
-    let stored;
-    try { stored = parseInt(localStorage.getItem('tt_active_level'), 10); } catch (e) { return; }
-    if (!Number.isFinite(stored)) return;
-    const def = SKIN_LEVELS.find(item => item.level === stored);
+    const requestedSkin = requestedGameSkin(store.ownedSkins);
+    let def = requestedSkin ? SKIN_LEVELS.find(item => item.key === requestedSkin) : null;
+    if (!def){
+      let stored;
+      try { stored = parseInt(localStorage.getItem('tt_active_level'), 10); } catch (e) { return; }
+      if (!Number.isFinite(stored)) return;
+      def = SKIN_LEVELS.find(item => item.level === stored);
+    }
     if (!def || store.ownedSkins.indexOf(def.key) === -1) return;
     if (store.skin === def.key) return; // already matches - nothing to do
     store.skin = def.key;
