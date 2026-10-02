@@ -4695,6 +4695,7 @@ function frS(){ if (!Array.isArray(S.frIn)) { S.frIn = []; S.frInSeeded = true; 
 const isFriend = n => frS().friends.some(f => f.n === n);
 const dmOf = n => (frS().dm[n] = Array.isArray(S.dm[n]) ? S.dm[n] : []);
 const unreadOf = n => dmOf(n).filter(m => !m.mine && !m.read).length;
+const dmLoadPending = new Set();
 async function friendApi(path,body){
   if(!SHOP_ACCOUNT.token){toast(t('lim_tg'));return null;}
   try{
@@ -4708,15 +4709,19 @@ async function friendApi(path,body){
 async function loadDirectMessages(name){
   const peer=friendTargetByName(name);
   if(!SHOP_ACCOUNT.token||!peer?.uid)return;
+  const loadKey=String(peer.uid);
+  if(dmLoadPending.has(loadKey))return;
+  dmLoadPending.add(loadKey);
   try{
     const response=await fetch(`/api/friends/dm?with=${encodeURIComponent(peer.uid)}&token=${encodeURIComponent(SHOP_ACCOUNT.token)}`,{cache:'no-store'});
     const data=await response.json(); if(!response.ok||!Array.isArray(data.messages))return;
-    const messages=data.messages.map(message=>directMessageModel(message));
+    const messages=data.messages.map(message=>directMessageModel(message,name));
     if(JSON.stringify(S.dm[name]||[])!==JSON.stringify(messages)){S.dm[name]=messages;save();if(dmWith===name&&current==='chat'&&chatTab==='fr')renderDM();else renderFriends();}
-  }catch(e){}
+  }catch(e){}finally{dmLoadPending.delete(loadKey);}
 }
-function directMessageModel(message){return {id:message.id,mine:String(message.fromUid)===SHOP_ACCOUNT.uid,text:message.text||'',img:message.img||'',ts:Number(message.ts)||Date.now(),read:true,chatItems:message.chatItems||{},photoUrl:message.photoUrl||''};}
+function directMessageModel(message,name){const mine=String(message.fromUid)===SHOP_ACCOUNT.uid,open=dmWith===name&&current==='chat'&&chatTab==='fr';return {id:message.id,mine,text:message.text||'',img:message.img||'',ts:Number(message.ts)||Date.now(),read:mine||open,chatItems:message.chatItems||{},photoUrl:message.photoUrl||''};}
 setInterval(()=>{if(SHOP_ACCOUNT.token&&dmWith&&current==='chat'&&chatTab==='fr')loadDirectMessages(dmWith);},3000);
+setInterval(()=>{if(SHOP_ACCOUNT.token&&!document.hidden)SHOP_ACCOUNT.friends.forEach(friend=>loadDirectMessages(friend.name));},15000);
 function frButtons(n){
   const st = isFriend(n) ? 'fr' : frS().frReq[n] ? 'req' : S.frIn.some(r => r.n === n) ? 'in' : 'none';
   return `<div class="frbtns">
