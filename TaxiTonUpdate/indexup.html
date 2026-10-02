@@ -615,7 +615,8 @@
   #realGameFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#060826;z-index:5}
   #realGameBack{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;z-index:7;border:1px solid rgba(255,255,255,.3);border-radius:10px;
     padding:8px 12px;background:rgba(6,8,38,.85);font-weight:700}
-  #realGameLoading{position:absolute;inset:0;z-index:6;display:grid;place-items:center;background:#060826;font-family:var(--display);font-size:20px;color:var(--taxi)}
+  #realGameLoading{position:absolute;inset:0;z-index:6;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;background:#060826;font-family:var(--display);font-size:20px;color:var(--taxi)}
+  #realGameRetry{padding:10px 18px;border:1px solid var(--taxi);border-radius:10px;background:#111a45;color:var(--taxi);font:inherit;font-size:15px}
   #realGameLoading[hidden]{display:none}
   .sheet{width:100%;max-width:360px;text-align:center;background:linear-gradient(180deg,var(--panel-2),var(--panel));border:2px solid var(--edge);
     border-radius:18px;padding:20px 18px;box-shadow:0 0 40px rgba(45,107,255,.5)}
@@ -3281,7 +3282,7 @@
   <div id="game" hidden>
     <iframe id="realGameFrame" title="TaxiTon game" allow="autoplay" hidden></iframe>
     <button id="realGameBack" type="button" aria-label="Back to TaxiTon">←</button>
-    <div id="realGameLoading" hidden>Loading TaxiTon…</div>
+    <div id="realGameLoading" hidden><span id="realGameLoadingText">Loading TaxiTon…</span><button id="realGameRetry" type="button" hidden>Retry</button></div>
     <canvas id="cv"></canvas>
     <div class="hud">
       <button class="pause" id="pauseBtn" aria-label="Pause">II</button>
@@ -5651,7 +5652,12 @@ function loop(ts){
 
 let chosen = {};
 let legacyGameObserver = null;
+let gameLoadTimer = null;
+let gameLoadId = 0;
+let activationPollLoadId = 0;
 function openGame(){
+  const loadId = ++gameLoadId;
+  if (gameLoadTimer) clearTimeout(gameLoadTimer);
   running = false;
   cancelAnimationFrame(raf);
   $('#mStart').hidden = true; $('#mPause').hidden = true; $('#mOver').hidden = true;
@@ -5659,12 +5665,24 @@ function openGame(){
   game.hidden = false;
   frame.hidden = false;
   $('#realGameLoading').hidden = false;
-  frame.onload = () => activateLegacyGame(0);
+  $('#realGameLoadingText').textContent = 'Loading TaxiTon…';
+  $('#realGameRetry').hidden = true;
+  frame.onload = () => activateLegacyGame(0, loadId);
   const gamePath = window.location.protocol === 'file:' ? '../index.html' : '/legacy-game.html';
-  frame.src = `${gamePath}?embedded=1&v=level1-nitro-only-20261001`;
+  frame.src = `${gamePath}?embedded=1&v=slow-vpn-game-load-20261002&retry=${loadId}`;
+  activateLegacyGame(0, loadId);
+  gameLoadTimer = setTimeout(() => {
+    if (game.hidden || gameLoadId !== loadId || $('#realGameLoading').hidden) return;
+    $('#realGameLoadingText').textContent = 'Slow connection. The game is still loading.';
+    $('#realGameRetry').hidden = false;
+  }, 45000);
 }
-function activateLegacyGame(attempt){
-  if (game.hidden) return;
+function activateLegacyGame(attempt, loadId){
+  if (game.hidden || gameLoadId !== loadId) return;
+  if (attempt === 0){
+    if (activationPollLoadId === loadId) return;
+    activationPollLoadId = loadId;
+  }
   const frame = $('#realGameFrame');
   let doc = null;
   try { doc = frame.contentDocument; } catch (e) {}
@@ -5674,7 +5692,9 @@ function activateLegacyGame(attempt){
     if (play) play.click();
   }
   if (screen && screen.classList.contains('active')) {
+    if (gameLoadTimer) clearTimeout(gameLoadTimer);
     $('#realGameLoading').hidden = true;
+    $('#realGameRetry').hidden = true;
     if (legacyGameObserver) legacyGameObserver.disconnect();
     legacyGameObserver = new MutationObserver(() => {
       if (!screen.classList.contains('active')) closeGame();
@@ -5682,11 +5702,12 @@ function activateLegacyGame(attempt){
     legacyGameObserver.observe(screen, {attributes:true, attributeFilter:['class']});
     return;
   }
-  if (attempt >= 400) {
-    $('#realGameLoading').textContent = 'Unable to load the game';
+  if (attempt >= 1200) {
+    $('#realGameLoadingText').textContent = 'The game is taking too long to load. Check your connection and retry.';
+    $('#realGameRetry').hidden = false;
     return;
   }
-  setTimeout(() => activateLegacyGame(attempt + 1), 50);
+  setTimeout(() => activateLegacyGame(attempt + 1, loadId), 50);
 }
 function startRun(){
   if (triesLeft() <= 0) { closeGame(); toast(t('noTries')); return; }
@@ -5711,6 +5732,8 @@ function endRun(){
   $('#mOver').hidden = false;
 }
 function closeGame(){
+  gameLoadId++;
+  if (gameLoadTimer) { clearTimeout(gameLoadTimer); gameLoadTimer = null; }
   running = false;
   if (legacyGameObserver) { legacyGameObserver.disconnect(); legacyGameObserver = null; }
   const frame = $('#realGameFrame');
@@ -5725,6 +5748,7 @@ function closeGame(){
 }
 
 $('#hPlay').onclick = openGame;
+$('#realGameRetry').onclick = openGame;
 $('#realGameBack').onclick = closeGame;
 window.addEventListener('message', event => {
   if (event.source !== $('#realGameFrame').contentWindow || event.data?.type !== 'tt-game-start-rejected') return;

@@ -1911,6 +1911,35 @@
     }
   }
 
+  let adsgramLoadPromise = null;
+  function loadAdsgram(){
+    if (window.Adsgram && typeof window.Adsgram.init === 'function') return Promise.resolve();
+    if (!adsgramLoadPromise){
+      adsgramLoadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://sad.adsgram.ai/js/sad.min.js';
+        script.async = true;
+        const timeout = setTimeout(() => {
+          script.remove();
+          adsgramLoadPromise = null;
+          reject(new Error('adsgram-timeout'));
+        }, 15000);
+        script.onload = () => {
+          clearTimeout(timeout);
+          if (window.Adsgram && typeof window.Adsgram.init === 'function') resolve();
+          else { adsgramLoadPromise = null; reject(new Error('adsgram-unavailable')); }
+        };
+        script.onerror = () => {
+          clearTimeout(timeout);
+          adsgramLoadPromise = null;
+          reject(new Error('adsgram-unavailable'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+    return adsgramLoadPromise;
+  }
+
   async function watchRewardedAd(){
     const statusEl = document.getElementById('adsTaskStatus');
     const button = document.getElementById('watchAdBtn');
@@ -1936,13 +1965,10 @@
       statusEl.textContent = 'Open the game in Telegram to watch rewarded videos.';
       return;
     }
-    if (!window.Adsgram || typeof window.Adsgram.init !== 'function'){
-      statusEl.textContent = 'The video service is not ready. Please try again.';
-      return;
-    }
     button.disabled = true;
     statusEl.textContent = 'Loading video...';
     try {
+      await loadAdsgram();
       const controller = window.Adsgram.init({ blockId: '48235' });
       await controller.show();
       const response = await fetch(SERVER_URL + '/api/tasks/ad-video-claim', {

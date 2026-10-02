@@ -1924,13 +1924,20 @@ app.get('/legacy-game.html', (req, res) => {
   }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+app.get('/vendor/three-r128.min.js', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(path.join(__dirname, 'node_modules', 'three', 'build', 'three.min.js'));
+});
 app.use(express.static(__dirname, {
   index: false,
   setHeaders: (res, filePath) => {
-    // Avoid stale cached client code (e.g. Telegram WebView) missing anti-cheat
-    // or gameplay fixes after a deploy.
-    if (/\.(html|js|css)$/i.test(filePath)) {
+    if (/\.html$/i.test(filePath)) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else if (/\.(js|css)$/i.test(filePath)) {
+      const requestUrl = res.req && res.req.url || '';
+      res.setHeader('Cache-Control', /[?&]v=/.test(requestUrl)
+        ? 'public, max-age=86400'
+        : 'no-cache, no-store, must-revalidate');
     }
   },
 }));
