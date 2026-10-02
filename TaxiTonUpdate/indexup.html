@@ -3817,7 +3817,14 @@ function friendTargetByName(name){
 }
 const initials = n => n.replace(/[^A-Za-z]/g,'').slice(0,2).toUpperCase() || n.slice(0,1);
 const hhmm = ts => new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-const meUser = () => ({n: t('you'), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null, isChatAdmin: SHOP_ACCOUNT.isChatAdmin===true, adminBadge: SHOP_ACCOUNT.adminBadge, isDesigner: SHOP_ACCOUNT.isDesigner===true, badge4: SHOP_ACCOUNT.badge4===true});
+// Same precedence the server uses for req.user.name (server.js verifyInitData), so
+// the name we show for our own messages always matches what others actually see.
+function myTelegramName(){
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  if (!user) return t('you');
+  return user.username || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || ('Player ' + user.id);
+}
+const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null, isChatAdmin: SHOP_ACCOUNT.isChatAdmin===true, adminBadge: SHOP_ACCOUNT.adminBadge, isDesigner: SHOP_ACCOUNT.isDesigner===true, badge4: SHOP_ACCOUNT.badge4===true});
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
