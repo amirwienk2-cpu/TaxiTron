@@ -2869,6 +2869,13 @@
     if (telegramInitData) return;
     consumeAttempt();
   }
+  // Lets the embedding wallet app (indexup.html) refresh its own "tries left"
+  // display right away instead of waiting for its next periodic state poll.
+  function notifyEmbeddedRunCrashed(){
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'tt-game-crash' }, '*');
+    }
+  }
   async function enterGame(){
     if (runStartPending) return;
     runStartPending = true;
@@ -4447,6 +4454,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     spawnParticles(playerCar.position.x, 0.6, playerCar.position.z, 0xff6b6b);
     commitRun();
     await reportRunCrash();
+    notifyEmbeddedRunCrashed();
     document.getElementById('finalScore').textContent = personScore;
     document.getElementById('bestScoreText').textContent = t('bestScoreText').replace('{best}', best);
     const artEl = document.getElementById('gameOverArt');

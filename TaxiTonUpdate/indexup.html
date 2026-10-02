@@ -3437,7 +3437,7 @@ const CARS = [
   {id:'luna',   lvl:5, skin:'luna',   price:25, dailyReward:1.66, rewardDays:30, limit:20, body:'#eee8ff', trim:'#b83cff', bonus:45},
   {id:'nikto',  lvl:6, soon:true, price:0, body:'#1a1f4a', trim:'#ff3b4e', bonus:60},
 ];
-const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},online:false};
+const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},attemptsByLevel:{},online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
 const PROFILE_BIO_SYNCING = new Set();
 const profileBioSyncKey = uid => 'taxiton.profileBioSynced_' + String(uid);
@@ -3526,6 +3526,7 @@ function applyShopAccountState(state, preferredCar){
   if (!SHOP_ACCOUNT.ownedSkins.includes('yellow')) SHOP_ACCOUNT.ownedSkins.unshift('yellow');
   SHOP_ACCOUNT.skinRewards = state.skinRewards && typeof state.skinRewards === 'object' ? state.skinRewards : {};
   SHOP_ACCOUNT.tonTodayByLevel = state.tonTodayByLevel && typeof state.tonTodayByLevel === 'object' ? state.tonTodayByLevel : {};
+  SHOP_ACCOUNT.attemptsByLevel = state.attemptsByLevel && typeof state.attemptsByLevel === 'object' ? state.attemptsByLevel : {};
   SHOP_ACCOUNT.channelClaims = {
     news: state.taskChannelRewardClaimed === true,
     withdraw: state.withdrawChannelTaskRewardClaimed === true,
@@ -3668,7 +3669,19 @@ function applyLang(){
   $('#chatIn').placeholder = t('ch_ph');
 }
 function maxTries(){ return (Number(CARS.find(c => c.id === S.car)?.lvl) || 1) === 1 ? 10 : 15; }
-function triesLeft(){ if (!S.tries || S.tries.date !== today()) S.tries = {date: today(), used: 0}; return Math.max(0, maxTries() - S.tries.used); }
+// When logged in, the real attempt count lives server-side (consumed only on an
+// actual in-game crash - see app.js gameOver()/server.js /api/run/crash) and is
+// synced into SHOP_ACCOUNT.attemptsByLevel on every state refresh. The local
+// S.tries counter is only a fallback for the logged-out/offline test mode,
+// where there is no server attempt state to read from.
+function triesLeft(){
+  const lvl = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
+  if (SHOP_ACCOUNT.token && SHOP_ACCOUNT.attemptsByLevel && SHOP_ACCOUNT.attemptsByLevel[lvl]) {
+    return Math.max(0, Number(SHOP_ACCOUNT.attemptsByLevel[lvl].left) || 0);
+  }
+  if (!S.tries || S.tries.date !== today()) S.tries = {date: today(), used: 0};
+  return Math.max(0, maxTries() - S.tries.used);
+}
 function renderTries(){
   const left = triesLeft();
   const max = maxTries();
@@ -6148,6 +6161,13 @@ window.addEventListener('message', event => {
       ? 'Dein Gerät unterstützt das Spiel nicht (3D/WebGL fehlt). Bitte Telegram aktualisieren oder ein anderes Gerät probieren.'
       : 'Your device can\'t run the game (missing 3D/WebGL support). Please update Telegram or try a different device.';
     $('#realGameRetry').hidden = false;
+    return;
+  }
+  if (event.data?.type === 'tt-game-crash') {
+    // A try was just spent server-side (see app.js gameOver()/server.js
+    // /api/run/crash) - refresh right away instead of waiting out the 15s poll,
+    // so the "tries left" counter on Home updates immediately.
+    void refreshShopAccount();
   }
 });
 $('#goBtn').onclick = startRun;
