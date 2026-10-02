@@ -196,6 +196,11 @@ const LEVEL_TWO_DAILY_PTS_CAP = 0.067;
 const LEVEL_THREE_DAILY_PTS_CAP = 0.2;
 const LEVEL_FOUR_DAILY_PTS_CAP = 0.67;
 const LEVEL_FIVE_DAILY_PTS_CAP = 1.66;
+// Levels 2-5 pay out their full daily TON cap as a single flat reward once this many
+// zombies have been killed that calendar day at that level (set to match the
+// in-game "Zombies today" goal shown to players) - NOT via the per-zombie coin rate,
+// which (especially at level 4) no longer lines up 1:1 with these goals.
+const LEVEL_ZOMBIE_GOALS = { 2: 7500, 3: 7000, 4: 6000, 5: 5000 };
 const LIMITED_SKIN_OFFERS = { luna: { price: 25, level: 5, dailyReward: 1.67, rewardDays: 30, max: 20 } };
 // Level 1 doesn't use the calendar-day TON cap the other levels use: instead, every
 // 2-hour attempt window (the same cooldown that refills their 10 free tries - see
@@ -1218,10 +1223,18 @@ function ensureDailyReset(user) {
     const value = Number(user.tonTodayByLevel[level]);
     user.tonTodayByLevel[level] = Number.isFinite(value) ? Math.max(0, value) : 0;
   });
+  if (!user.zombiesTodayByLevel || typeof user.zombiesTodayByLevel !== 'object') {
+    user.zombiesTodayByLevel = { 2: 0, 3: 0, 4: 0, 5: 0 };
+  }
+  [2, 3, 4, 5].forEach((level) => {
+    const value = Number(user.zombiesTodayByLevel[level]);
+    user.zombiesTodayByLevel[level] = Number.isFinite(value) ? Math.max(0, value) : 0;
+  });
   if (user.tonDate !== today) {
     user.tonDate = today;
     user.tonToday = 0;
     user.tonTodayByLevel = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    user.zombiesTodayByLevel = { 2: 0, 3: 0, 4: 0, 5: 0 };
   }
   if (user.adVideoDay !== today) {
     user.adVideoDay = today;
@@ -1443,6 +1456,7 @@ function publicState(user) {
     mine: { last: user.mine.last, acc: user.mine.acc },
     tonToday: user.tonToday,
     tonTodayByLevel: user.tonTodayByLevel,
+    zombiesTodayByLevel: user.zombiesTodayByLevel,
     lastWithdrawalDay: user.lastWithdrawalDay || '',
     lastWithdrawalAt: latestWithdrawalAt(user),
     best: user.best,
@@ -3591,12 +3605,17 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
     return res.json({ state: publicState(user), acceptedZombies: 0, error: 'daily-earn-cap-reached', level });
   }
 
-  const rawGain = (coinsGained / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
-  const allowed = Math.max(0, dailyCap - levelToday);
-  const gain = Math.min(rawGain, allowed);
-  const updatedToday = levelToday + gain;
-  if (updatedToday >= dailyCap - 1e-9 && levelToday < dailyCap - 1e-9) user.ton += dailyCap;
-  user.tonTodayByLevel[level] = updatedToday;
+  // Flat reward: once this level's "zombies today" goal is reached, credit the
+  // FULL daily TON cap in one go - independent of the per-zombie coin rate,
+  // which no longer lines up 1:1 with these goals (see LEVEL_ZOMBIE_GOALS).
+  if (!user.zombiesTodayByLevel || typeof user.zombiesTodayByLevel !== 'object') user.zombiesTodayByLevel = { 2: 0, 3: 0, 4: 0, 5: 0 };
+  const zombiesToday = Math.max(0, Number(user.zombiesTodayByLevel[level]) || 0) + zombies;
+  user.zombiesTodayByLevel[level] = zombiesToday;
+  const zombieGoal = LEVEL_ZOMBIE_GOALS[level] || LEVEL_ZOMBIE_GOALS[2];
+  if (hasLevelReward && zombiesToday >= zombieGoal) {
+    user.ton += dailyCap;
+    user.tonTodayByLevel[level] = dailyCap;
+  }
   user.tonToday = user.tonTodayByLevel[level];
 
   user.runs += 1;

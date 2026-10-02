@@ -3437,7 +3437,7 @@ const CARS = [
   {id:'luna',   lvl:5, skin:'luna',   price:25, dailyReward:1.66, rewardDays:30, limit:20, body:'#eee8ff', trim:'#b83cff', bonus:45},
   {id:'nikto',  lvl:6, soon:true, price:0, body:'#1a1f4a', trim:'#ff3b4e', bonus:60},
 ];
-const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,badge4:false,chatMuted:false,online:false};
+const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,badge4:false,chatMuted:false,online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
 const PROFILE_BIO_SYNCING = new Set();
 const profileBioSyncKey = uid => 'taxiton.profileBioSynced_' + String(uid);
@@ -3531,6 +3531,7 @@ function applyShopAccountState(state, preferredCar){
   SHOP_ACCOUNT.badge4 = state.badge4 === true;
   SHOP_ACCOUNT.chatMuted = state.chatMuted === true;
   SHOP_ACCOUNT.tonTodayByLevel = state.tonTodayByLevel && typeof state.tonTodayByLevel === 'object' ? state.tonTodayByLevel : {};
+  SHOP_ACCOUNT.zombiesTodayByLevel = state.zombiesTodayByLevel && typeof state.zombiesTodayByLevel === 'object' ? state.zombiesTodayByLevel : {};
   SHOP_ACCOUNT.attemptsByLevel = state.attemptsByLevel && typeof state.attemptsByLevel === 'object' ? state.attemptsByLevel : {};
   SHOP_ACCOUNT.channelClaims = {
     news: state.taskChannelRewardClaimed === true,
@@ -4249,27 +4250,23 @@ function walletExchangeRate(){
 }
 function walletDailyGoal(){
   const lvl = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
-  const rate = walletExchangeRate();
   const totalByLevel = {1:4000, 2:7500, 3:7000, 4:6000, 5:5000};
-  let earnedTon = Math.max(0, Number(SHOP_ACCOUNT.tonTodayByLevel[lvl] || 0));
+  const totalZombies = totalByLevel[lvl] || totalByLevel[1];
   let pendingZombies = 0;
   try {
     const uid = localStorage.getItem('cr3d_serverUid') || SHOP_ACCOUNT.uid;
     const pendingKey = uid ? `cr3d_pendingZombiesByLevel_${uid}` : 'cr3d_pendingZombiesByLevel';
     const pending = JSON.parse(localStorage.getItem(pendingKey) || '{}');
     pendingZombies = Math.max(0, Number(pending[lvl] || 0));
-    if (!SHOP_ACCOUNT.online) {
-      const key = uid ? `cr3d_pointsTodayByLevel_${uid}` : 'cr3d_pointsTodayByLevel';
-      const localPoints = JSON.parse(localStorage.getItem(key) || localStorage.getItem('cr3d_pointsTodayByLevel') || '{}');
-      earnedTon = Math.max(earnedTon, Number(localPoints[lvl] || 0));
-    }
   } catch (e) {}
-  const tonPerZombie = rate / 1000000;
-  const totalZombies = totalByLevel[lvl] || totalByLevel[1];
-  const dailyCap = ({1:1, 2:0.067, 3:0.2, 4:0.67, 5:1.66})[lvl] || 1;
-  const earnedZombies = earnedTon >= dailyCap - 1e-9
-    ? totalZombies
-    : Math.min(totalZombies, Math.floor(earnedTon / tonPerZombie) + pendingZombies);
+  // Levels 2-5: the server tracks the real "zombies today" count directly - the
+  // daily TON cap is a flat reward once that goal is hit, not a per-zombie
+  // conversion (see server.js LEVEL_ZOMBIE_GOALS), so this no longer needs (or
+  // should) back-convert from TON. Level 1 resets every 2h, not daily, and has
+  // no server-exposed daily counter, so it still approximates from what's
+  // locally pending.
+  const zombiesToday = lvl >= 2 ? Math.max(0, Number(SHOP_ACCOUNT.zombiesTodayByLevel[lvl] || 0)) : 0;
+  const earnedZombies = Math.min(totalZombies, zombiesToday + pendingZombies);
   return {earnedZombies, remainingZombies:Math.max(0, totalZombies - earnedZombies), totalZombies};
 }
 function renderWallet(){

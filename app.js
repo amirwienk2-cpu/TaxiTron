@@ -295,6 +295,7 @@
     points: parseFloat(localStorage.getItem('cr3d_points') || '0'),
     pointsToday: parseFloat(localStorage.getItem('cr3d_pointsToday') || '0'),
     pointsTodayByLevel: {},
+    zombiesTodayByLevel: {},
     pointsDate: localStorage.getItem('cr3d_pointsDate') || '',
     skin: localStorage.getItem('cr3d_skin') || 'yellow',
     ownedSkins: JSON.parse(localStorage.getItem('cr3d_ownedSkins') || '["yellow"]'),
@@ -1770,6 +1771,14 @@
       });
     } else if (typeof state.tonToday === 'number') {
       store.pointsTodayByLevel[activeLevelForProgress] = state.tonToday;
+    }
+    if (!store.zombiesTodayByLevel || typeof store.zombiesTodayByLevel !== 'object') store.zombiesTodayByLevel = {};
+    if (state.zombiesTodayByLevel && typeof state.zombiesTodayByLevel === 'object') {
+      [2, 3, 4, 5].forEach(level => {
+        if (typeof state.zombiesTodayByLevel[level] === 'number') {
+          store.zombiesTodayByLevel[level] = state.zombiesTodayByLevel[level];
+        }
+      });
     }
     ensureLevelTodayState(activeLevelForProgress);
     store.pointsDate = todayStr();
@@ -4400,18 +4409,19 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       // stale/legacy tonTodayByLevel[1] value can never block this.
       return (Number(pendingZombiesByLevel[1]) || 0) >= 4000;
     }
+    // Levels 2-5 also pay out a flat daily TON cap once a zombie-count goal is
+    // reached (server.js /api/run), not via the per-zombie coin rate - so this
+    // triggers purely off the real "zombies today" count the server tracks,
+    // not a back-converted TON estimate (which no longer matches 1:1, e.g. at
+    // level 4).
     const dailyZombieCaps = {2:7500,3:7000,4:6000,5:5000};
     const dailyZombieCap = dailyZombieCaps[level] || dailyZombieCaps[2];
-    const dailyTonCap = getLevelDailyPtsCap(level);
-    const earnedTon = getCurrentLevelTodayPoints(level);
-    const earnedZombies = earnedTon >= dailyTonCap - 1e-9
-      ? dailyZombieCap
-      : Math.min(dailyZombieCap, Math.floor(earnedTon / (getCoinsPerZombie(level) / 1000000)));
-    if (earnedZombies >= dailyZombieCap) return false;
+    const zombiesToday = Number(store.zombiesTodayByLevel && store.zombiesTodayByLevel[level]) || 0;
+    if (zombiesToday >= dailyZombieCap) return false;
     const rewardSkinByLevel = {2:'red',3:'white',4:'green',5:'luna'};
     const rewardSkin = rewardSkinByLevel[level];
     if (rewardSkin && !(Number(store.skinRewards[rewardSkin] && store.skinRewards[rewardSkin].remainingDays) > 0)) return false;
-    return earnedZombies + (Number(pendingZombiesByLevel[level]) || 0) >= dailyZombieCap;
+    return zombiesToday + (Number(pendingZombiesByLevel[level]) || 0) >= dailyZombieCap;
   }
 
   function commitRun(){
