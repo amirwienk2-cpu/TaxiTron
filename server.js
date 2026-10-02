@@ -774,6 +774,7 @@ function newUser(id, name) {
     name: name || ('Player ' + id),
     photoUrl: '',
     profileImage: '',
+    bio: '',
     coins: 0,
     ton: 0,
     ttBalance: 0,
@@ -1224,6 +1225,7 @@ function publicState(user) {
   return {
     uid: String(user.id),
     profilePhoto: user.profileImage || user.photoUrl || '',
+    bio: typeof user.bio === 'string' ? user.bio.slice(0, 120) : '',
     coins: user.coins,
     ton: user.ton,
     totalWithdrawnTon: (Array.isArray(user.withdrawals) ? user.withdrawals : [])
@@ -3666,8 +3668,14 @@ app.get('/api/profile/:uid', requireUserFromQuery, (req, res) => {
     stk: Array.isArray(target.stickerPacks)
       ? [...new Set(target.stickerPacks.filter((id) => Object.hasOwn(TT_CHAT_ITEMS.stk, id)))]
       : [],
-    bio: '',
+    bio: typeof target.bio === 'string' ? target.bio.slice(0, 120) : '',
   } });
+});
+app.post('/api/profile/bio', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const bio = typeof (req.body && req.body.bio) === 'string' ? req.body.bio : '';
+  req.user.bio = bio.replace(/\s+/g, ' ').trim().slice(0, 120);
+  persist();
+  res.json({ ok: true, state: publicState(req.user) });
 });
 app.post('/api/profile/photo', requireUserFromBody, rejectBannedUser, (req, res) => {
   const photo = String(req.body && req.body.photo || '');

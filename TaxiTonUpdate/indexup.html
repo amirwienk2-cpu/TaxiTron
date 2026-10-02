@@ -3436,6 +3436,7 @@ function applyShopAccountState(state, preferredCar){
   SHOP_ACCOUNT.mine = state.mine && typeof state.mine === 'object' ? {last:Number(state.mine.last)||Date.now(),acc:Math.max(0,Number(state.mine.acc)||0)} : {last:Date.now(),acc:0};
   S.ton = SHOP_ACCOUNT.ton;
   S.tt = SHOP_ACCOUNT.tt;
+  if (typeof state.bio === 'string') S.bio = state.bio.slice(0, BIO_MAX);
   S.ttOrders = Array.isArray(state.ttOrders) ? state.ttOrders.slice() : [];
   const accountItems = state.chatItems && typeof state.chatItems === 'object' ? state.chatItems : {};
   S.items = {
@@ -5147,7 +5148,25 @@ function openProfile(who, liveProfile, profileResolved){
     $('#bioEdit').onclick = edit; if (!P.bio) $('#bioShow').onclick = edit;
     $('#bioIn').oninput = e => { $('#bioCnt').textContent = e.target.value.length + '/' + BIO_MAX; };
     $('#bioCancel').onclick = () => { $('#bioIn').value = S.bio || ''; bb.classList.remove('edit'); };
-    $('#bioSave').onclick = () => { S.bio = $('#bioIn').value.replace(/\s+/g, ' ').trim().slice(0, BIO_MAX); save(); openProfile('@me'); toast(t('bio_saved')); };
+    $('#bioSave').onclick = async () => {
+      const bio = $('#bioIn').value.replace(/\s+/g, ' ').trim().slice(0, BIO_MAX);
+      if (SHOP_ACCOUNT.token){
+        const button = $('#bioSave'); button.disabled = true;
+        try {
+          const response = await fetch('/api/profile/bio', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,bio})});
+          const data = await response.json();
+          if (!response.ok || !data.state) throw new Error('bio-save-failed');
+          applyShopAccountState(data.state, S.car);
+        } catch (error) {
+          button.disabled = false;
+          toast(S.lang === 'de' ? 'Bio konnte nicht gespeichert werden.' : S.lang === 'fa' ? 'ذخیره بیو انجام نشد.' : 'Could not save bio.');
+          return;
+        }
+      } else {
+        S.bio = bio; save();
+      }
+      openProfile('@me'); toast(t('bio_saved'));
+    };
   }
   bindFrButtons(who);
   if (!P.me && SHOP_ACCOUNT.token && uid && !profileResolved && !PROFILE_PENDING.has(uid)){
