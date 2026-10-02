@@ -196,6 +196,12 @@ const LEVEL_THREE_DAILY_PTS_CAP = 0.2;
 const LEVEL_FOUR_DAILY_PTS_CAP = 0.67;
 const LEVEL_FIVE_DAILY_PTS_CAP = 1.66;
 const LIMITED_SKIN_OFFERS = { luna: { price: 25, level: 5, dailyReward: 1.67, rewardDays: 30, max: 20 } };
+// Level 1 doesn't use the calendar-day TON cap the other levels use: instead, every
+// 2-hour attempt window (the same cooldown that refills their 10 free tries - see
+// ATTEMPT_COOLDOWN_LEVEL_ONE_MS) gives one flat TON reward once enough zombies have
+// been killed since that window started.
+const LEVEL_ONE_WINDOW_ZOMBIE_GOAL = 4000;
+const LEVEL_ONE_WINDOW_TON_REWARD = 0.01;
 const FIGURE_PACKS = {
   red: { price: 0.5, weights: { sara: 800, nova: 120, zero: 75, berlin: 5, luna: 0 } },
   purple: { price: 1, weights: { sara: 700, nova: 149, zero: 130, berlin: 20, luna: 1 } },
@@ -1287,6 +1293,8 @@ function ensureAttemptState(user, level) {
       left: Number.isFinite(legacyLeft) ? Math.max(0, Math.min(max, legacyLeft)) : max,
       resetAt: normalizedLevel === 1 ? Number(user.attemptsResetAt) || null : nextBerlinMidnightTimestamp(),
       resetDay: today,
+      windowZombies: 0,
+      windowRewardGiven: false,
     };
     user.attemptsByLevel[normalizedLevel] = state;
   }
@@ -1301,6 +1309,8 @@ function ensureAttemptState(user, level) {
     if (state.left === 0 && state.resetAt && Date.now() >= state.resetAt) {
       state.left = max;
       state.resetAt = null;
+      state.windowZombies = 0;
+      state.windowRewardGiven = false;
     } else if (state.left > 0) {
       state.resetAt = null;
     }
@@ -3535,16 +3545,34 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
   ensureDailyReset(user);
 
   const level = resolvePlayableLevel(user, req.body && req.body.level);
-  const hasLevelReward = hasActiveLevelReward(user, level);
   const coinsPerZombie = level >= 5 ? LEVEL_FIVE_COINS_PER_ZOMBIE : level >= 4 ? LEVEL_FOUR_COINS_PER_ZOMBIE : level >= 3 ? LEVEL_THREE_COINS_PER_ZOMBIE : level >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
+  const coinsGained = zombies * coinsPerZombie;
+  user.coins += coinsGained;
+
+  if (level === 1) {
+    // Level 1 isn't on the daily TON cap system: every 2-hour attempt window gives
+    // one flat LEVEL_ONE_WINDOW_TON_REWARD once LEVEL_ONE_WINDOW_ZOMBIE_GOAL zombies
+    // have been killed since the window started (see ensureAttemptState).
+    const attemptState = ensureAttemptState(user, 1);
+    attemptState.windowZombies = Math.max(0, Number(attemptState.windowZombies) || 0) + zombies;
+    if (!attemptState.windowRewardGiven && attemptState.windowZombies >= LEVEL_ONE_WINDOW_ZOMBIE_GOAL) {
+      attemptState.windowRewardGiven = true;
+      user.ton += LEVEL_ONE_WINDOW_TON_REWARD;
+    }
+    user.runs += 1;
+    user.best = Math.max(user.best, zombies);
+    persist();
+    res.json({ state: publicState(user), acceptedZombies: zombies });
+    return;
+  }
+
+  const hasLevelReward = hasActiveLevelReward(user, level);
   const dailyCap = hasLevelReward ? dailyTonCapForLevel(level) : 0;
   const levelToday = Number(user.tonTodayByLevel[level] || 0);
-  if (level >= 2 && hasLevelReward && levelToday >= dailyCap - 1e-9) {
+  if (hasLevelReward && levelToday >= dailyCap - 1e-9) {
     persist();
     return res.json({ state: publicState(user), acceptedZombies: 0, error: 'daily-earn-cap-reached', level });
   }
-  const coinsGained = zombies * coinsPerZombie;
-  user.coins += coinsGained;
 
   const rawGain = (coinsGained / COINS_PER_BLOCK) * PTS_PER_BLOCK * LEVEL_MULTIPLIER;
   const allowed = Math.max(0, dailyCap - levelToday);

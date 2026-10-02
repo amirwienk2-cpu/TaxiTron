@@ -4359,8 +4359,15 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
   function pendingReachesDailyCap(level){
     ensureDailyReset();
-    const dailyZombieCaps = {1:1000000,2:7500,3:7000,4:6000,5:5000};
-    const dailyZombieCap = dailyZombieCaps[level] || dailyZombieCaps[1];
+    if (Number(level) === 1) {
+      // Level 1 has its own 2-hour-window reward handled entirely server-side
+      // (see server.js /api/run), independent of the calendar-day TON cap the
+      // other levels use - trigger purely off the raw pending zombie count so a
+      // stale/legacy tonTodayByLevel[1] value can never block this.
+      return (Number(pendingZombiesByLevel[1]) || 0) >= 4000;
+    }
+    const dailyZombieCaps = {2:7500,3:7000,4:6000,5:5000};
+    const dailyZombieCap = dailyZombieCaps[level] || dailyZombieCaps[2];
     const dailyTonCap = getLevelDailyPtsCap(level);
     const earnedTon = getCurrentLevelTodayPoints(level);
     const earnedZombies = earnedTon >= dailyTonCap - 1e-9
