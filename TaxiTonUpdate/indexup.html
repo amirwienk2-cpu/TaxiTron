@@ -4024,7 +4024,8 @@ function reconcileChatMessages(log,markup){
     let node=currentByKey.get(key);
     if(node){
       currentByKey.delete(key);
-      if(node.outerHTML!==desired.outerHTML){if(node===cursor)cursor=desired;node.replaceWith(desired);node=desired;}
+      if(node.innerHTML!==desired.innerHTML){if(node===cursor)cursor=desired;node.replaceWith(desired);node=desired;}
+      else node.className=desired.className;
     }else node=desired;
     if(node!==cursor)log.insertBefore(node,cursor);
     cursor=node.nextElementSibling;
