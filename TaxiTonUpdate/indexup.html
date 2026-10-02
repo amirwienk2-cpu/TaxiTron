@@ -6134,9 +6134,21 @@ $('#hPlay').onclick = openGame;
 $('#realGameRetry').onclick = openGame;
 $('#realGameBack').onclick = closeGame;
 window.addEventListener('message', event => {
-  if (event.source !== $('#realGameFrame').contentWindow || event.data?.type !== 'tt-game-start-rejected') return;
-  closeGame();
-  toast(t('noTries'));
+  if (event.source !== $('#realGameFrame').contentWindow) return;
+  if (event.data?.type === 'tt-game-start-rejected') {
+    closeGame();
+    toast(t('noTries'));
+    return;
+  }
+  if (event.data?.type === 'tt-game-init-failed') {
+    // The embedded game crashed during startup (e.g. no WebGL on this device) -
+    // show this immediately instead of waiting out the 45-60s loading timeout.
+    if (gameLoadTimer) clearTimeout(gameLoadTimer);
+    $('#realGameLoadingText').textContent = S.lang === 'de'
+      ? 'Dein Gerät unterstützt das Spiel nicht (3D/WebGL fehlt). Bitte Telegram aktualisieren oder ein anderes Gerät probieren.'
+      : 'Your device can\'t run the game (missing 3D/WebGL support). Please update Telegram or try a different device.';
+    $('#realGameRetry').hidden = false;
+  }
 });
 $('#goBtn').onclick = startRun;
 $('#quitBtn').onclick = closeGame;

@@ -1,4 +1,23 @@
 (function(){
+  // Reports a fatal error that happened before the game finished initializing
+  // (e.g. THREE.WebGLRenderer throwing because the device/browser has no usable
+  // WebGL context). Without this, such an error would silently abort the entire
+  // IIFE and leave the embedding wallet app stuck on "Loading..." forever.
+  function reportFatalInitError(error){
+    try { console.error('[TaxiTon] fatal init error', error); } catch (e) {}
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'tt-game-init-failed', message: String(error && error.message || error) }, '*');
+      }
+    } catch (e) {}
+    try {
+      const box = document.createElement('div');
+      box.setAttribute('style', 'position:fixed;inset:0;z-index:999999;background:#0a0a12;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font:16px/1.5 system-ui,sans-serif;');
+      box.textContent = "This device can't run the 3D game (missing WebGL/graphics support). Please try a different device, update the Telegram app, or enable hardware acceleration. / Dieses Gerät unterstützt das 3D-Spiel nicht. Bitte ein anderes Gerät probieren oder Telegram aktualisieren.";
+      document.body.appendChild(box);
+    } catch (e) {}
+  }
+  try {
   /* ================= I18N ================= */
   const translations = {
     en: {
@@ -4768,4 +4787,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     if (typeof tg.disableSwipeToClose === 'function') tg.disableSwipeToClose();
   }
   initServerSession();
+  } catch (error) {
+    reportFatalInitError(error);
+  }
 })();
