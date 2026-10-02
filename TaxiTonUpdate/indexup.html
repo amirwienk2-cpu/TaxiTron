@@ -3829,7 +3829,7 @@ const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: type
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -3902,6 +3902,17 @@ function ensureChatEventStream(){
       if(previousStatus!=='complete'&&serverCardEvent?.status==='complete')refreshShopAccount();
       return;
     }
+    if(update.type==='message-deleted'){
+      serverChat=serverChat.filter(item=>item.id!==update.messageId);
+      if(current==='chat'&&chatTab==='chat')renderChat();
+      return;
+    }
+    if(update.type==='message-edited'){
+      const message=serverChat.find(item=>item.id===update.messageId);
+      if(message){message.text=update.text;message.editedAt=update.editedAt;}
+      if(current==='chat'&&chatTab==='chat')renderChat();
+      return;
+    }
     if(update.type!=='reaction')return;
     const message=serverChat.find(item=>String(item.id)===String(update.messageId));
     if(!message)return;
@@ -3970,7 +3981,9 @@ $('#chatlog').addEventListener('click',event=>{
   const reaction=event.target.closest('[data-react]');
   if(reaction){event.stopPropagation();void toggleChatReaction(reaction.dataset.reactionMessage,reaction.dataset.react);}
   const delBtn=event.target.closest('[data-mod-del]');
-  if(delBtn){event.stopPropagation();void deleteServerChatMessage(Number(delBtn.dataset.modDel));}
+  if(delBtn){event.stopPropagation();void deleteServerChatMessage(Number(delBtn.dataset.modDel));return;}
+  const editBtn=event.target.closest('[data-edit-msg]');
+  if(editBtn){event.stopPropagation();startEdit(editBtn.dataset.editMsg);}
 });
 async function deleteServerChatMessage(messageId){
   if(!SHOP_ACCOUNT.token||!SHOP_ACCOUNT.isChatAdmin||!Number.isFinite(messageId))return;
@@ -4134,8 +4147,8 @@ function renderChat(){
     const messageCardEvent=m.cardEventResult||(m.cardEventId&&serverCardEvent?.id===m.cardEventId?serverCardEvent:null);
     const cardEventMarkup=renderServerCardEvent(messageCardEvent);
     return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
-      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span>${SHOP_ACCOUNT.isChatAdmin && Number.isFinite(m.id) ? `<button type="button" data-mod-del="${esc(m.id)}" title="${S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.12);color:#ff6b6b;font-size:11px;line-height:1.4">🗑</button>` : ''}</div>${m.reply ? replyQuote(m.reply) : ''}
-      ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
+      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span>${mine && Number.isFinite(m.id) && !m.stk ? `<button type="button" data-edit-msg="${esc(m.ts)}" title="${S.lang==='de'?'Bearbeiten':S.lang==='fa'?'ویرایش':'Edit'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(98,198,255,.35);background:rgba(98,198,255,.12);color:#62c6ff;font-size:11px;line-height:1.4">✎</button>` : ''}${SHOP_ACCOUNT.isChatAdmin && Number.isFinite(m.id) ? `<button type="button" data-mod-del="${esc(m.id)}" title="${S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.12);color:#ff6b6b;font-size:11px;line-height:1.4">🗑</button>` : ''}</div>${m.reply ? replyQuote(m.reply) : ''}
+      ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
   const log = $('#chatlog'); log.scrollTop = log.scrollHeight;
@@ -4800,6 +4813,12 @@ $('#tabOnline').onclick = () => { chatTab = 'on'; if(SHOP_ACCOUNT.token)loadOnli
 $('#tabFr').onclick = () => { chatTab = 'fr'; renderChat(); };
 $('#tabMe').onclick = () => openProfile('@me');
 $('#chatForm').addEventListener('submit', async e => { e.preventDefault(); const v = $('#chatIn').value.trim(); if (!v) return;
+  if (editingMessageId){
+    const id = editingMessageId;
+    const ok = await editServerChatMessage(id, v);
+    if (!ok) return;
+    clearReply(); $('#chatIn').value=''; growChatIn(); renderChat(); return;
+  }
   if (SHOP_ACCOUNT.token && chatRoom) {
     const sent = await sendServerChat({text:v, room:chatRoom, replyTo:replyTo && replyTo.id}); if (!sent) return;
     clearReply(); addPxp(PX.chat, 'chat'); $('#chatIn').value=''; growChatIn(); renderChat(); return;
@@ -5438,7 +5457,7 @@ function bioHtml(P){
 }
 /* ---- Chat reply ---- */
 const chatIdx = new Map();
-let replyTo = null, mPopTs = null;
+let replyTo = null, mPopTs = null, editingMessageId = null;
 const rqText = r => r.stk ? '🖼 ' + t('rp_sticker') : String(r.text || '').slice(0, 90);
 function replyQuote(r){
   const name = r.who === '@me' ? t('you') : r.name;
@@ -5446,31 +5465,80 @@ function replyQuote(r){
 }
 function setReply(ts){
   const m = chatIdx.get(String(ts)); if (!m) return;
+  editingMessageId = null;
   replyTo = {id:m.id, ts:m.ts, who:m.who, name:m.name, c:m.c, text:m.text ? String(m.text).slice(0, 120) : undefined, stk:m.stk};
   $('#rbLabel').textContent = t('rp_reply');
   $('#rbName').textContent = m.who === '@me' ? t('you') : m.name; $('#rbName').style.color = m.c;
   $('#rbText').textContent = rqText(m); $('#replyBar').hidden = false; $('#chatIn').focus();
 }
-function clearReply(){ replyTo = null; $('#replyBar').hidden = true; }
+function startEdit(ts){
+  const m = chatIdx.get(String(ts)); if (!m || m.who !== '@me' || !Number.isFinite(m.id) || m.stk) return;
+  replyTo = null;
+  editingMessageId = m.id;
+  $('#rbLabel').textContent = S.lang==='de'?'Nachricht bearbeiten':S.lang==='fa'?'ویرایش پیام':'Edit message';
+  $('#rbName').textContent = ''; $('#rbName').style.color = '#62c6ff';
+  $('#rbText').textContent = String(m.text || '').slice(0, 90);
+  $('#replyBar').hidden = false;
+  $('#chatIn').value = m.text || ''; growChatIn(); $('#chatIn').focus();
+}
+function clearReply(){
+  replyTo = null;
+  if (editingMessageId){ editingMessageId = null; $('#chatIn').value = ''; growChatIn(); }
+  $('#replyBar').hidden = true;
+}
+async function editServerChatMessage(messageId, text){
+  if (!SHOP_ACCOUNT.token) return false;
+  try {
+    const response = await fetch('/api/chat/edit', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:SHOP_ACCOUNT.token, messageId, text})});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'chat-edit-failed');
+    const message = serverChat.find(item => item.id === messageId);
+    if (message){ message.text = data.text; message.editedAt = data.editedAt; }
+    return true;
+  } catch (e) { toast(t('lim_err')); return false; }
+}
 $('#rbX').onclick = clearReply;
+let mPopShownAt = 0;
 function hideMPop(){ $('#mPop').hidden = true; mPopTs = null; }
+function showMPop(row){
+  const ts = row.dataset.ts;
+  if (!chatIdx.get(String(ts))) return;
+  mPopTs = ts;
+  const pop = $('#mPop'), app = $('#app');
+  pop.hidden = false;
+  const appRect = app.getBoundingClientRect(), rowRect = row.getBoundingClientRect();
+  const popWidth = pop.offsetWidth || 170, popHeight = pop.offsetHeight || 90;
+  let left = rowRect.left - appRect.left;
+  left = Math.max(8, Math.min(left, appRect.width - popWidth - 8));
+  let top = rowRect.bottom - appRect.top + 4;
+  if (top + popHeight > appRect.height - 8) top = Math.max(8, rowRect.top - appRect.top - popHeight - 4);
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  mPopShownAt = Date.now();
+}
 document.addEventListener('click', e => {
   if (e.target.closest('#mPop')) return;
   const q = e.target.closest('[data-jump]');
   if (q) { hideMPop(); const row = document.querySelector(`#chatlog .mrow[data-ts="${CSS.escape(q.dataset.jump)}"]`);
     if (row) { row.scrollIntoView({block:'center', behavior:'smooth'}); row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); } return; }
   const rb = e.target.closest('[data-rp]'); if (rb) { e.stopPropagation(); setReply(rb.dataset.rp); return; }
-  if (!$('#mPop').hidden) hideMPop();
+  if (!$('#mPop').hidden && Date.now() - mPopShownAt > 250) hideMPop();
 });
 $('#chatlog').addEventListener('scroll', hideMPop);
 (() => { const log = $('#chatlog'); let sw = null;
-  log.addEventListener('pointerdown', e => { const row = e.target.closest('.mrow[data-ts]'); if (!row || e.target.closest('[data-user],[data-rp],[data-jump]')) return; sw = {row, x: e.clientX, y: e.clientY, dx: 0, on: false}; });
+  log.addEventListener('pointerdown', e => { const row = e.target.closest('.mrow[data-ts]'); if (!row || e.target.closest('[data-user],[data-rp],[data-jump],[data-react],[data-react-open],[data-mod-del],[data-edit-msg],[data-server-card-vote],[data-card-test-vote],[data-imgview]')) return; sw = {row, x: e.clientX, y: e.clientY, dx: 0, on: false}; });
   log.addEventListener('pointermove', e => { if (!sw) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
     if (!sw.on) { if (Math.abs(dy) > 10) { sw = null; return; } if (Math.abs(dx) > 12) sw.on = true; else return; }
     const dir = sw.row.classList.contains('mine') ? -1 : 1, rtl = document.getElementById('app').dir === 'rtl' ? -1 : 1, d = Math.max(0, Math.min(60, dx * dir * rtl));
     sw.dx = d; sw.row.style.transform = `translateX(${d * dir * rtl}px)`; sw.row.style.transition = 'none'; sw.row.classList.toggle('swp', d > 44); });
-  const end = () => { if (!sw) return; const r = sw.row; r.style.transition = ''; r.style.transform = ''; if (sw.dx > 44) setReply(r.dataset.ts); r.classList.remove('swp'); sw = null; };
-  log.addEventListener('pointerup', end); log.addEventListener('pointercancel', end); log.addEventListener('pointerleave', end);
+  const end = () => {
+    if (!sw) return;
+    const r = sw.row, wasTap = !sw.on;
+    r.style.transition = ''; r.style.transform = '';
+    if (sw.dx > 44) setReply(r.dataset.ts);
+    else if (wasTap) showMPop(r);
+    r.classList.remove('swp'); sw = null;
+  };
+  log.addEventListener('pointerup', end); log.addEventListener('pointercancel', () => { sw = null; }); log.addEventListener('pointerleave', () => { sw = null; });
 })();
 $('#mPopReply').onclick = () => { const ts = mPopTs; hideMPop(); if (ts) setReply(ts); };
 $('#mPopProf').onclick = () => { const m = chatIdx.get(mPopTs); hideMPop(); if (m) openProfile(m.who); };

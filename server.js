@@ -3087,6 +3087,29 @@ app.post('/api/chat/delete', requireUserFromBody, (req, res) => {
   broadcastChatEvent('message-deleted', { messageId });
 });
 
+// A player can edit the text of their own message (stickers/gifts/etc. can't be edited).
+app.post('/api/chat/edit', requireUserFromBody, (req, res) => {
+  const messageId = Number(req.body && req.body.messageId);
+  if (!Number.isSafeInteger(messageId) || messageId <= 0) {
+    return res.status(400).json({ error: 'invalid-message-id' });
+  }
+  const message = chatMessages.find((item) => item.id === messageId);
+  if (!message) return res.status(404).json({ error: 'message-not-found' });
+  if (String(message.uid) !== String(req.uid)) return res.status(403).json({ error: 'not-your-message' });
+  if (message.stk) return res.status(400).json({ error: 'cannot-edit-sticker' });
+  const text = String((req.body && req.body.text) || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, CHAT_MAX_LEN);
+  if (!text) return res.status(400).json({ error: 'empty-message' });
+  message.text = text;
+  message.editedAt = Date.now();
+  persistChat();
+  res.json({ ok: true, messageId, text, editedAt: message.editedAt });
+  broadcastChatEvent('message-edited', { messageId, text, editedAt: message.editedAt });
+});
+
 // A chat admin can flip the global on/off switch directly from the app (in addition to the /admin panel).
 app.post('/api/chat/set-enabled', requireUserFromBody, (req, res) => {
   if (req.user.isChatAdmin !== true) return res.status(403).json({ error: 'not-a-chat-admin' });
