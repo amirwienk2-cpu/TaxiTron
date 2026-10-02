@@ -4026,7 +4026,10 @@ function reconcileChatMessages(log,markup){
     let node=currentByKey.get(key);
     if(node){
       currentByKey.delete(key);
-      if(node.innerHTML!==desired.innerHTML){if(node===cursor)cursor=desired;node.replaceWith(desired);node=desired;}
+      const contentChanged=node.dataset.chatKey
+        ?node.dataset.chatSignature!==desired.dataset.chatSignature
+        :node.innerHTML!==desired.innerHTML;
+      if(contentChanged){if(node===cursor)cursor=desired;node.replaceWith(desired);node=desired;}
       else node.className=desired.className;
     }else node=desired;
     if(node!==cursor)log.insertBefore(node,cursor);
@@ -4102,7 +4105,8 @@ function renderChat(){
     const reactionMarkup = chatReactionMarkup(m);
     const messageCardEvent=m.cardEventResult||(m.cardEventId&&serverCardEvent?.id===m.cardEventId?serverCardEvent:null);
     const cardEventMarkup=renderServerCardEvent(messageCardEvent);
-    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}" data-chat-key="${esc(String(m.id||m.ts))}">${messageAvatar}
+    const chatSignature=JSON.stringify([m.text||'',m.stk||'',m.reply||null,m.reactions||null,messageCardEvent||null,m.cardEventTest||null]);
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}" data-chat-key="${esc(String(m.id||m.ts))}" data-chat-signature="${esc(chatSignature)}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
