@@ -4696,6 +4696,15 @@ const isFriend = n => frS().friends.some(f => f.n === n);
 const dmOf = n => (frS().dm[n] = Array.isArray(S.dm[n]) ? S.dm[n] : []);
 const unreadOf = n => dmOf(n).filter(m => !m.mine && !m.read).length;
 const dmLoadPending = new Set();
+const dmReadPending = new Map();
+async function markDirectMessagesRead(peerUid, throughTs){
+  const uid=String(peerUid), through=Number(throughTs)||0;
+  if(!SHOP_ACCOUNT.token||!uid||!through||(dmReadPending.get(uid)||0)>=through)return;
+  dmReadPending.set(uid,through);
+  try{
+    await fetch('/api/friends/dm/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,peerUid:uid,throughTs:through})});
+  }catch(e){}finally{if((dmReadPending.get(uid)||0)<=through)dmReadPending.delete(uid);}
+}
 async function friendApi(path,body){
   if(!SHOP_ACCOUNT.token){toast(t('lim_tg'));return null;}
   try{
@@ -4715,11 +4724,17 @@ async function loadDirectMessages(name){
   try{
     const response=await fetch(`/api/friends/dm?with=${encodeURIComponent(peer.uid)}&token=${encodeURIComponent(SHOP_ACCOUNT.token)}`,{cache:'no-store'});
     const data=await response.json(); if(!response.ok||!Array.isArray(data.messages))return;
-    const messages=data.messages.map(message=>directMessageModel(message,name));
+    const oldMessages=dmOf(name), localReadThrough=oldMessages.reduce((max,message)=>!message.mine&&message.read?Math.max(max,Number(message.ts)||0):max,0);
+    const serverReadThrough=Number(data.readThrough)||0, open=dmWith===name&&current==='chat'&&chatTab==='fr';
+    const latestIncoming=data.messages.reduce((max,message)=>String(message.fromUid)!==SHOP_ACCOUNT.uid?Math.max(max,Number(message.ts)||0):max,0);
+    if(localReadThrough>serverReadThrough)void markDirectMessagesRead(peer.uid,localReadThrough);
+    if(open&&latestIncoming>Math.max(serverReadThrough,localReadThrough))void markDirectMessagesRead(peer.uid,latestIncoming);
+    const readThrough=Math.max(serverReadThrough,localReadThrough,open?latestIncoming:0);
+    const messages=data.messages.map(message=>directMessageModel(message,name,readThrough));
     if(JSON.stringify(S.dm[name]||[])!==JSON.stringify(messages)){S.dm[name]=messages;save();if(dmWith===name&&current==='chat'&&chatTab==='fr')renderDM();else renderFriends();}
   }catch(e){}finally{dmLoadPending.delete(loadKey);}
 }
-function directMessageModel(message,name){const mine=String(message.fromUid)===SHOP_ACCOUNT.uid,open=dmWith===name&&current==='chat'&&chatTab==='fr';return {id:message.id,mine,text:message.text||'',img:message.img||'',ts:Number(message.ts)||Date.now(),read:mine||open,chatItems:message.chatItems||{},photoUrl:message.photoUrl||''};}
+function directMessageModel(message,name,readThrough=0){const mine=String(message.fromUid)===SHOP_ACCOUNT.uid,open=dmWith===name&&current==='chat'&&chatTab==='fr';return {id:message.id,mine,text:message.text||'',img:message.img||'',ts:Number(message.ts)||Date.now(),read:mine||message.read===true||Number(message.ts)<=readThrough||open,chatItems:message.chatItems||{},photoUrl:message.photoUrl||''};}
 setInterval(()=>{if(SHOP_ACCOUNT.token&&dmWith&&current==='chat'&&chatTab==='fr')loadDirectMessages(dmWith);},3000);
 setInterval(()=>{if(SHOP_ACCOUNT.token&&!document.hidden)SHOP_ACCOUNT.friends.forEach(friend=>loadDirectMessages(friend.name));},15000);
 function frButtons(n){

@@ -784,6 +784,7 @@ function newUser(id, name) {
     friendRequestsIn: [],
     friendRequestsOut: [],
     directMessages: {},
+    directMessageReadAt: {},
     figCount: {},
     mine: { last: Date.now(), acc: 0 },
     ttOrders: [],
@@ -1192,6 +1193,7 @@ function publicState(user) {
   if (!Array.isArray(user.friendRequestsIn)) user.friendRequestsIn = [];
   if (!Array.isArray(user.friendRequestsOut)) user.friendRequestsOut = [];
   if (!user.directMessages || typeof user.directMessages !== 'object') user.directMessages = {};
+  if (!user.directMessageReadAt || typeof user.directMessageReadAt !== 'object') user.directMessageReadAt = {};
   if (!user.mine || typeof user.mine !== 'object') user.mine = { last: Date.now(), acc: 0 };
   user.mine.last = Math.max(0, Number(user.mine.last) || Date.now());
   user.mine.acc = Math.max(0, Number(user.mine.acc) || 0);
@@ -3695,6 +3697,7 @@ function ensureFriendState(user) {
   if (!Array.isArray(user.friendRequestsIn)) user.friendRequestsIn = [];
   if (!Array.isArray(user.friendRequestsOut)) user.friendRequestsOut = [];
   if (!user.directMessages || typeof user.directMessages !== 'object') user.directMessages = {};
+  if (!user.directMessageReadAt || typeof user.directMessageReadAt !== 'object') user.directMessageReadAt = {};
 }
 function makeFriends(first, second) {
   ensureFriendState(first); ensureFriendState(second);
@@ -3777,10 +3780,23 @@ app.get('/api/friends/dm', requireUserFromQuery, (req, res) => {
   const user = req.user, friendUid = String(req.query.with || '').trim();
   ensureFriendState(user);
   if (!user.friends.includes(friendUid)) return res.status(403).json({ error: 'not-friends' });
-  res.json({ messages: (user.directMessages[friendUid] || []).slice(-100).map((message) => ({
+  const readThrough = Math.max(0, Number(user.directMessageReadAt[friendUid]) || 0);
+  res.json({ readThrough, messages: (user.directMessages[friendUid] || []).slice(-100).map((message) => ({
     ...message,
+    read: String(message.fromUid) === String(user.id) || Number(message.ts) <= readThrough,
     chatItems: message.chatItems || {},
   })) });
+});
+
+app.post('/api/friends/dm/read', requireUserFromBody, (req, res) => {
+  const user = req.user, friendUid = String(req.body && req.body.peerUid || '').trim();
+  ensureFriendState(user);
+  if (!user.friends.includes(friendUid)) return res.status(403).json({ error: 'not-friends' });
+  const throughTs = Math.min(Date.now(), Math.max(0, Number(req.body && req.body.throughTs) || 0));
+  if (!throughTs) return res.status(400).json({ error: 'invalid-read-time' });
+  user.directMessageReadAt[friendUid] = Math.max(Number(user.directMessageReadAt[friendUid]) || 0, throughTs);
+  persist();
+  res.json({ ok: true, readThrough: user.directMessageReadAt[friendUid] });
 });
 
 app.post('/api/friends/dm', requireUserFromBody, rejectBannedUser, (req, res) => {
