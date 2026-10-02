@@ -2253,6 +2253,9 @@
   .upop .upi{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;background:linear-gradient(180deg,#ffe066,#e39a00)}
   .upop b{display:block;font-size:13px}
   .upop small{display:block;font-size:11px;color:#ffd21a;font-weight:800}
+  .upop button.mpop-sm{padding:5px 10px 5px 6px;gap:6px;border-radius:10px}
+  .upop button.mpop-sm .upi{width:20px;height:20px;font-size:11px}
+  .upop button.mpop-sm b{font-size:11.5px}
   #profOv{z-index:46;align-items:end;padding:0}
   .profsheet{position:relative;width:100%;max-height:92%;overflow-y:auto;border-radius:24px 24px 0 0;background:linear-gradient(180deg,var(--db36),var(--db37) 60%);
     border:1.5px solid rgba(var(--gl3),.3);border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.6);animation:sheetUp .28s cubic-bezier(.2,1,.3,1);padding-bottom:calc(14px + env(safe-area-inset-bottom))}
@@ -3208,7 +3211,7 @@
       <img id="infoImg" alt="">
     </div>
   </div>
-  <div class="upop mpop" id="mPop" hidden><button id="mPopReply"><span class="upi">↩</span><span><b data-t="rp_reply">Reply</b></span></button><button id="mPopProf"><span class="upi">👤</span><span><b data-t="pf_view">View profile</b></span></button></div>
+  <div class="upop mpop" id="mPop" hidden><button id="mPopReply" class="mpop-sm"><span class="upi">↩</span><span><b data-t="rp_reply">Reply</b></span></button></div>
   <div class="upop" id="uPop" hidden><button id="uPopBtn"><span class="upi">👤</span><span><b id="uPopName"></b><small data-t="pf_view">View profile</small></span></button></div>
   <div class="modal" id="profOv" hidden>
     <div class="profsheet" id="profSheet"></div>
@@ -4148,7 +4151,7 @@ function renderChat(){
     const cardEventMarkup=renderServerCardEvent(messageCardEvent);
     return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span>${mine && Number.isFinite(m.id) && !m.stk ? `<button type="button" data-edit-msg="${esc(m.ts)}" title="${S.lang==='de'?'Bearbeiten':S.lang==='fa'?'ویرایش':'Edit'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(98,198,255,.35);background:rgba(98,198,255,.12);color:#62c6ff;font-size:11px;line-height:1.4">✎</button>` : ''}${SHOP_ACCOUNT.isChatAdmin && Number.isFinite(m.id) ? `<button type="button" data-mod-del="${esc(m.id)}" title="${S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.12);color:#ff6b6b;font-size:11px;line-height:1.4">🗑</button>` : ''}</div>${m.reply ? replyQuote(m.reply) : ''}
-      ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
+      ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
   const log = $('#chatlog'); log.scrollTop = log.scrollHeight;
@@ -5507,7 +5510,7 @@ function showMPop(row){
   const pop = $('#mPop'), app = $('#app');
   pop.hidden = false;
   const appRect = app.getBoundingClientRect(), rowRect = row.getBoundingClientRect();
-  const popWidth = pop.offsetWidth || 170, popHeight = pop.offsetHeight || 90;
+  const popWidth = pop.offsetWidth || 110, popHeight = pop.offsetHeight || 40;
   let left = rowRect.left - appRect.left;
   left = Math.max(8, Math.min(left, appRect.width - popWidth - 8));
   let top = rowRect.bottom - appRect.top + 4;
@@ -5541,7 +5544,6 @@ $('#chatlog').addEventListener('scroll', hideMPop);
   log.addEventListener('pointerup', end); log.addEventListener('pointercancel', () => { sw = null; }); log.addEventListener('pointerleave', () => { sw = null; });
 })();
 $('#mPopReply').onclick = () => { const ts = mPopTs; hideMPop(); if (ts) setReply(ts); };
-$('#mPopProf').onclick = () => { const m = chatIdx.get(mPopTs); hideMPop(); if (m) openProfile(m.who); };
 let popWho = null;
 function hidePop(){ $('#uPop').hidden = true; popWho = null; }
 document.addEventListener('click', e => {
