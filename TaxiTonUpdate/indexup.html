@@ -4015,23 +4015,24 @@ function finishCardEventTest(){
   else if(event.choice)event.announcement='انتخاب شما برنده نشد';
   cardEventTest=null;scheduleNextCardEventTest();renderChat();
 }
-function captureChatScroll(log,room){
-  const sameRoom=log.dataset.room===(room||'');
-  const atBottom=!sameRoom||!log.clientHeight||log.scrollHeight-log.clientHeight-log.scrollTop<48;
-  const bounds=log.getBoundingClientRect();
-  const anchor=[...log.querySelectorAll('.mrow[data-ts]')].find(row=>{const rect=row.getBoundingClientRect();return rect.bottom>bounds.top&&rect.top<bounds.bottom;});
-  const anchorBounds=anchor?.getBoundingClientRect();
-  return {room:room||'',atBottom,scrollTop:log.scrollTop,anchorTs:anchor?.dataset.ts,anchorOffset:anchorBounds?anchorBounds.top-bounds.top:0};
-}
-function restoreChatScroll(log,state){
-  log.dataset.room=state.room;
-  if(state.atBottom){log.scrollTop=log.scrollHeight;return;}
-  const anchor=[...log.querySelectorAll('.mrow[data-ts]')].find(row=>row.dataset.ts===state.anchorTs);
-  if(anchor){log.scrollTop+=anchor.getBoundingClientRect().top-log.getBoundingClientRect().top-state.anchorOffset;return;}
-  log.scrollTop=Math.min(state.scrollTop,Math.max(0,log.scrollHeight-log.clientHeight));
+function reconcileChatMessages(log,markup){
+  const template=document.createElement('template');template.innerHTML=markup;
+  const currentByKey=new Map([...log.children].map(node=>[node.dataset.chatKey?`message:${node.dataset.chatKey}`:`day:${node.dataset.chatSeparator}`,node]));
+  let cursor=log.firstElementChild;
+  for(const desired of template.content.children){
+    const key=desired.dataset.chatKey?`message:${desired.dataset.chatKey}`:`day:${desired.dataset.chatSeparator}`;
+    let node=currentByKey.get(key);
+    if(node){
+      currentByKey.delete(key);
+      if(node.outerHTML!==desired.outerHTML){if(node===cursor)cursor=desired;node.replaceWith(desired);node=desired;}
+    }else node=desired;
+    if(node!==cursor)log.insertBefore(node,cursor);
+    cursor=node.nextElementSibling;
+  }
+  while(cursor){const next=cursor.nextElementSibling;cursor.remove();cursor=next;}
 }
 function renderChat(){
-  const log=$('#chatlog'),scrollState=captureChatScroll(log,chatRoom);
+  const log=$('#chatlog');
   const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST;
   ensureChatEventStream();
   refreshOnlineCounts();
@@ -4082,14 +4083,14 @@ function renderChat(){
   $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive;
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
-  $('#chatlog').innerHTML = msgs.map((m, i) => {
+  const renderedMessages=msgs.map((m, i) => {
     const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, badge4:m.badge4===true||peer.badge4===true};
     const chatStyle = m.chatItems && typeof m.chatItems === 'object' ? m.chatItems : {};
     const messageFrame = mine ? eqItem('frm') : chatStyle.frm;
     const messageBubble = mine ? eqItem('bub') : chatStyle.bub;
     const prev = msgs[i-1], grouped = prev && !!prev.mine === mine && (prev.who === m.who) && (m.ts - prev.ts < 5*60000);
     const nx = msgs[i+1], lastG = !(nx && !!nx.mine === mine && nx.who === m.who && (nx.ts - m.ts < 5*60000));
-    const dk = new Date(m.ts).toDateString(), sep = dk !== lastDay ? `<div class="dsep"><span>${esc(dayLabel(m.ts))}</span></div>` : ''; lastDay = dk;
+    const dk = new Date(m.ts).toDateString(), sep = dk !== lastDay ? `<div class="dsep" data-chat-separator="${esc(dk)}"><span>${esc(dayLabel(m.ts))}</span></div>` : ''; lastDay = dk;
     chatIdx.set(String(m.ts), {id:m.id,ts:m.ts, who: mine ? '@me' : m.who, name:u.n, c:u.c, text:m.text, stk:m.stk});
     const showFrame = messageFrame && messageFrame !== 'none';
     const messageAvatar = mine
@@ -4098,12 +4099,13 @@ function renderChat(){
     const reactionMarkup = chatReactionMarkup(m);
     const messageCardEvent=m.cardEventResult||(m.cardEventId&&serverCardEvent?.id===m.cardEventId?serverCardEvent:null);
     const cardEventMarkup=renderServerCardEvent(messageCardEvent);
-    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}" data-chat-key="${esc(String(m.id||m.ts))}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
-  restoreChatScroll(log,scrollState);
+  reconcileChatMessages(log,renderedMessages);
+  log.scrollTop=log.scrollHeight;
 }
 let walTab = 'wal', dwTab = 'dep';
 const WD_MIN = 1, WD_FEE = 0.01, WD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
