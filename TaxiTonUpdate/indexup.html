@@ -3393,6 +3393,18 @@ const CARS = [
 ];
 const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
+const PROFILE_BIO_SYNCING = new Set();
+const profileBioSyncKey = uid => 'taxiton.profileBioSynced_' + String(uid);
+async function migrateLegacyProfileBio(uid, bio){
+  const key = profileBioSyncKey(uid);
+  if (!uid || !bio || !SHOP_ACCOUNT.token || PROFILE_BIO_SYNCING.has(uid) || localStorage.getItem(key) === '1') return;
+  PROFILE_BIO_SYNCING.add(uid);
+  try {
+    const response = await fetch('/api/profile/bio', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,bio})});
+    const data = await response.json();
+    if (response.ok && data.state) localStorage.setItem(key, '1');
+  } catch (e) {} finally { PROFILE_BIO_SYNCING.delete(uid); }
+}
 const ALL_LEVELS_TEST = new URLSearchParams(window.location.search).get('all-levels-test') === '1';
 const SHOP_WORDS = {
   en:{day:'day',days:'days',left:'left',today:'Today',offer:'Daily earning limit',active:'Daily limit active',offline:'Open in Telegram to buy'},
@@ -3436,7 +3448,19 @@ function applyShopAccountState(state, preferredCar){
   SHOP_ACCOUNT.mine = state.mine && typeof state.mine === 'object' ? {last:Number(state.mine.last)||Date.now(),acc:Math.max(0,Number(state.mine.acc)||0)} : {last:Date.now(),acc:0};
   S.ton = SHOP_ACCOUNT.ton;
   S.tt = SHOP_ACCOUNT.tt;
-  if (typeof state.bio === 'string') S.bio = state.bio.slice(0, BIO_MAX);
+  const serverBio = typeof state.bio === 'string' ? state.bio.slice(0, BIO_MAX) : '';
+  const bioSyncKey = profileBioSyncKey(SHOP_ACCOUNT.uid);
+  const legacyBio = typeof S.bio === 'string' ? S.bio.replace(/\s+/g, ' ').trim().slice(0, BIO_MAX) : '';
+  const sameLocalAccount = String(localStorage.getItem('cr3d_serverUid') || '') === SHOP_ACCOUNT.uid;
+  if (serverBio) {
+    S.bio = serverBio;
+    localStorage.setItem(bioSyncKey, '1');
+  } else if (legacyBio && sameLocalAccount && localStorage.getItem(bioSyncKey) !== '1') {
+    S.bio = legacyBio;
+    void migrateLegacyProfileBio(SHOP_ACCOUNT.uid, legacyBio);
+  } else {
+    S.bio = serverBio;
+  }
   S.ttOrders = Array.isArray(state.ttOrders) ? state.ttOrders.slice() : [];
   const accountItems = state.chatItems && typeof state.chatItems === 'object' ? state.chatItems : {};
   S.items = {
@@ -5156,6 +5180,7 @@ function openProfile(who, liveProfile, profileResolved){
           const response = await fetch('/api/profile/bio', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,bio})});
           const data = await response.json();
           if (!response.ok || !data.state) throw new Error('bio-save-failed');
+          localStorage.setItem(profileBioSyncKey(SHOP_ACCOUNT.uid), '1');
           applyShopAccountState(data.state, S.car);
         } catch (error) {
           button.disabled = false;
