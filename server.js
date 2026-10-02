@@ -339,6 +339,14 @@ try {
 } catch (e) {
   console.error('[chat] messages file unreadable: ' + e.message);
 }
+let migratedZombieBotRooms = false;
+chatMessages.forEach((message) => {
+  if (String(message.uid) === RANDOM_BOT_UID && message.room !== 'fa') {
+    message.room = 'fa';
+    migratedZombieBotRooms = true;
+  }
+});
+if (migratedZombieBotRooms) persistChat();
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
 const chatLastGiftGuessAt = {}; // uid -> timestamp, in-memory only (number-gift guess cooldown)
