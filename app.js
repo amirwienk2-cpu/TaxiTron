@@ -1967,7 +1967,7 @@
   renderAdsTask();
 
   let exchangeInProgress = false;
-  async function exchangePersons(){
+  async function exchangePersons(onlyLevel){
     if (totalPendingZombies() <= 0 || exchangeInProgress || dailyEarningsComplete()) return;
 
     if (SERVER_URL){
@@ -1980,7 +1980,7 @@
         // Exchange each level's stash SEPARATELY, tagged with its own real level, so a
         // batch collected at a cheap level can never be cashed out at a premium level's
         // rate just because that premium level happens to be "active" in the shop now.
-        const levelsWithStock = [1,2,3,4,5].filter(l => (pendingZombiesByLevel[l]||0) > 0);
+        const levelsWithStock = [1,2,3,4,5].filter(l => (onlyLevel === undefined || l === Number(onlyLevel)) && (pendingZombiesByLevel[l]||0) > 0);
         for (const level of levelsWithStock){
           for (let attempt = 0; attempt < 2 && pendingZombiesByLevel[level] > 0; attempt++){
             if (!serverSession.online || !serverSession.token){
@@ -2030,7 +2030,8 @@
 
     // no server configured at all: local-only economy - still each level at its own rate
     let coinsGained = 0;
-    [1,2,3,4,5].forEach(level => {
+    const levelsToExchange = onlyLevel === undefined ? [1,2,3,4,5] : [Number(onlyLevel)];
+    levelsToExchange.forEach(level => {
       coinsGained += (pendingZombiesByLevel[level]||0) * getCoinsPerZombie(level);
       pendingZombiesByLevel[level] = 0;
     });
@@ -4291,6 +4292,22 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     return Math.min(s, baseSpeed * 8); // safety cap so obstacles can't tunnel through at extreme speed
   }
 
+  function pendingReachesDailyCap(level){
+    ensureDailyReset();
+    const dailyZombieCaps = {1:1000000,2:9572,3:10000,4:13000,5:16600};
+    const dailyZombieCap = dailyZombieCaps[level] || dailyZombieCaps[1];
+    const dailyTonCap = getLevelDailyPtsCap(level);
+    const earnedTon = getCurrentLevelTodayPoints(level);
+    const earnedZombies = earnedTon >= dailyTonCap - 1e-9
+      ? dailyZombieCap
+      : Math.min(dailyZombieCap, Math.floor(earnedTon / (getCoinsPerZombie(level) / 1000000)));
+    if (earnedZombies >= dailyZombieCap) return false;
+    const rewardSkinByLevel = {2:'red',3:'white',4:'green',5:'luna'};
+    const rewardSkin = rewardSkinByLevel[level];
+    if (rewardSkin && !(Number(store.skinRewards[rewardSkin] && store.skinRewards[rewardSkin].remainingDays) > 0)) return false;
+    return earnedZombies + (Number(pendingZombiesByLevel[level]) || 0) >= dailyZombieCap;
+  }
+
   function commitRun(){
     store.runs += 1;
     if (personScore > best){ best = personScore; store.best = best; }
@@ -4302,13 +4319,14 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     savePending();
     saveStore();
     refreshTopUI();
+    if (pendingReachesDailyCap(runLevel)) void exchangePersons(runLevel);
     submitScoreForTournament(personScore, distance, runMaxScoreMultiplier);
   }
 
   // Reports this run's zombie count to the server for the TOURNAMENT ranking
   // only — completely separate from the coin economy, which still only
-  // changes when the player taps "Exchange" in the wallet. This runs
-  // automatically after every round, so the leaderboard reflects real
+  // changes when the player taps "Exchange" or automatically reaches the daily
+  // cap. This runs after every round, so the leaderboard reflects real
   // performance even if the player never exchanges their coins.
   async function submitScoreForTournament(zombies, dist, scoreMultiplier){
     if (!SERVER_URL || !serverSession.online || !serverSession.token) return;
