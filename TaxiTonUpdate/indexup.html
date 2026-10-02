@@ -3588,16 +3588,14 @@ async function refreshShopAccount(){
   if (!SHOP_ACCOUNT.token) return loadShopAccount();
   try {
     const response = await fetch(`/api/referrals/status?token=${encodeURIComponent(SHOP_ACCOUNT.token)}`, {cache:'no-store'});
-    if (response.status === 401) {
-      SHOP_ACCOUNT.token = '';
-      SHOP_ACCOUNT.online = false;
-      await loadShopAccount();
-      return;
-    }
     const data = await response.json();
-    if (!response.ok || !data.state) return;
+    if (!response.ok || !data.state) throw new Error('shop-state-refresh-failed');
     applyShopAccountState(data.state, S.car);
-  } catch(e){}
+  } catch(e) {
+    SHOP_ACCOUNT.token = '';
+    SHOP_ACCOUNT.online = false;
+    await loadShopAccount();
+  }
 }
 setInterval(()=>{if(SHOP_ACCOUNT.token&&!document.hidden)refreshShopAccount();},15000);
 window.addEventListener('message', event => {
@@ -3883,7 +3881,8 @@ function ensureChatEventStream(){
     if(!message)return;
     message.reactions={...(update.reactions||{}),mine:message.reactions?.mine??null};
     if(current==='chat'&&chatTab==='chat'&&message.room===chatRoom){
-      renderChat();
+      const log=$('#chatlog'),top=log.scrollTop,atBottom=log.scrollHeight-log.scrollTop-log.clientHeight<40;
+      renderChat();if(!atBottom)$('#chatlog').scrollTop=top;
     }
   });
 }
@@ -4017,29 +4016,8 @@ function finishCardEventTest(){
   else if(event.choice)event.announcement='انتخاب شما برنده نشد';
   cardEventTest=null;scheduleNextCardEventTest();renderChat();
 }
-function reconcileChatMessages(log,markup){
-  const template=document.createElement('template');template.innerHTML=markup;
-  const currentByKey=new Map([...log.children].map(node=>[node.dataset.chatKey?`message:${node.dataset.chatKey}`:`day:${node.dataset.chatSeparator}`,node]));
-  let cursor=log.firstElementChild;
-  for(const desired of template.content.children){
-    const key=desired.dataset.chatKey?`message:${desired.dataset.chatKey}`:`day:${desired.dataset.chatSeparator}`;
-    let node=currentByKey.get(key);
-    if(node){
-      currentByKey.delete(key);
-      const contentChanged=node.dataset.chatKey
-        ?node.dataset.chatSignature!==desired.dataset.chatSignature
-        :node.innerHTML!==desired.innerHTML;
-      if(contentChanged){if(node===cursor)cursor=desired;node.replaceWith(desired);node=desired;}
-      else node.className=desired.className;
-    }else node=desired;
-    if(node!==cursor)log.insertBefore(node,cursor);
-    cursor=node.nextElementSibling;
-  }
-  while(cursor){const next=cursor.nextElementSibling;cursor.remove();cursor=next;}
-}
 function renderChat(){
-  const log=$('#chatlog');
-  const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST || serverChat.some(message=>message.room===chatRoom);
+  const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST;
   ensureChatEventStream();
   refreshOnlineCounts();
   const cardEventActive=chatRoom==='fa'&&serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
@@ -4078,8 +4056,7 @@ function renderChat(){
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
     .concat(localTestMessages)
-    .sort((a,b) => a.ts - b.ts)
-    .slice(-50);
+    .sort((a,b) => a.ts - b.ts);
   if (!liveChat) {
     $('#chatlog').innerHTML = `<div class="chatauth"><b>${esc(S.lang === 'de' ? 'Chat ist nicht im Demo-Modus aktiv' : S.lang === 'fa' ? 'چت نمایشی غیرفعال است' : 'Live chat unavailable')}</b>${esc(S.lang === 'de' ? 'Öffne TaxiTon über Telegram, um den echten Chat zu verwenden.' : S.lang === 'fa' ? 'برای استفاده از چت واقعی، TaxiTon را از تلگرام باز کنید.' : 'Open TaxiTon through Telegram to use the live chat.')}</div>`;
     $('#chatForm').hidden = true;
@@ -4089,14 +4066,14 @@ function renderChat(){
   $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive;
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
-  const renderedMessages=msgs.map((m, i) => {
+  $('#chatlog').innerHTML = msgs.map((m, i) => {
     const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, badge4:m.badge4===true||peer.badge4===true};
     const chatStyle = m.chatItems && typeof m.chatItems === 'object' ? m.chatItems : {};
     const messageFrame = mine ? eqItem('frm') : chatStyle.frm;
     const messageBubble = mine ? eqItem('bub') : chatStyle.bub;
     const prev = msgs[i-1], grouped = prev && !!prev.mine === mine && (prev.who === m.who) && (m.ts - prev.ts < 5*60000);
     const nx = msgs[i+1], lastG = !(nx && !!nx.mine === mine && nx.who === m.who && (nx.ts - m.ts < 5*60000));
-    const dk = new Date(m.ts).toDateString(), sep = dk !== lastDay ? `<div class="dsep" data-chat-separator="${esc(dk)}"><span>${esc(dayLabel(m.ts))}</span></div>` : ''; lastDay = dk;
+    const dk = new Date(m.ts).toDateString(), sep = dk !== lastDay ? `<div class="dsep"><span>${esc(dayLabel(m.ts))}</span></div>` : ''; lastDay = dk;
     chatIdx.set(String(m.ts), {id:m.id,ts:m.ts, who: mine ? '@me' : m.who, name:u.n, c:u.c, text:m.text, stk:m.stk});
     const showFrame = messageFrame && messageFrame !== 'none';
     const messageAvatar = mine
@@ -4105,14 +4082,12 @@ function renderChat(){
     const reactionMarkup = chatReactionMarkup(m);
     const messageCardEvent=m.cardEventResult||(m.cardEventId&&serverCardEvent?.id===m.cardEventId?serverCardEvent:null);
     const cardEventMarkup=renderServerCardEvent(messageCardEvent);
-    const chatSignature=JSON.stringify([m.text||'',m.stk||'',m.reply||null,m.reactions||null,messageCardEvent||null,m.cardEventTest||null]);
-    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}" data-chat-key="${esc(String(m.id||m.ts))}" data-chat-signature="${esc(chatSignature)}">${messageAvatar}
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
-  reconcileChatMessages(log,renderedMessages);
-  log.scrollTop=log.scrollHeight;
+  const log = $('#chatlog'); log.scrollTop = log.scrollHeight;
 }
 let walTab = 'wal', dwTab = 'dep';
 const WD_MIN = 1, WD_FEE = 0.01, WD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -4750,7 +4725,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requ
 // ---------- page actions ----------
 document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => { S.lang = b.dataset.lang; S.langSet = true; save(); render(); if (!$('#tower').hidden) renderTower(); if (!$('#twGame').hidden) { twLx(); if (tgG()) tgRender(); } }));
 const chatIn = $('#chatIn');
-function growChatIn(){ chatIn.style.height = 'auto'; chatIn.style.height = Math.min(chatIn.scrollHeight + 3, 120) + 'px'; }
+function growChatIn(){ chatIn.style.height = 'auto'; chatIn.style.height = Math.min(chatIn.scrollHeight + 3, 120) + 'px'; const log = $('#chatlog'); log.scrollTop = log.scrollHeight; }
 chatIn.addEventListener('input', growChatIn);
 chatIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatForm').requestSubmit(); } });
 $('#tabChat').onclick = () => { chatTab = 'chat'; renderChat(); };
