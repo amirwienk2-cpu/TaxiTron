@@ -3803,7 +3803,7 @@ const userOf = n => {
   const sample=CHAT_USERS.find(u=>u.n===n); if(sample)return sample;
   const online=SHOP_ACCOUNT.onlineUsers.find(u=>u.name===n);
   const social=friendTargetByName(n);
-  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara'};
+  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:online?.isChatAdmin===true,adminBadge:online?.adminBadge,isDesigner:online?.isDesigner===true,badge4:online?.badge4===true,chatMuted:online?.chatMuted===true};
 };
 function friendTargetByName(name){
   return SHOP_ACCOUNT.friends.find(u=>u.name===name)
@@ -3973,7 +3973,7 @@ async function deleteServerChatMessage(messageId){
     renderChat();
   }catch(e){toast(t('lim_err'));}
 }
-async function moderateChatUser(targetUid,muted){
+async function moderateChatUser(targetUid,muted,who){
   if(!SHOP_ACCOUNT.token||!(SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isDesigner))return;
   try{
     const response=await fetch('/api/chat/moderate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,targetUid,muted})});
@@ -3982,14 +3982,9 @@ async function moderateChatUser(targetUid,muted){
     const target=SHOP_ACCOUNT.onlineUsers.find(u=>String(u.uid)===String(targetUid));
     if(target)target.chatMuted=muted;
     renderChat();
+    if(who)openProfile(who);
   }catch(e){toast(t('lim_err'));}
 }
-$('#onList').addEventListener('click',event=>{
-  const muteBtn=event.target.closest('[data-mod-mute]');
-  if(!muteBtn)return;
-  event.stopPropagation();
-  void moderateChatUser(muteBtn.dataset.modMute,muteBtn.dataset.modMuted!=='1');
-});
 function renderCardEventTest(event){
   const remaining=Math.max(0,Math.ceil((event.endsAt-Date.now())/1000));
   const status=event.finished?'':event.choice?`کارت ${event.choice} انتخاب شد · ${remaining} ثانیه باقی مانده`:`یک کارت انتخاب کنید · ${remaining} ثانیه فرصت دارید`;
@@ -4095,10 +4090,9 @@ function renderChat(){
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
     ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,badge4:u.badge4===true,chatMuted:u.chatMuted===true}))
     : [];
-  const canModerateChat = SHOP_ACCOUNT.isChatAdmin || SHOP_ACCOUNT.isDesigner;
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
       <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span>${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}</div>
-      <div class="muted">${u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}${canModerateChat && !u.isMe ? `<button type="button" data-mod-mute="${esc(u.uid)}" data-mod-muted="${u.chatMuted?'1':'0'}" style="flex-shrink:0;padding:5px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:${u.chatMuted?'rgba(46,224,122,.15)':'rgba(255,107,107,.15)'};color:${u.chatMuted?'#2ee07a':'#ff6b6b'};font-size:12px;white-space:nowrap">${u.chatMuted ? (S.lang==='de'?'Entmuten':S.lang==='fa'?'رفع بی‌صدا':'Unmute') : (S.lang==='de'?'Muten':S.lang==='fa'?'بی‌صدا':'Mute')}</button>` : ''}</div>`).join('');
+      <div class="muted">${u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
   const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
@@ -5503,7 +5497,8 @@ function openProfile(who, liveProfile, profileResolved){
         ${u.role ? `<span class="pfchip team">★ ${esc(t('ch_staff'))}</span>` : ''}
         <span class="pfchip onl"><i></i>${esc(t('ch_online'))}</span></div>
       ${bioHtml(P)}
-      ${P.me ? '' : frButtons(u.n)}</div>
+      ${P.me ? '' : frButtons(u.n)}
+      ${!P.me && (SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isDesigner) && u.uid && String(u.uid)!==SHOP_ACCOUNT.uid ? `<button type="button" id="pfMute" style="margin-top:8px;padding:6px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:${u.chatMuted?'rgba(46,224,122,.15)':'rgba(255,107,107,.15)'};color:${u.chatMuted?'#2ee07a':'#ff6b6b'};font-size:13px">${u.chatMuted ? (S.lang==='de'?'🔈 Entmuten':S.lang==='fa'?'🔈 رفع بی‌صدا':'🔈 Unmute') : (S.lang==='de'?'🔇 Muten':S.lang==='fa'?'🔇 بی‌صدا کردن':'🔇 Mute')}</button>` : ''}</div>
     ${P.me ? `<div class="pfpick" id="pfPick" hidden><h4>${esc(t('pf_photo'))}</h4>
         <div class="pfpgrid">${AV_PRESETS.map((src, i) => `<button data-avset="${i}" data-av="${src.replace(/^assets\/av-|\.webp$/g, '')}" class="${u.img === src ? 'on' : ''}"><img src="${src}" alt=""></button>`).join('')}</div>
         <div class="pfpbtns"><label class="btn pfup">⬆ ${esc(t('pf_upload'))}<input type="file" accept="image/*" id="pfFile" hidden></label>
@@ -5527,6 +5522,8 @@ function openProfile(who, liveProfile, profileResolved){
   PFig.mount();
   $('#pfClose').onclick = () => { $('#profOv').hidden = true; };
   $('#pfAll').onclick = () => openAllItems(who);
+  const pfMuteBtn = $('#pfMute');
+  if (pfMuteBtn) pfMuteBtn.onclick = () => void moderateChatUser(u.uid, !u.chatMuted, who);
   if (P.me) {
     const bb = $('#bioBox'), edit = () => { bb.classList.add('edit'); const ta = $('#bioIn'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); };
     $('#bioEdit').onclick = edit; if (!P.bio) $('#bioShow').onclick = edit;
