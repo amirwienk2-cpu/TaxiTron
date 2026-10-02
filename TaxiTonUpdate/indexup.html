@@ -2497,6 +2497,16 @@
   .bub.stkb{background:none!important;border:0!important;padding:0 0 14px;min-width:0}
   .bub.stkb img{display:block;width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
   .bub.stkb .tm{background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px;bottom:0}
+  .chat-reactions{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:7px 0 2px}
+  .chat-react-pill,.chat-react-add{min-height:25px;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:2px 7px;border:1px solid rgba(255,255,255,.12);border-radius:99px;background:rgba(0,0,0,.18);color:var(--ink);font:inherit;font-size:12px;line-height:1;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+  .chat-react-pill b{font-size:10px;color:var(--ink-dim)}
+  .chat-react-pill.mine{border-color:var(--taxi);background:rgba(var(--gl2),.18)}
+  .chat-react-pill.mine b{color:var(--taxi)}
+  .chat-react-add{width:26px;padding:0;color:var(--ink-dim);font-size:15px}
+  .chat-react-pill:active,.chat-react-add:active{transform:scale(.95)}
+  .chat-react-picker{display:flex;flex-wrap:wrap;gap:3px;padding:4px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:var(--db7);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+  .chat-react-picker button{width:29px;height:29px;border:0;border-radius:8px;background:transparent;font-size:17px}
+  .chat-react-picker button:active{background:rgba(var(--gl2),.18)}
   .dwseg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:8px;border-radius:14px;background:var(--db19);border:1.5px solid rgba(var(--gl1),.45)}
   .dwseg button{border:0;border-radius:10px;padding:9px 4px;font-weight:800;font-size:13px;color:var(--ink-dim);background:transparent}
   .dwseg button[aria-selected="true"]{color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
@@ -3675,6 +3685,8 @@ function badgeFor(u){
 }
 const badgeImg = (u, big) => { const b = badgeFor(u); return b ? `<img class="ubadge ${big?'big':''} ${b.staff?'staff':''}" src="${b.src}" alt="${b.alt}" title="${b.alt}">` : ''; };
 const CHAT_ROOMS = ['en', 'fa', 'de'];
+const CHAT_REACTION_EMOJIS = ['👍','❤️','😂','😮','😢','🔥','👏','😡'];
+let reactionPickerMessageId = null, chatEventSource = null;
 const ROOM_CHAT = {
   en: [{who:'Misha', text:'Welcome to TaxiTon! Please be kind and no spam 🙏', ago:40},{who:'Arash', text:'Nova + ×2 boost = 300 zombies per run 🔥', ago:31},{who:'Dmitri', text:'Tip: stay in the middle lane at high speed, cars spawn on the sides more.', ago:18},{who:'Mina', text:'Finally pulled Luna from a Legend Pack 💜', ago:6},{who:'Reza', text:'gg Mina! still missing Berlin 😭', ago:3}],
   fa: [{who:'Sahar', text:'به چت تاکسی‌تون خوش آمدید! لطفاً محترمانه گفتگو کنید 🙏', ago:40},{who:'Tina', text:'برای مشکل واریز به پشتیبانی پیام بدید 💜', ago:30},{who:'Nika', text:'سلام! کسی می‌دونه توکن TAXI کی میاد؟', ago:26},{who:'Omid', text:'به زودی، کانال @TaxiiTon رو چک کن', ago:24},{who:'Sara_K', text:'رکوردم ۲۴۰۰ شد 😎', ago:12},{who:'Yasmin', text:'کسی برلین داره؟ خیلی بزرگه 😅', ago:4}],
@@ -3757,11 +3769,13 @@ const meUser = () => ({n: t('you'), c:'#2d6bff', lvl: pLv().l, img: typeof S.ava
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},isAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
-  if(!item.id||serverChat.some(m=>m.id===item.id)) return;
+  if(!item.id) return;
+  const existing=serverChat.find(m=>String(m.id)===String(item.id));
+  if(existing){existing.reactions={...(item.reactions||{}),mine:item.reactions?.mine??existing.reactions?.mine??null};return;}
   serverChat.push(item); serverChat.sort((a,b)=>a.ts-b.ts); serverChatLastByRoom[item.room]=Math.max(serverChatLastByRoom[item.room]||0,Number(item.id)||0);
 }
 async function pollServerChat(){
@@ -3784,8 +3798,53 @@ async function sendServerChat(payload){
     receiveServerChatMessage(data.message); renderChat(); return true;
   }catch(e){toast(t('lim_err'));return false;}
 }
+function ensureChatEventStream(){
+  if(!SHOP_ACCOUNT.token||!chatRoom||typeof EventSource==='undefined'){
+    if(chatEventSource){chatEventSource.close();chatEventSource=null;}
+    return;
+  }
+  if(chatEventSource)return;
+  chatEventSource=new EventSource('/api/chat/events');
+  chatEventSource.addEventListener('chat-update',event=>{
+    let update;try{update=JSON.parse(event.data);}catch(e){return;}
+    if(update.type==='message'){pollServerChat();return;}
+    if(update.type!=='reaction')return;
+    const message=serverChat.find(item=>String(item.id)===String(update.messageId));
+    if(!message)return;
+    message.reactions={...(update.reactions||{}),mine:message.reactions?.mine??null};
+    if(current==='chat'&&chatTab==='chat'&&message.room===chatRoom){
+      const log=$('#chatlog'),top=log.scrollTop,atBottom=log.scrollHeight-log.scrollTop-log.clientHeight<40;
+      renderChat();if(!atBottom)$('#chatlog').scrollTop=top;
+    }
+  });
+}
+function chatReactionMarkup(message){
+  if(!SHOP_ACCOUNT.token||!message.id)return '';
+  const state=message.reactions||{counts:{},mine:null},counts=state.counts||{};
+  const pills=CHAT_REACTION_EMOJIS.filter(emoji=>Number(counts[emoji])>0).map(emoji=>`<button type="button" class="chat-react-pill ${state.mine===emoji?'mine':''}" data-reaction-message="${esc(String(message.id))}" data-react="${emoji}" aria-pressed="${state.mine===emoji}">${emoji}<b>${Number(counts[emoji])}</b></button>`).join('');
+  const picker=String(reactionPickerMessageId)===String(message.id)?`<span class="chat-react-picker">${CHAT_REACTION_EMOJIS.map(emoji=>`<button type="button" data-reaction-message="${esc(String(message.id))}" data-react="${emoji}" aria-label="${emoji}">${emoji}</button>`).join('')}</span>`:'';
+  return `<div class="chat-reactions">${pills}<button type="button" class="chat-react-add" data-react-open="${esc(String(message.id))}" aria-label="Add reaction" title="Add reaction">＋</button>${picker}</div>`;
+}
+async function toggleChatReaction(messageId,emoji){
+  if(!SHOP_ACCOUNT.token)return;
+  const message=serverChat.find(item=>String(item.id)===String(messageId));
+  if(!message)return;
+  try{
+    const response=await fetch('/api/chat/react',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,messageId:Number(messageId),emoji,on:message.reactions?.mine!==emoji})});
+    const data=await response.json();
+    if(!response.ok||!data.reactions){toast(data.error==='like-event-chat-locked'?'Chat reactions are paused during the like event.':t('lim_err'));return;}
+    message.reactions=data.reactions;reactionPickerMessageId=null;renderChat();
+  }catch(e){toast(t('lim_err'));}
+}
+$('#chatlog').addEventListener('click',event=>{
+  const toggle=event.target.closest('[data-react-open]');
+  if(toggle){event.stopPropagation();const id=String(toggle.dataset.reactOpen);reactionPickerMessageId=reactionPickerMessageId===id?null:id;renderChat();return;}
+  const reaction=event.target.closest('[data-react]');
+  if(reaction){event.stopPropagation();void toggleChatReaction(reaction.dataset.messageId,reaction.dataset.react);}
+});
 function renderChat(){
   const liveChat = !!SHOP_ACCOUNT.token;
+  ensureChatEventStream();
   refreshOnlineCounts();
   document.querySelectorAll('.demo').forEach(el => { el.hidden = !liveChat; });
   document.querySelectorAll('[data-flag]').forEach(el => { if (!el.innerHTML) el.innerHTML = flagSvg(el.dataset.flag); });
@@ -3825,9 +3884,10 @@ function renderChat(){
     const messageAvatar = mine
       ? avatar(u, true, messageFrame || 'none', '@me')
       : avatar(u, true, messageFrame || undefined, u.n);
+    const reactionMarkup = chatReactionMarkup(m);
     return sep + `<div class="mrow ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
-      ${m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
+      ${m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
   const log = $('#chatlog'); log.scrollTop = log.scrollHeight;
