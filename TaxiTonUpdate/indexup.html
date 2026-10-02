@@ -3588,14 +3588,16 @@ async function refreshShopAccount(){
   if (!SHOP_ACCOUNT.token) return loadShopAccount();
   try {
     const response = await fetch(`/api/referrals/status?token=${encodeURIComponent(SHOP_ACCOUNT.token)}`, {cache:'no-store'});
+    if (response.status === 401) {
+      SHOP_ACCOUNT.token = '';
+      SHOP_ACCOUNT.online = false;
+      await loadShopAccount();
+      return;
+    }
     const data = await response.json();
-    if (!response.ok || !data.state) throw new Error('shop-state-refresh-failed');
+    if (!response.ok || !data.state) return;
     applyShopAccountState(data.state, S.car);
-  } catch(e) {
-    SHOP_ACCOUNT.token = '';
-    SHOP_ACCOUNT.online = false;
-    await loadShopAccount();
-  }
+  } catch(e){}
 }
 setInterval(()=>{if(SHOP_ACCOUNT.token&&!document.hidden)refreshShopAccount();},15000);
 window.addEventListener('message', event => {
@@ -4034,7 +4036,7 @@ function reconcileChatMessages(log,markup){
 }
 function renderChat(){
   const log=$('#chatlog');
-  const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST;
+  const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST || serverChat.some(message=>message.room===chatRoom);
   ensureChatEventStream();
   refreshOnlineCounts();
   const cardEventActive=chatRoom==='fa'&&serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
