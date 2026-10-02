@@ -2176,8 +2176,6 @@
   .mrow{gap:7px;max-width:92%}
   .mrow:not(.grp){margin-top:6px}
   .mrow.grp{margin-top:0}
-  .mrow:not(.mine) .uav.sm{visibility:hidden}
-  .mrow:not(.mine).lastg .uav.sm{visibility:visible}
   .mrow:not(.mine) .uav.ghost,.mrow:not(.mine) .uav.sm{width:30px}
   .bub{padding:6px 11px 17px;border-radius:16px;border:0!important;box-shadow:0 1px 1px rgba(0,0,0,.25),0 2px 8px rgba(0,0,0,.18);min-width:84px}
   .bub:not([class*="sk-"]):not(.stkb){background:linear-gradient(180deg,var(--db31),color-mix(in srgb,var(--db31) 82%,#000))}
@@ -3787,11 +3785,10 @@ function renderChat(){
     chatIdx.set(String(m.ts), {id:m.id,ts:m.ts, who: mine ? '@me' : m.who, name:u.n, c:u.c, text:m.text, stk:m.stk});
     const showFrame = messageFrame && messageFrame !== 'none';
     const messageAvatar = mine
-      ? (showFrame || u.img ? avatar(u, true, messageFrame, '@me') : '<span class="uav ghost"></span>')
-      : grouped ? (showFrame && lastG ? avatar(u, true, messageFrame, u.n) : '<span class="uav ghost"></span>')
-        : avatar(u, true, messageFrame || undefined, u.n);
+      ? avatar(u, true, messageFrame || 'none', '@me')
+      : avatar(u, true, messageFrame || undefined, u.n);
     return sep + `<div class="mrow ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
-      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}">${grouped || mine ? '' : `<div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>`}${m.reply ? replyQuote(m.reply) : ''}
+      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
