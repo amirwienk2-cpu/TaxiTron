@@ -3881,8 +3881,7 @@ function ensureChatEventStream(){
     if(!message)return;
     message.reactions={...(update.reactions||{}),mine:message.reactions?.mine??null};
     if(current==='chat'&&chatTab==='chat'&&message.room===chatRoom){
-      const log=$('#chatlog'),top=log.scrollTop,atBottom=log.scrollHeight-log.scrollTop-log.clientHeight<40;
-      renderChat();if(!atBottom)$('#chatlog').scrollTop=top;
+      renderChat();
     }
   });
 }
@@ -4016,7 +4015,23 @@ function finishCardEventTest(){
   else if(event.choice)event.announcement='انتخاب شما برنده نشد';
   cardEventTest=null;scheduleNextCardEventTest();renderChat();
 }
+function captureChatScroll(log,room){
+  const sameRoom=log.dataset.room===(room||'');
+  const atBottom=!sameRoom||!log.clientHeight||log.scrollHeight-log.clientHeight-log.scrollTop<48;
+  const bounds=log.getBoundingClientRect();
+  const anchor=[...log.querySelectorAll('.mrow[data-ts]')].find(row=>{const rect=row.getBoundingClientRect();return rect.bottom>bounds.top&&rect.top<bounds.bottom;});
+  const anchorBounds=anchor?.getBoundingClientRect();
+  return {room:room||'',atBottom,scrollTop:log.scrollTop,anchorTs:anchor?.dataset.ts,anchorOffset:anchorBounds?anchorBounds.top-bounds.top:0};
+}
+function restoreChatScroll(log,state){
+  log.dataset.room=state.room;
+  if(state.atBottom){log.scrollTop=log.scrollHeight;return;}
+  const anchor=[...log.querySelectorAll('.mrow[data-ts]')].find(row=>row.dataset.ts===state.anchorTs);
+  if(anchor){log.scrollTop+=anchor.getBoundingClientRect().top-log.getBoundingClientRect().top-state.anchorOffset;return;}
+  log.scrollTop=Math.min(state.scrollTop,Math.max(0,log.scrollHeight-log.clientHeight));
+}
 function renderChat(){
+  const log=$('#chatlog'),scrollState=captureChatScroll(log,chatRoom);
   const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST;
   ensureChatEventStream();
   refreshOnlineCounts();
@@ -4056,7 +4071,8 @@ function renderChat(){
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
     .concat(localTestMessages)
-    .sort((a,b) => a.ts - b.ts);
+    .sort((a,b) => a.ts - b.ts)
+    .slice(-50);
   if (!liveChat) {
     $('#chatlog').innerHTML = `<div class="chatauth"><b>${esc(S.lang === 'de' ? 'Chat ist nicht im Demo-Modus aktiv' : S.lang === 'fa' ? 'چت نمایشی غیرفعال است' : 'Live chat unavailable')}</b>${esc(S.lang === 'de' ? 'Öffne TaxiTon über Telegram, um den echten Chat zu verwenden.' : S.lang === 'fa' ? 'برای استفاده از چت واقعی، TaxiTon را از تلگرام باز کنید.' : 'Open TaxiTon through Telegram to use the live chat.')}</div>`;
     $('#chatForm').hidden = true;
@@ -4087,7 +4103,7 @@ function renderChat(){
       ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
-  const log = $('#chatlog'); log.scrollTop = log.scrollHeight;
+  restoreChatScroll(log,scrollState);
 }
 let walTab = 'wal', dwTab = 'dep';
 const WD_MIN = 1, WD_FEE = 0.01, WD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -4725,7 +4741,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requ
 // ---------- page actions ----------
 document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => { S.lang = b.dataset.lang; S.langSet = true; save(); render(); if (!$('#tower').hidden) renderTower(); if (!$('#twGame').hidden) { twLx(); if (tgG()) tgRender(); } }));
 const chatIn = $('#chatIn');
-function growChatIn(){ chatIn.style.height = 'auto'; chatIn.style.height = Math.min(chatIn.scrollHeight + 3, 120) + 'px'; const log = $('#chatlog'); log.scrollTop = log.scrollHeight; }
+function growChatIn(){ chatIn.style.height = 'auto'; chatIn.style.height = Math.min(chatIn.scrollHeight + 3, 120) + 'px'; }
 chatIn.addEventListener('input', growChatIn);
 chatIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatForm').requestSubmit(); } });
 $('#tabChat').onclick = () => { chatTab = 'chat'; renderChat(); };
