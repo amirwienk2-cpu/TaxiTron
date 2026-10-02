@@ -257,6 +257,10 @@ const MIN_MS_BETWEEN_RUN_EXCHANGES = 4000;
 // ---- Global chat (shown on Home, under the online-player count) ----
 const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
 const CHAT_SETTINGS_FILE = path.join(DATA_DIR, 'chat-settings.json');
+const CARD_EVENT_FILE = path.join(DATA_DIR, 'card-event.json');
+const CARD_EVENT_DURATION_MS = 30 * 1000;
+const CARD_EVENT_MIN_INTERVAL_MS = 10 * 60 * 1000;
+const CARD_EVENT_MAX_INTERVAL_MS = 20 * 60 * 1000;
 const CHAT_MAX_STORED = 200; // how many messages are kept on disk/in memory
 const CHAT_MAX_LEN = 300; // characters per message
 const CHAT_MIN_INTERVAL_MS = 2000; // basic anti-spam: one message per user every 2s
@@ -347,6 +351,27 @@ chatMessages.forEach((message) => {
   }
 });
 if (migratedZombieBotRooms) persistChat();
+let cardEventState = null;
+try {
+  if (fs.existsSync(CARD_EVENT_FILE)) {
+    const loaded = readJsonFile(CARD_EVENT_FILE);
+    if (loaded && typeof loaded.id === 'string' && ['active','settling','complete'].includes(loaded.status)) {
+      cardEventState = {
+        id: loaded.id,
+        status: loaded.status,
+        startedAt: Number(loaded.startedAt) || 0,
+        endsAt: Number(loaded.endsAt) || 0,
+        rewards: Array.isArray(loaded.rewards) ? loaded.rewards.slice(0,3).map((value) => Number(value) || 0) : [500,1000,0],
+        votes: loaded.votes && typeof loaded.votes === 'object' ? loaded.votes : {},
+        voterNames: Array.isArray(loaded.voterNames) ? loaded.voterNames : [[],[],[]],
+        announcementMessageId: Number(loaded.announcementMessageId) || 0,
+        completedAt: Number(loaded.completedAt) || 0,
+      };
+    }
+  }
+} catch (error) {
+  console.error('[card-event] state file unreadable: ' + error.message);
+}
 let chatNextId = chatMessages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) + 1;
 const chatLastSentAt = {}; // uid -> timestamp, in-memory only (anti-spam)
 const chatLastGiftGuessAt = {}; // uid -> timestamp, in-memory only (number-gift guess cooldown)
@@ -744,6 +769,140 @@ function persistChat() {
   }
 }
 
+let cardEventStartTimer = null;
+let cardEventFinishTimer = null;
+function persistCardEventState() {
+  const tmp = CARD_EVENT_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(cardEventState));
+    fs.renameSync(tmp, CARD_EVENT_FILE);
+    return true;
+  } catch (error) {
+    console.error('[card-event] state write failed: ' + error.message);
+    return false;
+  }
+}
+function publicCardEvent(uid) {
+  const event = cardEventState;
+  if (!event) return null;
+  const counts = [0, 0, 0];
+  Object.values(event.votes || {}).forEach((card) => {
+    const index = Number(card) - 1;
+    if (index >= 0 && index < 3) counts[index]++;
+  });
+  const result = {
+    id: event.id,
+    status: event.status,
+    startedAt: event.startedAt,
+    endsAt: event.endsAt,
+    counts,
+    choice: uid ? Number(event.votes && event.votes[String(uid)]) || 0 : 0,
+  };
+  if (event.status === 'complete') {
+    result.rewards = event.rewards.slice();
+    result.voterNames = event.voterNames.map((names) => names.slice());
+    result.announcement = event.announcement || '';
+    result.completedAt = event.completedAt;
+  }
+  return result;
+}
+function isCardEventActive() {
+  return !!(cardEventState && cardEventState.status === 'active' && Date.now() < Number(cardEventState.endsAt || 0));
+}
+function shuffledCardRewards() {
+  const rewards = [500, 1000, 0];
+  for (let index = rewards.length - 1; index > 0; index--) {
+    const swap = crypto.randomInt(index + 1);
+    [rewards[index], rewards[swap]] = [rewards[swap], rewards[index]];
+  }
+  return rewards;
+}
+function scheduleNextCardEvent() {
+  if (cardEventStartTimer) clearTimeout(cardEventStartTimer);
+  const delay = crypto.randomInt(CARD_EVENT_MIN_INTERVAL_MS, CARD_EVENT_MAX_INTERVAL_MS + 1);
+  cardEventStartTimer = setTimeout(startScheduledCardEvent, delay);
+}
+function startScheduledCardEvent() {
+  if (isCardEventActive()) return;
+  const now = Date.now();
+  const event = cardEventState = {
+    id: 'card-' + now + '-' + crypto.randomBytes(6).toString('hex'),
+    status: 'active',
+    startedAt: now,
+    endsAt: now + CARD_EVENT_DURATION_MS,
+    rewards: shuffledCardRewards(),
+    votes: {},
+    voterNames: [[], [], []],
+    announcementMessageId: 0,
+    completedAt: 0,
+    announcement: '',
+  };
+  const message = {
+    id: chatNextId++, uid: RANDOM_BOT_UID, name: RANDOM_BOT_NAME,
+    room: 'fa', text: 'ZombieBot یک رویداد کارت شروع کرد! ۳۰ ثانیه فرصت دارید یک کارت انتخاب کنید.',
+    ts: now, isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
+    cardEventId: event.id,
+  };
+  event.announcementMessageId = message.id;
+  chatMessages.push(message);
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  persistCardEventState();
+  persistChat();
+  broadcastChatEvent('message');
+  broadcastChatEvent('card-event', { event: publicCardEvent(null) });
+  if (cardEventFinishTimer) clearTimeout(cardEventFinishTimer);
+  cardEventFinishTimer = setTimeout(() => { void finishCardEvent(event.id); }, CARD_EVENT_DURATION_MS);
+}
+async function finishCardEvent(eventId) {
+  const event = cardEventState;
+  if (!event || String(event.id) !== String(eventId) || !['active', 'settling'].includes(event.status)) return;
+  if (event.status === 'active' && Date.now() < event.endsAt) {
+    if (cardEventFinishTimer) clearTimeout(cardEventFinishTimer);
+    cardEventFinishTimer = setTimeout(() => { void finishCardEvent(event.id); }, event.endsAt - Date.now());
+    return;
+  }
+  event.status = 'settling';
+  persistCardEventState();
+  const voterNames = [[], [], []];
+  Object.entries(event.votes || {}).forEach(([uid, card]) => {
+    const index = Number(card) - 1, user = users[String(uid)];
+    if (index < 0 || index > 2 || !user) return;
+    const reward = Number(event.rewards[index]) || 0;
+    if (!user.cardEventRewards || typeof user.cardEventRewards !== 'object') user.cardEventRewards = {};
+    if (!Object.hasOwn(user.cardEventRewards, event.id)) {
+      user.cardEventRewards[event.id] = reward;
+      if (reward > 0) user.ttBalance = Number((Number(user.ttBalance || 0) + reward).toFixed(6));
+    }
+    voterNames[index].push(user.name || ('Player ' + uid));
+  });
+  await persist();
+  event.voterNames = voterNames;
+  event.status = 'complete';
+  event.completedAt = Date.now();
+  event.announcement = voterNames.map((names, index) => {
+    const reward = Number(event.rewards[index]) || 0;
+    return `کارت ${index + 1}: ${names.length ? names.join('، ') : 'کسی انتخاب نکرد'} · ${reward ? '+' + reward + ' TT' : 'باخت'}`;
+  }).join(' | ');
+  const announcement = chatMessages.find((message) => String(message.cardEventId || '') === String(event.id));
+  if (announcement) {
+    announcement.text = 'نتیجه رویداد کارت: ' + event.announcement;
+    announcement.cardEventResult = publicCardEvent(null);
+  }
+  persistCardEventState();
+  persistChat();
+  broadcastChatEvent('card-event-finished', { event: publicCardEvent(null) });
+  broadcastChatEvent('message');
+  scheduleNextCardEvent();
+}
+function startCardEventScheduler() {
+  if (cardEventState && ['active', 'settling'].includes(cardEventState.status)) {
+    const delay = cardEventState.status === 'active' ? Math.max(0, cardEventState.endsAt - Date.now()) : 0;
+    cardEventFinishTimer = setTimeout(() => { void finishCardEvent(cardEventState.id); }, delay);
+    return;
+  }
+  scheduleNextCardEvent();
+}
+
 function flushSync() {
   try {
     const tmp = DATA_FILE + '.shutdown.tmp';
@@ -796,6 +955,7 @@ function newUser(id, name) {
     friendRequestsOut: [],
     directMessages: {},
     directMessageReadAt: {},
+    cardEventRewards: {},
     figCount: {},
     mine: { last: Date.now(), acc: 0 },
     ttOrders: [],
@@ -2599,7 +2759,23 @@ app.get('/api/chat/messages', (req, res) => {
     ? roomMessages.filter((message) => message.id > after)
     : roomMessages.slice(-50);
   const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
-  res.json({ messages, enabled: chatEnabled });
+  res.json({ messages, enabled: chatEnabled, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null });
+});
+
+app.post('/api/chat/card-event/vote', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const event = cardEventState;
+  const eventId = String(req.body && req.body.eventId || '');
+  const card = Number(req.body && req.body.card);
+  if (!event || event.status !== 'active' || Date.now() >= event.endsAt || eventId !== event.id) {
+    return res.status(409).json({ error: 'card-event-closed', event: publicCardEvent(req.uid) });
+  }
+  if (![1, 2, 3].includes(card)) return res.status(400).json({ error: 'invalid-card' });
+  if (event.votes[String(req.uid)]) return res.status(409).json({ error: 'already-voted', event: publicCardEvent(req.uid) });
+  event.votes[String(req.uid)] = card;
+  persistCardEventState();
+  const publicEvent = publicCardEvent(req.uid);
+  broadcastChatEvent('card-event', { event: publicCardEvent(null) });
+  res.json({ ok: true, event: publicEvent });
 });
 
 app.get('/api/chat/like-event', (req, res) => {
@@ -2728,6 +2904,7 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   const sticker = String(req.body && req.body.sticker || '').trim();
   const requestedRoom = String(req.body && req.body.room || 'en').toLowerCase();
   if (!['en', 'fa', 'de'].includes(requestedRoom)) return res.status(400).json({ error: 'invalid-chat-room' });
+  if (requestedRoom === 'fa' && isCardEventActive()) return res.status(423).json({ error: 'card-event-active' });
   const stickerMatch = sticker.match(/^([a-z]+)-([1-6])$/);
   const stickerPack = stickerMatch && stickerMatch[1];
   if (sticker && (!stickerMatch || !Object.hasOwn(TT_CHAT_ITEMS.stk, stickerPack) || !Array.isArray(req.user.stickerPacks) || !req.user.stickerPacks.includes(stickerPack))) {
@@ -2826,6 +3003,7 @@ app.post('/api/chat/react', requireUserFromBody, (req, res) => {
   if (!CHAT_REACTION_EMOJIS.has(emoji)) return res.status(400).json({ error: 'invalid-reaction' });
   const message = chatMessages.find((entry) => entry.id === messageId);
   if (!message) return res.status(404).json({ error: 'message-not-found' });
+  if (message.room === 'fa' && isCardEventActive()) return res.status(423).json({ error: 'card-event-active' });
   if (!message.reactions || typeof message.reactions !== 'object') message.reactions = {};
   Object.keys(message.reactions).forEach((key) => {
     if (!Array.isArray(message.reactions[key])) message.reactions[key] = [];
@@ -4610,6 +4788,7 @@ attachMonsterCrash(server, {
 server.listen(PORT, () => {
   console.log('TaxiTron server listening on port ' + PORT);
   console.log('[storage] data file: ' + DATA_FILE + ' (' + Object.keys(users).length + ' users loaded)');
+  startCardEventScheduler();
   if (!STORAGE_PERSISTENT) {
     console.error('==================================================================');
     console.error('[storage] WARNING: running on Railway WITHOUT a volume for ' + DATA_DIR);

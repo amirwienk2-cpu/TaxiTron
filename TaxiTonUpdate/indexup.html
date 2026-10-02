@@ -2508,6 +2508,33 @@
   .chat-react-picker{display:flex;flex-wrap:wrap;gap:3px;padding:4px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:var(--db7);box-shadow:0 6px 16px rgba(0,0,0,.25)}
   .chat-react-picker button{width:29px;height:29px;border:0;border-radius:8px;background:transparent;font-size:17px}
   .chat-react-picker button:active{background:rgba(var(--gl2),.18)}
+  .card-event-test-start{flex:none;border:1px solid rgba(255,198,26,.5);border-radius:9px;padding:6px 9px;background:rgba(255,198,26,.1);color:#ffe27a;font:inherit;font-size:11px;font-weight:800}
+  .card-event-countdown{flex:none;display:flex;align-items:center;gap:7px;padding:6px 9px;border:1px solid rgba(255,198,26,.26);border-radius:10px;background:rgba(8,14,34,.72);color:#cbd4e7;font-size:9px;line-height:1.1}
+  .card-event-countdown[hidden]{display:none}
+  .card-event-countdown i{width:6px;height:6px;border-radius:50%;background:#ffd84a;box-shadow:0 0 7px rgba(255,216,74,.7)}
+  .card-event-countdown b{font-variant-numeric:tabular-nums;color:#ffe27a;font-size:12px}
+  .card-event-test{margin:3px 0 8px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+  .mrow.card-event-message{width:100%;max-width:100%;align-self:stretch;gap:0}
+  .mrow.card-event-message .uav,.mrow.card-event-message .bh{display:none!important}
+  .mrow.card-event-message .bub{width:100%;min-width:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+  .card-event-test-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;color:#ffe27a;font-size:11px;font-weight:800}
+  .card-event-test-timer{font-variant-numeric:tabular-nums;color:#d8e2ff}
+  .card-event-test-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .card-event-test-card{position:relative;min-width:0;padding:0;border:2px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;background:#11172c;aspect-ratio:2/3}
+  .card-event-test-card img{display:block;width:100%;height:100%;object-fit:cover}
+  .card-event-test-card b{position:absolute;top:6px;left:50%;transform:translateX(-50%);min-width:26px;padding:3px 7px;border-radius:99px;background:rgba(6,10,28,.88);color:#fff;text-align:center;font-size:12px}
+  .card-event-test-card.selected{border-color:#ffe27a;box-shadow:0 0 0 2px rgba(255,226,122,.24)}
+  .card-event-test-card:disabled{cursor:default;opacity:1}
+  .card-event-result{min-width:0;display:flex;flex-direction:column;align-items:center}
+  .card-event-test-card.revealed,.card-event-test-card.revealed.selected{border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;overflow:visible;aspect-ratio:2/3}
+  .card-event-test-card.revealed img{object-fit:contain}
+  .card-event-test-card.revealed b{display:none}
+  .card-event-test-outcome{display:block;margin-top:5px;color:#fff;font-size:9px;font-weight:800;text-align:center}
+  .card-event-test-voters{display:grid;gap:3px;margin-top:7px;color:var(--ink-dim);font-size:10px;line-height:1.35;text-align:right;direction:rtl}
+  .card-event-test-voters p{margin:0;overflow-wrap:anywhere}
+  .card-event-voters{display:block;min-height:28px;margin-top:4px;color:var(--ink-dim);font-size:9px;line-height:1.3;text-align:center;overflow-wrap:anywhere}
+  .card-event-vote-count{position:absolute;right:4px;bottom:4px;left:4px;padding:3px;border-radius:6px;background:rgba(6,10,28,.82);color:#fff;font-size:9px;text-align:center}
+  .card-event-test-status{margin:8px 0 0;color:var(--ink-dim);font-size:10px;text-align:center}
   .dwseg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:8px;border-radius:14px;background:var(--db19);border:1.5px solid rgba(var(--gl1),.45)}
   .dwseg button{border:0;border-radius:10px;padding:9px 4px;font-weight:800;font-size:13px;color:var(--ink-dim);background:transparent}
   .dwseg button[aria-selected="true"]{color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
@@ -2928,6 +2955,7 @@
             <b><span data-t="ch_room">TaxiTon Chat</span> <span id="roomName"></span></b>
             <div class="chstat"><span class="dot"></span><span class="num" id="onCount">0</span> <span data-t="ch_online">online</span></div>
           </div>
+          <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
         </div>
         <div class="chatlog" id="chatlog"></div>
         <div class="typing" id="typing" hidden><span class="tdots"><i></i><i></i><i></i></span><span id="typingTxt"></span></div>
@@ -3424,6 +3452,7 @@ async function migrateLegacyProfileBio(uid, bio){
   } catch (e) {} finally { PROFILE_BIO_SYNCING.delete(uid); }
 }
 const ALL_LEVELS_TEST = new URLSearchParams(window.location.search).get('all-levels-test') === '1';
+const CARD_EVENT_TEST = new URLSearchParams(window.location.search).get('card-event-test') === '1';
 const SHOP_WORDS = {
   en:{day:'day',days:'days',left:'left',today:'Today',offer:'Daily earning limit',active:'Daily limit active',offline:'Open in Telegram to buy',levelUnavailable:'Unavailable'},
   de:{day:'Tag',days:'Tage',left:'übrig',today:'Heute',offer:'Tägliches Verdienstlimit',active:'Tageslimit aktiv',offline:'Zum Kaufen in Telegram öffnen',levelUnavailable:'Nicht verfügbar'},
@@ -3696,6 +3725,10 @@ const ROOM_CHAT = {
 const ROOM_LIVE = {en:['who else is grinding the weekly race? 🏁','just hit level 10 🚕','Legend Pack gave me Sara again 😂'],fa:['سلام به همه 👋','چه کسی لونا داره؟','امروز ۵ بار بازی کردم 🔥'],de:['Wer hat schon Luna? 💜','Gerade 1.200 Punkte geschafft!','Guten Morgen Fahrer ☕']};
 const ROOM_USERS = {en:['Misha','Tina','Arash','Dmitri','Mina','Reza','Kian','Yasmin','Omid'],fa:['Sahar','Tina','Nima','Nika','Omid','Sara_K','Yasmin','Reza','Mina','Arash'],de:['Misha','Nima','Lena','Kian','Dmitri','Mina','Omid']};
 let chatRoom = null;
+let cardEventTest = null, cardEventTestMessage = null, cardEventTestTimer = null, cardEventScheduleTimer = null, cardEventNextStartAt = 0, cardEventTestEndsAt = 0;
+const CARD_EVENT_TEST_DURATION_MS = 12 * 60 * 60 * 1000;
+const CARD_EVENT_TEST_MIN_INTERVAL_MS = 10 * 1000;
+const CARD_EVENT_TEST_MAX_INTERVAL_MS = 20 * 1000;
 const SAMPLE_CHAT = [
   {who:'Arash', text:'Nova + ×2 boost = 300 zombies per run 🔥', ago:31},
   {who:'Nika', text:'سلام! کسی می‌دونه توکن TAXI کی میاد؟', ago:26},
@@ -3708,7 +3741,7 @@ const SAMPLE_CHAT = [
 const LIVE_LINES = ['who else is grinding the weekly race? 🏁','just hit level 10 🚕','Legend Pack gave me Sara again 😂','how many tries do you have left?','Zero hack ability when? 👀','سلام به همه 👋','چه کسی لونا داره؟','Berlin truck is huge 😅'];
 const chatNow = Date.now();
 let onlineN = 0, onlineCounts = {en:0,fa:0,de:0}, onlineCountBusy = false, onlineCountUpdatedAt = 0, chatTab = 'chat';
-let serverChat = [], serverChatLastByRoom = {en:0,fa:0,de:0}, serverChatBusy = false;
+let serverChat = [], serverChatLastByRoom = {en:0,fa:0,de:0}, serverChatBusy = false, serverCardEvent = null;
 function renderOnlineCounts(){
   $('#rpTotal').textContent = fmt(onlineN);
   const max = Math.max(0, ...CHAT_ROOMS.map(room => onlineCounts[room] || 0));
@@ -3770,15 +3803,31 @@ const meUser = () => ({n: t('you'), c:'#2d6bff', lvl: pLv().l, img: typeof S.ava
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
   if(!item.id) return;
   const existing=serverChat.find(m=>String(m.id)===String(item.id));
-  if(existing){existing.reactions={...(item.reactions||{}),mine:item.reactions?.mine??existing.reactions?.mine??null};return;}
+  if(existing){existing.reactions={...(item.reactions||{}),mine:item.reactions?.mine??existing.reactions?.mine??null};if(item.cardEventResult){existing.cardEventResult=item.cardEventResult;existing.text=item.text;}return;}
   serverChat.push(item); serverChat.sort((a,b)=>a.ts-b.ts); serverChatLastByRoom[item.room]=Math.max(serverChatLastByRoom[item.room]||0,Number(item.id)||0);
 }
+function updateServerCardEvent(event){
+  if(event&&serverCardEvent&&event.id===serverCardEvent.id&&!Number(event.choice)&&Number(serverCardEvent.choice))event={...event,choice:serverCardEvent.choice};
+  serverCardEvent=event||null;
+  if(serverCardEvent?.status==='complete'){
+    const message=serverChat.find(item=>String(item.cardEventId)===String(serverCardEvent.id));
+    if(message){message.cardEventResult=serverCardEvent;if(serverCardEvent.announcement)message.text='نتیجه رویداد کارت: '+serverCardEvent.announcement;}
+  }
+}
+setInterval(()=>{
+  if(serverCardEvent?.status!=='active')return;
+  const timer=document.querySelector('[data-live-card-timer]');
+  if(!timer)return;
+  const remaining=Math.max(0,Math.ceil((Number(serverCardEvent.endsAt||0)-Date.now())/1000));
+  timer.textContent=remaining+' ثانیه';
+  if(!remaining)document.querySelectorAll('[data-server-card-vote]').forEach(button=>button.disabled=true);
+},500);
 async function pollServerChat(){
   if(!SHOP_ACCOUNT.token||!chatRoom||serverChatBusy) return;
   serverChatBusy=true;
@@ -3786,8 +3835,11 @@ async function pollServerChat(){
     const url=`/api/chat/messages?room=${encodeURIComponent(chatRoom)}&after=${serverChatLastByRoom[chatRoom]||0}&token=${encodeURIComponent(SHOP_ACCOUNT.token)}`;
     const response=await fetch(url,{cache:'no-store'}),data=await response.json();
     if(response.ok&&Array.isArray(data.messages)){
+      const previousEvent=JSON.stringify(serverCardEvent);
+      updateServerCardEvent(chatRoom==='fa'?data.cardEvent:null);
       data.messages.forEach(receiveServerChatMessage);
-      if(current==='chat'&&data.messages.length) renderChat();
+      if(current==='chat'&&(data.messages.length||previousEvent!==JSON.stringify(serverCardEvent)))renderChat();
+      if(previousEvent!==JSON.stringify(serverCardEvent)&&serverCardEvent?.status==='complete')refreshShopAccount();
     }
   }catch(e){}finally{serverChatBusy=false;}
 }
@@ -3809,6 +3861,13 @@ function ensureChatEventStream(){
   chatEventSource.addEventListener('chat-update',event=>{
     let update;try{update=JSON.parse(event.data);}catch(e){return;}
     if(update.type==='message'){pollServerChat();return;}
+    if(update.type==='card-event'){
+      const previousStatus=serverCardEvent?.status;
+      updateServerCardEvent(update.event);
+      if(current==='chat'&&chatTab==='chat'&&chatRoom==='fa')renderChat();
+      if(previousStatus!=='complete'&&serverCardEvent?.status==='complete')refreshShopAccount();
+      return;
+    }
     if(update.type!=='reaction')return;
     const message=serverChat.find(item=>String(item.id)===String(update.messageId));
     if(!message)return;
@@ -3826,6 +3885,29 @@ function chatReactionMarkup(message){
   const picker=String(reactionPickerMessageId)===String(message.id)?`<span class="chat-react-picker">${CHAT_REACTION_EMOJIS.map(emoji=>`<button type="button" data-reaction-message="${esc(String(message.id))}" data-react="${emoji}" aria-label="${emoji}">${emoji}</button>`).join('')}</span>`:'';
   return `<div class="chat-reactions">${pills}<button type="button" class="chat-react-add" data-react-open="${esc(String(message.id))}" aria-label="Add reaction" title="Add reaction"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 14s1.4 2 4 2 4-2 4-2M9 9h.01M15 9h.01"></path></svg></button>${picker}</div>`;
 }
+function renderServerCardEvent(event){
+  if(!event)return '';
+  const finished=event.status==='complete',remaining=Math.max(0,Math.ceil((Number(event.endsAt||0)-Date.now())/1000));
+  const cards=[1,2,3].map(number=>{
+    const index=number-1,reward=finished?Number(event.rewards?.[index])||0:null;
+    const image=finished?(reward===500?'55tt.png':reward===1000?'10ttt.png':'lose.png'):'karte.png';
+    const selected=Number(event.choice)===number,disabled=finished||!!event.choice||remaining<=0;
+    const names=finished?(event.voterNames?.[index]||[]):[];
+    const count=Number(event.counts?.[index])||0;
+    return `<div class="card-event-result"><button type="button" class="card-event-test-card ${selected?'selected':''} ${finished?'revealed':''}" data-server-card-vote="${number}" ${disabled?'disabled':''}><img src="../sprites/${image}" alt="Karte ${number}"><b>${number}</b>${!finished?`<span class="card-event-vote-count">${count} Stimmen${selected?' · Gewählt':''}</span>`:''}</button>${finished?`<small class="card-event-voters">${names.length?esc(names.join(', ')):'Niemand'}</small>`:''}</div>`;
+  }).join('');
+  const status=finished?(event.announcement||'نتیجه رویداد کارت'):(event.choice?'انتخاب شما ثبت شد':'یک کارت انتخاب کنید · ۳۰ ثانیه');
+  return `<div class="card-event-test ${finished?'finished':''}"><div class="card-event-test-head"><span>ZombieBot · کارت شانسی</span><span class="card-event-test-timer" data-live-card-timer>${finished?'پایان':remaining+' ثانیه'}</span></div><div class="card-event-test-cards">${cards}</div><p class="card-event-test-status">${esc(status)}</p></div>`;
+}
+async function voteScheduledCard(number){
+  if(!SHOP_ACCOUNT.token||serverCardEvent?.status!=='active'||serverCardEvent.choice)return;
+  try{
+    const response=await fetch('/api/chat/card-event/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,eventId:serverCardEvent.id,card:number})});
+    const data=await response.json();
+    if(!response.ok||!data.event){if(data.event)updateServerCardEvent(data.event);toast(data.error==='already-voted'?'Du hast schon gewählt.':data.error==='card-event-closed'?'Die Abstimmung ist geschlossen.':t('lim_err'));renderChat();return;}
+    updateServerCardEvent(data.event);renderChat();
+  }catch(e){toast(t('lim_err'));}
+}
 async function toggleChatReaction(messageId,emoji){
   if(!SHOP_ACCOUNT.token){toast(t('lim_tg'));return;}
   const message=serverChat.find(item=>String(item.id)===String(messageId));
@@ -3842,19 +3924,108 @@ async function toggleChatReaction(messageId,emoji){
     const data=await response.json();
     if(!response.ok||!data.reactions)throw new Error(data.error||'reaction-failed');
     message.reactions=data.reactions;renderChat();
-  }catch(e){message.reactions=previous;renderChat();toast(e.message==='like-event-chat-locked'?'Chat reactions are paused during the like event.':t('lim_err'));}
+  }catch(e){message.reactions=previous;renderChat();toast(e.message==='like-event-chat-locked'?'Chat reactions are paused during the like event.':e.message==='card-event-active'?'Chat reactions are paused during the card vote.':t('lim_err'));}
 }
 $('#chatlog').addEventListener('click',event=>{
+  const serverCard=event.target.closest('[data-server-card-vote]');
+  if(serverCard){event.stopPropagation();void voteScheduledCard(Number(serverCard.dataset.serverCardVote));return;}
+  const cardVote=event.target.closest('[data-card-test-vote]');
+  if(cardVote){event.stopPropagation();selectCardEventTestVote(Number(cardVote.dataset.cardTestVote));return;}
   const toggle=event.target.closest('[data-react-open]');
   if(toggle){event.stopPropagation();const id=String(toggle.dataset.reactOpen);reactionPickerMessageId=reactionPickerMessageId===id?null:id;renderChat();return;}
   const reaction=event.target.closest('[data-react]');
   if(reaction){event.stopPropagation();void toggleChatReaction(reaction.dataset.reactionMessage,reaction.dataset.react);}
 });
+function renderCardEventTest(event){
+  const remaining=Math.max(0,Math.ceil((event.endsAt-Date.now())/1000));
+  const status=event.finished?'':event.choice?`کارت ${event.choice} انتخاب شد · ${remaining} ثانیه باقی مانده`:`یک کارت انتخاب کنید · ${remaining} ثانیه فرصت دارید`;
+  const cards=[1,2,3].map(number=>{
+    const reward=event.outcomes[number-1],selected=event.choice===number;
+    const image=event.finished?(reward===500?'55tt.png':reward===1000?'10ttt.png':'lose.png'):'karte.png';
+    const outcome=reward?`+${reward} TT`:'باخت';
+    return `<button type="button" class="card-event-test-card ${selected?'selected':''}" data-card-test-vote="${number}" ${event.finished||event.choice?'disabled':''}><img src="../sprites/${image}" alt="${event.finished?outcome:`کارت ${number}`}"><b>${number}</b>${event.finished?`<span class="card-event-test-outcome">${outcome} · ${event.votes[number-1]} رأی</span>`:''}</button>`;
+  }).join('');
+  const voterRows=event.finished?`<div class="card-event-test-voters">${[1,2,3].map(number=>{const names=(event.voters[number-1]||[]).join('، ')||'کسی انتخاب نکرد';return `<p><b>${number}:</b> ${esc(names)}</p>`;}).join('')}</div>`:'';
+  return `<div class="card-event-test"><div class="card-event-test-head"><span>ZombieBot · آزمایش محلی</span><span class="card-event-test-timer" data-card-event-timer>${remaining} ثانیه</span></div><div class="card-event-test-cards">${cards}</div>${voterRows}${status?`<p class="card-event-test-status">${esc(status)}</p>`:''}${event.finished&&event.announcement?`<p class="card-event-test-status">${esc(event.announcement)}</p>`:''}</div>`;
+}
+function cardEventTestVoterName(){
+  const user=window.Telegram?.WebApp?.initDataUnsafe?.user;
+  const name=user?[user.first_name,user.last_name].filter(Boolean).join(' ').trim():'';
+  return name|| (user&&user.username?'@'+user.username:(S.lang==='de'?'Du':'You'));
+}
+function cardEventCountdownText(ms){
+  const seconds=Math.max(0,Math.ceil(ms/1000));
+  return String(Math.floor(seconds/3600)).padStart(2,'0')+':'+String(Math.floor(seconds%3600/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+}
+function updateCardEventTestCountdown(){
+  const box=$('#cardEventCountdown');
+  if(!box)return;
+  const remaining=Math.max(0,cardEventTestEndsAt-Date.now());
+  $('#cardEventCountdownLabel').textContent=remaining>0?(S.lang==='de'?'Gesamtevent endet':S.lang==='fa'?'پایان رویداد':'Event ends'):(S.lang==='de'?'Event beendet':S.lang==='fa'?'رویداد پایان یافت':'Event ended');
+  $('#cardEventCountdownValue').textContent=cardEventCountdownText(remaining);
+}
+function scheduleNextCardEventTest(){
+  if(!CARD_EVENT_TEST||!cardEventTestEndsAt||Date.now()>=cardEventTestEndsAt){updateCardEventTestCountdown();return;}
+  if(cardEventScheduleTimer)clearInterval(cardEventScheduleTimer);
+  cardEventNextStartAt=Math.min(Date.now()+CARD_EVENT_TEST_MIN_INTERVAL_MS+Math.floor(Math.random()*(CARD_EVENT_TEST_MAX_INTERVAL_MS-CARD_EVENT_TEST_MIN_INTERVAL_MS+1)),cardEventTestEndsAt);
+  updateCardEventTestCountdown();
+  cardEventScheduleTimer=setInterval(()=>{
+    updateCardEventTestCountdown();
+    if(Date.now()>=cardEventTestEndsAt){clearInterval(cardEventScheduleTimer);cardEventScheduleTimer=null;cardEventNextStartAt=0;return;}
+    if(Date.now()>=cardEventNextStartAt&&chatRoom==='fa'&&!cardEventTest){
+      clearInterval(cardEventScheduleTimer);cardEventScheduleTimer=null;cardEventNextStartAt=0;startCardEventTest();
+    }
+  },1000);
+}
+function startCardEventTest(){
+  if(!CARD_EVENT_TEST||chatRoom!=='fa'||cardEventTest)return;
+  if(cardEventScheduleTimer){clearInterval(cardEventScheduleTimer);cardEventScheduleTimer=null;}
+  cardEventNextStartAt=0;
+  const outcomes=[500,1000,0];
+  for(let i=outcomes.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[outcomes[i],outcomes[j]]=[outcomes[j],outcomes[i]];}
+  const now=Date.now(),event={id:'local-card-event-'+now,startedAt:now,endsAt:now+30000,outcomes,votes:[3,2,3],voters:[['Sahar (Test)','Ali (Test)','Mina (Test)'],['Nika (Test)','Reza (Test)'],['Omid (Test)','Yasmin (Test)','Arash (Test)']],choice:0,finished:false,announcement:''};
+  cardEventTest=event;
+  cardEventTestMessage={id:event.id,uid:'local-zombie-bot',mine:false,who:'ZombieBot',text:'',ts:now,room:'fa',cardEventTest:event};
+  renderChat();
+  clearInterval(cardEventTestTimer);
+  cardEventTestTimer=setInterval(()=>{
+    if(cardEventTest!==event){clearInterval(cardEventTestTimer);return;}
+    const left=Math.max(0,Math.ceil((event.endsAt-Date.now())/1000)),timer=document.querySelector('[data-card-event-timer]');
+    if(timer)timer.textContent=left+' ثانیه';
+    updateCardEventTestCountdown();
+    if(Date.now()>=event.endsAt)finishCardEventTest();
+  },250);
+}
+function selectCardEventTestVote(number){
+  if(!CARD_EVENT_TEST||!cardEventTest||cardEventTest.finished||cardEventTest.choice||Date.now()>=cardEventTest.endsAt||![1,2,3].includes(number))return;
+  cardEventTest.choice=number;cardEventTest.votes[number-1]++;cardEventTest.voters[number-1].push(cardEventTestVoterName());renderChat();
+}
+function finishCardEventTest(){
+  const event=cardEventTest;if(!event||event.finished)return;
+  event.finished=true;clearInterval(cardEventTestTimer);cardEventTestTimer=null;
+  const reward=event.choice?event.outcomes[event.choice-1]:0;
+  if(reward>0){S.tt=(Number(S.tt)||0)+reward;save();renderHome();event.announcement=`انتخاب شما: +${reward} TT در موجودی آزمایشی`;}
+  else if(event.choice)event.announcement='انتخاب شما برنده نشد';
+  cardEventTest=null;scheduleNextCardEventTest();renderChat();
+}
 function renderChat(){
-  const liveChat = !!SHOP_ACCOUNT.token;
+  const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST;
   ensureChatEventStream();
   refreshOnlineCounts();
-  document.querySelectorAll('.demo').forEach(el => { el.hidden = !liveChat; });
+  const cardEventActive=chatRoom==='fa'&&serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
+  const cardEventTimer=document.querySelector('[data-live-card-timer]');
+  if(cardEventTimer&&cardEventActive)cardEventTimer.textContent=Math.max(0,Math.ceil((Number(serverCardEvent.endsAt)-Date.now())/1000))+' ثانیه';
+  document.querySelectorAll('.demo').forEach(el => { el.hidden = !SHOP_ACCOUNT.token; });
+  const cardEventCountdown=$('#cardEventCountdown');
+  if(cardEventCountdown){
+    const testEventVisible=CARD_EVENT_TEST&&chatRoom==='fa';
+    cardEventCountdown.hidden=!testEventVisible;
+    if(testEventVisible){
+      if(!cardEventTestEndsAt)cardEventTestEndsAt=Date.now()+CARD_EVENT_TEST_DURATION_MS;
+      if(!cardEventTest&&!cardEventNextStartAt)scheduleNextCardEventTest();
+      updateCardEventTestCountdown();
+    }
+  }
   document.querySelectorAll('[data-flag]').forEach(el => { if (!el.innerHTML) el.innerHTML = flagSvg(el.dataset.flag); });
   $('#roomPick').hidden = !!chatRoom; $('#chatTabs').hidden = !chatRoom;
   if (!chatRoom) { $('#chatPane').hidden = true; $('#onPane').hidden = true; $('#frPane').hidden = true; return; }
@@ -3867,8 +4038,10 @@ function renderChat(){
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
       <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span></div>
       <div class="muted">${u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
+  const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
+    .concat(localTestMessages)
     .sort((a,b) => a.ts - b.ts);
   if (!liveChat) {
     $('#chatlog').innerHTML = `<div class="chatauth"><b>${esc(S.lang === 'de' ? 'Chat ist nicht im Demo-Modus aktiv' : S.lang === 'fa' ? 'چت نمایشی غیرفعال است' : 'Live chat unavailable')}</b>${esc(S.lang === 'de' ? 'Öffne TaxiTon über Telegram, um den echten Chat zu verwenden.' : S.lang === 'fa' ? 'برای استفاده از چت واقعی، TaxiTon را از تلگرام باز کنید.' : 'Open TaxiTon through Telegram to use the live chat.')}</div>`;
@@ -3876,7 +4049,7 @@ function renderChat(){
     $('#onList').innerHTML = '';
     return;
   }
-  $('#chatForm').hidden = false;
+  $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive;
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
   $('#chatlog').innerHTML = msgs.map((m, i) => {
@@ -3893,9 +4066,11 @@ function renderChat(){
       ? avatar(u, true, messageFrame || 'none', '@me')
       : avatar(u, true, messageFrame || undefined, u.n);
     const reactionMarkup = chatReactionMarkup(m);
-    return sep + `<div class="mrow ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
+    const messageCardEvent=m.cardEventResult||(m.cardEventId&&serverCardEvent?.id===m.cardEventId?serverCardEvent:null);
+    const cardEventMarkup=renderServerCardEvent(messageCardEvent);
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
-      ${m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
+      ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<button class="rpb" data-rp="${m.ts}" aria-label="${esc(t('rp_reply'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 8V4.5L3 11l7 6.5V14c4.6 0 8 1.4 10.5 5-.9-5.2-4-10-10.5-11z"/></svg></button><span class="tm">${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
   const log = $('#chatlog'); log.scrollTop = log.scrollHeight;
