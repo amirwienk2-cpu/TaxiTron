@@ -186,6 +186,7 @@ const COINS_PER_ZOMBIE = 1;
 const LEVEL_TWO_COINS_PER_ZOMBIE = 7;
 const LEVEL_THREE_COINS_PER_ZOMBIE = 20;
 const LEVEL_FOUR_COINS_PER_ZOMBIE = 100;
+const LEVEL_FIVE_COINS_PER_ZOMBIE = 332;
 const COINS_PER_BLOCK = 10000;
 const PTS_PER_BLOCK = 0.01;
 const LEVEL_MULTIPLIER = 1; // server only ever applies the Level 1 base rate
@@ -3509,7 +3510,7 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
 
   const level = resolvePlayableLevel(user, req.body && req.body.level);
   const hasLevelReward = hasActiveLevelReward(user, level);
-  const coinsPerZombie = level >= 4 ? LEVEL_FOUR_COINS_PER_ZOMBIE : level >= 3 ? LEVEL_THREE_COINS_PER_ZOMBIE : level >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
+  const coinsPerZombie = level >= 5 ? LEVEL_FIVE_COINS_PER_ZOMBIE : level >= 4 ? LEVEL_FOUR_COINS_PER_ZOMBIE : level >= 3 ? LEVEL_THREE_COINS_PER_ZOMBIE : level >= 2 ? LEVEL_TWO_COINS_PER_ZOMBIE : COINS_PER_ZOMBIE;
   const dailyCap = hasLevelReward ? dailyTonCapForLevel(level) : 0;
   const levelToday = Number(user.tonTodayByLevel[level] || 0);
   if (level >= 2 && hasLevelReward && levelToday >= dailyCap - 1e-9) {

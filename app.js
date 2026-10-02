@@ -669,7 +669,7 @@
   initializeOwnedPremiumAttempts();
   loadActiveAttemptState();
   saveStore();
-  function getCoinsPerZombie(level){ level = level===undefined ? activeAttemptLevel() : Number(level); return level >= 4 ? 100 : level >= 3 ? 20 : level >= 2 ? 7 : 1; }
+  function getCoinsPerZombie(level){ level = level===undefined ? activeAttemptLevel() : Number(level); return level >= 5 ? 332 : level >= 4 ? 100 : level >= 3 ? 20 : level >= 2 ? 7 : 1; }
   function getLevelName(level){
     const nameKeys = { 1:'skinNameYellow', 2:'skinNameRed', 3:'skinNameWhite', 4:'skinNameGreen', 5:'skinNameBlack' };
     return t(nameKeys[Number(level)] || nameKeys[1]);
@@ -4338,7 +4338,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
   function pendingReachesDailyCap(level){
     ensureDailyReset();
-    const dailyZombieCaps = {1:1000000,2:9572,3:10000,4:13000,5:16600};
+    const dailyZombieCaps = {1:1000000,2:9572,3:10000,4:13000,5:5000};
     const dailyZombieCap = dailyZombieCaps[level] || dailyZombieCaps[1];
     const dailyTonCap = getLevelDailyPtsCap(level);
     const earnedTon = getCurrentLevelTodayPoints(level);

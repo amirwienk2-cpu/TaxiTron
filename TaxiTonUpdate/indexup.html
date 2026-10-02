@@ -4177,12 +4177,12 @@ function renderTaskList(){
 }
 function walletExchangeRate(){
   const lvl = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
-  return lvl >= 4 ? 100 : lvl >= 3 ? 20 : lvl >= 2 ? 7 : 1;
+  return lvl >= 5 ? 332 : lvl >= 4 ? 100 : lvl >= 3 ? 20 : lvl >= 2 ? 7 : 1;
 }
 function walletDailyGoal(){
   const lvl = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
   const rate = walletExchangeRate();
-  const totalByLevel = {1:1000000, 2:9572, 3:10000, 4:13000, 5:16600};
+  const totalByLevel = {1:1000000, 2:9572, 3:10000, 4:13000, 5:5000};
   let earnedTon = Math.max(0, Number(SHOP_ACCOUNT.tonTodayByLevel[lvl] || 0));
   let pendingZombies = 0;
   try {
