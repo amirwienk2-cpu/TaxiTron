@@ -1700,9 +1700,11 @@
   });
 
   function requestedGameSkin(ownedSkins){
-    const level = Number(new URLSearchParams(window.location.search).get('level'));
+    const params = new URLSearchParams(window.location.search);
+    const level = Number(params.get('level'));
     const skin = ({1:'yellow',2:'red',3:'white',4:'green',5:'luna'})[level];
-    return skin && Array.isArray(ownedSkins) && ownedSkins.includes(skin) ? skin : null;
+    const shopOwned = (params.get('shopOwned') || '').split(',');
+    return skin && ((Array.isArray(ownedSkins) && ownedSkins.includes(skin)) || shopOwned.includes(skin)) ? skin : null;
   }
 
   function applyServerState(state){
@@ -3607,7 +3609,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       if (!Number.isFinite(stored)) return;
       def = SKIN_LEVELS.find(item => item.level === stored);
     }
-    if (!def || store.ownedSkins.indexOf(def.key) === -1) return;
+    if (!def || !requestedGameSkin(store.ownedSkins)) return;
     if (store.skin === def.key) return; // already matches - nothing to do
     store.skin = def.key;
     store.level = def.level;
