@@ -4200,7 +4200,7 @@ function walletExchangeRate(){
 function walletDailyGoal(){
   const lvl = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
   const rate = walletExchangeRate();
-  const totalByLevel = {1:1000000, 2:9572, 3:10000, 4:6000, 5:5000};
+  const totalByLevel = {1:1000000, 2:9572, 3:7000, 4:6000, 5:5000};
   let earnedTon = Math.max(0, Number(SHOP_ACCOUNT.tonTodayByLevel[lvl] || 0));
   let pendingZombies = 0;
   try {

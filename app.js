@@ -4359,7 +4359,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
   function pendingReachesDailyCap(level){
     ensureDailyReset();
-    const dailyZombieCaps = {1:1000000,2:9572,3:10000,4:6000,5:5000};
+    const dailyZombieCaps = {1:1000000,2:9572,3:7000,4:6000,5:5000};
     const dailyZombieCap = dailyZombieCaps[level] || dailyZombieCaps[1];
     const dailyTonCap = getLevelDailyPtsCap(level);
     const earnedTon = getCurrentLevelTodayPoints(level);
