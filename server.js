@@ -1953,7 +1953,7 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .2fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -2133,6 +2133,50 @@ setInterval(()=>{if(secret())pollMoneyEvents()},15000);
   };
   new MutationObserver(addTtButton).observe(list, {childList: true, subtree: true});
   addTtButton();
+})();
+</script>
+<script>
+(() => {
+  const button = document.getElementById('adjustTtTop');
+  if (!button) return;
+  button.addEventListener('click', async () => {
+    const query = prompt('Spielername oder Telegram-UID eingeben:');
+    if (!query || !query.trim()) return;
+    const uidQuery = query.trim();
+    const needle = uidQuery.toLocaleLowerCase();
+    const rows = [...document.querySelectorAll('.player-row')];
+    const exactUid = rows.filter((row) => String(row.dataset.uid || '') === uidQuery);
+    const matches = exactUid.length ? exactUid : rows.filter((row) => (row.dataset.search || '').includes(needle));
+    if (matches.length !== 1) {
+      alert(matches.length ? 'Mehrere Spieler gefunden. Bitte die genaue Telegram-UID eingeben.' : 'Spieler nicht gefunden. Bitte zuerst „Load players“ ausführen.');
+      return;
+    }
+    const row = matches[0];
+    const uid = String(row.dataset.uid || '');
+    const name = (row.firstElementChild && row.firstElementChild.textContent.split(String.fromCharCode(10))[0].trim()) || uid;
+    const value = prompt('TT-Änderung für ' + name + ' (z. B. 25 zum Geben, -10 zum Abziehen):');
+    if (value === null) return;
+    const delta = Number(value.replace(',', '.'));
+    if (!Number.isFinite(delta) || delta === 0) { alert('Ungültiger Wert.'); return; }
+    const action = delta > 0 ? 'hinzufügen' : 'abziehen';
+    if (!confirm(Math.abs(delta).toFixed(6) + ' TT bei ' + name + ' ' + action + '?')) return;
+    button.disabled = true;
+    try {
+      const response = await fetch('/admin/users/' + encodeURIComponent(uid) + '/adjust-tt', {
+        method: 'POST',
+        headers: {'x-admin-secret': document.getElementById('secret').value, 'Content-Type': 'application/json'},
+        body: JSON.stringify({delta})
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Update failed');
+      await load();
+      status(name + 's TT-Guthaben wurde auf ' + Number(data.ttBalance).toFixed(6) + ' TT korrigiert.');
+    } catch (error) {
+      status(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
 })();
 </script></body></html>`);
 });
