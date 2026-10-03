@@ -3566,7 +3566,7 @@ const CARS = [
   {id:'luna',   lvl:5, skin:'luna',   price:25, dailyReward:1.66, rewardDays:30, limit:20, body:'#eee8ff', trim:'#b83cff', bonus:45},
   {id:'nikto',  lvl:6, soon:true, price:0, body:'#1a1f4a', trim:'#ff3b4e', bonus:60},
 ];
-const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,isSupporter:false,badge4:false,badge5:false,chatMuted:false,ttShopEnabled:false,adVideosWatched:0,adRewardClaimed:false,online:false};
+const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,isSupporter:false,isDeveloper:false,badge4:false,badge5:false,chatMuted:false,ttShopEnabled:false,adVideosWatched:0,adRewardClaimed:false,online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
 const PROFILE_BIO_SYNCING = new Set();
 const profileBioSyncKey = uid => 'taxiton.profileBioSynced_' + String(uid);
@@ -3660,6 +3660,7 @@ function applyShopAccountState(state, preferredCar){
   SHOP_ACCOUNT.adminBadge = state.adminBadge === 'girl' ? 'girl' : 'boy';
   SHOP_ACCOUNT.isDesigner = state.isDesigner === true;
   SHOP_ACCOUNT.isSupporter = state.isSupporter === true;
+  SHOP_ACCOUNT.isDeveloper = state.isDeveloper === true;
   SHOP_ACCOUNT.badge4 = state.badge4 === true;
   SHOP_ACCOUNT.badge5 = state.badge5 === true;
   SHOP_ACCOUNT.chatMuted = state.chatMuted === true;
@@ -3860,6 +3861,7 @@ function badgeFor(u){
   }
   if (u.isDesigner || u.role === 'design') return [{src:'assets/role-design.webp', alt:'Design', staff:true}];
   if (u.isSupporter || u.role === 'support') return [{src:'assets/role-support.webp', alt:'Support', staff:true}];
+  if (u.isDeveloper) return [{src:'assets/role-developer.png', alt:'Amir', staff:true}];
   // Manually-granted (admin panel) badges - shown together if a user has both.
   if (u.badge4 || u.badge5) {
     const granted = [];
@@ -3950,7 +3952,7 @@ const userOf = n => {
   const sample=CHAT_USERS.find(u=>u.n===n); if(sample)return sample;
   const online=SHOP_ACCOUNT.onlineUsers.find(u=>u.name===n);
   const social=friendTargetByName(n);
-  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:online?.isChatAdmin===true,adminBadge:online?.adminBadge,isDesigner:online?.isDesigner===true,isSupporter:online?.isSupporter===true,badge4:online?.badge4===true,badge5:online?.badge5===true,hasLevel4:online?.hasLevel4===true,hasLevel5:online?.hasLevel5===true,chatMuted:online?.chatMuted===true};
+  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:online?.isChatAdmin===true,adminBadge:online?.adminBadge,isDesigner:online?.isDesigner===true,isSupporter:online?.isSupporter===true,isDeveloper:online?.isDeveloper===true,badge4:online?.badge4===true,badge5:online?.badge5===true,hasLevel4:online?.hasLevel4===true,hasLevel5:online?.hasLevel5===true,chatMuted:online?.chatMuted===true};
 };
 function friendTargetByName(name){
   return SHOP_ACCOUNT.friends.find(u=>u.name===name)
@@ -3969,11 +3971,11 @@ function myTelegramName(){
   if (!user) return t('you');
   return user.username || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || ('Player ' + user.id);
 }
-const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null, isChatAdmin: SHOP_ACCOUNT.isChatAdmin===true, adminBadge: SHOP_ACCOUNT.adminBadge, isDesigner: SHOP_ACCOUNT.isDesigner===true, isSupporter: SHOP_ACCOUNT.isSupporter===true, badge4: SHOP_ACCOUNT.badge4===true, badge5: SHOP_ACCOUNT.badge5===true, hasLevel4: SHOP_ACCOUNT.ownedSkins.includes('green'), hasLevel5: SHOP_ACCOUNT.ownedSkins.includes('luna')});
+const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null, isChatAdmin: SHOP_ACCOUNT.isChatAdmin===true, adminBadge: SHOP_ACCOUNT.adminBadge, isDesigner: SHOP_ACCOUNT.isDesigner===true, isSupporter: SHOP_ACCOUNT.isSupporter===true, isDeveloper: SHOP_ACCOUNT.isDeveloper===true, badge4: SHOP_ACCOUNT.badge4===true, badge5: SHOP_ACCOUNT.badge5===true, hasLevel4: SHOP_ACCOUNT.ownedSkins.includes('green'), hasLevel5: SHOP_ACCOUNT.ownedSkins.includes('luna')});
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -4135,7 +4137,7 @@ $('#chatlog').addEventListener('click',event=>{
   if(editBtn){event.stopPropagation();startEdit(editBtn.dataset.editMsg);}
 });
 async function deleteServerChatMessage(messageId){
-  if(!SHOP_ACCOUNT.token||!(SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter)||!Number.isFinite(messageId))return;
+  if(!SHOP_ACCOUNT.token||!(SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDeveloper)||!Number.isFinite(messageId))return;
   if(!confirm(S.lang==='de'?'Diese Nachricht löschen?':S.lang==='fa'?'این پیام حذف شود؟':'Delete this message?'))return;
   try{
     const response=await fetch('/api/chat/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,messageId})});
@@ -4146,7 +4148,7 @@ async function deleteServerChatMessage(messageId){
   }catch(e){toast(t('lim_err'));}
 }
 async function moderateChatUser(targetUid,muted,who){
-  if(!SHOP_ACCOUNT.token||!(SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDesigner))return;
+  if(!SHOP_ACCOUNT.token||!(SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDeveloper||SHOP_ACCOUNT.isDesigner))return;
   try{
     const response=await fetch('/api/chat/moderate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,targetUid,muted})});
     const data=await response.json();
@@ -4263,7 +4265,7 @@ function renderChat(){
   $('#tabChat').setAttribute('aria-selected', chatTab==='chat'); $('#tabOnline').setAttribute('aria-selected', chatTab==='on'); $('#tabFr').setAttribute('aria-selected', chatTab==='fr'); $('#tabMe').innerHTML = avatar(meUser(), true) + '<span class="medot"></span>';
   $('#chatPane').hidden = chatTab !== 'chat'; $('#onPane').hidden = chatTab !== 'on'; $('#frPane').hidden = chatTab !== 'fr'; renderFriends();
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
-    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,badge4:u.badge4===true,badge5:u.badge5===true,hasLevel4:u.hasLevel4===true,hasLevel5:u.hasLevel5===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true}))
+    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,isDeveloper:u.isDeveloper===true,badge4:u.badge4===true,badge5:u.badge5===true,hasLevel4:u.hasLevel4===true,hasLevel5:u.hasLevel5===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true}))
     : [];
   const raceBadgesOn = chatRoom === 'fa';
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
@@ -4284,7 +4286,7 @@ function renderChat(){
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
   $('#chatlog').innerHTML = msgs.map((m, i) => {
-    const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isChatAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, isSupporter:m.isSupporter===true||peer.isSupporter===true, badge4:m.badge4===true||peer.badge4===true, badge5:m.badge5===true||peer.badge5===true, hasLevel4:m.hasLevel4===true||peer.hasLevel4===true, hasLevel5:m.hasLevel5===true||peer.hasLevel5===true};
+    const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isChatAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, isSupporter:m.isSupporter===true||peer.isSupporter===true, isDeveloper:m.isDeveloper===true||peer.isDeveloper===true, badge4:m.badge4===true||peer.badge4===true, badge5:m.badge5===true||peer.badge5===true, hasLevel4:m.hasLevel4===true||peer.hasLevel4===true, hasLevel5:m.hasLevel5===true||peer.hasLevel5===true};
     const chatStyle = m.chatItems && typeof m.chatItems === 'object' ? m.chatItems : {};
     const messageFrame = mine ? eqItem('frm') : chatStyle.frm;
     const messageBubble = mine ? eqItem('bub') : chatStyle.bub;
@@ -4300,7 +4302,7 @@ function renderChat(){
     const messageCardEvent=m.cardEventResult||(m.cardEventId&&serverCardEvent?.id===m.cardEventId?serverCardEvent:null);
     const cardEventMarkup=renderServerCardEvent(messageCardEvent);
     return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
-      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span>${mine && Number.isFinite(m.id) && !m.stk ? `<button type="button" data-edit-msg="${esc(m.ts)}" title="${S.lang==='de'?'Bearbeiten':S.lang==='fa'?'ویرایش':'Edit'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(98,198,255,.35);background:rgba(98,198,255,.12);color:#62c6ff;font-size:11px;line-height:1.4">✎</button>` : ''}${SHOP_ACCOUNT.isChatAdmin || SHOP_ACCOUNT.isSupporter ? (Number.isFinite(m.id) ? `<button type="button" data-mod-del="${esc(m.id)}" title="${S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.12);color:#ff6b6b;font-size:11px;line-height:1.4">🗑</button>` : '') : ''}</div>${m.reply ? replyQuote(m.reply) : ''}
+      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span>${mine && Number.isFinite(m.id) && !m.stk ? `<button type="button" data-edit-msg="${esc(m.ts)}" title="${S.lang==='de'?'Bearbeiten':S.lang==='fa'?'ویرایش':'Edit'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(98,198,255,.35);background:rgba(98,198,255,.12);color:#62c6ff;font-size:11px;line-height:1.4">✎</button>` : ''}${SHOP_ACCOUNT.isChatAdmin || SHOP_ACCOUNT.isSupporter || SHOP_ACCOUNT.isDeveloper ? (Number.isFinite(m.id) ? `<button type="button" data-mod-del="${esc(m.id)}" title="${S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.12);color:#ff6b6b;font-size:11px;line-height:1.4">🗑</button>` : '') : ''}</div>${m.reply ? replyQuote(m.reply) : ''}
       ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
   }).join('');
   renderStkPick();
@@ -6069,7 +6071,7 @@ function openProfile(who, liveProfile, profileResolved){
         <span class="pfchip onl"><i></i>${esc(t('ch_online'))}</span></div>
       ${bioHtml(P)}
       ${P.me ? '' : frButtons(u.n)}
-      ${!P.me && (SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDesigner) && u.uid && String(u.uid)!==SHOP_ACCOUNT.uid ? `<button type="button" id="pfMute" style="margin-top:8px;padding:6px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:${u.chatMuted?'rgba(46,224,122,.15)':'rgba(255,107,107,.15)'};color:${u.chatMuted?'#2ee07a':'#ff6b6b'};font-size:13px">${u.chatMuted ? (S.lang==='de'?'🔈 Entmuten':S.lang==='fa'?'🔈 رفع بی‌صدا':'🔈 Unmute') : (S.lang==='de'?'🔇 Muten':S.lang==='fa'?'🔇 بی‌صدا کردن':'🔇 Mute')}</button>` : ''}</div>
+      ${!P.me && (SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDeveloper||SHOP_ACCOUNT.isDesigner) && u.uid && String(u.uid)!==SHOP_ACCOUNT.uid ? `<button type="button" id="pfMute" style="margin-top:8px;padding:6px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:${u.chatMuted?'rgba(46,224,122,.15)':'rgba(255,107,107,.15)'};color:${u.chatMuted?'#2ee07a':'#ff6b6b'};font-size:13px">${u.chatMuted ? (S.lang==='de'?'🔈 Entmuten':S.lang==='fa'?'🔈 رفع بی‌صدا':'🔈 Unmute') : (S.lang==='de'?'🔇 Muten':S.lang==='fa'?'🔇 بی‌صدا کردن':'🔇 Mute')}</button>` : ''}</div>
     ${P.me ? `<div class="pfpick" id="pfPick" hidden><h4>${esc(t('pf_photo'))}</h4>
         <div class="pfpgrid">${AV_PRESETS.map((src, i) => `<button data-avset="${i}" data-av="${src.replace(/^assets\/av-|\.webp$/g, '')}" class="${u.img === src ? 'on' : ''}"><img src="${src}" alt=""></button>`).join('')}</div>
         <div class="pfpbtns"><label class="btn pfup">⬆ ${esc(t('pf_upload'))}<input type="file" accept="image/*" id="pfFile" hidden></label>

@@ -1373,6 +1373,7 @@ function newUser(id, name) {
     adminBadge: 'boy',
     isDesigner: false,
     isSupporter: false,
+    isDeveloper: false,
     badge4: false,
     badge5: false,
     chatMuted: false,
@@ -1840,6 +1841,7 @@ function publicState(user) {
     adminBadge: user.adminBadge === 'girl' ? 'girl' : 'boy',
     isDesigner: user.isDesigner === true,
     isSupporter: user.isSupporter === true,
+    isDeveloper: user.isDeveloper === true,
     badge4: user.badge4 === true,
     badge5: user.badge5 === true,
     chatMuted: user.chatMuted === true,
@@ -1856,15 +1858,15 @@ function hasActiveLevelReward(user, level) {
   return Number(user.skinRewards && user.skinRewards[skin] && user.skinRewards[skin].remainingDays) > 0;
 }
 
-// Supporter is a full admin-equivalent role (same chat-moderation and
-// chat-override powers as isChatAdmin) - just a separate flag/badge so staff
-// can be given it without also getting the "Chat-Admin" label.
+// Supporter and Developer are both full admin-equivalent roles (same
+// chat-moderation and chat-override powers as isChatAdmin) - just separate
+// flags/badges so staff can be given either without the "Chat-Admin" label.
 function isAdminOrSupporter(user) {
-  return !!(user && (user.isChatAdmin === true || user.isSupporter === true));
+  return !!(user && (user.isChatAdmin === true || user.isSupporter === true || user.isDeveloper === true));
 }
 
 function canModerateChat(user) {
-  return user && (user.isChatAdmin === true || user.isSupporter === true || user.isDesigner === true);
+  return user && (user.isChatAdmin === true || user.isSupporter === true || user.isDeveloper === true || user.isDesigner === true);
 }
 
 function latestWithdrawalAt(user) {
@@ -2685,8 +2687,8 @@ async function runSearch(){const q=document.getElementById('chatUserSearch').val
 updateChatToggleBtn(d.chatEnabled);
 updateCardEventToggleBtn(d.cardEventEnabled);
 const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'':'Keine Nutzer gefunden.';
-d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.isSupporter?' is-supporter':'')+(u.chatMuted?' is-muted':'');
-const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isSupporter?'<span class="tag admin">Supporter</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.badge4?'<span class="tag designer">Badge 4</span>':'')+(u.badge5?'<span class="tag designer">Badge 5</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
+d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.isSupporter?' is-supporter':'')+(u.isDeveloper?' is-supporter':'')+(u.chatMuted?' is-muted':'');
+const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isSupporter?'<span class="tag admin">Supporter</span>':'')+(u.isDeveloper?'<span class="tag admin">Developer (Amir)</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.badge4?'<span class="tag designer">Badge 4</span>':'')+(u.badge5?'<span class="tag designer">Badge 5</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
 row.innerHTML='<span>'+u.name+tags+'<br><span class="muted">UID '+u.uid+'</span></span><span></span><span></span><span></span><span></span>';
 const adminBtn=document.createElement('button');adminBtn.className='small-btn';adminBtn.textContent=u.isChatAdmin?'Badge speichern':'Zum Chat-Admin machen';
 const adminBadgeSelect=document.createElement('select');adminBadgeSelect.className='admin-badge-select';adminBadgeSelect.title='Admin-Badge auswählen';
@@ -2698,6 +2700,9 @@ adminRemoveBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-admin',{m
 const supporterBtn=document.createElement('button');supporterBtn.className='small-btn';supporterBtn.textContent=u.isSupporter?'Supporter entfernen':'Zum Supporter machen';
 supporterBtn.title='Supporter hat dieselben Rechte wie Chat-Admin (löschen, muten, Chat-Override)';
 supporterBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-supporter',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isSupporter:!u.isSupporter})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
+const developerBtn=document.createElement('button');developerBtn.className='small-btn';developerBtn.textContent=u.isDeveloper?'Developer-Badge entfernen':'Developer-Badge (Amir) geben';
+developerBtn.title='Hat dieselben Rechte wie Chat-Admin (löschen, muten, Chat-Override)';
+developerBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-developer',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isDeveloper:!u.isDeveloper})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const designerBtn=document.createElement('button');designerBtn.className='small-btn';designerBtn.textContent=u.isDesigner?'Designer entfernen':'Zum Designer machen';
 designerBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-designer',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isDesigner:!u.isDesigner})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const badgeBtn=document.createElement('button');badgeBtn.className='small-btn';badgeBtn.textContent=u.badge4?'Badge 4 entfernen':'Badge 4 geben';
@@ -2706,7 +2711,7 @@ const badge5Btn=document.createElement('button');badge5Btn.className='small-btn'
 badge5Btn.onclick=async()=>{const rr=await fetch('/admin/chat/set-badge5',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,badge5:!u.badge5})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const muteBtn=document.createElement('button');muteBtn.className='small-btn'+(u.chatMuted?'':' danger');muteBtn.textContent=u.chatMuted?'Entmuten':'Muten';
 muteBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-mute',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,muted:!u.chatMuted})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
-row.children[2].appendChild(adminBadgeSelect);row.children[2].appendChild(adminBtn);row.children[2].appendChild(adminRemoveBtn);row.children[1].appendChild(supporterBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(badgeBtn);row.children[4].appendChild(badge5Btn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
+row.children[2].appendChild(adminBadgeSelect);row.children[2].appendChild(adminBtn);row.children[2].appendChild(adminRemoveBtn);row.children[1].appendChild(supporterBtn);row.children[1].appendChild(developerBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(badgeBtn);row.children[4].appendChild(badge5Btn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
 status(d.users.length+' Nutzer geladen.')}
 document.getElementById('chatUserSearchBtn').onclick=runSearch;
 document.getElementById('chatUserSearch').addEventListener('keydown',e=>{if(e.key==='Enter')runSearch()});
@@ -3126,6 +3131,8 @@ function publicChatMessage(message, viewerUid) {
     ? users[String(message.uid)].isDesigner === true : message.isDesigner === true;
   publicMessage.isSupporter = users[String(message.uid)]
     ? users[String(message.uid)].isSupporter === true : message.isSupporter === true;
+  publicMessage.isDeveloper = users[String(message.uid)]
+    ? users[String(message.uid)].isDeveloper === true : message.isDeveloper === true;
   publicMessage.badge4 = users[String(message.uid)]
     ? users[String(message.uid)].badge4 === true : message.badge4 === true;
   publicMessage.badge5 = users[String(message.uid)]
@@ -3175,7 +3182,7 @@ app.get('/api/online-users', (req, res) => {
   const list = Object.values(users)
     .filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS)
     .sort((a, b) => {
-      const adminDiff = (b.isChatAdmin === true || b.isSupporter === true ? 1 : 0) - (a.isChatAdmin === true || a.isSupporter === true ? 1 : 0);
+      const adminDiff = (b.isChatAdmin === true || b.isSupporter === true || b.isDeveloper === true ? 1 : 0) - (a.isChatAdmin === true || a.isSupporter === true || a.isDeveloper === true ? 1 : 0);
       if (adminDiff !== 0) return adminDiff;
       const badgeDiff = (b.badge4 === true || b.badge5 === true ? 1 : 0) - (a.badge4 === true || a.badge5 === true ? 1 : 0);
       if (badgeDiff !== 0) return badgeDiff;
@@ -3191,6 +3198,7 @@ app.get('/api/online-users', (req, res) => {
       adminBadge: user.adminBadge === 'girl' ? 'girl' : 'boy',
       isDesigner: user.isDesigner === true,
       isSupporter: user.isSupporter === true,
+      isDeveloper: user.isDeveloper === true,
       badge4: user.badge4 === true,
       badge5: user.badge5 === true,
       hasLevel4: Array.isArray(user.ownedSkins) && user.ownedSkins.includes('green'),
@@ -3475,6 +3483,7 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
     isAdmin: req.user.isChatAdmin === true,
     isDesigner: req.user.isDesigner === true,
     isSupporter: req.user.isSupporter === true,
+    isDeveloper: req.user.isDeveloper === true,
     badge4: req.user.badge4 === true,
     badge5: req.user.badge5 === true,
     chatMuted: req.user.chatMuted === true,
@@ -4765,6 +4774,7 @@ app.get('/api/leaderboard', (req, res) => {
       adminBadge: user && user.adminBadge === 'girl' ? 'girl' : 'boy',
       isDesigner: user && user.isDesigner === true,
       isSupporter: user && user.isSupporter === true,
+      isDeveloper: user && user.isDeveloper === true,
       badge4: user && user.badge4 === true,
       badge5: user && user.badge5 === true,
     };
@@ -4884,6 +4894,7 @@ app.get('/admin/chat-users', requireAdmin, (req, res) => {
     adminBadge: u.adminBadge === 'girl' ? 'girl' : 'boy',
     isDesigner: u.isDesigner === true,
     isSupporter: u.isSupporter === true,
+    isDeveloper: u.isDeveloper === true,
     badge4: u.badge4 === true,
     badge5: u.badge5 === true,
     chatMuted: u.chatMuted === true,
@@ -4951,6 +4962,18 @@ app.post('/admin/chat/set-supporter', requireAdmin, (req, res) => {
   persist();
   res.json({ ok: true, uid, isSupporter: user.isSupporter });
   broadcastChatEvent('moderation', { uid, isSupporter: user.isSupporter });
+});
+
+// Developer badge ("Amir"): another full admin-equivalent role (see
+// isAdminOrSupporter/canModerateChat), just a separate flag/badge image.
+app.post('/admin/chat/set-developer', requireAdmin, (req, res) => {
+  const uid = String((req.body && req.body.uid) || '');
+  const user = users[uid];
+  if (!user) return res.status(404).json({ error: 'user-not-found' });
+  user.isDeveloper = req.body.isDeveloper === true;
+  persist();
+  res.json({ ok: true, uid, isDeveloper: user.isDeveloper });
+  broadcastChatEvent('moderation', { uid, isDeveloper: user.isDeveloper });
 });
 
 app.post('/admin/chat/set-badge4', requireAdmin, (req, res) => {
