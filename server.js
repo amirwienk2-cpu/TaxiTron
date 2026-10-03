@@ -3097,6 +3097,8 @@ function publicChatMessage(message, viewerUid) {
     ? users[String(message.uid)].isSupporter === true : message.isSupporter === true;
   publicMessage.badge4 = users[String(message.uid)]
     ? users[String(message.uid)].badge4 === true : message.badge4 === true;
+  publicMessage.hasLevel4 = author ? Array.isArray(author.ownedSkins) && author.ownedSkins.includes('green') : false;
+  publicMessage.hasLevel5 = author ? Array.isArray(author.ownedSkins) && author.ownedSkins.includes('luna') : false;
   publicMessage.chatMuted = users[String(message.uid)]
     ? users[String(message.uid)].chatMuted === true : message.chatMuted === true;
   publicMessage.reactions = publicChatReactions(message, viewerUid);
@@ -3157,6 +3159,8 @@ app.get('/api/online-users', (req, res) => {
       isDesigner: user.isDesigner === true,
       isSupporter: user.isSupporter === true,
       badge4: user.badge4 === true,
+      hasLevel4: Array.isArray(user.ownedSkins) && user.ownedSkins.includes('green'),
+      hasLevel5: Array.isArray(user.ownedSkins) && user.ownedSkins.includes('luna'),
       chatMuted: user.chatMuted === true,
       racing: racingUids ? racingUids.has(String(user.id)) : false,
       racePhase: racingUids && racingUids.has(String(user.id)) ? racePhase : null,

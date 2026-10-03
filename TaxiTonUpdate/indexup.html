@@ -3851,17 +3851,21 @@ function badgeFor(u){
   const fa = S.lang === 'fa';
   if (u.isChatAdmin || u.isAdmin || u.role === 'admin1' || u.role === 'admin2') {
     const girl = u.adminBadge === 'girl' || u.role === 'admin2';
-    return {src:girl ? 'assets/role-admin-girl.webp' : 'assets/role-admin-boy.webp', alt:'Admin', staff:true};
+    return [{src:girl ? 'assets/role-admin-girl.webp' : 'assets/role-admin-boy.webp', alt:'Admin', staff:true}];
   }
-  if (u.isDesigner || u.role === 'design') return {src:'assets/role-design.webp', alt:'Design', staff:true};
-  if (u.isSupporter || u.role === 'support') return {src:'assets/role-support.webp', alt:'Support', staff:true};
-  if (u.badge4) return {src:'../sprites/badge4.png', alt:'Badge 4', staff:true};
-  const cars = u.mine ? S.cars : [u.car];
-  if (cars.includes('luna')) return {src:'assets/badge-lvl5.webp', alt:'Level 5'};
-  if (cars.includes('berlin')) return {src:'assets/badge-lvl4.webp', alt:'Level 4'};
-  return null;
+  if (u.isDesigner || u.role === 'design') return [{src:'assets/role-design.webp', alt:'Design', staff:true}];
+  if (u.isSupporter || u.role === 'support') return [{src:'assets/role-support.webp', alt:'Support', staff:true}];
+  if (u.badge4) return [{src:'assets/badge-lvl4.webp', alt:'Badge 4', staff:true}];
+  // A player who owns BOTH the level-4 and level-5 car skins gets both level
+  // badges shown next to their name, not just the higher one. hasLevel4/5 come
+  // straight from the server's real ownedSkins (green/luna), unlike the old
+  // "mine ? S.cars : [u.car]" check which never actually matched for anyone.
+  const badges = [];
+  if (u.hasLevel5) badges.push({src:'assets/badge-lvl5.webp', alt:'Level 5'});
+  if (u.hasLevel4) badges.push({src:'assets/badge-lvl4.webp', alt:'Level 4'});
+  return badges;
 }
-const badgeImg = (u, big) => { const b = badgeFor(u); return b ? `<img class="ubadge ${big?'big':''} ${b.staff?'staff':''}" src="${b.src}" alt="${b.alt}" title="${b.alt}">` : ''; };
+const badgeImg = (u, big) => badgeFor(u).map(b => `<img class="ubadge ${big?'big':''} ${b.staff?'staff':''}" src="${b.src}" alt="${b.alt}" title="${b.alt}">`).join('');
 const CHAT_ROOMS = ['en', 'fa', 'de'];
 const CHAT_REACTION_EMOJIS = ['👍','❤️','😂','😮','😢','🔥','👏','😡'];
 let reactionPickerMessageId = null, chatEventSource = null;
@@ -3935,7 +3939,7 @@ const userOf = n => {
   const sample=CHAT_USERS.find(u=>u.n===n); if(sample)return sample;
   const online=SHOP_ACCOUNT.onlineUsers.find(u=>u.name===n);
   const social=friendTargetByName(n);
-  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:online?.isChatAdmin===true,adminBadge:online?.adminBadge,isDesigner:online?.isDesigner===true,isSupporter:online?.isSupporter===true,badge4:online?.badge4===true,chatMuted:online?.chatMuted===true};
+  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:online?.isChatAdmin===true,adminBadge:online?.adminBadge,isDesigner:online?.isDesigner===true,isSupporter:online?.isSupporter===true,badge4:online?.badge4===true,hasLevel4:online?.hasLevel4===true,hasLevel5:online?.hasLevel5===true,chatMuted:online?.chatMuted===true};
 };
 function friendTargetByName(name){
   return SHOP_ACCOUNT.friends.find(u=>u.name===name)
@@ -3954,11 +3958,11 @@ function myTelegramName(){
   if (!user) return t('you');
   return user.username || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || ('Player ' + user.id);
 }
-const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null, isChatAdmin: SHOP_ACCOUNT.isChatAdmin===true, adminBadge: SHOP_ACCOUNT.adminBadge, isDesigner: SHOP_ACCOUNT.isDesigner===true, isSupporter: SHOP_ACCOUNT.isSupporter===true, badge4: SHOP_ACCOUNT.badge4===true});
+const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: typeof S.avatar === 'string' && /^(data:image\/(jpeg|png|webp);base64,|assets\/)/.test(S.avatar) ? S.avatar : null, isChatAdmin: SHOP_ACCOUNT.isChatAdmin===true, adminBadge: SHOP_ACCOUNT.adminBadge, isDesigner: SHOP_ACCOUNT.isDesigner===true, isSupporter: SHOP_ACCOUNT.isSupporter===true, badge4: SHOP_ACCOUNT.badge4===true, hasLevel4: SHOP_ACCOUNT.ownedSkins.includes('green'), hasLevel5: SHOP_ACCOUNT.ownedSkins.includes('luna')});
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,badge4:message.badge4===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,badge4:message.badge4===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -4248,7 +4252,7 @@ function renderChat(){
   $('#tabChat').setAttribute('aria-selected', chatTab==='chat'); $('#tabOnline').setAttribute('aria-selected', chatTab==='on'); $('#tabFr').setAttribute('aria-selected', chatTab==='fr'); $('#tabMe').innerHTML = avatar(meUser(), true) + '<span class="medot"></span>';
   $('#chatPane').hidden = chatTab !== 'chat'; $('#onPane').hidden = chatTab !== 'on'; $('#frPane').hidden = chatTab !== 'fr'; renderFriends();
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
-    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,badge4:u.badge4===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true}))
+    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,badge4:u.badge4===true,hasLevel4:u.hasLevel4===true,hasLevel5:u.hasLevel5===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true}))
     : [];
   const raceBadgesOn = chatRoom === 'fa';
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
@@ -4269,7 +4273,7 @@ function renderChat(){
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
   $('#chatlog').innerHTML = msgs.map((m, i) => {
-    const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isChatAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, isSupporter:m.isSupporter===true||peer.isSupporter===true, badge4:m.badge4===true||peer.badge4===true};
+    const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isChatAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, isSupporter:m.isSupporter===true||peer.isSupporter===true, badge4:m.badge4===true||peer.badge4===true, hasLevel4:m.hasLevel4===true||peer.hasLevel4===true, hasLevel5:m.hasLevel5===true||peer.hasLevel5===true};
     const chatStyle = m.chatItems && typeof m.chatItems === 'object' ? m.chatItems : {};
     const messageFrame = mine ? eqItem('frm') : chatStyle.frm;
     const messageBubble = mine ? eqItem('bub') : chatStyle.bub;
