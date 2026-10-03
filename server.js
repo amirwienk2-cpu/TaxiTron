@@ -954,9 +954,17 @@ const TAXI_RACE_MIN_PLAYERS = 2;
 const TAXI_RACE_MAX_PLAYERS = 5;
 const TAXI_RACE_REWARD_TT = 250;
 const TAXI_RACE_TIP_TT = 100; // reward for a spectator correctly predicting the winner
+// Occasionally a race is a "bonus race" with a much bigger prize (random, roughly
+// 1-in-10 races on average, but never two bonus races back-to-back - see
+// rollTaxiRaceBonus()).
+const TAXI_RACE_BONUS_CHANCE = 0.1;
+const TAXI_RACE_BONUS_MIN_GAP = 3; // at least this many normal races must happen between two bonus races
+const TAXI_RACE_BONUS_WINNER_MULT = 10;
+const TAXI_RACE_BONUS_TIP_MULT = 5;
 
 let taxiRaceState = null; // null = no race has happened yet (or none kept around) - see taxiRaceNextStartAt for the countdown
 let taxiRaceNextStartAt = 0;
+let taxiRaceRacesSinceBonus = TAXI_RACE_BONUS_MIN_GAP; // allow a bonus race right away on first boot
 let taxiRaceGridTimer = null; // fires when the drivers for the next race are drawn/announced
 let taxiRaceRunTimer = null; // fires when a drawn race actually starts running
 let taxiRaceFinishTimer = null;
@@ -965,6 +973,7 @@ try {
     const loaded = readJsonFile(TAXI_RACE_FILE);
     if (loaded && typeof loaded === 'object') {
       taxiRaceNextStartAt = Number(loaded.nextStartAt) || 0;
+      taxiRaceRacesSinceBonus = Number.isFinite(Number(loaded.racesSinceBonus)) ? Number(loaded.racesSinceBonus) : TAXI_RACE_BONUS_MIN_GAP;
       if (loaded.race && typeof loaded.race.id === 'string') taxiRaceState = loaded.race;
     }
   }
@@ -974,11 +983,22 @@ try {
 function persistTaxiRaceState() {
   try {
     const tmp = TAXI_RACE_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ nextStartAt: taxiRaceNextStartAt, race: taxiRaceState }));
+    fs.writeFileSync(tmp, JSON.stringify({ nextStartAt: taxiRaceNextStartAt, racesSinceBonus: taxiRaceRacesSinceBonus, race: taxiRaceState }));
     fs.renameSync(tmp, TAXI_RACE_FILE);
   } catch (error) {
     console.error('[taxi-race] state write failed: ' + error.message);
   }
+}
+// Decides whether the next race is a bonus race (bigger prize). Keeps the
+// random 1-in-10 feel but guarantees a cooldown so it can never fire twice in
+// a row (or too frequently) - see TAXI_RACE_BONUS_MIN_GAP.
+function rollTaxiRaceBonus() {
+  taxiRaceRacesSinceBonus++;
+  if (taxiRaceRacesSinceBonus >= TAXI_RACE_BONUS_MIN_GAP && Math.random() < TAXI_RACE_BONUS_CHANCE) {
+    taxiRaceRacesSinceBonus = 0;
+    return true;
+  }
+  return false;
 }
 function isTaxiRaceActive() {
   return !!(taxiRaceState && taxiRaceState.status === 'running');
@@ -1003,8 +1023,9 @@ function publicTaxiRace(viewerUid) {
     predictionCounts,
     totalPredictions: Object.keys(race.predictions || {}).length,
     correctNames: race.correctNames || null,
-    tipRewardTT: TAXI_RACE_TIP_TT,
-    rewardTT: TAXI_RACE_REWARD_TT,
+    isBonus: race.isBonus === true,
+    tipRewardTT: race.tipRewardTT || TAXI_RACE_TIP_TT,
+    rewardTT: race.rewardTT || TAXI_RACE_REWARD_TT,
   };
   if (viewerUid != null) {
     result.myPrediction = (race.predictions || {})[String(viewerUid)] || null;
@@ -1101,6 +1122,9 @@ function drawTaxiRaceGrid() {
   }));
   const raceId = 'race-' + now + '-' + crypto.randomBytes(5).toString('hex');
   const startsAt = Math.max(taxiRaceNextStartAt, now + 1000);
+  const isBonus = rollTaxiRaceBonus();
+  const rewardTT = isBonus ? TAXI_RACE_REWARD_TT * TAXI_RACE_BONUS_WINNER_MULT : TAXI_RACE_REWARD_TT;
+  const tipRewardTT = isBonus ? TAXI_RACE_TIP_TT * TAXI_RACE_BONUS_TIP_MULT : TAXI_RACE_TIP_TT;
   taxiRaceState = {
     id: raceId,
     status: 'grid',
@@ -1110,10 +1134,14 @@ function drawTaxiRaceGrid() {
     winnerUid: null,
     winnerName: null,
     correctNames: null,
+    isBonus,
+    rewardTT,
+    tipRewardTT,
     payoutDone: false,
   };
   persistTaxiRaceState();
-  postTaxiRaceBotMessage('🔮 رانندگان مشخص شدند: ' + players.map((p) => p.name).join('، ') + '. برنده را رایگان حدس بزن — حدس درست ' + TAXI_RACE_TIP_TT + ' TT جایزه دارد!', raceId, 'grid');
+  const bonusPrefix = isBonus ? '🔥 رنس بونوس امروز! جایزه x10 ' : '';
+  postTaxiRaceBotMessage(bonusPrefix + '🔮 رانندگان مشخص شدند: ' + players.map((p) => p.name).join('، ') + '. برنده را رایگان حدس بزن — حدس درست ' + tipRewardTT + ' TT جایزه دارد!', raceId, 'grid');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
   if (taxiRaceRunTimer) clearTimeout(taxiRaceRunTimer);
@@ -1132,7 +1160,8 @@ function startDrawnTaxiRace(raceId) {
   race.winnerName = sim.winnerName;
   persistTaxiRaceState();
   const tipCount = Object.keys(race.predictions || {}).length;
-  postTaxiRaceBotMessage('🚦 شروع شد! پیش‌بینی‌ها بسته شدند (' + tipCount + ' پیش‌بینی). برنده ' + TAXI_RACE_REWARD_TT + ' TT می‌گیرد!', raceId, 'start');
+  const startBonusPrefix = race.isBonus ? '🔥 ' : '';
+  postTaxiRaceBotMessage(startBonusPrefix + '🚦 شروع شد! پیش‌بینی‌ها بسته شدند (' + tipCount + ' پیش‌بینی). برنده ' + (race.rewardTT || TAXI_RACE_REWARD_TT) + ' TT می‌گیرد!', raceId, 'start');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
   if (taxiRaceFinishTimer) clearTimeout(taxiRaceFinishTimer);
@@ -1147,25 +1176,28 @@ function finishTaxiRace(raceId) {
   if (!race || race.id !== raceId || race.status !== 'running') return;
   race.status = 'finished';
   race.completedAt = Date.now();
+  const rewardTT = race.rewardTT || TAXI_RACE_REWARD_TT;
+  const tipRewardTT = race.tipRewardTT || TAXI_RACE_TIP_TT;
   if (!race.payoutDone) {
     race.payoutDone = true; // set before the async persist() call so a near-simultaneous restart can't double-pay
     const winner = users[String(race.winnerUid)];
     if (winner) {
-      winner.ttBalance = Number((Number(winner.ttBalance || 0) + TAXI_RACE_REWARD_TT).toFixed(6));
+      winner.ttBalance = Number((Number(winner.ttBalance || 0) + rewardTT).toFixed(6));
     }
     const correctUids = Object.entries(race.predictions || {}).filter(([, pick]) => String(pick) === String(race.winnerUid)).map(([uid]) => uid);
     race.correctNames = correctUids.map((uid) => (users[uid] && users[uid].name) || ('Player ' + uid));
     correctUids.forEach((uid) => {
       const predictor = users[uid];
-      if (predictor) predictor.ttBalance = Number((Number(predictor.ttBalance || 0) + TAXI_RACE_TIP_TT).toFixed(6));
+      if (predictor) predictor.ttBalance = Number((Number(predictor.ttBalance || 0) + tipRewardTT).toFixed(6));
     });
     persist();
   }
   persistTaxiRaceState();
   const tipLine = race.correctNames && race.correctNames.length
-    ? ' 🔮 ' + race.correctNames.length + ' نفر درست حدس زدند و هرکدام ' + TAXI_RACE_TIP_TT + ' TT گرفتند: ' + race.correctNames.join('، ') + '.'
+    ? ' 🔮 ' + race.correctNames.length + ' نفر درست حدس زدند و هرکدام ' + tipRewardTT + ' TT گرفتند: ' + race.correctNames.join('، ') + '.'
     : '';
-  postTaxiRaceBotMessage('🏆 ' + race.winnerName + ' اول به خط پایان رسید و ' + TAXI_RACE_REWARD_TT + ' TT برد!' + tipLine + ' مسابقه بعدی تا ۵ دقیقه دیگر.', race.id, 'winner');
+  const finishBonusPrefix = race.isBonus ? '🔥 ' : '';
+  postTaxiRaceBotMessage(finishBonusPrefix + '🏆 ' + race.winnerName + ' اول به خط پایان رسید و ' + rewardTT + ' TT برد!' + tipLine + ' مسابقه بعدی تا ۵ دقیقه دیگر.', race.id, 'winner');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
 }
@@ -3044,6 +3076,8 @@ app.get('/api/online-users', (req, res) => {
   const racingUids = raceActive ? new Set(taxiRaceState.drivers.map((d) => String(d.uid))) : null;
   const racePhase = raceActive ? taxiRaceState.status : null;
   const lastWinnerUid = taxiRaceState && taxiRaceState.status === 'finished' ? String(taxiRaceState.winnerUid) : null;
+  const lastRaceRewardTT = (taxiRaceState && taxiRaceState.rewardTT) || TAXI_RACE_REWARD_TT;
+  const lastRaceTipRewardTT = (taxiRaceState && taxiRaceState.tipRewardTT) || TAXI_RACE_TIP_TT;
   const correctPredictorNames = new Set((taxiRaceState && taxiRaceState.status === 'finished' && taxiRaceState.correctNames) || []);
   const pendingPredictionUids = raceActive ? new Set(Object.keys(taxiRaceState.predictions || {})) : null;
   const list = Object.values(users)
@@ -3069,7 +3103,9 @@ app.get('/api/online-users', (req, res) => {
       racing: racingUids ? racingUids.has(String(user.id)) : false,
       racePhase: racingUids && racingUids.has(String(user.id)) ? racePhase : null,
       lastRaceWinner: lastWinnerUid === String(user.id),
+      lastRaceRewardTT,
       racePredictedCorrect: correctPredictorNames.has(user.name),
+      lastRaceTipRewardTT,
       racePredictionPending: pendingPredictionUids ? pendingPredictionUids.has(String(user.id)) : false,
     }));
   res.json({ users: list });

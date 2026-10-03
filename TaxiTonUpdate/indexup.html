@@ -2554,7 +2554,12 @@
   .race-btn{flex:none;border:0;border-radius:11px;padding:8px 13px;font:inherit;font-family:var(--display);font-size:12.5px;letter-spacing:.3px;
     color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00,0 2px 8px rgba(255,198,26,.25)}
   .race-btn.live{color:#fff;background:linear-gradient(180deg,#ff6b6b,#d8232f 45%,#8a0d16);box-shadow:0 3px 0 #5c0309,0 2px 10px rgba(216,35,47,.4);animation:raceLiveBlink 1s ease-in-out infinite}
+  .race-btn.bonus{background:linear-gradient(180deg,#ff8a3d,#ff3d7a 45%,#8a0d4a);box-shadow:0 3px 0 #6b0d2e,0 2px 10px rgba(255,61,122,.45);animation:raceBonusPulse 1.1s ease-in-out infinite}
   @keyframes raceLiveBlink{0%,100%{opacity:1}50%{opacity:.62}}
+  @keyframes raceBonusPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .race-bonus-banner{margin:-4px -4px 10px;padding:9px 12px;border-radius:14px;text-align:center;font-family:var(--display);font-size:13px;letter-spacing:.3px;color:#fff;
+    background:linear-gradient(90deg,#ff5f6d,#ffc371);box-shadow:0 3px 10px rgba(255,95,109,.4);animation:raceBonusGlow 1.4s ease-in-out infinite}
+  @keyframes raceBonusGlow{0%,100%{box-shadow:0 3px 10px rgba(255,95,109,.4)}50%{box-shadow:0 3px 18px rgba(255,195,113,.65)}}
   .racewrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:14px 12px;overflow-y:auto}
   .race-card{background:linear-gradient(180deg,#1d2358,#161a2c 60%);border:1.5px solid #3c4170;border-radius:20px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04)}
   .race-card.win{border-color:rgba(255,198,26,.65);box-shadow:0 0 26px rgba(255,198,26,.25),inset 0 1px 0 rgba(255,255,255,.04)}
@@ -3062,9 +3067,10 @@
         <div class="chatlog" id="chatlog"></div>
         <div class="racewrap" id="raceView" hidden>
           <div class="race-card" id="raceCardWin">
+            <div class="race-bonus-banner" id="raceBonusBanner" hidden>🔥 رنس بونوس! جایزه x10</div>
             <div class="race-card-head">
               <div><div class="race-card-title">🏁 مسابقه تاکسی</div><div class="race-card-sub" id="raceSub">هر ۵ دقیقه · ۵ راننده تصادفی</div></div>
-              <div class="race-card-prize"><b>250 TT</b><span>برای برنده</span></div>
+              <div class="race-card-prize"><b id="racePrizeAmount">250 TT</b><span>برای برنده</span></div>
             </div>
             <div class="race-card-timer"><i id="raceTimerBar" style="width:100%"></i></div>
             <div class="race-wait" id="raceWait" hidden>
@@ -4241,11 +4247,11 @@ function renderChat(){
   $('#tabChat').setAttribute('aria-selected', chatTab==='chat'); $('#tabOnline').setAttribute('aria-selected', chatTab==='on'); $('#tabFr').setAttribute('aria-selected', chatTab==='fr'); $('#tabMe').innerHTML = avatar(meUser(), true) + '<span class="medot"></span>';
   $('#chatPane').hidden = chatTab !== 'chat'; $('#onPane').hidden = chatTab !== 'on'; $('#frPane').hidden = chatTab !== 'fr'; renderFriends();
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
-    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,badge4:u.badge4===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,racePredictedCorrect:u.racePredictedCorrect===true,racePredictionPending:u.racePredictionPending===true}))
+    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,badge4:u.badge4===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true}))
     : [];
   const raceBadgesOn = chatRoom === 'fa';
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
-      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span>${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${raceBadgesOn && u.racing ? `<span class="race-badge racing">${u.racePhase === 'grid' ? '🔮 شروع می‌شود' : '🏁 در حال مسابقه'}</span>` : raceBadgesOn && u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${TAXI_RACE_REWARD_TT} TT</span>` : raceBadgesOn && u.racePredictedCorrect ? `<span class="race-badge winner">🔮 +${TAXI_RACE_TIP_TT} TT</span>` : raceBadgesOn && u.racePredictionPending ? `<span class="race-badge racing">🔮 پیش‌بینی</span>` : ''}</div>
+      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span>${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${raceBadgesOn && u.racing ? `<span class="race-badge racing">${u.racePhase === 'grid' ? '🔮 شروع می‌شود' : '🏁 در حال مسابقه'}</span>` : raceBadgesOn && u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${u.lastRaceRewardTT || TAXI_RACE_REWARD_TT} TT</span>` : raceBadgesOn && u.racePredictedCorrect ? `<span class="race-badge winner">🔮 +${u.lastRaceTipRewardTT || TAXI_RACE_TIP_TT} TT</span>` : raceBadgesOn && u.racePredictionPending ? `<span class="race-badge racing">🔮 پیش‌بینی</span>` : ''}</div>
       <div class="muted">${raceBadgesOn && u.racing ? (u.racePhase === 'grid' ? '🔮 به‌زودی می‌راند' : '🏁 در حال مسابقه') : u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
   const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
@@ -4428,15 +4434,17 @@ function taxiRaceCountdownText(ms){
 function renderRaceButton(){
   const btn = $('#raceBtn'), txt = $('#raceBtnText');
   if (!btn || !txt) return;
-  if (chatRoom !== TAXI_RACE_ROOM) { btn.hidden = true; btn.classList.remove('live'); return; }
+  if (chatRoom !== TAXI_RACE_ROOM) { btn.hidden = true; btn.classList.remove('live', 'bonus'); return; }
   const race = TAXI_RACE.race;
+  const isBonus = !!(race && race.isBonus && race.status !== 'finished');
+  btn.classList.toggle('bonus', isBonus);
   if (race && race.status === 'running') {
-    btn.hidden = false; btn.classList.add('live'); txt.textContent = '🏁 LIVE';
+    btn.hidden = false; btn.classList.add('live'); txt.textContent = isBonus ? '🔥 LIVE x10' : '🏁 LIVE';
     return;
   }
   btn.classList.remove('live');
   if (race && race.status === 'grid') {
-    btn.hidden = false; txt.textContent = '🔮 ' + taxiRaceCountdownText(race.startsAt - Date.now());
+    btn.hidden = false; txt.textContent = (isBonus ? '🔥 ' : '🔮 ') + taxiRaceCountdownText(race.startsAt - Date.now());
   } else if (TAXI_RACE.nextStartAt > Date.now()) {
     btn.hidden = false; txt.textContent = '🏁 ' + taxiRaceCountdownText(TAXI_RACE.nextStartAt - Date.now());
   } else if (race && race.status === 'finished') {
@@ -4502,7 +4510,11 @@ function renderRaceCardChrome(){
   if (!TAXI_RACE.viewOpen) return;
   const race = TAXI_RACE.race;
   const card = $('#raceCardWin'), sub = $('#raceSub'), bar = $('#raceTimerBar'), back = $('#raceBack');
+  const banner = $('#raceBonusBanner'), prize = $('#racePrizeAmount');
   if (!card) return;
+  const isBonus = !!(race && race.isBonus);
+  if (banner) banner.hidden = !isBonus;
+  if (prize) prize.textContent = (race && race.rewardTT ? race.rewardTT : TAXI_RACE_REWARD_TT) + ' TT';
   if (race && race.status === 'running') {
     card.classList.remove('win');
     const elapsedS = Math.max(0, Math.floor((Date.now() - race.startedAt) / 1000));
@@ -4569,11 +4581,12 @@ function renderRaceGrid(race){
   if (!wrap) return;
   const amRacing = race.drivers.some((d) => String(d.uid) === String(SHOP_ACCOUNT.uid));
   const counts = race.predictionCounts || {};
+  const tipReward = race.tipRewardTT || TAXI_RACE_TIP_TT;
   const hintText = amRacing
     ? '🏁 تو در این مسابقه رانندگی می‌کنی'
     : TAXI_RACE.myPrediction
       ? '🔮 پیش‌بینی تو ثبت شد'
-      : `🔮 حدس بزن چه کسی برنده می‌شود · درست = +${TAXI_RACE_TIP_TT} TT`;
+      : `🔮 حدس بزن چه کسی برنده می‌شود · درست = +${tipReward} TT`;
   wrap.innerHTML = `<div class="race-pick-hint">${esc(hintText)}</div>` + race.drivers.map((d) => {
     const initials = (d.name || '?').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || (d.name || '?').slice(0, 1);
     const isMe = String(d.uid) === String(SHOP_ACCOUNT.uid);
@@ -4662,7 +4675,7 @@ function renderRaceWinner(race){
   const tipLine = myTipRight
     ? `<div class="race-result-tip win">پیش‌بینی تو درست بود: +${race.tipRewardTT || TAXI_RACE_TIP_TT} TT</div>`
     : (TAXI_RACE.myPrediction != null ? `<div class="race-result-tip lost">پیش‌بینی تو اشتباه بود</div>` : '');
-  result.innerHTML = `<div class="race-result-ic">🏆</div><b>${esc(race.winnerName)}${youSuffix}</b><div class="race-result-reward">+${TAXI_RACE_REWARD_TT} TT</div>${tipLine}`;
+  result.innerHTML = `<div class="race-result-ic">🏆</div><b>${esc(race.winnerName)}${youSuffix}</b><div class="race-result-reward">+${race.rewardTT || TAXI_RACE_REWARD_TT} TT</div>${tipLine}`;
   renderRaceCardChrome();
 }
 async function initTaxiRace(){
