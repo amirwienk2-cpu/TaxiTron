@@ -3861,7 +3861,7 @@ function badgeFor(u){
   }
   if (u.isDesigner || u.role === 'design') return [{src:'assets/role-design.webp', alt:'Design', staff:true}];
   if (u.isSupporter || u.role === 'support') return [{src:'assets/role-support.webp', alt:'Support', staff:true}];
-  if (u.isDeveloper) return [{src:'assets/role-developer.png', alt:'Amir', staff:true}];
+  if (u.isDeveloper) return [{src:'assets/role-developer.png?v=2', alt:'Amir', staff:true}];
   // Manually-granted (admin panel) badges - shown together if a user has both.
   if (u.badge4 || u.badge5) {
     const granted = [];
