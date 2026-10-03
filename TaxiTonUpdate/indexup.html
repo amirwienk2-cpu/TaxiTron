@@ -2550,6 +2550,48 @@
   .card-event-countdown[hidden]{display:none}
   .card-event-countdown i{width:6px;height:6px;border-radius:50%;background:#ffd84a;box-shadow:0 0 7px rgba(255,216,74,.7)}
   .card-event-countdown b{font-variant-numeric:tabular-nums;color:#ffe27a;font-size:12px}
+  /* ---- Taxi Race ---- */
+  .race-btn{flex:none;border:0;border-radius:10px;padding:7px 11px;font:inherit;font-family:var(--display);font-size:12px;letter-spacing:.3px;
+    color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
+  .race-btn.live{color:#fff;background:linear-gradient(180deg,#ff6b6b,#d8232f 45%,#8a0d16);box-shadow:0 3px 0 #5c0309;animation:raceLiveBlink 1s ease-in-out infinite}
+  @keyframes raceLiveBlink{0%,100%{opacity:1}50%{opacity:.62}}
+  .racewrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:14px 12px;overflow-y:auto}
+  .race-card{background:linear-gradient(180deg,#1b2150,#171a2a 60%);border:1.5px solid #3a3f6b;border-radius:18px;padding:14px}
+  .race-card.win{border-color:rgba(255,198,26,.6);box-shadow:0 0 20px rgba(255,198,26,.22)}
+  .race-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .race-card-title{font-family:var(--display);font-size:16px;color:#ffe27a;letter-spacing:.2px}
+  .race-card-sub{font-size:11px;color:var(--ink-dim);margin-top:2px}
+  .race-card-prize{text-align:right;flex:none}
+  .race-card-prize b{display:block;font-family:var(--display);font-size:18px;color:var(--taxi)}
+  .race-card-prize span{font-size:9.5px;color:var(--ink-dim)}
+  .race-card-timer{height:5px;border-radius:5px;background:#2a2e47;margin:10px 0 8px;overflow:hidden}
+  .race-card-timer i{display:block;height:100%;background:linear-gradient(90deg,var(--taxi),#ff8a00);transition:width 1s linear}
+  .race-back{display:block;width:100%;border:0;border-radius:11px;padding:11px;background:rgba(255,255,255,.07);color:#fff;font:inherit;font-weight:700;font-size:12.5px}
+  .race-wait{padding:14px 6px 2px;text-align:center;color:var(--ink-dim)}
+  .race-wait b{display:block;font-variant-numeric:tabular-nums;font-family:var(--display);font-size:32px;color:#fff;margin-bottom:4px}
+  .race-wait small{max-width:260px;display:inline-block;font-size:11px}
+  .race-track{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .race-lane{display:flex;align-items:center;gap:8px}
+  .race-lane-av{flex:none;position:relative;width:30px;height:30px;border-radius:50%;background:linear-gradient(180deg,#2d6bff,#14207a);display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;overflow:hidden}
+  .race-lane-av img{width:100%;height:100%;object-fit:cover}
+  .race-lane-body{flex:1;min-width:0}
+  .race-lane-name{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:#dfe6ff;margin-bottom:3px}
+  .race-lane-name b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .race-lane.me .race-lane-name b{color:var(--taxi)}
+  .race-lane-fx{flex:none;font-size:13px;opacity:0;transition:opacity .15s}
+  .race-lane-fx.show{opacity:1}
+  .race-lane-road{position:relative;height:18px;border-radius:9px;background:#0b1240;border:1px solid rgba(255,255,255,.1);overflow:hidden}
+  .race-lane-road::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 10px,transparent 10px 24px)}
+  .race-lane-car{position:absolute;top:50%;left:0;transform:translate(0,-50%) scaleX(-1);font-size:15px;transition:left .45s linear;z-index:1}
+  .race-lane.winner .race-lane-road{border-color:rgba(255,198,26,.6);box-shadow:0 0 10px rgba(255,198,26,.3)}
+  .race-result{text-align:center;padding:16px 6px 2px}
+  .race-result-ic{font-size:36px}
+  .race-result b{display:block;font-family:var(--display);font-size:16px;color:#ffe27a;margin-top:4px}
+  .race-result .race-result-reward{font-family:var(--display);font-size:22px;color:var(--zombie);margin-top:4px}
+  .race-pausenote{margin:0;padding:8px 2px;text-align:center;font-size:11px;color:var(--ink-dim)}
+  .race-badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:800;white-space:nowrap}
+  .race-badge.racing{color:#ff6b6b}
+  .race-badge.winner{color:var(--taxi)}
   .card-event-test{margin:3px 0 8px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
   .mrow.card-event-message{width:100%;max-width:100%;align-self:stretch;gap:0}
   .mrow.card-event-message .uav,.mrow.card-event-message .bh{display:none!important}
@@ -3002,8 +3044,26 @@
             <div class="chstat"><span class="dot"></span><span class="num" id="onCount">0</span> <span data-t="ch_online">online</span></div>
           </div>
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
+          <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
         <div class="chatlog" id="chatlog"></div>
+        <div class="racewrap" id="raceView" hidden>
+          <div class="race-card" id="raceCardWin">
+            <div class="race-card-head">
+              <div><div class="race-card-title">🏁 Taxi Race</div><div class="race-card-sub" id="raceSub">Every 5 minutes · 5 random drivers</div></div>
+              <div class="race-card-prize"><b>250 TT</b><span data-t="race_for_winner">for the winner</span></div>
+            </div>
+            <div class="race-card-timer"><i id="raceTimerBar" style="width:100%"></i></div>
+            <div class="race-wait" id="raceWait" hidden>
+              <b id="raceWaitCd">--:--</b>
+              <small data-t="race_wait_note">until the next race · 5 drivers are picked at random from the online users</small>
+            </div>
+            <div class="race-track" id="raceTrack" hidden></div>
+            <div class="race-result" id="raceResult" hidden></div>
+          </div>
+          <p class="race-pausenote muted" id="racePauseNote" hidden><span data-t="race_paused">💬 Chat is paused during the race</span></p>
+          <button type="button" class="race-back" id="raceBack"><span data-t="race_back">Back to chat</span></button>
+        </div>
         <div class="typing" id="typing" hidden><span class="tdots"><i></i><i></i><i></i></span><span id="typingTxt"></span></div>
         <div class="replybar" id="replyBar" hidden><span class="rbic">↩</span><div class="grow"><small class="rb-label" id="rbLabel"></small><b id="rbName"></b><span id="rbText"></span></div><button type="button" class="rbx" id="rbX" aria-label="Cancel">✕</button></div>
         <div class="stkpick" id="stkPick" hidden></div>
@@ -3919,6 +3979,7 @@ async function pollServerChat(){
     if(response.ok&&Array.isArray(data.messages)){
       const previousEvent=JSON.stringify(serverCardEvent);
       updateServerCardEvent(chatRoom==='fa'?data.cardEvent:null);
+      if(data.taxiRace)applyTaxiRaceEvent(data.taxiRace);
       data.messages.forEach(receiveServerChatMessage);
       if(current==='chat'&&(data.messages.length||previousEvent!==JSON.stringify(serverCardEvent)))renderChat();
       if(previousEvent!==JSON.stringify(serverCardEvent)&&serverCardEvent?.status==='complete')refreshShopAccount();
@@ -3959,6 +4020,10 @@ function ensureChatEventStream(){
       const message=serverChat.find(item=>item.id===update.messageId);
       if(message){message.text=update.text;message.editedAt=update.editedAt;}
       if(current==='chat'&&chatTab==='chat')renderChat();
+      return;
+    }
+    if(update.type==='taxi-race'){
+      applyTaxiRaceEvent(update.event);
       return;
     }
     if(update.type!=='reaction')return;
@@ -4133,6 +4198,8 @@ function renderChat(){
   ensureChatEventStream();
   refreshOnlineCounts();
   renderAdVideoTask();
+  renderRaceButton();
+  if (TAXI_RACE.race && TAXI_RACE.race.status === 'running' && chatTab === 'chat' && !TAXI_RACE.viewOpen) { openRaceView(); TAXI_RACE.autoOpened = true; }
   const cardEventActive=chatRoom==='fa'&&serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
   const cardEventTimer=document.querySelector('[data-live-card-timer]');
   if(cardEventTimer&&cardEventActive)cardEventTimer.textContent=Math.max(0,Math.ceil((Number(serverCardEvent.endsAt)-Date.now())/1000))+' ثانیه';
@@ -4160,11 +4227,11 @@ function renderChat(){
   $('#tabChat').setAttribute('aria-selected', chatTab==='chat'); $('#tabOnline').setAttribute('aria-selected', chatTab==='on'); $('#tabFr').setAttribute('aria-selected', chatTab==='fr'); $('#tabMe').innerHTML = avatar(meUser(), true) + '<span class="medot"></span>';
   $('#chatPane').hidden = chatTab !== 'chat'; $('#onPane').hidden = chatTab !== 'on'; $('#frPane').hidden = chatTab !== 'fr'; renderFriends();
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
-    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,badge4:u.badge4===true,chatMuted:u.chatMuted===true}))
+    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,badge4:u.badge4===true,chatMuted:u.chatMuted===true,racing:u.racing===true,lastRaceWinner:u.lastRaceWinner===true}))
     : [];
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
-      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span>${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}</div>
-      <div class="muted">${u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
+      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span>${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${u.racing ? '<span class="race-badge racing">🏁 Racing</span>' : u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${TAXI_RACE_REWARD_TT} TT</span>` : ''}</div>
+      <div class="muted">${u.racing ? '🏁 ' + (S.lang==='de'?'Im Rennen':S.lang==='fa'?'در حال مسابقه':'In the race') : u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
   const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
@@ -4176,7 +4243,7 @@ function renderChat(){
     $('#onList').innerHTML = '';
     return;
   }
-  $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive;
+  $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive || (TAXI_RACE.race && TAXI_RACE.race.status === 'running');
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
   $('#chatlog').innerHTML = msgs.map((m, i) => {
@@ -4329,6 +4396,191 @@ async function watchRewardedAdVideo(){
   }
 }
 $('#adVideoBtn').onclick = () => void watchRewardedAdVideo();
+
+// ---- Taxi Race: server-authoritative mini-game shown inside the chat ----
+// Matches server.js's TAXI_RACE_REWARD_TT - display-only here, the real
+// payout always happens server-side exactly once per race.
+const TAXI_RACE_REWARD_TT = 250;
+const TAXI_RACE_INTERVAL_MS_CLIENT = 5 * 60 * 1000; // matches server.js TAXI_RACE_INTERVAL_MS, only used for the wait-screen timer bar
+const TAXI_RACE = {race:null, nextStartAt:0, viewOpen:false, autoOpened:false, animHandle:null, resultTimer:null};
+function taxiRaceCountdownText(ms){
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function renderRaceButton(){
+  const btn = $('#raceBtn'), txt = $('#raceBtnText');
+  if (!btn || !txt) return;
+  const race = TAXI_RACE.race;
+  if (race && race.status === 'running') {
+    btn.hidden = false; btn.classList.add('live'); txt.textContent = '🏁 LIVE';
+    return;
+  }
+  btn.classList.remove('live');
+  if (TAXI_RACE.nextStartAt > Date.now()) {
+    btn.hidden = false; txt.textContent = '🏁 ' + taxiRaceCountdownText(TAXI_RACE.nextStartAt - Date.now());
+  } else if (race && race.status === 'finished') {
+    btn.hidden = false; txt.textContent = '🏁 0:00';
+  } else {
+    btn.hidden = true;
+  }
+}
+function applyTaxiRaceEvent(event){
+  if (!event) { TAXI_RACE.race = null; renderRaceButton(); return; }
+  if (event.status === 'scheduled') {
+    TAXI_RACE.nextStartAt = Number(event.nextStartAt) || 0;
+    if (TAXI_RACE.race && TAXI_RACE.race.status !== 'finished') TAXI_RACE.race = null;
+  } else {
+    const wasRunning = TAXI_RACE.race && TAXI_RACE.race.status === 'running';
+    const sameRaceAlreadyFinished = TAXI_RACE.race && TAXI_RACE.race.id === event.id && TAXI_RACE.race.status === 'finished';
+    TAXI_RACE.race = event;
+    if (event.nextStartAt) TAXI_RACE.nextStartAt = Number(event.nextStartAt);
+    if (event.status === 'running' && !wasRunning) {
+      if (current === 'chat' && chatTab === 'chat' && !TAXI_RACE.viewOpen) { openRaceView(); TAXI_RACE.autoOpened = true; }
+      else startRaceAnimation(event);
+      if (current === 'chat') renderChat();
+    } else if (event.status === 'finished' && wasRunning && !sameRaceAlreadyFinished) {
+      onTaxiRaceFinished(event);
+      if (current === 'chat') renderChat();
+    }
+  }
+  renderRaceButton();
+  if (current === 'chat' && chatTab === 'on' && typeof loadOnlinePlayers === 'function') loadOnlinePlayers();
+}
+function onTaxiRaceFinished(race){
+  if (TAXI_RACE.animHandle) { cancelAnimationFrame(TAXI_RACE.animHandle); TAXI_RACE.animHandle = null; }
+  if (TAXI_RACE.viewOpen) renderRaceWinner(race);
+  if (TAXI_RACE.resultTimer) clearTimeout(TAXI_RACE.resultTimer);
+  TAXI_RACE.resultTimer = setTimeout(() => {
+    if (TAXI_RACE.autoOpened && TAXI_RACE.viewOpen) closeRaceView();
+    TAXI_RACE.autoOpened = false;
+  }, 6000);
+}
+function renderRaceCardChrome(){
+  if (!TAXI_RACE.viewOpen) return;
+  const race = TAXI_RACE.race;
+  const card = $('#raceCardWin'), sub = $('#raceSub'), bar = $('#raceTimerBar'), back = $('#raceBack');
+  if (!card) return;
+  if (race && race.status === 'running') {
+    card.classList.remove('win');
+    const elapsedS = Math.max(0, Math.floor((Date.now() - race.startedAt) / 1000));
+    sub.textContent = (S.lang==='de' ? 'Rennen läuft · ' : S.lang==='fa' ? 'در حال مسابقه · ' : 'Race in progress · ') + taxiRaceCountdownText(elapsedS * 1000);
+    bar.style.width = '0%';
+    if (back) back.hidden = true;
+  } else if (race && race.status === 'finished') {
+    card.classList.add('win');
+    sub.textContent = S.lang==='de' ? 'Rennen beendet' : S.lang==='fa' ? 'مسابقه تمام شد' : 'Race finished';
+    bar.style.width = '0%';
+    if (back) back.hidden = false;
+  } else {
+    card.classList.remove('win');
+    sub.textContent = S.lang==='de' ? 'Alle 5 Minuten · 5 zufällige Fahrer' : S.lang==='fa' ? 'هر ۵ دقیقه · ۵ راننده تصادفی' : 'Every 5 minutes · 5 random drivers';
+    const remaining = Math.max(0, TAXI_RACE.nextStartAt - Date.now());
+    bar.style.width = Math.max(0, Math.min(100, (remaining / TAXI_RACE_INTERVAL_MS_CLIENT) * 100)) + '%';
+    if (back) back.hidden = false;
+  }
+}
+function openRaceView(){
+  TAXI_RACE.viewOpen = true;
+  $('#chatlog').hidden = true;
+  $('#chatForm').hidden = true;
+  $('#raceView').hidden = false;
+  const race = TAXI_RACE.race;
+  if (race && race.status === 'running') {
+    $('#racePauseNote').hidden = false;
+    $('#raceWait').hidden = true; $('#raceResult').hidden = true; $('#raceTrack').hidden = false;
+    startRaceAnimation(race);
+  } else if (race && race.status === 'finished') {
+    $('#racePauseNote').hidden = true;
+    $('#raceWait').hidden = true; $('#raceTrack').hidden = true;
+    renderRaceWinner(race);
+  } else {
+    $('#racePauseNote').hidden = true;
+    $('#raceTrack').hidden = true; $('#raceResult').hidden = true; $('#raceWait').hidden = false;
+    $('#raceWaitCd').textContent = taxiRaceCountdownText(TAXI_RACE.nextStartAt - Date.now());
+  }
+  renderRaceCardChrome();
+}
+function closeRaceView(){
+  TAXI_RACE.viewOpen = false;
+  if (TAXI_RACE.animHandle) { cancelAnimationFrame(TAXI_RACE.animHandle); TAXI_RACE.animHandle = null; }
+  $('#raceView').hidden = true;
+  $('#racePauseNote').hidden = true;
+  $('#chatlog').hidden = false;
+  if (current === 'chat') renderChat(); else $('#chatForm').hidden = !SHOP_ACCOUNT.token;
+}
+$('#raceBtn').onclick = () => { if (TAXI_RACE.viewOpen) closeRaceView(); else openRaceView(); };
+$('#raceBack').onclick = () => closeRaceView();
+function driverPosAt(driver, elapsedMs){
+  const samples = driver.samples;
+  if (!samples || !samples.length) return 0;
+  if (elapsedMs <= samples[0].t) return samples[0].pos;
+  for (let i = 1; i < samples.length; i++) {
+    if (elapsedMs <= samples[i].t) {
+      const a = samples[i - 1], b = samples[i], span = b.t - a.t || 1;
+      return a.pos + (b.pos - a.pos) * ((elapsedMs - a.t) / span);
+    }
+  }
+  return samples[samples.length - 1].pos;
+}
+function startRaceAnimation(race){
+  const track = $('#raceTrack');
+  if (!track) return;
+  track.innerHTML = race.drivers.map((d) => {
+    const initials = (d.name || '?').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || (d.name || '?').slice(0, 1);
+    const isMe = String(d.uid) === String(SHOP_ACCOUNT.uid);
+    return `<div class="race-lane${isMe ? ' me' : ''}" data-race-uid="${esc(d.uid)}">
+      <div class="race-lane-av">${d.photoUrl ? `<img src="${esc(d.photoUrl)}" alt="">` : esc(initials)}</div>
+      <div class="race-lane-body">
+        <div class="race-lane-name"><b>${esc(d.name)}</b><span class="race-lane-fx" data-race-fx>⚡</span></div>
+        <div class="race-lane-road"><span class="race-lane-car" style="left:0%">🚕</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  if (TAXI_RACE.animHandle) cancelAnimationFrame(TAXI_RACE.animHandle);
+  const step = () => {
+    if (!TAXI_RACE.race || TAXI_RACE.race.id !== race.id) return;
+    const elapsed = Date.now() - race.startedAt;
+    race.drivers.forEach((d) => {
+      const pos = Math.min(96, driverPosAt(d, elapsed));
+      const lane = track.querySelector(`.race-lane[data-race-uid="${CSS.escape(String(d.uid))}"]`);
+      if (!lane) return;
+      const car = lane.querySelector('.race-lane-car');
+      if (car) car.style.left = pos + '%';
+      const fx = lane.querySelector('[data-race-fx]');
+      if (fx) {
+        const activeEvent = (d.events || []).find((ev) => elapsed >= ev.t && elapsed < ev.t + 1200);
+        if (activeEvent) { fx.textContent = activeEvent.type === 'boost' ? '⚡' : '💨'; fx.classList.add('show'); }
+        else fx.classList.remove('show');
+      }
+    });
+    if (elapsed < race.endsAt - race.startedAt) TAXI_RACE.animHandle = requestAnimationFrame(step);
+  };
+  TAXI_RACE.animHandle = requestAnimationFrame(step);
+}
+function renderRaceWinner(race){
+  $('#raceTrack').hidden = true; $('#raceWait').hidden = true;
+  const result = $('#raceResult');
+  result.hidden = false;
+  const isMe = String(race.winnerUid) === String(SHOP_ACCOUNT.uid);
+  const youSuffix = isMe ? (S.lang==='de' ? ' (Du!)' : S.lang==='fa' ? ' (تو!)' : ' (You!)') : '';
+  result.innerHTML = `<div class="race-result-ic">🏆</div><b>${esc(race.winnerName)}${youSuffix}</b><div class="race-result-reward">+${TAXI_RACE_REWARD_TT} TT</div>`;
+  renderRaceCardChrome();
+}
+async function initTaxiRace(){
+  try {
+    const response = await fetch('/api/taxi-race/state', {cache:'no-store'});
+    const data = await response.json();
+    if (response.ok) applyTaxiRaceEvent(data.race);
+  } catch (e) {}
+  renderRaceButton();
+  setInterval(renderRaceButton, 1000);
+  setInterval(() => {
+    if (!TAXI_RACE.viewOpen) return;
+    if ($('#raceWait') && !$('#raceWait').hidden) $('#raceWaitCd').textContent = taxiRaceCountdownText(TAXI_RACE.nextStartAt - Date.now());
+    renderRaceCardChrome();
+  }, 1000);
+}
+void initTaxiRace();
 function campLeft(){
   let s = Math.max(0, Math.floor((CAMP_END - Date.now())/1000));
   const d = Math.floor(s/86400); s%=86400; const h = Math.floor(s/3600); s%=3600; const m = Math.floor(s/60); s%=60;
