@@ -2051,7 +2051,17 @@
 
   let exchangeInProgress = false;
   async function exchangePersons(onlyLevel){
-    if (totalPendingZombies() <= 0 || exchangeInProgress || dailyEarningsComplete()) return;
+    // NOTE: dailyEarningsComplete() must NOT gate this function - it becomes true
+    // the instant pending zombies are estimated to reach today's goal, which is
+    // exactly when commitRun() calls this to actually submit/credit that batch
+    // (see pendingReachesDailyCap() in commitRun()). Gating on it here used to
+    // make the auto-exchange (and the manual "Exchange" button) silently no-op
+    // right at the moment the cap was reached, so the bonus was never actually
+    // submitted to the server - zombiesTodayByLevel/ton never updated, so the
+    // shop kept showing the old (sub-goal) count and no TON was credited. The
+    // server already enforces the per-level daily cap on its own (see /api/run's
+    // 'daily-earn-cap-reached'), so no client-side gate is needed here at all.
+    if (totalPendingZombies() <= 0 || exchangeInProgress) return;
 
     if (SERVER_URL){
       // Server economy: coins/TON only ever change on the server, so nothing gets
