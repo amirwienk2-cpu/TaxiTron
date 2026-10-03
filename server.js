@@ -1113,7 +1113,7 @@ function drawTaxiRaceGrid() {
     payoutDone: false,
   };
   persistTaxiRaceState();
-  postTaxiRaceBotMessage('🔮 Drivers drawn: ' + players.map((p) => p.name).join(', ') + '. Predict the winner for free — a correct guess gets ' + TAXI_RACE_TIP_TT + ' TT!', raceId, 'grid');
+  postTaxiRaceBotMessage('🔮 رانندگان مشخص شدند: ' + players.map((p) => p.name).join('، ') + '. برنده را رایگان حدس بزن — حدس درست ' + TAXI_RACE_TIP_TT + ' TT جایزه دارد!', raceId, 'grid');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
   if (taxiRaceRunTimer) clearTimeout(taxiRaceRunTimer);
@@ -1132,7 +1132,7 @@ function startDrawnTaxiRace(raceId) {
   race.winnerName = sim.winnerName;
   persistTaxiRaceState();
   const tipCount = Object.keys(race.predictions || {}).length;
-  postTaxiRaceBotMessage('🚦 Go! Predictions are closed (' + tipCount + (tipCount === 1 ? ' tip' : ' tips') + '). Winner gets ' + TAXI_RACE_REWARD_TT + ' TT!', raceId, 'start');
+  postTaxiRaceBotMessage('🚦 شروع شد! پیش‌بینی‌ها بسته شدند (' + tipCount + ' پیش‌بینی). برنده ' + TAXI_RACE_REWARD_TT + ' TT می‌گیرد!', raceId, 'start');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
   if (taxiRaceFinishTimer) clearTimeout(taxiRaceFinishTimer);
@@ -1163,9 +1163,9 @@ function finishTaxiRace(raceId) {
   }
   persistTaxiRaceState();
   const tipLine = race.correctNames && race.correctNames.length
-    ? ' 🔮 ' + race.correctNames.length + (race.correctNames.length === 1 ? ' spectator' : ' spectators') + ' predicted right and get ' + TAXI_RACE_TIP_TT + ' TT: ' + race.correctNames.join(', ') + '.'
+    ? ' 🔮 ' + race.correctNames.length + ' نفر درست حدس زدند و هرکدام ' + TAXI_RACE_TIP_TT + ' TT گرفتند: ' + race.correctNames.join('، ') + '.'
     : '';
-  postTaxiRaceBotMessage('🏆 ' + race.winnerName + ' crossed the line first and wins ' + TAXI_RACE_REWARD_TT + ' TT!' + tipLine + ' Next race in 5 minutes.', race.id, 'winner');
+  postTaxiRaceBotMessage('🏆 ' + race.winnerName + ' اول به خط پایان رسید و ' + TAXI_RACE_REWARD_TT + ' TT برد!' + tipLine + ' مسابقه بعدی تا ۵ دقیقه دیگر.', race.id, 'winner');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
 }

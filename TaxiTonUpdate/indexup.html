@@ -2551,56 +2551,58 @@
   .card-event-countdown i{width:6px;height:6px;border-radius:50%;background:#ffd84a;box-shadow:0 0 7px rgba(255,216,74,.7)}
   .card-event-countdown b{font-variant-numeric:tabular-nums;color:#ffe27a;font-size:12px}
   /* ---- Taxi Race ---- */
-  .race-btn{flex:none;border:0;border-radius:10px;padding:7px 11px;font:inherit;font-family:var(--display);font-size:12px;letter-spacing:.3px;
-    color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
-  .race-btn.live{color:#fff;background:linear-gradient(180deg,#ff6b6b,#d8232f 45%,#8a0d16);box-shadow:0 3px 0 #5c0309;animation:raceLiveBlink 1s ease-in-out infinite}
+  .race-btn{flex:none;border:0;border-radius:11px;padding:8px 13px;font:inherit;font-family:var(--display);font-size:12.5px;letter-spacing:.3px;
+    color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00,0 2px 8px rgba(255,198,26,.25)}
+  .race-btn.live{color:#fff;background:linear-gradient(180deg,#ff6b6b,#d8232f 45%,#8a0d16);box-shadow:0 3px 0 #5c0309,0 2px 10px rgba(216,35,47,.4);animation:raceLiveBlink 1s ease-in-out infinite}
   @keyframes raceLiveBlink{0%,100%{opacity:1}50%{opacity:.62}}
   .racewrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:14px 12px;overflow-y:auto}
-  .race-card{background:linear-gradient(180deg,#1b2150,#171a2a 60%);border:1.5px solid #3a3f6b;border-radius:18px;padding:14px}
-  .race-card.win{border-color:rgba(255,198,26,.6);box-shadow:0 0 20px rgba(255,198,26,.22)}
+  .race-card{background:linear-gradient(180deg,#1d2358,#161a2c 60%);border:1.5px solid #3c4170;border-radius:20px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04)}
+  .race-card.win{border-color:rgba(255,198,26,.65);box-shadow:0 0 26px rgba(255,198,26,.25),inset 0 1px 0 rgba(255,255,255,.04)}
   .race-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-  .race-card-title{font-family:var(--display);font-size:16px;color:#ffe27a;letter-spacing:.2px}
-  .race-card-sub{font-size:11px;color:var(--ink-dim);margin-top:2px}
+  .race-card-title{font-family:var(--display);font-size:17px;color:#ffe27a;letter-spacing:.2px;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+  .race-card-sub{font-size:11.5px;color:var(--ink-dim);margin-top:3px}
   .race-card-prize{text-align:right;flex:none}
-  .race-card-prize b{display:block;font-family:var(--display);font-size:18px;color:var(--taxi)}
+  .race-card-prize b{display:block;font-family:var(--display);font-size:19px;color:var(--taxi);text-shadow:0 1px 0 rgba(0,0,0,.3)}
   .race-card-prize span{font-size:9.5px;color:var(--ink-dim)}
-  .race-card-timer{height:5px;border-radius:5px;background:#2a2e47;margin:10px 0 8px;overflow:hidden}
-  .race-card-timer i{display:block;height:100%;background:linear-gradient(90deg,var(--taxi),#ff8a00);transition:width 1s linear}
-  .race-back{display:block;width:100%;border:0;border-radius:11px;padding:11px;background:rgba(255,255,255,.07);color:#fff;font:inherit;font-weight:700;font-size:12.5px}
-  .race-wait{padding:14px 6px 2px;text-align:center;color:var(--ink-dim)}
-  .race-wait b{display:block;font-variant-numeric:tabular-nums;font-family:var(--display);font-size:32px;color:#fff;margin-bottom:4px}
+  .race-card-timer{height:6px;border-radius:6px;background:#262a46;margin:12px 0 10px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+  .race-card-timer i{display:block;height:100%;background:linear-gradient(90deg,var(--taxi),#ff8a00);transition:width 1s linear;box-shadow:0 0 8px rgba(255,138,0,.5)}
+  .race-back{display:block;width:100%;border:0;border-radius:12px;padding:12px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-weight:700;font-size:12.5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  .race-wait{padding:16px 6px 2px;text-align:center;color:var(--ink-dim)}
+  .race-wait b{display:block;font-variant-numeric:tabular-nums;font-family:var(--display);font-size:34px;color:#fff;margin-bottom:5px;text-shadow:0 2px 6px rgba(0,0,0,.3)}
   .race-wait small{max-width:260px;display:inline-block;font-size:11px}
-  .race-track{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-  .race-lane{display:flex;align-items:center;gap:8px}
-  .race-lane-av{flex:none;position:relative;width:30px;height:30px;border-radius:50%;background:linear-gradient(180deg,#2d6bff,#14207a);display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;overflow:hidden}
+  .race-track{display:flex;flex-direction:column;gap:13px;margin-top:6px}
+  .race-lane{display:flex;align-items:center;gap:10px}
+  .race-lane-av{flex:none;position:relative;width:38px;height:38px;border-radius:50%;background:linear-gradient(180deg,#2d6bff,#14207a);display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.3),0 0 0 2px rgba(255,255,255,.06)}
   .race-lane-av img{width:100%;height:100%;object-fit:cover}
   .race-lane-body{flex:1;min-width:0}
-  .race-lane-name{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:#dfe6ff;margin-bottom:3px}
+  .race-lane-name{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:#dfe6ff;margin-bottom:4px}
   .race-lane-name b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .race-lane.me .race-lane-name b{color:var(--taxi)}
-  .race-lane-fx{flex:none;font-size:13px;opacity:0;transition:opacity .15s}
+  .race-lane-fx{flex:none;font-size:15px;opacity:0;transition:opacity .15s;filter:drop-shadow(0 0 4px rgba(255,198,26,.6))}
   .race-lane-fx.show{opacity:1}
-  .race-lane-road{position:relative;height:18px;border-radius:9px;background:#0b1240;border:1px solid rgba(255,255,255,.1);overflow:hidden}
-  .race-lane-road::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 10px,transparent 10px 24px)}
-  .race-lane-car{position:absolute;top:50%;left:0;transform:translate(0,-50%) scaleX(-1);font-size:15px;transition:left .45s linear;z-index:1}
-  .race-lane.winner .race-lane-road{border-color:rgba(255,198,26,.6);box-shadow:0 0 10px rgba(255,198,26,.3)}
-  .race-result{text-align:center;padding:16px 6px 2px}
-  .race-result-ic{font-size:36px}
-  .race-result b{display:block;font-family:var(--display);font-size:16px;color:#ffe27a;margin-top:4px}
-  .race-result .race-result-reward{font-family:var(--display);font-size:22px;color:var(--zombie);margin-top:4px}
-  .race-result-tip{margin-top:6px;font-size:12px;font-weight:700}
+  .race-lane-road{position:relative;height:28px;border-radius:12px;background:#0c1342;border:1px solid rgba(255,255,255,.1);overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.4)}
+  .race-lane-road::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 12px,transparent 12px 28px)}
+  .race-lane-road::after{content:'';position:absolute;right:0;top:0;bottom:0;width:7px;background:repeating-linear-gradient(180deg,#fff 0 6px,#111 6px 12px);opacity:.85}
+  .race-lane-car{position:absolute;top:50%;left:0;transform:translate(0,-50%) scaleX(-1);font-size:26px;line-height:1;transition:left .45s linear;z-index:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+  .race-lane.winner .race-lane-road{border-color:rgba(255,198,26,.65);box-shadow:inset 0 2px 5px rgba(0,0,0,.4),0 0 12px rgba(255,198,26,.35)}
+  .race-result{text-align:center;padding:18px 6px 2px}
+  .race-result-ic{font-size:40px;filter:drop-shadow(0 3px 6px rgba(255,198,26,.35))}
+  .race-result b{display:block;font-family:var(--display);font-size:17px;color:#ffe27a;margin-top:5px}
+  .race-result .race-result-reward{font-family:var(--display);font-size:23px;color:var(--zombie);margin-top:5px;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+  .race-result-tip{margin-top:7px;font-size:12px;font-weight:700}
   .race-result-tip.win{color:var(--taxi)}
   .race-result-tip.lost{color:var(--ink-dim)}
   .race-pausenote{margin:0;padding:8px 2px;text-align:center;font-size:11px;color:var(--ink-dim)}
   .race-badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:800;white-space:nowrap}
   .race-badge.racing{color:#ff6b6b}
   .race-badge.winner{color:var(--taxi)}
-  .race-grid{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-  .race-pick-hint{font-size:11px;color:var(--ink-dim);text-align:center;margin-bottom:2px}
-  .race-grid .race-lane{align-items:center}
-  .race-lane-right{flex:none;text-align:right;min-width:72px}
-  .race-pick-count{display:block;font-size:10px;color:var(--ink-dim);margin-bottom:3px}
-  .race-pick-btn{border:0;border-radius:9px;padding:5px 10px;font:inherit;font-weight:800;font-size:11px;background:linear-gradient(180deg,#ffd84a,#f0a500);color:#2a1e00}
+  .race-grid{display:flex;flex-direction:column;gap:11px;margin-top:6px}
+  .race-pick-hint{font-size:11.5px;color:var(--ink-dim);text-align:center;margin-bottom:3px}
+  .race-grid .race-lane{align-items:center;padding:6px 8px;border-radius:14px;background:rgba(255,255,255,.03)}
+  .race-lane-right{flex:none;text-align:right;min-width:76px}
+  .race-pick-count{display:block;font-size:10.5px;color:var(--ink-dim);margin-bottom:4px}
+  .race-pick-btn{border:0;border-radius:10px;padding:6px 12px;font:inherit;font-weight:800;font-size:11.5px;background:linear-gradient(180deg,#ffd84a,#f0a500);color:#2a1e00;box-shadow:0 2px 0 #b77a00,0 2px 6px rgba(255,198,26,.25)}
+  .race-pick-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #b77a00}
   .race-pick-btn:disabled{opacity:.4}
   .race-pick-mine{font-size:10.5px;font-weight:800;color:var(--taxi)}
   .card-event-test{margin:3px 0 8px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
@@ -3061,20 +3063,20 @@
         <div class="racewrap" id="raceView" hidden>
           <div class="race-card" id="raceCardWin">
             <div class="race-card-head">
-              <div><div class="race-card-title">🏁 Taxi Race</div><div class="race-card-sub" id="raceSub">Every 5 minutes · 5 random drivers</div></div>
-              <div class="race-card-prize"><b>250 TT</b><span data-t="race_for_winner">for the winner</span></div>
+              <div><div class="race-card-title">🏁 مسابقه تاکسی</div><div class="race-card-sub" id="raceSub">هر ۵ دقیقه · ۵ راننده تصادفی</div></div>
+              <div class="race-card-prize"><b>250 TT</b><span>برای برنده</span></div>
             </div>
             <div class="race-card-timer"><i id="raceTimerBar" style="width:100%"></i></div>
             <div class="race-wait" id="raceWait" hidden>
               <b id="raceWaitCd">--:--</b>
-              <small data-t="race_wait_note">until the next race · 5 drivers are picked at random from the online users</small>
+              <small>تا مسابقه بعدی · ۵ راننده به‌صورت تصادفی از کاربران آنلاین انتخاب می‌شوند</small>
             </div>
             <div class="race-grid" id="raceGrid" hidden></div>
             <div class="race-track" id="raceTrack" hidden></div>
             <div class="race-result" id="raceResult" hidden></div>
           </div>
-          <p class="race-pausenote muted" id="racePauseNote" hidden><span data-t="race_paused">💬 Chat is paused during the race</span></p>
-          <button type="button" class="race-back" id="raceBack"><span data-t="race_back">Back to chat</span></button>
+          <p class="race-pausenote muted" id="racePauseNote" hidden><span>💬 چت در طول مسابقه متوقف است</span></p>
+          <button type="button" class="race-back" id="raceBack"><span>بازگشت به چت</span></button>
         </div>
         <div class="typing" id="typing" hidden><span class="tdots"><i></i><i></i><i></i></span><span id="typingTxt"></span></div>
         <div class="replybar" id="replyBar" hidden><span class="rbic">↩</span><div class="grow"><small class="rb-label" id="rbLabel"></small><b id="rbName"></b><span id="rbText"></span></div><button type="button" class="rbx" id="rbX" aria-label="Cancel">✕</button></div>
@@ -3500,7 +3502,7 @@ const T = {
     useBoost:'Use at start',have:'have',runReward:'Run reward',taskReward:'Task reward',
     t_runs:'Drive 3 runs today',t_smash:'Smash 100 zombies in total',t_score:'Score 1,000 in one run',t_chan:'Join the @TaxiiTon channel',t_invite:'Invite a friend',
     open:'Open',copy:'Copy link',copied:'Invite link copied',copyFail:'Copy failed, long-press the link to copy it',
-    c_classic:'Classic Cab',c_night:'Night Rider',c_gold:'Gold Cab',c_ghost:'Ghost Cab',bonus:'zombies',starter:'Starter cab',tasksTitle:'Tasks',figBonusT:'Complete collection',figBonusSub:'{a} / {b} figures · each full set = 25 TON',setsReady:'{n} sets ready',youHave:'You have',figClaim:'Claim 25 TON',figOwned:'Drag to spin',figLocked:'Find this figure in Packs',newFig:'New figure!',pk_red:'Street Pack',pk_purple:'Night Pack',pk_gold:'Legend Pack',pkInfo_red:'1 figure',pkInfo_purple:'1 figure',pkInfo_gold:'1 figure',tapOpen:'Tap to open',noTries:'No tries left today. Come back tomorrow!',rar_common:'Common',rar_rare:'Rare',rar_epic:'Epic',rar_legend:'Legendary',dupFig:'Duplicate',collect:'Collect',opened:'Opened',newCab:'New cab unlocked!',dupCab:'duplicate → zombies',welcome:'Welcome, driver! Tap PLAY to start.',race_for_winner:'for the winner',race_wait_note:'until the next race · 5 drivers are picked at random from the online users',race_paused:'💬 Chat is paused during the race',race_back:'Back to chat'},
+    c_classic:'Classic Cab',c_night:'Night Rider',c_gold:'Gold Cab',c_ghost:'Ghost Cab',bonus:'zombies',starter:'Starter cab',tasksTitle:'Tasks',figBonusT:'Complete collection',figBonusSub:'{a} / {b} figures · each full set = 25 TON',setsReady:'{n} sets ready',youHave:'You have',figClaim:'Claim 25 TON',figOwned:'Drag to spin',figLocked:'Find this figure in Packs',newFig:'New figure!',pk_red:'Street Pack',pk_purple:'Night Pack',pk_gold:'Legend Pack',pkInfo_red:'1 figure',pkInfo_purple:'1 figure',pkInfo_gold:'1 figure',tapOpen:'Tap to open',noTries:'No tries left today. Come back tomorrow!',rar_common:'Common',rar_rare:'Rare',rar_epic:'Epic',rar_legend:'Legendary',dupFig:'Duplicate',collect:'Collect',opened:'Opened',newCab:'New cab unlocked!',dupCab:'duplicate → zombies',welcome:'Welcome, driver! Tap PLAY to start.'},
   de:{ch_today:'Heute',ch_yday:'Gestern',ch_onTab:'Online',lk_style:'Style',lk_title:'Charakter bearbeiten',lk_sub:'Wähle deinen Look',lk_hairS:'Haare',lk_reset:'Zurücksetzen',lk_saved:'Charakter gespeichert',lk_s1:'Porzellan',lk_s2:'Hell',lk_s3:'Beige',lk_s4:'Gebräunt',lk_s5:'Braun',lk_s6:'Dunkel',lk_h1:'Schwarz',lk_h2:'Braun',lk_h3:'Kastanie',lk_h4:'Blond',lk_h5:'Rot',lk_h6:'Grau',lk_h7:'Blau',lk_h8:'Pink',lk_edit:'Bearbeiten',lk_skin:'Hautfarbe',lk_hair:'Haar- & Augenbrauenfarbe',lk_orig:'Original',lk_hs:'Frisur',lk_beard:'Bart',lk_eyes:'Augen',lk_brows:'Augenbrauen',lk_ears:'Ohren',lk_nose:'Nase',lk_lips:'Lippen',pf_boy:'Junge',pf_girl:'Mädchen',s_dark:'Dark Mode',s_darkD:'Dunklere Farben, angenehmer für die Augen in der Nacht',it_bub_racer:'Street Racer',it_frm_racer:'Street Racer',it_ban_racer:'Street Racer',fr_reqs:'Anfragen',fr_in:'Erhalten',fr_out:'Gesendet',fr_wants:'möchte dein Freund sein',fr_accept:'Annehmen',fr_decline:'Ablehnen',fr_accd:'{n} ist jetzt dein Freund! 🎉',fr_decd:'Anfrage abgelehnt',fr_noReq:'Keine neuen Anfragen',fr_rmShort:'Löschen?',fr_tab:'Freunde',fr_add:'Freund hinzufügen',fr_sent:'Anfrage gesendet',fr_is:'Freunde',fr_rm:'Freund entfernen?',fr_msg:'Nachricht',fr_note:'Füge ihn als Freund hinzu, um privat zu chatten.',fr_reqd:'Freundschaftsanfrage gesendet',fr_acc:'{n} hat deine Anfrage angenommen! 🎉',fr_removed:'{n} aus Freunden entfernt',fr_none:'Noch keine Freunde',fr_noneD:'Tippe im Chat auf einen Spieler, öffne sein Profil und füge ihn als Freund hinzu.',fr_start:'Sag Hallo 👋',fr_priv:'Privater Chat – nur ihr zwei seht ihn.',fr_replies:['Hey! 👋','haha nice 😂','Später ein Rennen? 🏁','gg!','Hab grad eine neue Figur 🔥','Woher kommst du?','ok 👍','Heute Abend Zombie Tower? 🧟'],pf_all:'Alle Items',px_chat:'Chatten',px_act:'Aktiv sein',px_day:'Tagesbonus',px_up:'Profil-Level aufgestiegen! Lv {n} 🎉',bio_ph:'Schreib etwas über dich…',bio_edit:'Bio bearbeiten',bio_save:'Speichern',bio_cancel:'Abbrechen',bio_saved:'Bio gespeichert',bio_staff:'Offizielles TaxiTon-Team · frag mich alles 🚕',rp_reply:'Antworten',rp_sticker:'Sticker',it_bub_pixel:'Pixel-Coder',it_frm_pixel:'Pixel-Coder',it_ban_pixel:'Pixel-Coder',it_ban:'Banner',it_banNote:'Ein Banner oben in deinem Profil – alle sehen es.',it_ban_classic:'Klassisch',it_ban_autumn:'Herbstregen',it_bub_autumn:'Herbstregen',it_frm_autumn:'Herbstregen',it_ban_cozy:'Gemütlicher Herbst',it_bub_cozy:'Gemütlicher Herbst',it_frm_cozy:'Gemütlicher Herbst',it_ban_fox:'Herbstfuchs',it_bub_fox:'Herbstfuchs',it_frm_fox:'Herbstfuchs',stk_autumn:'Herbstfreunde',it_ban_city:'Neon-City',it_ban_duo:'Karten-Duo',it_ban_crew:'Taxi-Crew',it_ban_vault:'TON-Tresor',it_ban_zombie:'Zombie Tower',it_ban_taxiton:'TaxiTon-Legenden',pf_photo:'Profilbild ändern',pf_upload:'Foto hochladen',pf_remove:'Entfernen',pf_saved:'Profilbild gespeichert',pf_removed:'Profilbild entfernt',pf_bad:'Bitte ein Bild auswählen',pf_mine:'Mein Profil',pf_mineD:'Profilbild, Guthaben & Items',pf_view:'Profil ansehen',pf_ton:'TON-Guthaben',pf_tt:'TT-Guthaben',pf_paid:'Ausgezahlt',pf_eq:'Ausgerüstete Items',pf_none:'Noch keine Sticker-Packs',it_tab:'Items',it_stk:'Sticker',it_bub:'Bubbles',it_frm:'Rahmen',it_bubNote:'Gestalte deine Chat-Nachrichten – alle im Raum sehen es.',it_frmNote:'Ein Rahmen um deinen Avatar neben deinen Chat-Nachrichten.',it_equip:'Ausrüsten',it_equipped:'Aktiv',it_got:'{n} freigeschaltet & ausgerüstet!',it_hi:'Hi! 👋',it_bub_classic:'Klassisch',it_bub_ton:'TON-Blau',it_bub_gold:'Gold',it_bub_neon:'Neon',it_bub_zombie:'Giftiger Zombie',it_bub_gift:'Mystery-Geschenk',it_frm_none:'Kein Rahmen',it_frm_ton:'TON-Blau',it_frm_gold:'Gold',it_frm_neon:'Neon',it_frm_fire:'Feuer',it_frm_crown:'König',it_frm_taxi:'Taxi-König',stk_tab:'Sticker',stk_note:'Kaufe ein Sticker-Pack mit TT und schicke die Sticker im Chat.',stk_owned:'gekauft',stk_count:'Sticker',stk_use:'Im Chat nutzen',stk_got:'{n}-Sticker freigeschaltet!',stk_none:'Noch keine Sticker – kaufe ein Pack im Shop.',stk_zombie:'Zombie',tw_rules:'1 gegen 1: Beide sehen dieselbe Karte und raten, ob die nächste Karte höher oder niedriger ist. Wer zuerst 12 Punkte hat, gewinnt den Preis.',tw_bal:'Dein Guthaben',tw_create:'Raum erstellen',tw_goBtn:'Raum erstellen mit {v} TON',tw_open:'Offene Räume',tw_empty:'Noch keine offenen Räume',tw_emptyD:'Erstelle einen Raum und starte das Spiel',tw_yours:'Dein Raum',tw_wait:'Warte auf Gegner…',tw_cancel:'Abbrechen',tw_one:'Du hast schon einen offenen Raum',tw_made:'Raum erstellt',tw_closed:'Raum geschlossen – Einsatz zurückerstattet',tw_note:'Jeder, mit dem du diese Seite teilst, kann mitspielen. Sein Einsatz wird von seinem TaxiTon-Guthaben abgezogen.',g_title:'Spiele',g_join:'Spielen',g_all:'Alle Spiele',g_live:'live',g_soon:'bald',g_soonChip:'BALD',g_tower:'Zombie-Turm',g_nard:'Backgammon',g_bingo:'Bingo',g_ludo:'Mensch ärgere dich nicht',tr_t:'Figuren-Tausch',tr_d:'Tausche doppelte Figuren mit anderen Spielern.',tt_memo:'Memo / Kommentar',tt_memoOpt:'(falls nötig)',tt_memoPh:'z. B. bei Börsen erforderlich',mn_luna:'Luna-Bonus (Legendär)',notEnoughTon:'Nicht genug TON – zahle TON in der Wallet ein',mn_hr:'Pro Stunde',mn_dy:'Pro Tag',mn_usd:'Wert / Tag',mn_crew:'Mining-Crew',mn_nextT:'Nächste Figur: {r} TT/Tag',mn_max:'Max. Tempo',mn_fullS:'Voll',mn_t:'TT-Mining',mn_day:'Tag',mn_d:'T',mn_sub:'{n}/{b} Figuren freigeschaltet – sammle mehr für schnelleres Mining',mn_on:'Aktiv',mn_off:'Gestoppt',mn_store:'Gemined – bereit zum Abholen',mn_need:'Schalte eine Figur frei, um zu minen',mn_full:'Speicher voll – jetzt abholen!',mn_fullin:'Speicher voll in {t}',mn_claim:'Abholen',mn_wait:'Mining läuft…',wd_t:'TON auszahlen',wd_avail:'Auszahlbares Guthaben',wd_addr:'TON-Wallet-Adresse',wd_amt:'Betrag (mind. 1 TON)',wd_memo:'Notiz (optional)',wd_btn:'Auszahlung anfordern',wd_min:'Die Mindestauszahlung beträgt',wd_rev:'Anfragen werden geprüft und an deine Wallet gesendet.',wd_fee:'Es wird 1 % Gebühr abgezogen. Du erhältst',wd_low:'Guthaben unter 1 TON',wd_badaddr:'Ungültige TON-Adresse',wd_min1:'Mindestens 1 TON',wd_over:'Betrag übersteigt Guthaben',wd_mine:'Deine Auszahlungen',wd_done:'Auszahlung angefordert – wird geprüft',wd_pastehint:'Feld lange drücken zum Einfügen',tt_badtron:'Gültige TRON-Adresse eingeben (beginnt mit T)',tt_bal:'Dein TT-Guthaben',tt_from:'ab',tt_orders:'Deine Bestellungen',tt_pending:'In Prüfung',tt_note:'10.000 TT = 1 $. Wähle eine Coin, einen Betrag und deine Wallet-Adresse.',tt_amount:'Betrag',tt_addr:'Deine Wallet-Adresse',tt_cost:'Kosten',tt_have:'Dein TT',tt_buy:'Kaufen',tt_poor:'Nicht genug TT',tt_needaddr:'Wallet-Adresse eingeben',tt_warn:'Prüfe Adresse und Netzwerk genau. Auszahlungen werden nach Prüfung manuell gesendet.',tt_done:'Bestellung aufgegeben – wird geprüft',pk_col:'Deine Sammlung',pk_best:'Beste Chancen',pk_note:'Jedes Pack enthält genau 1 Figur.',pk_can:'Mögliche Figuren',rp_servers:'Chat-Server',rp_global:'Global',rp_note:'Freundlich bleiben · kein Spam · kein Betrug. Admins haben ein Abzeichen.',rp_top:'Am aktivsten',rp_last:'Zuletzt besucht',lv_current:'Dein Taxi',lv_unlocked:'Freigeschaltet',lv_next:'Nächstes',lv_all:'Alle Taxis freigeschaltet',lv_base:'Basis',colT:'Sammlung',ch_staff:'TaxiTon-Team',rp_t:'Wähle deinen Chat',rp_d:'Wähle einen Raum, um mit Fahrern in deiner Sprache zu schreiben.',ch_onlineT:'Online-Spieler',ch_driving:'Fährt gerade',ch_room:'TaxiTon-Chat',ch_online:'online',ch_members:'Mitglieder',ch_demo:'Demo',ch_typing:'schreibt…',ch_ph:'Nachricht schreiben…',ch_t:'Kanälen beitreten',ch_d:'Tritt den folgenden Kanälen bei, um diese Aufgabe zu erfüllen.',ch_rew:'Belohnung',ch_join:'Beitreten',ch_check:'Mitgliedschaft prüfen',ch_done:'Erledigt',ch_got:'+5 TT erhalten',iv_t1:'Lade deine Freunde ein',iv_t2:'Gewinne Preise',iv_d:'Lade echte Telegram-Nutzer mit deinem persönlichen Link ein. Die 3 Spieler mit den meisten Einladungen gewinnen:',iv_rank:'Platz',iv_ends:'Kampagne endet in',iv_mine:'Deine Einladungen',iv_btn:'Mit deinem Link einladen',iv_share:'Spiel mit mir TaxiTon! Überfahre Zombies und gewinne TON 🚕🧟',sw_have:'Gesammelt – noch nicht getauscht',sw_rate:'100 TT pro Zombie',sw_btn:'Tauschen',sw_per:'pro Zombie',sw_bal:'Dein TT-Guthaben',dep_t:'TON einzahlen',dep_d:'Um dein Spielguthaben aufzuladen, sende TON an diese Adresse.',dep_copy:'Adresse kopieren',dep_imp:'Wichtig:',dep_memo:'Gib diesen Code als Kommentar (Memo) bei der Überweisung ein, sonst wird deine Einzahlung nicht automatisch gutgeschrieben.',dep_net:'Nutze nur das TON-Netzwerk.',dep_time:'Einzahlungen werden einige Minuten nach der Netzwerkbestätigung gutgeschrieben.',copied2:'Kopiert',i_bonus:'Zombie-Bonus',i_price:'Preis',i_free:'Gratis',i_txt:'Fahr dieses Taxi und jeder überfahrene Zombie zählt {b}% mehr.',i_start:'Dein erstes Taxi. Jeder Fahrer bekommt es gratis.',i_soon:'Dieses Taxi gibt es noch nicht. Bleib dran!',comingSoon:'Demnächst',tuT:'Spielanleitung',tu1:'Pfeiltasten, A/D oder Wischen zum Spurwechsel',tu2a:'Zerstöre die Zombies!',tu2b:'Je mehr Zombies, desto mehr verdienst du',tu3a:'Weiche anderen Autos aus',tu3b:'Ein Crash',tu3c:'beendet deine Fahrt.',tu4:'Tausche gesammelte Zombies in der Wallet',tu5:'Auf der Strecke liegen Power-ups. Fahr drüber, um sie zu aktivieren.',wkT:'Zombie-Rennen',wkReset:'Reset in',wkPrize:'Wochenpreis',wk1:'1. Platz',wk2:'2. Platz',wk3:'3. Platz',triesLbl:'Versuche übrig:',settings:'Einstellungen',s_vib:'Vibration',s_vibD:'Vibriert beim Überfahren eines Zombies',s_fx:'Effekte',s_fxD:'Wackeln und Blitze im Spiel',s_lang:'Sprache',s_links:'Kanäle',s_id:'Spieler-ID',home:'Home',games:'Spiele',chat:'Chat',wallet:'Wallet',top:'Rangliste',topShort:'Top',tasks:'Collection',shop:'Shop',garage:'Home',level:'Level',lvlWord:'LvL',best:'Bestwert',
     chatSub:'Sprich mit anderen Fahrern',chanSub:'News, Events und Gewinnspiele',chanSub2:'Auszahlungs-News',join:'Beitreten',send:'Senden',
     walletSub:'Deine Guthaben und Tausch',zombies:'Zombies',swapTitle:'Zombies → TAXI tauschen',swapInfo:'Gesammelte Zombies kannst du später in den TAXI-Token tauschen. Der Tausch startet mit dem Token-Launch.',
@@ -3513,7 +3515,7 @@ const T = {
     useBoost:'Beim Start nutzen',have:'hast',runReward:'Fahrt-Belohnung',taskReward:'Missions-Belohnung',
     t_runs:'Fahre heute 3 Runden',t_smash:'Überfahre insgesamt 100 Zombies',t_score:'Hol 1.000 Punkte in einer Fahrt',t_chan:'Tritt dem Kanal @TaxiiTon bei',t_invite:'Lade einen Freund ein',
     open:'Öffnen',copy:'Link kopieren',copied:'Einladungslink kopiert',copyFail:'Kopieren fehlgeschlagen, halte den Link gedrückt',
-    c_classic:'Klassik-Taxi',c_night:'Nachtfahrer',c_gold:'Gold-Taxi',c_ghost:'Geister-Taxi',bonus:'Zombies',starter:'Start-Taxi',tasksTitle:'Aufgaben',figBonusT:'Sammlung komplett',figBonusSub:'{a} / {b} Figuren · jedes volle Set = 25 TON',setsReady:'{n} Sets bereit',youHave:'Du hast',figClaim:'25 TON abholen',figOwned:'Zum Drehen ziehen',figLocked:'Finde diese Figur in Packs',newFig:'Neue Figur!',pk_red:'Street Pack',pk_purple:'Night Pack',pk_gold:'Legend Pack',pkInfo_red:'1 Figur',pkInfo_purple:'1 Figur',pkInfo_gold:'1 Figur',tapOpen:'Zum Öffnen tippen',noTries:'Keine Versuche mehr heute. Komm morgen wieder!',rar_common:'Gewöhnlich',rar_rare:'Selten',rar_epic:'Episch',rar_legend:'Legendär',dupFig:'Doppelt',collect:'Einsammeln',opened:'Geöffnet',newCab:'Neues Taxi freigeschaltet!',dupCab:'doppelt → Zombies',welcome:'Willkommen, Fahrer! Tippe auf PLAY zum Starten.',race_for_winner:'für den Gewinner',race_wait_note:'bis zum nächsten Rennen · 5 Fahrer werden zufällig aus den Online-Nutzern ausgewählt',race_paused:'💬 Chat ist während des Rennens pausiert',race_back:'Zurück zum Chat'},
+    c_classic:'Klassik-Taxi',c_night:'Nachtfahrer',c_gold:'Gold-Taxi',c_ghost:'Geister-Taxi',bonus:'Zombies',starter:'Start-Taxi',tasksTitle:'Aufgaben',figBonusT:'Sammlung komplett',figBonusSub:'{a} / {b} Figuren · jedes volle Set = 25 TON',setsReady:'{n} Sets bereit',youHave:'Du hast',figClaim:'25 TON abholen',figOwned:'Zum Drehen ziehen',figLocked:'Finde diese Figur in Packs',newFig:'Neue Figur!',pk_red:'Street Pack',pk_purple:'Night Pack',pk_gold:'Legend Pack',pkInfo_red:'1 Figur',pkInfo_purple:'1 Figur',pkInfo_gold:'1 Figur',tapOpen:'Zum Öffnen tippen',noTries:'Keine Versuche mehr heute. Komm morgen wieder!',rar_common:'Gewöhnlich',rar_rare:'Selten',rar_epic:'Episch',rar_legend:'Legendär',dupFig:'Doppelt',collect:'Einsammeln',opened:'Geöffnet',newCab:'Neues Taxi freigeschaltet!',dupCab:'doppelt → Zombies',welcome:'Willkommen, Fahrer! Tippe auf PLAY zum Starten.'},
   fa:{ch_today:'امروز',ch_yday:'دیروز',ch_onTab:'آنلاین',lk_style:'مدل',lk_title:'ویرایش کاراکتر',lk_sub:'ظاهر خود را انتخاب کن',lk_hairS:'مو',lk_reset:'بازنشانی',lk_saved:'کاراکتر ذخیره شد',lk_s1:'چینی',lk_s2:'روشن',lk_s3:'بژ',lk_s4:'برنزه',lk_s5:'قهوه‌ای',lk_s6:'تیره',lk_h1:'مشکی',lk_h2:'قهوه‌ای',lk_h3:'شاه‌بلوطی',lk_h4:'بلوند',lk_h5:'قرمز',lk_h6:'خاکستری',lk_h7:'آبی',lk_h8:'صورتی',lk_edit:'ویرایش',lk_skin:'رنگ پوست',lk_hair:'رنگ مو و ابرو',lk_orig:'اصلی',lk_hs:'مدل مو',lk_beard:'ریش',lk_eyes:'چشم',lk_brows:'ابرو',lk_ears:'گوش',lk_nose:'بینی',lk_lips:'لب',pf_boy:'پسر',pf_girl:'دختر',s_dark:'حالت تاریک',s_darkD:'رنگ‌های تیره‌تر، برای چشم در شب راحت‌تر',it_bub_racer:'مسابقه خیابانی',it_frm_racer:'مسابقه خیابانی',it_ban_racer:'مسابقه خیابانی',fr_reqs:'درخواست‌ها',fr_in:'دریافتی',fr_out:'ارسالی',fr_wants:'می‌خواهد دوست تو باشد',fr_accept:'پذیرفتن',fr_decline:'رد کردن',fr_accd:'{n} حالا دوست توست! 🎉',fr_decd:'درخواست رد شد',fr_noReq:'درخواست جدیدی نیست',fr_rmShort:'حذف؟',fr_tab:'دوستان',fr_add:'افزودن دوست',fr_sent:'درخواست ارسال شد',fr_is:'دوست',fr_rm:'حذف دوست؟',fr_msg:'پیام',fr_note:'برای چت خصوصی او را به دوستان اضافه کن.',fr_reqd:'درخواست دوستی ارسال شد',fr_acc:'{n} درخواست دوستی تو را پذیرفت! 🎉',fr_removed:'{n} از دوستان حذف شد',fr_none:'هنوز دوستی نداری',fr_noneD:'در چت روی یک بازیکن بزن، پروفایلش را باز کن و او را به دوستان اضافه کن.',fr_start:'سلام کن 👋',fr_priv:'چت خصوصی – فقط شما دو نفر می\u200cبینید.',fr_replies:['سلام! 👋','خخخ عالیه 😂','بعداً مسابقه بدیم؟ 🏁','gg!','الان یه فیگور جدید گرفتم 🔥','اهل کجایی؟','باشه 👍','امشب برج زامبی؟ 🧟'],pf_all:'همه آیتم‌ها',px_chat:'چت',px_act:'زمان فعالیت',px_day:'پاداش روزانه',px_up:'سطح پروفایل بالا رفت! سطح {n} 🎉',bio_ph:'چیزی درباره خودت بنویس…',bio_edit:'ویرایش بیو',bio_save:'ذخیره',bio_cancel:'لغو',bio_saved:'بیو ذخیره شد',bio_staff:'تیم رسمی تاکسی‌تون · هر سوالی داری بپرس 🚕',rp_reply:'پاسخ',rp_sticker:'استیکر',it_bub_pixel:'کدنویس پیکسلی',it_frm_pixel:'کدنویس پیکسلی',it_ban_pixel:'کدنویس پیکسلی',it_ban:'بنر',it_banNote:'یک بنر بالای پروفایل تو – همه آن را می\u200cبینند.',it_ban_classic:'کلاسیک',it_ban_autumn:'باران پاییزی',it_bub_autumn:'باران پاییزی',it_frm_autumn:'باران پاییزی',it_ban_cozy:'پاییز دنج',it_bub_cozy:'پاییز دنج',it_frm_cozy:'پاییز دنج',it_ban_fox:'روباه پاییزی',it_bub_fox:'روباه پاییزی',it_frm_fox:'روباه پاییزی',stk_autumn:'دوستان پاییزی',it_ban_city:'شهر نئون',it_ban_duo:'دوتایی کارت',it_ban_crew:'تیم تاکسی',it_ban_vault:'گاوصندوق TON',it_ban_zombie:'برج زامبی',it_ban_taxiton:'افسانه\u200cهای تاکسی\u200cتون',pf_photo:'تغییر عکس پروفایل',pf_upload:'آپلود عکس',pf_remove:'حذف',pf_saved:'عکس پروفایل ذخیره شد',pf_removed:'عکس پروفایل حذف شد',pf_bad:'لطفاً یک تصویر انتخاب کنید',pf_mine:'پروفایل من',pf_mineD:'عکس پروفایل، موجودی و آیتم\u200cها',pf_view:'مشاهده پروفایل',pf_ton:'موجودی TON',pf_tt:'موجودی TT',pf_paid:'برداشت شده',pf_eq:'آیتم\u200cهای فعال',pf_none:'هنوز پک استیکری ندارد',it_tab:'آیتم\u200cها',it_stk:'استیکر',it_bub:'حباب چت',it_frm:'قاب',it_bubNote:'پیام\u200cهای چت خود را زیبا کن – همه در اتاق آن را می\u200cبینند.',it_frmNote:'یک قاب دور آواتار تو کنار پیام\u200cهایت در چت.',it_equip:'استفاده',it_equipped:'فعال',it_got:'{n} باز و فعال شد!',it_hi:'سلام! 👋',it_bub_classic:'کلاسیک',it_bub_ton:'آبی TON',it_bub_gold:'طلایی',it_bub_neon:'نئون',it_bub_zombie:'زامبی سمی',it_bub_gift:'جعبه شانس',it_frm_none:'بدون قاب',it_frm_ton:'آبی TON',it_frm_gold:'طلایی',it_frm_neon:'نئون',it_frm_fire:'آتش',it_frm_crown:'پادشاه',it_frm_taxi:'پادشاه تاکسی',stk_tab:'استیکر',stk_note:'با TT یک پک استیکر بخر و استیکرها را در چت بفرست.',stk_owned:'خریداری\u200cشده',stk_count:'استیکر',stk_use:'استفاده در چت',stk_got:'استیکرهای {n} باز شد!',stk_none:'هنوز استیکری نداری – یک پک از فروشگاه بخر.',stk_zombie:'زامبی',tw_rules:'۱ در برابر ۱: هر دو همان کارت را می\u200cبینید و حدس می\u200cزنید کارت بعدی بالاتر است یا پایین\u200cتر. هر کس زودتر به ۱۲ امتیاز برسد، جایزه را می\u200cبرد.',tw_bal:'موجودی شما',tw_create:'ساخت اتاق',tw_goBtn:'ساخت اتاق با {v} TON',tw_open:'اتاق\u200cهای باز',tw_empty:'هنوز اتاقی باز نیست',tw_emptyD:'یک اتاق بساز و بازی را شروع کن',tw_yours:'اتاق شما',tw_wait:'در انتظار حریف…',tw_cancel:'لغو',tw_one:'شما یک اتاق باز دارید',tw_made:'اتاق ساخته شد',tw_closed:'اتاق بسته شد – مبلغ برگشت داده شد',tw_note:'هر کسی که این صفحه را با او به اشتراک بگذاری می\u200cتواند بازی کند. موجودی او از موجودی TaxiTon خوانده می\u200cشود.',g_title:'بازی‌ها',g_join:'پیوستن',g_all:'همه بازی‌ها',g_live:'فعال',g_soon:'به‌زودی',g_soonChip:'به‌زودی',g_tower:'برج زامبی',g_nard:'تخته نرد',g_bingo:'بینگو',g_ludo:'منچ',tr_t:'معاوضه فیگور',tr_d:'فیگورهای تکراری خود را با بازیکنان دیگر معاوضه کنید.',tt_memo:'ممو / توضیح',tt_memoOpt:'(در صورت نیاز)',tt_memoPh:'مثلاً برای صرافی‌ها لازم است',mn_luna:'پاداش لونا (افسانه‌ای)',notEnoughTon:'TON کافی نیست – در کیف پول TON واریز کنید',mn_hr:'در ساعت',mn_dy:'در روز',mn_usd:'ارزش / روز',mn_crew:'تیم ماینینگ',mn_nextT:'فیگور بعدی: {r} TT/روز',mn_max:'حداکثر سرعت',mn_fullS:'پر',mn_t:'ماینینگ TT',mn_day:'روز',mn_d:'روز',mn_sub:'{n}/{b} فیگور باز شده – برای ماینینگ سریع‌تر بیشتر جمع کنید',mn_on:'فعال',mn_off:'متوقف',mn_store:'استخراج‌شده – آماده دریافت',mn_need:'برای شروع ماینینگ یک فیگور باز کنید',mn_full:'مخزن پر است – دریافت کنید!',mn_fullin:'پر شدن مخزن تا {t}',mn_claim:'دریافت',mn_wait:'در حال ماینینگ…',wd_t:'برداشت تون',wd_avail:'موجودی قابل برداشت',wd_addr:'آدرس کیف پول تون',wd_amt:'مقدار (حداقل 1 TON)',wd_memo:'یادداشت (در صورت نیاز)',wd_btn:'درخواست برداشت',wd_min:'حداقل برداشت',wd_rev:'است. درخواست‌ها بررسی و به آدرس کیف پول شما ارسال می‌شوند.',wd_fee:'۱٪ کارمزد برداشت کسر می‌شود. شما دریافت می‌کنید:',wd_low:'موجودی کمتر از 1 TON',wd_badaddr:'آدرس تون نامعتبر است',wd_min1:'حداقل 1 TON',wd_over:'مقدار بیشتر از موجودی است',wd_mine:'برداشت‌های شما',wd_done:'درخواست برداشت ثبت شد – در حال بررسی',wd_pastehint:'برای چسباندن، فیلد را نگه دارید',tt_badtron:'آدرس ترون معتبر وارد کنید (با T شروع می‌شود)',tt_bal:'موجودی TT شما',tt_from:'از',tt_orders:'سفارش‌های شما',tt_pending:'در حال بررسی',tt_note:'۱۰٬۰۰۰ TT = ۱ دلار. ارز، مبلغ و آدرس کیف پول خود را انتخاب کنید.',tt_amount:'مبلغ',tt_addr:'آدرس کیف پول شما',tt_cost:'هزینه',tt_have:'TT شما',tt_buy:'خرید',tt_poor:'TT کافی نیست',tt_needaddr:'آدرس کیف پول را وارد کنید',tt_warn:'آدرس و شبکه را با دقت بررسی کنید. پرداخت‌ها پس از بررسی به صورت دستی ارسال می‌شوند.',tt_done:'سفارش ثبت شد – در حال بررسی',pk_col:'کلکسیون شما',pk_best:'بهترین شانس',pk_note:'هر پک دقیقاً ۱ فیگور دارد.',pk_can:'فیگورهای ممکن',rp_servers:'سرورهای چت',rp_global:'جهانی',rp_note:'محترمانه · بدون اسپم · بدون کلاهبرداری. ادمین‌ها نشان دارند.',rp_top:'فعال‌ترین',rp_last:'آخرین بازدید',lv_current:'تاکسی شما',lv_unlocked:'باز شده',lv_next:'بعدی',lv_all:'همه تاکسی‌ها باز شد',lv_base:'پایه',colT:'کلکسیون',ch_staff:'تیم تاکسی‌تون',rp_t:'چت خود را انتخاب کنید',rp_d:'یک اتاق انتخاب کنید تا با رانندگان به زبان خودتان گفتگو کنید.',ch_onlineT:'کاربران آنلاین',ch_driving:'در حال رانندگی',ch_room:'چت تاکسی‌تون',ch_online:'آنلاین',ch_members:'عضو',ch_demo:'نمایشی',ch_typing:'در حال نوشتن…',ch_ph:'پیام بنویسید…',ch_t:'عضویت در کانال‌ها',ch_d:'برای انجام این وظیفه در کانال‌های زیر عضو شوید.',ch_rew:'پاداش',ch_join:'عضویت',ch_check:'بررسی عضویت',ch_done:'انجام شد',ch_got:'+5 TT دریافت شد',iv_t1:'دوستان خود را دعوت کنید',iv_t2:'جایزه دریافت کنید',iv_d:'کاربران واقعی تلگرام را با لینک شخصی خود دعوت کنید. ۳ بازیکنی که بیشترین دعوت را داشته باشند برنده جایزه زیر می‌شوند:',iv_rank:'رتبه',iv_ends:'زمان کمپین تا',iv_mine:'دعوت‌های شما',iv_btn:'از طریق لینک خود دعوت کنید',iv_share:'به من در تاکسی‌تون بپیوند! زامبی‌ها را نابود کن و TON ببر 🚕🧟',sw_have:'جمع آوری شده - هنوز معاوضه نشده',sw_rate:'100 سکه به ازای هر زامبی',sw_btn:'معاوضه',sw_per:'به ازای هر زامبی',sw_bal:'موجودی TT شما',dep_t:'واریز تون',dep_d:'برای افزایش موجودی درون‌بازی، تون را به این آدرس ارسال کنید.',dep_copy:'کپی آدرس',dep_imp:'مهم:',dep_memo:'این کد را به‌عنوان توضیح/یادداشت (memo) انتقال وارد کنید، در غیر این صورت واریز شما به‌طور خودکار به حساب شما اعمال نمی‌شود.',dep_net:'فقط از شبکه TON استفاده کنید.',dep_time:'واریزها چند دقیقه پس از تأیید شبکه به حساب شما اضافه می‌شوند.',copied2:'کپی شد',i_bonus:'پاداش زامبی',i_price:'قیمت',i_free:'رایگان',i_txt:'با این تاکسی رانندگی کن و هر زامبی {b}٪ بیشتر حساب می‌شود.',i_start:'اولین تاکسی تو. همه رانندگان آن را رایگان دارند.',i_soon:'این تاکسی هنوز در دسترس نیست. منتظر باش!',comingSoon:'به‌زودی',tuT:'آموزش بازی',tu1:'کلید های جهت نما، A/D یا کشیدن انگشت برای تغییر مسیر',tu2a:'زامبی‌ها را نابود کنید',tu2b:'هرچه تعداد زامبی‌های بیشتری را نابود کنید، درآمد بیشتری کسب خواهید کرد.',tu3a:'از برخورد با موانع خودداری کنید',tu3b:'-',tu3c:'یک برخورد به مسیر پایان میدهد.',tu4:'زامبی‌های جمع‌آوری‌شده را از طریق کیف پول، با ارز موردنظر مبادله کنید.',tu5:'در مسیر بازی، آیتم های قدرتمندی قرار دارند که با برخورد تاکسی، فعال می‌شوند.',wkT:'مسابقه زامبی',wkReset:'باز نشانی بعد در',wkPrize:'جایزه هفتگی',wk1:'مقام اول',wk2:'مقام دوم',wk3:'مقام سوم',triesLbl:'تلاش باقی مانده:',settings:'تنظیمات',s_vib:'لرزش',s_vibD:'هنگام زدن زامبی گوشی می‌لرزد',s_fx:'افکت‌ها',s_fxD:'لرزش صفحه و فلش در بازی',s_lang:'زبان',s_links:'کانال‌ها',s_id:'شناسه بازیکن',home:'خانه',games:'بازی‌ها',chat:'چت',wallet:'کیف پول',top:'برترین‌ها',topShort:'برترین',tasks:'کلکسیون',shop:'فروشگاه',garage:'خانه',level:'سطح',lvlWord:'سطح',best:'بهترین',
     chatSub:'با رانندگان دیگر گفتگو کن',chanSub:'اخبار، رویدادها و جوایز',chanSub2:'اعلام برداشت‌ها',join:'عضویت',send:'ارسال',
     walletSub:'موجودی‌ها و معاوضه',zombies:'زامبی',swapTitle:'معاوضه زامبی ← TAXI',swapInfo:'زامبی‌های جمع‌شده قابل معاوضه با توکن TAXI خواهند بود. معاوضه با عرضه توکن باز می‌شود.',
@@ -3526,7 +3528,7 @@ const T = {
     useBoost:'استفاده در شروع',have:'داری',runReward:'جایزه مسیر',taskReward:'جایزه ماموریت',
     t_runs:'امروز ۳ مسیر برو',t_smash:'در مجموع ۱۰۰ زامبی نابود کن',t_score:'در یک مسیر ۱۰۰۰ امتیاز بگیر',t_chan:'عضو کانال @TaxiiTon شو',t_invite:'یک دوست دعوت کن',
     open:'باز کن',copy:'کپی لینک',copied:'لینک دعوت کپی شد',copyFail:'کپی نشد، لینک را نگه دار و کپی کن',
-    c_classic:'تاکسی کلاسیک',c_night:'شب‌رو',c_gold:'تاکسی طلایی',c_ghost:'تاکسی شبح',bonus:'زامبی',starter:'تاکسی شروع',tasksTitle:'ماموریت‌ها',figBonusT:'تکمیل کلکسیون',figBonusSub:'{a} / {b} فیگور · هر ست کامل = ۲۵ TON',setsReady:'{n} ست آماده',youHave:'داری',figClaim:'دریافت ۲۵ TON',figOwned:'برای چرخاندن بکش',figLocked:'این فیگور را در پک‌ها پیدا کن',newFig:'فیگور جدید!',pk_red:'پک خیابان',pk_purple:'پک شب',pk_gold:'پک افسانه',pkInfo_red:'۱ فیگور',pkInfo_purple:'۱ فیگور',pkInfo_gold:'۱ فیگور',tapOpen:'برای باز کردن بزن',noTries:'تلاش امروز تمام شد. فردا برگرد!',rar_common:'معمولی',rar_rare:'کمیاب',rar_epic:'حماسی',rar_legend:'افسانه‌ای',dupFig:'تکراری',collect:'دریافت',opened:'باز شد',newCab:'تاکسی جدید باز شد!',dupCab:'تکراری ← زامبی',welcome:'خوش آمدی راننده! برای شروع PLAY را بزن.',race_for_winner:'برای برنده',race_wait_note:'تا شروع رنس بعدی · ۵ راننده به‌صورت تصادفی از کاربران آنلاین انتخاب می‌شوند',race_paused:'💬 چت در طول مسابقه متوقف است',race_back:'بازگشت به چت'}
+    c_classic:'تاکسی کلاسیک',c_night:'شب‌رو',c_gold:'تاکسی طلایی',c_ghost:'تاکسی شبح',bonus:'زامبی',starter:'تاکسی شروع',tasksTitle:'ماموریت‌ها',figBonusT:'تکمیل کلکسیون',figBonusSub:'{a} / {b} فیگور · هر ست کامل = ۲۵ TON',setsReady:'{n} ست آماده',youHave:'داری',figClaim:'دریافت ۲۵ TON',figOwned:'برای چرخاندن بکش',figLocked:'این فیگور را در پک‌ها پیدا کن',newFig:'فیگور جدید!',pk_red:'پک خیابان',pk_purple:'پک شب',pk_gold:'پک افسانه',pkInfo_red:'۱ فیگور',pkInfo_purple:'۱ فیگور',pkInfo_gold:'۱ فیگور',tapOpen:'برای باز کردن بزن',noTries:'تلاش امروز تمام شد. فردا برگرد!',rar_common:'معمولی',rar_rare:'کمیاب',rar_epic:'حماسی',rar_legend:'افسانه‌ای',dupFig:'تکراری',collect:'دریافت',opened:'باز شد',newCab:'تاکسی جدید باز شد!',dupCab:'تکراری ← زامبی',welcome:'خوش آمدی راننده! برای شروع PLAY را بزن.'}
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4243,8 +4245,8 @@ function renderChat(){
     : [];
   const raceBadgesOn = chatRoom === 'fa';
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
-      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span>${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${raceBadgesOn && u.racing ? `<span class="race-badge racing">${u.racePhase === 'grid' ? '🔮 ' + (S.lang==='de'?'Startet':S.lang==='fa'?'شروع می‌شود':'Starting') : '🏁 Racing'}</span>` : raceBadgesOn && u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${TAXI_RACE_REWARD_TT} TT</span>` : raceBadgesOn && u.racePredictedCorrect ? `<span class="race-badge winner">🔮 +${TAXI_RACE_TIP_TT} TT</span>` : raceBadgesOn && u.racePredictionPending ? `<span class="race-badge racing">🔮 ${S.lang==='de'?'Tipp':S.lang==='fa'?'پیش‌بینی':'Tip'}</span>` : ''}</div>
-      <div class="muted">${raceBadgesOn && u.racing ? (u.racePhase === 'grid' ? '🔮 ' + (S.lang==='de'?'Fährt gleich los':S.lang==='fa'?'به‌زودی می‌راند':'Starting soon') : '🏁 ' + (S.lang==='de'?'Im Rennen':S.lang==='fa'?'در حال مسابقه':'In the race')) : u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
+      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b><span class="lv">${u.isMe ? (S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You') : 'Lv ' + u.lvl}</span>${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${raceBadgesOn && u.racing ? `<span class="race-badge racing">${u.racePhase === 'grid' ? '🔮 شروع می‌شود' : '🏁 در حال مسابقه'}</span>` : raceBadgesOn && u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${TAXI_RACE_REWARD_TT} TT</span>` : raceBadgesOn && u.racePredictedCorrect ? `<span class="race-badge winner">🔮 +${TAXI_RACE_TIP_TT} TT</span>` : raceBadgesOn && u.racePredictionPending ? `<span class="race-badge racing">🔮 پیش‌بینی</span>` : ''}</div>
+      <div class="muted">${raceBadgesOn && u.racing ? (u.racePhase === 'grid' ? '🔮 به‌زودی می‌راند' : '🏁 در حال مسابقه') : u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
   const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
@@ -4451,19 +4453,33 @@ function applyTaxiRaceEvent(event){
   } else {
     const prevStatus = TAXI_RACE.race && TAXI_RACE.race.id === event.id ? TAXI_RACE.race.status : null;
     const isNewRace = !TAXI_RACE.race || TAXI_RACE.race.id !== event.id;
+    const phaseChanged = prevStatus !== event.status;
     TAXI_RACE.race = event;
     if (event.nextStartAt) TAXI_RACE.nextStartAt = Number(event.nextStartAt);
     if (isNewRace) TAXI_RACE.myPrediction = null;
     if (event.myPrediction !== undefined) TAXI_RACE.myPrediction = event.myPrediction;
-    if (event.status === 'grid' && prevStatus !== 'grid') {
-      if (chatRoom === TAXI_RACE_ROOM && current === 'chat' && chatTab === 'chat' && !TAXI_RACE.viewOpen) { openRaceView(); TAXI_RACE.autoOpened = true; }
-      else if (TAXI_RACE.viewOpen) renderRaceGrid(event);
+    if (event.status === 'grid' && phaseChanged) {
+      if (chatRoom === TAXI_RACE_ROOM && current === 'chat' && chatTab === 'chat') {
+        // Re-sync the panels whether the race view was already open (e.g. showing
+        // the wait countdown) or needs to be opened fresh - openRaceView() picks
+        // the right panel for the current race status either way.
+        const wasOpen = TAXI_RACE.viewOpen;
+        openRaceView();
+        if (!wasOpen) TAXI_RACE.autoOpened = true;
+      } else if (TAXI_RACE.viewOpen) {
+        renderRaceGrid(event);
+      }
       if (current === 'chat') renderChat();
     } else if (event.status === 'grid') {
       if (TAXI_RACE.viewOpen) renderRaceGrid(event);
-    } else if (event.status === 'running' && prevStatus !== 'running') {
-      if (chatRoom === TAXI_RACE_ROOM && current === 'chat' && chatTab === 'chat' && !TAXI_RACE.viewOpen) { openRaceView(); TAXI_RACE.autoOpened = true; }
-      else startRaceAnimation(event);
+    } else if (event.status === 'running' && phaseChanged) {
+      if (chatRoom === TAXI_RACE_ROOM && current === 'chat' && chatTab === 'chat') {
+        const wasOpen = TAXI_RACE.viewOpen;
+        openRaceView();
+        if (!wasOpen) TAXI_RACE.autoOpened = true;
+      } else if (TAXI_RACE.viewOpen) {
+        startRaceAnimation(event);
+      }
       if (current === 'chat') renderChat();
     } else if (event.status === 'finished' && prevStatus !== 'finished') {
       onTaxiRaceFinished(event);
@@ -4490,23 +4506,23 @@ function renderRaceCardChrome(){
   if (race && race.status === 'running') {
     card.classList.remove('win');
     const elapsedS = Math.max(0, Math.floor((Date.now() - race.startedAt) / 1000));
-    sub.textContent = (S.lang==='de' ? 'Rennen läuft · ' : S.lang==='fa' ? 'در حال مسابقه · ' : 'Race in progress · ') + taxiRaceCountdownText(elapsedS * 1000);
+    sub.textContent = 'در حال مسابقه · ' + taxiRaceCountdownText(elapsedS * 1000);
     bar.style.width = '0%';
     if (back) back.hidden = true;
   } else if (race && race.status === 'grid') {
     card.classList.remove('win');
     const remaining = Math.max(0, race.startsAt - Date.now());
-    sub.textContent = (S.lang==='de' ? 'Fahrer gezogen · Start in ' : S.lang==='fa' ? 'رانندگان مشخص شدند · شروع در ' : 'Drivers drawn · starts in ') + taxiRaceCountdownText(remaining);
+    sub.textContent = 'رانندگان مشخص شدند · شروع در ' + taxiRaceCountdownText(remaining);
     bar.style.width = Math.max(0, Math.min(100, (remaining / TAXI_RACE_PICK_AHEAD_MS_CLIENT) * 100)) + '%';
     if (back) back.hidden = false;
   } else if (race && race.status === 'finished') {
     card.classList.add('win');
-    sub.textContent = S.lang==='de' ? 'Rennen beendet' : S.lang==='fa' ? 'مسابقه تمام شد' : 'Race finished';
+    sub.textContent = 'مسابقه تمام شد';
     bar.style.width = '0%';
     if (back) back.hidden = false;
   } else {
     card.classList.remove('win');
-    sub.textContent = S.lang==='de' ? 'Alle 5 Minuten · 5 zufällige Fahrer' : S.lang==='fa' ? 'هر ۵ دقیقه · ۵ راننده تصادفی' : 'Every 5 minutes · 5 random drivers';
+    sub.textContent = 'هر ۵ دقیقه · ۵ راننده تصادفی';
     const remaining = Math.max(0, TAXI_RACE.nextStartAt - Date.now());
     bar.style.width = Math.max(0, Math.min(100, (remaining / TAXI_RACE_INTERVAL_MS_CLIENT) * 100)) + '%';
     if (back) back.hidden = false;
@@ -4554,21 +4570,21 @@ function renderRaceGrid(race){
   const amRacing = race.drivers.some((d) => String(d.uid) === String(SHOP_ACCOUNT.uid));
   const counts = race.predictionCounts || {};
   const hintText = amRacing
-    ? (S.lang==='de' ? "🏁 Du fährst in diesem Rennen mit" : S.lang==='fa' ? '🏁 تو در این مسابقه رانندگی می‌کنی' : "🏁 You're driving in this race")
+    ? '🏁 تو در این مسابقه رانندگی می‌کنی'
     : TAXI_RACE.myPrediction
-      ? (S.lang==='de' ? '🔮 Deine Vorhersage ist gespeichert' : S.lang==='fa' ? '🔮 پیش‌بینی تو ثبت شد' : '🔮 Your prediction is locked in')
-      : (S.lang==='de' ? `🔮 Tippe, wer gewinnt · richtig = +${TAXI_RACE_TIP_TT} TT` : S.lang==='fa' ? `🔮 حدس بزن چه کسی برنده می‌شود · درست = +${TAXI_RACE_TIP_TT} TT` : `🔮 Tap who you think wins · correct = +${TAXI_RACE_TIP_TT} TT`);
+      ? '🔮 پیش‌بینی تو ثبت شد'
+      : `🔮 حدس بزن چه کسی برنده می‌شود · درست = +${TAXI_RACE_TIP_TT} TT`;
   wrap.innerHTML = `<div class="race-pick-hint">${esc(hintText)}</div>` + race.drivers.map((d) => {
     const initials = (d.name || '?').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || (d.name || '?').slice(0, 1);
     const isMe = String(d.uid) === String(SHOP_ACCOUNT.uid);
     const mine = TAXI_RACE.myPrediction != null && String(TAXI_RACE.myPrediction) === String(d.uid);
     const count = counts[d.uid] ?? counts[String(d.uid)] ?? 0;
     const right = mine
-      ? `<span class="race-pick-mine">✓ ${S.lang==='de' ? 'Dein Tipp' : S.lang==='fa' ? 'انتخاب تو' : 'Your pick'}</span>`
-      : (!amRacing && !TAXI_RACE.myPrediction ? `<button type="button" class="race-pick-btn" data-predict="${esc(d.uid)}">${S.lang==='de' ? 'Tippen' : S.lang==='fa' ? 'پیش‌بینی' : 'Predict'}</button>` : '');
+      ? `<span class="race-pick-mine">✓ انتخاب تو</span>`
+      : (!amRacing && !TAXI_RACE.myPrediction ? `<button type="button" class="race-pick-btn" data-predict="${esc(d.uid)}">پیش‌بینی</button>` : '');
     return `<div class="race-lane${isMe ? ' me' : ''}">
       <div class="race-lane-av">${d.photoUrl ? `<img src="${esc(d.photoUrl)}" alt="">` : esc(initials)}</div>
-      <div class="race-lane-body"><div class="race-lane-name"><b>${esc(d.name)}${isMe ? (S.lang==='de' ? ' (Du)' : S.lang==='fa' ? ' (تو)' : ' (You)') : ''}</b></div></div>
+      <div class="race-lane-body"><div class="race-lane-name"><b>${esc(d.name)}${isMe ? ' (تو)' : ''}</b></div></div>
       <div class="race-lane-right"><span class="race-pick-count">🔮 ${count}</span>${right}</div>
     </div>`;
   }).join('');
@@ -4641,11 +4657,11 @@ function renderRaceWinner(race){
   const result = $('#raceResult');
   result.hidden = false;
   const isMe = String(race.winnerUid) === String(SHOP_ACCOUNT.uid);
-  const youSuffix = isMe ? (S.lang==='de' ? ' (Du!)' : S.lang==='fa' ? ' (تو!)' : ' (You!)') : '';
+  const youSuffix = isMe ? ' (تو!)' : '';
   const myTipRight = TAXI_RACE.myPrediction != null && String(TAXI_RACE.myPrediction) === String(race.winnerUid);
   const tipLine = myTipRight
-    ? `<div class="race-result-tip win">${S.lang==='de' ? 'Deine Vorhersage war richtig: ' : S.lang==='fa' ? 'پیش‌بینی تو درست بود: ' : 'Your prediction was right: '}+${race.tipRewardTT || TAXI_RACE_TIP_TT} TT</div>`
-    : (TAXI_RACE.myPrediction != null ? `<div class="race-result-tip lost">${S.lang==='de' ? 'Deine Vorhersage war falsch' : S.lang==='fa' ? 'پیش‌بینی تو اشتباه بود' : 'Your prediction was wrong'}</div>` : '');
+    ? `<div class="race-result-tip win">پیش‌بینی تو درست بود: +${race.tipRewardTT || TAXI_RACE_TIP_TT} TT</div>`
+    : (TAXI_RACE.myPrediction != null ? `<div class="race-result-tip lost">پیش‌بینی تو اشتباه بود</div>` : '');
   result.innerHTML = `<div class="race-result-ic">🏆</div><b>${esc(race.winnerName)}${youSuffix}</b><div class="race-result-reward">+${TAXI_RACE_REWARD_TT} TT</div>${tipLine}`;
   renderRaceCardChrome();
 }
