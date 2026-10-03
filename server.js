@@ -2659,11 +2659,13 @@ const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'
 d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.isSupporter?' is-supporter':'')+(u.chatMuted?' is-muted':'');
 const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isSupporter?'<span class="tag admin">Supporter</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.badge4?'<span class="tag designer">Badge 4</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
 row.innerHTML='<span>'+u.name+tags+'<br><span class="muted">UID '+u.uid+'</span></span><span></span><span></span><span></span><span></span>';
-const adminBtn=document.createElement('button');adminBtn.className='small-btn';adminBtn.textContent=u.isChatAdmin?'Admin speichern':'Zum Chat-Admin machen';
+const adminBtn=document.createElement('button');adminBtn.className='small-btn';adminBtn.textContent=u.isChatAdmin?'Badge speichern':'Zum Chat-Admin machen';
 const adminBadgeSelect=document.createElement('select');adminBadgeSelect.className='admin-badge-select';adminBadgeSelect.title='Admin-Badge auswählen';
 adminBadgeSelect.innerHTML='<option value="boy">Admin Junge</option><option value="girl">Admin Mädchen</option>';
 adminBadgeSelect.value=u.adminBadge==='girl'?'girl':'boy';adminBadgeSelect.disabled=!u.isChatAdmin;
 adminBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isChatAdmin:true,adminBadge:adminBadgeSelect.value})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
+const adminRemoveBtn=document.createElement('button');adminRemoveBtn.className='small-btn danger';adminRemoveBtn.textContent='Admin entfernen';adminRemoveBtn.style.display=u.isChatAdmin?'':'none';
+adminRemoveBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-admin',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isChatAdmin:false})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const supporterBtn=document.createElement('button');supporterBtn.className='small-btn';supporterBtn.textContent=u.isSupporter?'Supporter entfernen':'Zum Supporter machen';
 supporterBtn.title='Supporter hat dieselben Rechte wie Chat-Admin (löschen, muten, Chat-Override)';
 supporterBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-supporter',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,isSupporter:!u.isSupporter})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
@@ -2673,7 +2675,7 @@ const badgeBtn=document.createElement('button');badgeBtn.className='small-btn';b
 badgeBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-badge4',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,badge4:!u.badge4})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
 const muteBtn=document.createElement('button');muteBtn.className='small-btn'+(u.chatMuted?'':' danger');muteBtn.textContent=u.chatMuted?'Entmuten':'Muten';
 muteBtn.onclick=async()=>{const rr=await fetch('/admin/chat/set-mute',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:u.uid,muted:!u.chatMuted})});if(rr.ok)runSearch();else status((await rr.json()).error||'Request failed')};
-row.children[2].appendChild(adminBadgeSelect);row.children[2].appendChild(adminBtn);row.children[1].appendChild(supporterBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(badgeBtn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
+row.children[2].appendChild(adminBadgeSelect);row.children[2].appendChild(adminBtn);row.children[2].appendChild(adminRemoveBtn);row.children[1].appendChild(supporterBtn);row.children[3].appendChild(designerBtn);row.children[4].appendChild(badgeBtn);row.children[4].appendChild(muteBtn);box.appendChild(row)});
 status(d.users.length+' Nutzer geladen.')}
 document.getElementById('chatUserSearchBtn').onclick=runSearch;
 document.getElementById('chatUserSearch').addEventListener('keydown',e=>{if(e.key==='Enter')runSearch()});
