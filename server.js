@@ -270,6 +270,7 @@ const MIN_MS_BETWEEN_RUN_EXCHANGES = 4000;
 // ---- Global chat (shown on Home, under the online-player count) ----
 const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
 const CHAT_SETTINGS_FILE = path.join(DATA_DIR, 'chat-settings.json');
+const TT_SHOP_SETTINGS_FILE = path.join(DATA_DIR, 'tt-shop-settings.json');
 const CARD_EVENT_FILE = path.join(DATA_DIR, 'card-event.json');
 const CARD_EVENT_DURATION_MS = 30 * 1000;
 const CARD_EVENT_MIN_INTERVAL_MS = 10 * 60 * 1000;
@@ -429,6 +430,25 @@ try {
 function persistChatSettings() {
   try { fs.writeFileSync(CHAT_SETTINGS_FILE, JSON.stringify({ enabled: chatEnabled })); }
   catch (e) { console.error('[chat] could not write settings: ' + e.message); }
+}
+
+// Global on/off switch for TT Shop payouts (cashing TT out for crypto),
+// flippable from the /admin panel. Starts OFF: payouts are temporarily
+// paused while a known issue is being looked at - requests are rejected
+// server-side (not just hidden in the UI). The real Wallet TON withdrawal
+// (/api/withdraw) is unaffected by this.
+let ttShopEnabled = false;
+try {
+  if (fs.existsSync(TT_SHOP_SETTINGS_FILE)) {
+    const loaded = JSON.parse(fs.readFileSync(TT_SHOP_SETTINGS_FILE, 'utf8'));
+    if (loaded && typeof loaded.enabled === 'boolean') ttShopEnabled = loaded.enabled;
+  }
+} catch (e) {
+  console.error('[tt-shop] settings file unreadable: ' + e.message);
+}
+function persistTtShopSettings() {
+  try { fs.writeFileSync(TT_SHOP_SETTINGS_FILE, JSON.stringify({ enabled: ttShopEnabled })); }
+  catch (e) { console.error('[tt-shop] could not write settings: ' + e.message); }
 }
 
 // One-time settlement state for the invite leaderboard campaign (payout only
@@ -1815,6 +1835,7 @@ function publicState(user) {
     adVideosWatched: Math.min(10, Math.max(0, Number(user.adVideosWatched) || 0)),
     adRewardClaimed: user.adRewardClaimed === true,
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
+    ttShopEnabled,
     isChatAdmin: user.isChatAdmin === true,
     adminBadge: user.adminBadge === 'girl' ? 'girl' : 'boy',
     isDesigner: user.isDesigner === true,
@@ -2519,7 +2540,7 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -2647,6 +2668,12 @@ document.getElementById('loadPurchases').onclick=loadPurchases;
 document.getElementById('loadWithdrawals').onclick=()=>loadWithdrawals();
 const completedWithdrawalsButton=document.createElement('button');completedWithdrawalsButton.textContent='Completed withdrawals';document.getElementById('loadWithdrawals').insertAdjacentElement('afterend',completedWithdrawalsButton);completedWithdrawalsButton.onclick=loadCompletedWithdrawals;
 document.getElementById('loadRejectedWithdrawals').onclick=loadRejectedWithdrawals;
+function updateTtShopEnableToggle(enabled){const btn=document.getElementById('withdrawEnableToggle');btn.textContent=enabled?'💸 TT Shop ist AN — jetzt ausschalten':'🚫 TT Shop ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
+document.getElementById('withdrawEnableToggle').onclick=async()=>{const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}const enabled=document.getElementById('withdrawEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/tt-shop/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateTtShopEnableToggle(dd.ttShopEnabled);status(dd.ttShopEnabled?'TT Shop wurde aktiviert.':'TT Shop wurde deaktiviert.')}else status((await rr.json()).error||'Request failed')};
+async function loadTtShopToggleStatus(){const s=secret();if(!s)return;try{const rr=await fetch('/admin/tt-shop/settings',{headers:{'x-admin-secret':s}});if(rr.ok){const dd=await rr.json();updateTtShopEnableToggle(dd.ttShopEnabled===true)}}catch(e){}}
+setInterval(loadTtShopToggleStatus,15000);
+document.getElementById('secret').addEventListener('change',loadTtShopToggleStatus);
+loadTtShopToggleStatus();
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
 const list=document.getElementById('list');
 list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button><button id="cardEventEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
@@ -4312,6 +4339,7 @@ function isValidTtPayoutAddress(coin, address) {
 
 app.post('/api/tt-shop/order', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user;
+  if (!ttShopEnabled) return res.status(503).json({ error: 'tt-shop-disabled' });
   const coin = String(req.body && req.body.coin || '').toLowerCase();
   const usd = Number(req.body && req.body.usd);
   const address = String(req.body && req.body.address || '').trim();
@@ -4963,6 +4991,18 @@ app.get('/admin/withdrawals', requireAdmin, (req, res) => {
   }));
   out.sort((a, b) => b.ts - a.ts);
   res.json({ withdrawals: out });
+});
+
+// Admin on/off switch for TT Shop payouts (see /api/tt-shop/order, which
+// rejects with 'tt-shop-disabled' while this is off). Does NOT affect the
+// real Wallet TON withdrawal (/api/withdraw).
+app.get('/admin/tt-shop/settings', requireAdmin, (req, res) => {
+  res.json({ ttShopEnabled });
+});
+app.post('/admin/tt-shop/set-enabled', requireAdmin, (req, res) => {
+  ttShopEnabled = req.body && req.body.enabled === true;
+  persistTtShopSettings();
+  res.json({ ok: true, ttShopEnabled });
 });
 
 app.get('/admin/deposits', requireAdmin, (req, res) => {
