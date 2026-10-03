@@ -965,6 +965,10 @@ const TAXI_RACE_BONUS_TIP_MULT = 5;
 let taxiRaceState = null; // null = no race has happened yet (or none kept around) - see taxiRaceNextStartAt for the countdown
 let taxiRaceNextStartAt = 0;
 let taxiRaceRacesSinceBonus = TAXI_RACE_BONUS_MIN_GAP; // allow a bonus race right away on first boot
+// True once the guaranteed "first ever race is a bonus race" kickoff has been
+// used - stays false (forcing a bonus) only on a brand-new deploy with no
+// taxi-race.json history yet.
+let taxiRaceFirstBonusUsed = true;
 let taxiRaceGridTimer = null; // fires when the drivers for the next race are drawn/announced
 let taxiRaceRunTimer = null; // fires when a drawn race actually starts running
 let taxiRaceFinishTimer = null;
@@ -974,8 +978,11 @@ try {
     if (loaded && typeof loaded === 'object') {
       taxiRaceNextStartAt = Number(loaded.nextStartAt) || 0;
       taxiRaceRacesSinceBonus = Number.isFinite(Number(loaded.racesSinceBonus)) ? Number(loaded.racesSinceBonus) : TAXI_RACE_BONUS_MIN_GAP;
+      taxiRaceFirstBonusUsed = loaded.firstBonusUsed !== false;
       if (loaded.race && typeof loaded.race.id === 'string') taxiRaceState = loaded.race;
     }
+  } else {
+    taxiRaceFirstBonusUsed = false; // no state file at all - this is a brand-new deploy
   }
 } catch (error) {
   console.error('[taxi-race] state file unreadable: ' + error.message);
@@ -983,16 +990,23 @@ try {
 function persistTaxiRaceState() {
   try {
     const tmp = TAXI_RACE_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ nextStartAt: taxiRaceNextStartAt, racesSinceBonus: taxiRaceRacesSinceBonus, race: taxiRaceState }));
+    fs.writeFileSync(tmp, JSON.stringify({ nextStartAt: taxiRaceNextStartAt, racesSinceBonus: taxiRaceRacesSinceBonus, firstBonusUsed: taxiRaceFirstBonusUsed, race: taxiRaceState }));
     fs.renameSync(tmp, TAXI_RACE_FILE);
   } catch (error) {
     console.error('[taxi-race] state write failed: ' + error.message);
   }
 }
-// Decides whether the next race is a bonus race (bigger prize). Keeps the
-// random 1-in-10 feel but guarantees a cooldown so it can never fire twice in
-// a row (or too frequently) - see TAXI_RACE_BONUS_MIN_GAP.
+// Decides whether the next race is a bonus race (bigger prize). The very
+// first race after a brand-new deploy is always a bonus race (to show it off
+// right away); after that, keeps the random 1-in-10 feel but guarantees a
+// cooldown so it can never fire twice in a row (or too frequently) - see
+// TAXI_RACE_BONUS_MIN_GAP.
 function rollTaxiRaceBonus() {
+  if (!taxiRaceFirstBonusUsed) {
+    taxiRaceFirstBonusUsed = true;
+    taxiRaceRacesSinceBonus = 0;
+    return true;
+  }
   taxiRaceRacesSinceBonus++;
   if (taxiRaceRacesSinceBonus >= TAXI_RACE_BONUS_MIN_GAP && Math.random() < TAXI_RACE_BONUS_CHANCE) {
     taxiRaceRacesSinceBonus = 0;
