@@ -3580,9 +3580,9 @@ async function migrateLegacyProfileBio(uid, bio){
 const ALL_LEVELS_TEST = new URLSearchParams(window.location.search).get('all-levels-test') === '1';
 const CARD_EVENT_TEST = new URLSearchParams(window.location.search).get('card-event-test') === '1';
 const SHOP_WORDS = {
-  en:{day:'day',days:'days',left:'left',today:'Today',offer:'Daily earning limit',active:'Daily limit active',offline:'Open in Telegram to buy',levelUnavailable:'Unavailable'},
-  de:{day:'Tag',days:'Tage',left:'übrig',today:'Heute',offer:'Tägliches Verdienstlimit',active:'Tageslimit aktiv',offline:'Zum Kaufen in Telegram öffnen',levelUnavailable:'Nicht verfügbar'},
-  fa:{day:'روز',days:'روز',left:'باقی‌مانده',today:'امروز',offer:'سقف درآمد روزانه',active:'سقف روزانه فعال',offline:'برای خرید در تلگرام باز کنید',levelUnavailable:'غیرفعال'}
+  en:{day:'day',days:'days',left:'left',today:'Today',offer:'Daily earning limit',active:'Daily limit active',offline:'Open in Telegram to buy',levelUnavailable:'Unavailable',dailyCapReached:'Daily goal reached · back tomorrow'},
+  de:{day:'Tag',days:'Tage',left:'übrig',today:'Heute',offer:'Tägliches Verdienstlimit',active:'Tageslimit aktiv',offline:'Zum Kaufen in Telegram öffnen',levelUnavailable:'Nicht verfügbar',dailyCapReached:'Tagesziel erreicht · morgen wieder'},
+  fa:{day:'روز',days:'روز',left:'باقی‌مانده',today:'امروز',offer:'سقف درآمد روزانه',active:'سقف روزانه فعال',offline:'برای خرید در تلگرام باز کنید',levelUnavailable:'غیرفعال',dailyCapReached:'سقف روزانه پر شد · فردا دوباره'}
 };
 const skinForCar = id => CARS.find(c => c.id === id)?.skin || 'yellow';
 const carForSkin = skin => CARS.find(c => c.skin === skin && !c.soon);
@@ -4726,8 +4726,8 @@ function walletExchangeRate(){
   const lvl = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
   return lvl >= 5 ? 332 : lvl >= 4 ? 100 : lvl >= 3 ? 20 : lvl >= 2 ? 7 : 1;
 }
-function walletDailyGoal(){
-  const lvl = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
+function walletDailyGoal(levelOverride){
+  const lvl = Number(levelOverride) || Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
   const totalByLevel = {1:4000, 2:7500, 3:7000, 4:6000, 5:5000};
   const totalZombies = totalByLevel[lvl] || totalByLevel[1];
   let pendingZombies = 0;
@@ -4746,6 +4746,14 @@ function walletDailyGoal(){
   const zombiesToday = lvl >= 2 ? Math.max(0, Number(SHOP_ACCOUNT.zombiesTodayByLevel[lvl] || 0)) : 0;
   const earnedZombies = Math.min(totalZombies, zombiesToday + pendingZombies);
   return {earnedZombies, remainingZombies:Math.max(0, totalZombies - earnedZombies), totalZombies};
+}
+// True once a level's daily reward goal is already fully earned - used to stop
+// players from selecting (or continuing to drive/play) that level in the shop
+// until tomorrow's reset, instead of letting them burn tries on a level that
+// can't pay out any more today.
+function levelDailyCapReached(level){
+  const goal = walletDailyGoal(level);
+  return goal.totalZombies > 0 && goal.earnedZombies >= goal.totalZombies;
 }
 function renderWallet(){
   $('#walTabs').dataset.i = walTab === 'wal' ? 0 : 1;
@@ -5200,10 +5208,13 @@ function renderShop(){
         ${next ? `<span>${esc(t('lv_next'))}: <b>${CAR_NAME[next.id]}</b> · <b class="num">${formatTon(next.price)} TON</b></span>` : `<span class="lvall">★ ${esc(t('lv_all'))}</span>`}</div>`;
     list.innerHTML = hero + `<div class="lvgrid">` + CARS.map(c => {
       const own = SHOP_ACCOUNT.ownedSkins.includes(c.skin), on = S.car === c.id, afford = SHOP_ACCOUNT.ton + 1e-9 >= c.price;
+      const capReached = levelDailyCapReached(c.lvl);
       let act, state = '';
       if (c.soon) { act = `<button class="lvbtn dis" disabled>${esc(t('comingSoon'))}</button>`; state = 'soon'; }
+      else if (on && capReached) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.dailyCapReached || SHOP_WORDS.en.dailyCapReached)}</button>`; state = 'capped'; }
       else if (on) { act = `<button class="lvbtn on" disabled>✓ ${esc(t('driving'))}</button>`; state = 'on'; }
       else if (c.lvl === 1 && SHOP_ACCOUNT.ownedSkins.some(skin => skin !== 'yellow')) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.levelUnavailable || SHOP_WORDS.en.levelUnavailable)}</button>`; state = 'locked'; }
+      else if (own && capReached) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.dailyCapReached || SHOP_WORDS.en.dailyCapReached)}</button>`; state = 'capped'; }
       else if (own) { act = `<button class="lvbtn sel" data-drive="${c.id}">${esc(t('select'))}</button>`; state = 'own'; }
       else if (c.limit && !LIM[c.id]) { act = `<button class="lvbtn dis" disabled>${esc(t('lim_off'))}</button>`; state = 'buy'; }
       else if (c.limit && LIM[c.id].sold >= LIM[c.id].max) { act = `<button class="lvbtn dis" disabled>${esc(t('lim_out'))}</button>`; state = 'soon'; }
@@ -6629,6 +6640,11 @@ function hideLegacyLoadingOverlay(loadId){
   $('#realGameRetry').hidden = true;
 }
 function openGame(){
+  const selectedLevel = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
+  if (levelDailyCapReached(selectedLevel)) {
+    toast(SHOP_WORDS[S.lang]?.dailyCapReached || SHOP_WORDS.en.dailyCapReached);
+    return;
+  }
   const loadId = ++gameLoadId;
   if (gameLoadTimer) clearTimeout(gameLoadTimer);
   if (visualReadyFallbackTimer) { clearTimeout(visualReadyFallbackTimer); visualReadyFallbackTimer = null; }
@@ -6645,7 +6661,6 @@ function openGame(){
   $('#realGameRetry').hidden = true;
   frame.onload = () => activateLegacyGame(0, loadId);
   const gamePath = window.location.protocol === 'file:' ? '../index.html' : '/legacy-game.html';
-  const selectedLevel = Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
   const ownedSkins = Array.isArray(SHOP_ACCOUNT.ownedSkins) ? SHOP_ACCOUNT.ownedSkins.join(',') : 'yellow';
   frame.src = `${gamePath}?embedded=1&level=${selectedLevel}&shopOwned=${encodeURIComponent(ownedSkins)}&v=shop-owned-level-sync-20261002&retry=${loadId}`;
   activateLegacyGame(0, loadId);

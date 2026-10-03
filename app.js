@@ -586,19 +586,16 @@
     ensureAttempts();
     const maxAttempts = getMaxAttempts();
     const available = store.attemptsLeft > 0;
-    // Reaching the daily TON-reward cap only stops EARNING more reward for
-    // today - it shouldn't also lock players out of using tries they already
-    // have (bought with coins/ads or still part of their free daily batch).
     const rewardComplete = dailyEarningsComplete();
     if (el){
       el.style.display = 'block';
-      el.textContent = available
-        ? (rewardComplete ? 'Today reward complete · ' : '') + store.attemptsLeft + ' / ' + maxAttempts + ' tries left'
-        : rewardComplete
+      el.textContent = rewardComplete
         ? 'Today reward complete · Next reset in ' + formatCountdown(nextBerlinMidnight() - Date.now())
+        : available
+        ? store.attemptsLeft + ' / ' + maxAttempts + ' tries left'
         : 'Next try in ' + formatCountdown(store.attemptsResetAt - Date.now());
     }
-      playButtons.forEach(btn => { btn.disabled = serverSession.isBanned || !available; });
+      playButtons.forEach(btn => { btn.disabled = serverSession.isBanned || !available || rewardComplete; });
     updateBannedUI();
   }
   function updateBannedUI(){
@@ -2909,12 +2906,9 @@
     runStartPending = true;
     if (SERVER_URL && (!serverSession.online || !serverSession.token)) await initServerSession();
     syncActiveLevelFromShop();
-    // Reaching today's TON-reward cap no longer blocks starting a run - it
-    // only stops earning more of that reward today (see the collection gate
-    // in update()/commitRun()). Players with tries left can keep playing.
-    if (serverSession.isBanned || (!usesServerAttempts() && !hasAttemptsLeft())){
+    if (serverSession.isBanned || (!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
       runStartPending = false;
-      const reason = serverSession.isBanned ? 'banned' : 'no-attempts';
+      const reason = serverSession.isBanned ? 'banned' : dailyEarningsComplete() ? 'daily-cap' : 'no-attempts';
       notifyEmbeddedStartRejected(reason);
       showScreen('home');
       return;
@@ -4546,12 +4540,12 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     }
     document.getElementById('gameOverScreen').classList.toggle('lvl4-art', hasArt);
     document.getElementById('gameOverScreen').style.display = 'flex';
-    document.getElementById('retryBtn').disabled = !hasAttemptsLeft();
+    document.getElementById('retryBtn').disabled = !hasAttemptsLeft() || dailyEarningsComplete();
   }
   document.getElementById('retryBtn').addEventListener('click', async () => {
     if (runStartPending) return;
     syncActiveLevelFromShop();
-    if (!usesServerAttempts() && !hasAttemptsLeft()){
+    if ((!usesServerAttempts() && !hasAttemptsLeft()) || dailyEarningsComplete()){
       renderAttemptsUI();
       document.getElementById('retryBtn').disabled = true;
       return;
