@@ -3595,12 +3595,24 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
       tex.needsUpdate = true;
       return true;
     }
-    frameUrls.forEach((url, i) => {
+    // Load frame 0 on its own first, then fan out the rest - requesting every
+    // frame at once (up to ~57 for some skins) used to flood the browser's
+    // small per-origin connection pool, so the one frame we actually need to
+    // show the car could end up queued behind dozens of others we don't need
+    // yet. That was the real cause of the car (or the loading screen waiting
+    // on it) taking several seconds to appear.
+    function loadFrame(i){
       const img = new Image();
-      img.onload = () => { if (i === 0 && drawFrame(0) && onFirstFrameReady) onFirstFrameReady(); };
-      img.src = url;
+      img.onload = () => {
+        if (i === 0){
+          if (drawFrame(0) && onFirstFrameReady) onFirstFrameReady();
+          for (let j = 1; j < frameUrls.length; j++) loadFrame(j);
+        }
+      };
+      img.src = frameUrls[i];
       images[i] = img;
-    });
+    }
+    loadFrame(0);
 
     let frameIndex = 0;
     let lastTick = 0;

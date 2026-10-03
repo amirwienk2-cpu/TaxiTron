@@ -2477,6 +2477,15 @@ app.use(express.static(__dirname, {
       res.setHeader('Cache-Control', /[?&]v=/.test(requestUrl)
         ? 'public, max-age=86400'
         : 'no-cache, no-store, must-revalidate');
+    } else if (/\.(png|jpe?g|webp|gif|svg)$/i.test(filePath)) {
+      // Sprite/skin frames (e.g. the animated car skins' frame_XXX.png files)
+      // never change in place - when one does change it gets a new `?v=`
+      // suffix in app.js - so it's safe to skip the usual conditional-GET
+      // round trip on every repeat "Play" press and just cache them for a
+      // week. Without this, re-opening the game used to re-request every
+      // single frame image (up to ~57 for some skins) on each load even
+      // though none of them had actually changed.
+      res.setHeader('Cache-Control', 'public, max-age=604800');
     }
   },
 }));
