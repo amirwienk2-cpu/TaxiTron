@@ -410,7 +410,23 @@
     return Math.max(0, 100 - getLevelProgressPct(level));
   }
   function getDailyPtsCap(){ return getLevelDailyPtsCap(activeAttemptLevel()); }
-  function dailyEarningsComplete(){ return activeAttemptLevel() >= 2 && getCurrentLevelTodayPoints() >= getDailyPtsCap() - 1e-9; }
+  // Levels 2-5 pay out a flat daily TON cap once a real "zombies killed today"
+  // count is reached (server.js /api/run, see LEVEL_ZOMBIE_GOALS) - this is no
+  // longer the old coin/points-based conversion (which used to require far
+  // more kills than the advertised goal, e.g. ~6700 instead of 6000 on level
+  // 4). Keep this in one place so the in-game stop-collecting gate and the
+  // manual exchange button always agree with the real, current goal.
+  const DAILY_ZOMBIE_CAPS = {2:7500,3:7000,4:6000,5:5000};
+  function getDailyZombieCap(level = activeAttemptLevel()){
+    return DAILY_ZOMBIE_CAPS[Number(level)] || DAILY_ZOMBIE_CAPS[2];
+  }
+  function dailyEarningsComplete(){
+    const level = activeAttemptLevel();
+    if (level < 2) return false;
+    const zombiesToday = Number(store.zombiesTodayByLevel && store.zombiesTodayByLevel[level]) || 0;
+    const pending = Number(pendingZombiesByLevel[level]) || 0;
+    return zombiesToday + pending >= getDailyZombieCap(level);
+  }
 
   function todayStr(){
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -4262,16 +4278,33 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
   });
 
   let touchStartX = null;
-  canvas.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
+  let lastTouchAt = 0;
+  canvas.addEventListener('touchstart', e => { touchStartX = e.touches[0] ? e.touches[0].clientX : null; e.preventDefault(); }, {passive:false});
   canvas.addEventListener('touchmove', e => { e.preventDefault(); }, {passive:false});
   canvas.addEventListener('touchend', e => {
-    if (touchStartX === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 30) moveLane(dx > 0 ? 1 : -1);
+    lastTouchAt = Date.now();
+    if (touchStartX === null) { e.preventDefault(); return; }
+    const touch = e.changedTouches[0];
+    const endX = touch ? touch.clientX : touchStartX;
+    const dx = endX - touchStartX;
+    if (Math.abs(dx) > 30) {
+      moveLane(dx > 0 ? 1 : -1);
+    } else {
+      // Short tap (not a swipe): steer toward whichever half of the canvas was
+      // tapped, handled here directly instead of relying on the synthetic
+      // click some mobile browsers fire after touchend (see click handler
+      // below) - that kept racing this handler and made swipes/taps flaky.
+      const rect = canvas.getBoundingClientRect();
+      moveLane(endX - rect.left < rect.width/2 ? -1 : 1);
+    }
     touchStartX = null;
     e.preventDefault();
   }, {passive:false});
   canvas.addEventListener('click', e => {
+    // Ignore the synthetic click a touch device fires after touchend - the
+    // swipe/tap was already handled above, so acting on it again could undo
+    // or double the lane change depending on where the touch happened to end.
+    if (Date.now() - lastTouchAt < 500) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     moveLane(x < rect.width/2 ? -1 : 1);
@@ -4414,8 +4447,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     // triggers purely off the real "zombies today" count the server tracks,
     // not a back-converted TON estimate (which no longer matches 1:1, e.g. at
     // level 4).
-    const dailyZombieCaps = {2:7500,3:7000,4:6000,5:5000};
-    const dailyZombieCap = dailyZombieCaps[level] || dailyZombieCaps[2];
+    const dailyZombieCap = getDailyZombieCap(level);
     const zombiesToday = Number(store.zombiesTodayByLevel && store.zombiesTodayByLevel[level]) || 0;
     if (zombiesToday >= dailyZombieCap) return false;
     const rewardSkinByLevel = {2:'red',3:'white',4:'green',5:'luna'};
