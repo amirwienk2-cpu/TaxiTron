@@ -6618,9 +6618,22 @@ let legacyGameObserver = null;
 let gameLoadTimer = null;
 let gameLoadId = 0;
 let activationPollLoadId = 0;
+let legacyGameScreenActive = false;
+let legacyGameVisualReady = false;
+let visualReadyFallbackTimer = null;
+function hideLegacyLoadingOverlay(loadId){
+  if (gameLoadId !== loadId) return;
+  if (gameLoadTimer) clearTimeout(gameLoadTimer);
+  if (visualReadyFallbackTimer) { clearTimeout(visualReadyFallbackTimer); visualReadyFallbackTimer = null; }
+  $('#realGameLoading').hidden = true;
+  $('#realGameRetry').hidden = true;
+}
 function openGame(){
   const loadId = ++gameLoadId;
   if (gameLoadTimer) clearTimeout(gameLoadTimer);
+  if (visualReadyFallbackTimer) { clearTimeout(visualReadyFallbackTimer); visualReadyFallbackTimer = null; }
+  legacyGameScreenActive = false;
+  legacyGameVisualReady = false;
   running = false;
   cancelAnimationFrame(raf);
   $('#mStart').hidden = true; $('#mPause').hidden = true; $('#mOver').hidden = true;
@@ -6657,9 +6670,18 @@ function activateLegacyGame(attempt, loadId){
     if (play) play.click();
   }
   if (screen && screen.classList.contains('active')) {
-    if (gameLoadTimer) clearTimeout(gameLoadTimer);
-    $('#realGameLoading').hidden = true;
-    $('#realGameRetry').hidden = true;
+    legacyGameScreenActive = true;
+    // Don't hide the "Loading TaxiTon…" overlay the instant the game screen's
+    // DOM becomes active - the car's skin texture is still downloading/decoding
+    // at that point (see app.js notifyPlayerVisualReady()), so players used to
+    // see only the car's contact shadow for a few seconds before it popped in.
+    // Wait for that readiness signal, with a short fallback timeout in case it
+    // never arrives (e.g. an older cached game bundle without this message).
+    if (legacyGameVisualReady) {
+      hideLegacyLoadingOverlay(loadId);
+    } else if (!visualReadyFallbackTimer) {
+      visualReadyFallbackTimer = setTimeout(() => { legacyGameVisualReady = true; hideLegacyLoadingOverlay(loadId); }, 6000);
+    }
     if (legacyGameObserver) legacyGameObserver.disconnect();
     legacyGameObserver = new MutationObserver(() => {
       if (!screen.classList.contains('active')) closeGame();
@@ -6737,6 +6759,13 @@ window.addEventListener('message', event => {
     // /api/run/crash) - refresh right away instead of waiting out the 15s poll,
     // so the "tries left" counter on Home updates immediately.
     void refreshShopAccount();
+  }
+  if (event.data?.type === 'tt-game-visual-ready') {
+    // The player car's skin texture has actually finished loading/drawing now
+    // (see app.js notifyPlayerVisualReady()) - safe to drop the loading
+    // overlay without the player seeing just the car's shadow underneath it.
+    legacyGameVisualReady = true;
+    if (legacyGameScreenActive) hideLegacyLoadingOverlay(gameLoadId);
   }
 });
 $('#goBtn').onclick = startRun;

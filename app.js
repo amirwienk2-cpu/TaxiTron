@@ -3545,7 +3545,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     return tex;
   }
-  function createAnimatedSkinTexture(frameUrls, fps, removeGreen = false){
+  function createAnimatedSkinTexture(frameUrls, fps, removeGreen = false, onFirstFrameReady){
     // Draw frames onto a shared canvas instead of swapping the texture's raw
     // <img> source directly: swapping raw images can hand WebGL a
     // half-decoded frame (briefly uploading a blank/black buffer). Drawing
@@ -3597,7 +3597,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     }
     frameUrls.forEach((url, i) => {
       const img = new Image();
-      img.onload = () => { if (i === 0) drawFrame(0); };
+      img.onload = () => { if (i === 0 && drawFrame(0) && onFirstFrameReady) onFirstFrameReady(); };
       img.src = url;
       images[i] = img;
     });
@@ -3619,36 +3619,41 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     requestAnimationFrame(advanceFrame);
     return tex;
   }
-  function getSkinTexture(key){
+  function getSkinTexture(key, onReady){
     if (!skinTextureCache[key]){
       if (key === 'green' && GAME_TAXI_LEVEL_FOUR_FRAMES.length){
-        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_FOUR_FRAMES, GAME_TAXI_LEVEL_FOUR_FRAME_FPS);
+        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_FOUR_FRAMES, GAME_TAXI_LEVEL_FOUR_FRAME_FPS, false, onReady);
         return skinTextureCache[key];
       }
       if (key === 'yellow' && GAME_TAXI_LEVEL_ONE_FRAMES.length){
-        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_ONE_FRAMES, GAME_TAXI_LEVEL_ONE_FRAME_FPS);
+        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_ONE_FRAMES, GAME_TAXI_LEVEL_ONE_FRAME_FPS, false, onReady);
         return skinTextureCache[key];
       }
       if (key === 'red' && GAME_TAXI_LEVEL_TWO_FRAMES.length){
-        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_TWO_FRAMES, GAME_TAXI_LEVEL_TWO_FRAME_FPS);
+        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_TWO_FRAMES, GAME_TAXI_LEVEL_TWO_FRAME_FPS, false, onReady);
         return skinTextureCache[key];
       }
       if (key === 'white' && GAME_TAXI_LEVEL_THREE_FRAMES.length){
-        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_THREE_FRAMES, GAME_TAXI_LEVEL_THREE_FRAME_FPS);
+        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_THREE_FRAMES, GAME_TAXI_LEVEL_THREE_FRAME_FPS, false, onReady);
         return skinTextureCache[key];
       }
       if (key === 'luna' && GAME_TAXI_LEVEL_FIVE_FRAMES.length){
-        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_FIVE_FRAMES, GAME_TAXI_LEVEL_FIVE_FRAME_FPS, true);
+        skinTextureCache[key] = createAnimatedSkinTexture(GAME_TAXI_LEVEL_FIVE_FRAMES, GAME_TAXI_LEVEL_FIVE_FRAME_FPS, true, onReady);
         return skinTextureCache[key];
       }
       const uri = GAME_SKIN_OVERRIDES[key] ||
         ((typeof SKIN_IMAGES !== 'undefined' && SKIN_IMAGES[key]) ? SKIN_IMAGES[key] : TAXI_SKIN_URI);
-      const tex = new THREE.TextureLoader().load(uri);
+      const tex = new THREE.TextureLoader().load(uri, onReady);
       configureSkinTexture(tex);
       tex.minFilter = THREE.NearestMipmapNearest;
       tex.generateMipmaps = true;
       skinTextureCache[key] = tex;
+      return skinTextureCache[key];
     }
+    // Already cached: by the time a skin is requested again it has already
+    // finished loading once before, so fire the callback immediately instead
+    // of leaving the caller (e.g. the "loading" overlay) waiting forever.
+    if (onReady) onReady();
     return skinTextureCache[key];
   }
   let playerSkinMat = null;
@@ -3721,6 +3726,19 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
     refreshTopUI();
   });
 
+  // Tells the parent TaxiTon shell (see indexup.html's "Loading TaxiTon…"
+  // overlay) once the player car's texture has actually finished loading and
+  // been drawn - previously the overlay was hidden as soon as the game
+  // screen's DOM became active, which happens well before the (sometimes
+  // large/animated) skin image finishes downloading, so players briefly saw
+  // only the car's contact shadow before the car itself popped in.
+  let playerVisualReadyNotified = false;
+  function notifyPlayerVisualReady(){
+    if (playerVisualReadyNotified) return;
+    playerVisualReadyNotified = true;
+    if (window.parent !== window) window.parent.postMessage({ type: 'tt-game-visual-ready' }, '*');
+  }
+
   function buildPlayerCar(scale){
     const g = new THREE.Group();
 
@@ -3735,7 +3753,7 @@ const GAME_TAXI_YELLOW_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfEA
 
     // flat billboard textured with the uploaded taxi image
     const skinMat = new THREE.MeshBasicMaterial({
-      map: getSkinTexture(store.skin),
+      map: getSkinTexture(store.skin, notifyPlayerVisualReady),
       transparent: true,
       alphaTest: 0.3,
       side: THREE.DoubleSide
