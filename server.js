@@ -796,9 +796,25 @@ function persistCardEventState() {
     return false;
   }
 }
+const CARD_EVENT_SETTINGS_FILE = path.join(DATA_DIR, 'card-event-settings.json');
+// Admin on/off switch (mirrors chatEnabled). Defaults to disabled on a fresh
+// deploy of this feature; persisted so the choice survives restarts.
+let cardEventEnabled = false;
+try {
+  if (fs.existsSync(CARD_EVENT_SETTINGS_FILE)) {
+    const loaded = JSON.parse(fs.readFileSync(CARD_EVENT_SETTINGS_FILE, 'utf8'));
+    if (loaded && typeof loaded.enabled === 'boolean') cardEventEnabled = loaded.enabled;
+  }
+} catch (e) {
+  console.error('[card-event] settings file unreadable: ' + e.message);
+}
+function persistCardEventSettings() {
+  try { fs.writeFileSync(CARD_EVENT_SETTINGS_FILE, JSON.stringify({ enabled: cardEventEnabled })); }
+  catch (e) { console.error('[card-event] could not write settings: ' + e.message); }
+}
 function publicCardEvent(uid) {
   const event = cardEventState;
-  if (!event) return cardEventNextStartAt ? { status: 'scheduled', nextStartAt: cardEventNextStartAt, counts: [0, 0, 0], choice: 0 } : null;
+  if (!event) return (cardEventEnabled && cardEventNextStartAt) ? { status: 'scheduled', nextStartAt: cardEventNextStartAt, counts: [0, 0, 0], choice: 0 } : null;
   const counts = [0, 0, 0];
   Object.values(event.votes || {}).forEach((card) => {
     const index = Number(card) - 1;
@@ -812,7 +828,7 @@ function publicCardEvent(uid) {
     counts,
     choice: uid ? Number(event.votes && event.votes[String(uid)]) || 0 : 0,
   };
-  if (cardEventNextStartAt) result.nextStartAt = cardEventNextStartAt;
+  if (cardEventEnabled && cardEventNextStartAt) result.nextStartAt = cardEventNextStartAt;
   if (event.status === 'complete') {
     result.rewards = event.rewards.slice();
     result.voterNames = event.voterNames.map((names) => names.slice());
@@ -834,12 +850,13 @@ function shuffledCardRewards() {
 }
 function scheduleNextCardEvent() {
   if (cardEventStartTimer) clearTimeout(cardEventStartTimer);
+  if (!cardEventEnabled) { cardEventNextStartAt = 0; return; }
   const delay = crypto.randomInt(CARD_EVENT_MIN_INTERVAL_MS, CARD_EVENT_MAX_INTERVAL_MS + 1);
   cardEventNextStartAt = Date.now() + delay;
   cardEventStartTimer = setTimeout(startScheduledCardEvent, delay);
 }
 function startScheduledCardEvent() {
-  if (isCardEventActive()) return;
+  if (!cardEventEnabled || isCardEventActive()) return;
   cardEventNextStartAt = 0;
   const now = Date.now();
   const event = cardEventState = {
@@ -2295,11 +2312,14 @@ const completedWithdrawalsButton=document.createElement('button');completedWithd
 document.getElementById('loadRejectedWithdrawals').onclick=loadRejectedWithdrawals;
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
 const list=document.getElementById('list');
-list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
+list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button><button id="cardEventEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
 function updateChatToggleBtn(enabled){const btn=document.getElementById('chatEnableToggle');btn.textContent=enabled?'💬 Chat ist AN — jetzt ausschalten':'🚫 Chat ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
+function updateCardEventToggleBtn(enabled){const btn=document.getElementById('cardEventEnableToggle');btn.textContent=enabled?'🃏 Karten-Event ist AN — jetzt ausschalten':'🚫 Karten-Event ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
 document.getElementById('chatEnableToggle').onclick=async()=>{const enabled=document.getElementById('chatEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/chat/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateChatToggleBtn(dd.chatEnabled);status(dd.chatEnabled?'Chat wurde aktiviert.':'Chat wurde fuer normale Nutzer deaktiviert.')}else status((await rr.json()).error||'Request failed')};
+document.getElementById('cardEventEnableToggle').onclick=async()=>{const enabled=document.getElementById('cardEventEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/card-event/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateCardEventToggleBtn(dd.cardEventEnabled);status(dd.cardEventEnabled?'Karten-Event wurde aktiviert.':'Karten-Event wurde deaktiviert.')}else status((await rr.json()).error||'Request failed')};
 async function runSearch(){const q=document.getElementById('chatUserSearch').value;status('Nutzer werden geladen...');const r=await fetch('/admin/chat-users?query='+encodeURIComponent(q),{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}
 updateChatToggleBtn(d.chatEnabled);
+updateCardEventToggleBtn(d.cardEventEnabled);
 const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'':'Keine Nutzer gefunden.';
 d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.chatMuted?' is-muted':'');
 const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.badge4?'<span class="tag designer">Badge 4</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
@@ -4435,7 +4455,7 @@ app.get('/admin/chat-users', requireAdmin, (req, res) => {
     chatMuted: u.chatMuted === true,
     lastSeenAt: Number(u.lastSeenAt || 0),
   }));
-  res.json({ users: list, chatEnabled });
+  res.json({ users: list, chatEnabled, cardEventEnabled });
 });
 
 app.post('/admin/chat/set-enabled', requireAdmin, (req, res) => {
@@ -4443,6 +4463,21 @@ app.post('/admin/chat/set-enabled', requireAdmin, (req, res) => {
   persistChatSettings();
   res.json({ ok: true, chatEnabled });
   broadcastChatEvent('settings', { chatEnabled });
+});
+
+// Toggle the recurring "card event" chance game (Farsi chat room) on/off. When
+// turning off, any already-scheduled next occurrence is cancelled immediately;
+// an event already in progress still finishes out normally.
+app.post('/admin/card-event/set-enabled', requireAdmin, (req, res) => {
+  cardEventEnabled = req.body.enabled === true;
+  persistCardEventSettings();
+  if (!cardEventEnabled) {
+    if (cardEventStartTimer) { clearTimeout(cardEventStartTimer); cardEventStartTimer = null; }
+    cardEventNextStartAt = 0;
+  } else if (!isCardEventActive()) {
+    scheduleNextCardEvent();
+  }
+  res.json({ ok: true, cardEventEnabled });
 });
 
 app.post('/admin/chat/set-admin', requireAdmin, (req, res) => {
