@@ -4017,7 +4017,7 @@ async function pollServerChat(){
     if(response.ok&&Array.isArray(data.messages)){
       const previousEvent=JSON.stringify(serverCardEvent);
       updateServerCardEvent(chatRoom==='fa'?data.cardEvent:null);
-      if(data.taxiRace)applyTaxiRaceEvent(data.taxiRace);
+      applyTaxiRaceEvent(data.taxiRace||null);
       data.messages.forEach(receiveServerChatMessage);
       if(current==='chat'&&(data.messages.length||previousEvent!==JSON.stringify(serverCardEvent)))renderChat();
       if(previousEvent!==JSON.stringify(serverCardEvent)&&serverCardEvent?.status==='complete')refreshShopAccount();
@@ -4472,7 +4472,7 @@ function renderRaceButton(){
   }
 }
 function applyTaxiRaceEvent(event){
-  if (!event) { TAXI_RACE.race = null; renderRaceButton(); return; }
+  if (!event) { TAXI_RACE.race = null; TAXI_RACE.nextStartAt = 0; renderRaceButton(); return; }
   if (event.status === 'scheduled') {
     TAXI_RACE.nextStartAt = Number(event.nextStartAt) || 0;
     if (TAXI_RACE.race && TAXI_RACE.race.status !== 'finished') TAXI_RACE.race = null;

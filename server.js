@@ -964,6 +964,10 @@ function startCardEventScheduler() {
 // runs the entire ~30s simulation up front and sends the finished timeline;
 // clients only replay it, never decide anything themselves.
 // ---------------------------------------------------------------------------
+// Event ended (see chat request) - scheduling is disabled below (see
+// TAXI_RACE_ENABLED); the simulation/scheduling code is left in place in case
+// the event is brought back later.
+const TAXI_RACE_ENABLED = false;
 const TAXI_RACE_FILE = path.join(DATA_DIR, 'taxi-race.json');
 const TAXI_RACE_ROOM = 'fa'; // the race (and its bot messages) only ever appear in the Farsi room
 const TAXI_RACE_INTERVAL_MS = 5 * 60 * 1000;
@@ -1042,6 +1046,7 @@ function isTaxiRaceActive() {
 // only meaningful for a direct, authenticated poll - SSE broadcasts go out to
 // everyone at once so they only ever carry the shared, viewer-agnostic fields.
 function publicTaxiRace(viewerUid) {
+  if (!TAXI_RACE_ENABLED) return null;
   if (!taxiRaceState) return taxiRaceNextStartAt ? { status: 'scheduled', nextStartAt: taxiRaceNextStartAt } : null;
   const race = taxiRaceState;
   const predictionCounts = {};
@@ -5444,7 +5449,15 @@ server.listen(PORT, () => {
   console.log('TaxiTron server listening on port ' + PORT);
   console.log('[storage] data file: ' + DATA_FILE + ' (' + Object.keys(users).length + ' users loaded)');
   startCardEventScheduler();
-  startTaxiRaceScheduler();
+  if (TAXI_RACE_ENABLED) {
+    startTaxiRaceScheduler();
+  } else if (taxiRaceState || taxiRaceNextStartAt) {
+    // Event ended: drop any leftover race/countdown from before this was
+    // disabled so a restart can't resurrect it in the chat.
+    taxiRaceState = null;
+    taxiRaceNextStartAt = 0;
+    persistTaxiRaceState();
+  }
   if (!STORAGE_PERSISTENT) {
     console.error('==================================================================');
     console.error('[storage] WARNING: running on Railway WITHOUT a volume for ' + DATA_DIR);
