@@ -945,16 +945,20 @@ function startCardEventScheduler() {
 // clients only replay it, never decide anything themselves.
 // ---------------------------------------------------------------------------
 const TAXI_RACE_FILE = path.join(DATA_DIR, 'taxi-race.json');
+const TAXI_RACE_ROOM = 'fa'; // the race (and its bot messages) only ever appear in the Farsi room
 const TAXI_RACE_INTERVAL_MS = 5 * 60 * 1000;
+const TAXI_RACE_PICK_AHEAD_MS = 60 * 1000; // drivers are drawn/announced 1 minute before the race actually starts, to allow predictions
 const TAXI_RACE_MAX_DURATION_MS = 90 * 1000; // safety cap in case nobody reaches the finish line quickly
 const TAXI_RACE_TICK_MS = 500; // one simulation sample every 500ms
 const TAXI_RACE_MIN_PLAYERS = 2;
 const TAXI_RACE_MAX_PLAYERS = 5;
 const TAXI_RACE_REWARD_TT = 250;
+const TAXI_RACE_TIP_TT = 100; // reward for a spectator correctly predicting the winner
 
 let taxiRaceState = null; // null = no race has happened yet (or none kept around) - see taxiRaceNextStartAt for the countdown
 let taxiRaceNextStartAt = 0;
-let taxiRaceStartTimer = null;
+let taxiRaceGridTimer = null; // fires when the drivers for the next race are drawn/announced
+let taxiRaceRunTimer = null; // fires when a drawn race actually starts running
 let taxiRaceFinishTimer = null;
 try {
   if (fs.existsSync(TAXI_RACE_FILE)) {
@@ -979,17 +983,33 @@ function persistTaxiRaceState() {
 function isTaxiRaceActive() {
   return !!(taxiRaceState && taxiRaceState.status === 'running');
 }
-function publicTaxiRace() {
+// viewerUid (optional) adds the viewer's own prediction/racing-status, which is
+// only meaningful for a direct, authenticated poll - SSE broadcasts go out to
+// everyone at once so they only ever carry the shared, viewer-agnostic fields.
+function publicTaxiRace(viewerUid) {
   if (!taxiRaceState) return taxiRaceNextStartAt ? { status: 'scheduled', nextStartAt: taxiRaceNextStartAt } : null;
+  const race = taxiRaceState;
+  const predictionCounts = {};
+  Object.values(race.predictions || {}).forEach((pick) => { predictionCounts[pick] = (predictionCounts[pick] || 0) + 1; });
   const result = {
-    id: taxiRaceState.id,
-    status: taxiRaceState.status, // 'running' | 'finished'
-    startedAt: taxiRaceState.startedAt,
-    endsAt: taxiRaceState.endsAt,
-    drivers: taxiRaceState.drivers.map((d) => ({ uid: d.uid, name: d.name, photoUrl: d.photoUrl, events: d.events, samples: d.samples, finalPos: d.finalPos })),
-    winnerUid: taxiRaceState.winnerUid,
-    winnerName: taxiRaceState.winnerName,
+    id: race.id,
+    status: race.status, // 'grid' (drivers drawn, predictions open) | 'running' | 'finished'
+    startsAt: race.startsAt,
+    startedAt: race.startedAt,
+    endsAt: race.endsAt,
+    drivers: race.drivers.map((d) => ({ uid: d.uid, name: d.name, photoUrl: d.photoUrl, events: d.events, samples: d.samples, finalPos: d.finalPos })),
+    winnerUid: race.winnerUid,
+    winnerName: race.winnerName,
+    predictionCounts,
+    totalPredictions: Object.keys(race.predictions || {}).length,
+    correctNames: race.correctNames || null,
+    tipRewardTT: TAXI_RACE_TIP_TT,
+    rewardTT: TAXI_RACE_REWARD_TT,
   };
+  if (viewerUid != null) {
+    result.myPrediction = (race.predictions || {})[String(viewerUid)] || null;
+    result.amRacing = race.drivers.some((d) => String(d.uid) === String(viewerUid));
+  }
   if (taxiRaceNextStartAt) result.nextStartAt = taxiRaceNextStartAt;
   return result;
 }
@@ -1040,24 +1060,30 @@ function simulateTaxiRace(players) {
   return { drivers, winnerUid: winner.uid, winnerName: winner.name, durationMs: finishedAtMs };
 }
 function postTaxiRaceBotMessage(text, raceId, kind) {
-  ['en', 'fa', 'de'].forEach((room) => {
-    chatMessages.push({
-      id: chatNextId++, uid: RANDOM_BOT_UID, name: RANDOM_BOT_NAME, room, text,
-      ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
-      taxiRaceId: raceId, taxiRaceKind: kind,
-    });
+  chatMessages.push({
+    id: chatNextId++, uid: RANDOM_BOT_UID, name: RANDOM_BOT_NAME, room: TAXI_RACE_ROOM, text,
+    ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
+    taxiRaceId: raceId, taxiRaceKind: kind,
   });
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
 }
 function scheduleNextTaxiRace() {
-  if (taxiRaceStartTimer) clearTimeout(taxiRaceStartTimer);
+  if (taxiRaceGridTimer) clearTimeout(taxiRaceGridTimer);
+  if (taxiRaceRunTimer) clearTimeout(taxiRaceRunTimer);
   taxiRaceNextStartAt = Date.now() + TAXI_RACE_INTERVAL_MS;
-  taxiRaceStartTimer = setTimeout(startScheduledTaxiRace, TAXI_RACE_INTERVAL_MS);
+  taxiRaceGridTimer = setTimeout(drawTaxiRaceGrid, Math.max(0, TAXI_RACE_INTERVAL_MS - TAXI_RACE_PICK_AHEAD_MS));
   persistTaxiRaceState();
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
 }
-function startScheduledTaxiRace() {
+// Draws the 5 (or fewer) drivers ~1 minute before the race actually starts, and
+// announces them so everyone else online can freely predict the winner.
+function drawTaxiRaceGrid() {
+  if (isTaxiRaceActive()) {
+    // A previous race is still running past this scheduling point - retry shortly instead of overlapping.
+    taxiRaceGridTimer = setTimeout(drawTaxiRaceGrid, 5000);
+    return;
+  }
   const now = Date.now();
   const onlineUsers = Object.values(users).filter((u) => now - Number(u.lastSeenAt || 0) < ONLINE_WINDOW_MS && u.isBanned !== true);
   if (onlineUsers.length < TAXI_RACE_MIN_PLAYERS) {
@@ -1073,24 +1099,47 @@ function startScheduledTaxiRace() {
   const players = shuffled.slice(0, TAXI_RACE_MAX_PLAYERS).map((u) => ({
     uid: String(u.id), name: u.name || ('Player ' + u.id), photoUrl: u.profileImage || u.photoUrl || '',
   }));
-  const sim = simulateTaxiRace(players);
-  const startedAt = now;
+  const raceId = 'race-' + now + '-' + crypto.randomBytes(5).toString('hex');
+  const startsAt = Math.max(taxiRaceNextStartAt, now + 1000);
   taxiRaceState = {
-    id: 'race-' + startedAt + '-' + crypto.randomBytes(5).toString('hex'),
-    status: 'running',
-    startedAt,
-    endsAt: startedAt + sim.durationMs,
-    drivers: sim.drivers,
-    winnerUid: sim.winnerUid,
-    winnerName: sim.winnerName,
+    id: raceId,
+    status: 'grid',
+    startsAt,
+    drivers: players.map((p) => ({ uid: p.uid, name: p.name, photoUrl: p.photoUrl, events: [], samples: [] })),
+    predictions: {}, // uid -> picked driver uid
+    winnerUid: null,
+    winnerName: null,
+    correctNames: null,
     payoutDone: false,
   };
   persistTaxiRaceState();
-  postTaxiRaceBotMessage('🚦 Taxi Race starts! Drivers: ' + players.map((p) => p.name).join(', ') + '. Winner gets ' + TAXI_RACE_REWARD_TT + ' TT!', taxiRaceState.id, 'start');
+  postTaxiRaceBotMessage('🔮 Drivers drawn: ' + players.map((p) => p.name).join(', ') + '. Predict the winner for free — a correct guess gets ' + TAXI_RACE_TIP_TT + ' TT!', raceId, 'grid');
+  broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
+  broadcastChatEvent('message');
+  if (taxiRaceRunTimer) clearTimeout(taxiRaceRunTimer);
+  taxiRaceRunTimer = setTimeout(() => startDrawnTaxiRace(raceId), Math.max(0, startsAt - Date.now()));
+}
+function startDrawnTaxiRace(raceId) {
+  const race = taxiRaceState;
+  if (!race || race.id !== raceId || race.status !== 'grid') return;
+  const sim = simulateTaxiRace(race.drivers);
+  const startedAt = Date.now();
+  race.status = 'running';
+  race.startedAt = startedAt;
+  race.endsAt = startedAt + sim.durationMs;
+  race.drivers = sim.drivers;
+  race.winnerUid = sim.winnerUid;
+  race.winnerName = sim.winnerName;
+  persistTaxiRaceState();
+  const tipCount = Object.keys(race.predictions || {}).length;
+  postTaxiRaceBotMessage('🚦 Go! Predictions are closed (' + tipCount + (tipCount === 1 ? ' tip' : ' tips') + '). Winner gets ' + TAXI_RACE_REWARD_TT + ' TT!', raceId, 'start');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
   if (taxiRaceFinishTimer) clearTimeout(taxiRaceFinishTimer);
-  taxiRaceFinishTimer = setTimeout(() => finishTaxiRace(taxiRaceState.id), sim.durationMs);
+  // Capture raceId by value now - reading taxiRaceState.id from inside the
+  // callback instead would re-evaluate the (mutable) global at fire time,
+  // which could by then be null or a different race.
+  taxiRaceFinishTimer = setTimeout(() => finishTaxiRace(raceId), sim.durationMs);
   scheduleNextTaxiRace();
 }
 function finishTaxiRace(raceId) {
@@ -1103,20 +1152,39 @@ function finishTaxiRace(raceId) {
     const winner = users[String(race.winnerUid)];
     if (winner) {
       winner.ttBalance = Number((Number(winner.ttBalance || 0) + TAXI_RACE_REWARD_TT).toFixed(6));
-      persist();
     }
+    const correctUids = Object.entries(race.predictions || {}).filter(([, pick]) => String(pick) === String(race.winnerUid)).map(([uid]) => uid);
+    race.correctNames = correctUids.map((uid) => (users[uid] && users[uid].name) || ('Player ' + uid));
+    correctUids.forEach((uid) => {
+      const predictor = users[uid];
+      if (predictor) predictor.ttBalance = Number((Number(predictor.ttBalance || 0) + TAXI_RACE_TIP_TT).toFixed(6));
+    });
+    persist();
   }
   persistTaxiRaceState();
-  postTaxiRaceBotMessage('🏆 ' + race.winnerName + ' crossed the line first and wins ' + TAXI_RACE_REWARD_TT + ' TT! Next race in 5 minutes.', race.id, 'winner');
+  const tipLine = race.correctNames && race.correctNames.length
+    ? ' 🔮 ' + race.correctNames.length + (race.correctNames.length === 1 ? ' spectator' : ' spectators') + ' predicted right and get ' + TAXI_RACE_TIP_TT + ' TT: ' + race.correctNames.join(', ') + '.'
+    : '';
+  postTaxiRaceBotMessage('🏆 ' + race.winnerName + ' crossed the line first and wins ' + TAXI_RACE_REWARD_TT + ' TT!' + tipLine + ' Next race in 5 minutes.', race.id, 'winner');
   broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
   broadcastChatEvent('message');
 }
 function startTaxiRaceScheduler() {
   if (taxiRaceState && taxiRaceState.status === 'running') {
     taxiRaceFinishTimer = setTimeout(() => finishTaxiRace(taxiRaceState.id), Math.max(0, taxiRaceState.endsAt - Date.now()));
+    return;
   }
-  if (taxiRaceNextStartAt && taxiRaceNextStartAt > Date.now()) {
-    taxiRaceStartTimer = setTimeout(startScheduledTaxiRace, taxiRaceNextStartAt - Date.now());
+  if (taxiRaceState && taxiRaceState.status === 'grid') {
+    const raceId = taxiRaceState.id;
+    taxiRaceRunTimer = setTimeout(() => startDrawnTaxiRace(raceId), Math.max(0, taxiRaceState.startsAt - Date.now()));
+    return;
+  }
+  const gridAt = taxiRaceNextStartAt - TAXI_RACE_PICK_AHEAD_MS;
+  if (taxiRaceNextStartAt && gridAt > Date.now()) {
+    taxiRaceGridTimer = setTimeout(drawTaxiRaceGrid, gridAt - Date.now());
+  } else if (taxiRaceNextStartAt && taxiRaceNextStartAt > Date.now()) {
+    // We're already past the normal draw point but the race hasn't started yet - draw right away.
+    taxiRaceGridTimer = setTimeout(drawTaxiRaceGrid, 0);
   } else {
     scheduleNextTaxiRace();
   }
@@ -2972,8 +3040,12 @@ app.get('/api/online-count', (req, res) => {
 // Lightweight list of currently online users (name + TON balance) for the Home chat sidebar.
 app.get('/api/online-users', (req, res) => {
   const now = Date.now();
-  const racingUids = isTaxiRaceActive() ? new Set(taxiRaceState.drivers.map((d) => String(d.uid))) : null;
+  const raceActive = taxiRaceState && (taxiRaceState.status === 'grid' || taxiRaceState.status === 'running');
+  const racingUids = raceActive ? new Set(taxiRaceState.drivers.map((d) => String(d.uid))) : null;
+  const racePhase = raceActive ? taxiRaceState.status : null;
   const lastWinnerUid = taxiRaceState && taxiRaceState.status === 'finished' ? String(taxiRaceState.winnerUid) : null;
+  const correctPredictorNames = new Set((taxiRaceState && taxiRaceState.status === 'finished' && taxiRaceState.correctNames) || []);
+  const pendingPredictionUids = raceActive ? new Set(Object.keys(taxiRaceState.predictions || {})) : null;
   const list = Object.values(users)
     .filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS)
     .sort((a, b) => {
@@ -2995,7 +3067,10 @@ app.get('/api/online-users', (req, res) => {
       badge4: user.badge4 === true,
       chatMuted: user.chatMuted === true,
       racing: racingUids ? racingUids.has(String(user.id)) : false,
+      racePhase: racingUids && racingUids.has(String(user.id)) ? racePhase : null,
       lastRaceWinner: lastWinnerUid === String(user.id),
+      racePredictedCorrect: correctPredictorNames.has(user.name),
+      racePredictionPending: pendingPredictionUids ? pendingPredictionUids.has(String(user.id)) : false,
     }));
   res.json({ users: list });
 });
@@ -3004,8 +3079,30 @@ app.get('/api/online-users', (req, res) => {
 // on the current taxi race countdown/running/finished state and join in at the
 // right point.
 app.get('/api/taxi-race/state', (req, res) => {
-  res.json({ race: publicTaxiRace() });
+  const viewerPayload = verifyToken(req.query.token);
+  const viewerUid = viewerPayload ? String(viewerPayload.uid) : null;
+  res.json({ race: publicTaxiRace(viewerUid) });
 });
+
+// Lets an online, non-racing user freely predict who will win the currently
+// drawn race, while predictions are still open ('grid' phase). One guess per
+// user per race; a correct guess earns a flat TT tip once the race finishes.
+app.post('/api/taxi-race/predict', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const race = taxiRaceState;
+  if (!race || race.status !== 'grid') return res.status(409).json({ error: 'no-predictions-open' });
+  const uid = String(req.uid);
+  if (race.drivers.some((d) => String(d.uid) === uid)) return res.status(403).json({ error: 'racer-cannot-predict' });
+  if (race.predictions && race.predictions[uid]) return res.status(409).json({ error: 'already-predicted' });
+  const racerUid = String((req.body && req.body.racerUid) || '');
+  if (!race.drivers.some((d) => String(d.uid) === racerUid)) return res.status(400).json({ error: 'invalid-racer' });
+  race.predictions = race.predictions || {};
+  race.predictions[uid] = racerUid;
+  persistTaxiRaceState();
+  broadcastChatEvent('taxi-race', { event: publicTaxiRace() });
+  res.json({ ok: true, myPrediction: racerUid });
+});
+
+
 
 // ---- Global chat (shown on Home, under the online-player count) ----
 // GET returns messages newer than ?after=<id> (or the last ~50 if omitted), for polling.
@@ -3031,7 +3128,7 @@ app.get('/api/chat/messages', (req, res) => {
     ? roomMessages.filter((message) => message.id > after)
     : roomMessages.slice(-50);
   const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
-  res.json({ messages, enabled: chatEnabled, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null, taxiRace: publicTaxiRace() });
+  res.json({ messages, enabled: chatEnabled, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null, taxiRace: room === TAXI_RACE_ROOM ? publicTaxiRace(viewerUid) : null });
 });
 
 app.post('/api/chat/card-event/vote', requireUserFromBody, rejectBannedUser, (req, res) => {
@@ -3165,7 +3262,8 @@ app.get('/api/chat/events', (req, res) => {
 
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   if (!chatEnabled && req.user.isChatAdmin !== true) return res.status(403).json({ error: 'chat-disabled' });
-  if (isTaxiRaceActive() && req.user.isChatAdmin !== true) return res.status(423).json({ error: 'taxi-race-active' });
+  const roomForRaceCheck = String((req.body && req.body.room) || 'en').toLowerCase();
+  if (roomForRaceCheck === TAXI_RACE_ROOM && isTaxiRaceActive() && req.user.isChatAdmin !== true) return res.status(423).json({ error: 'taxi-race-active' });
   if (publicChatLikeEvent(req.uid).chatLocked) {
     return res.status(423).json({ error: 'like-event-chat-locked' });
   }
