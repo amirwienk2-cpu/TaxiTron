@@ -964,7 +964,7 @@ const TAXI_RACE_BONUS_TIP_MULT = 5;
 // Bump this number to force the very next race (after the next deploy/restart)
 // to be a guaranteed bonus race, regardless of how much race history already
 // exists in the persisted state file. Each version is only "spent" once.
-const TAXI_RACE_FORCE_BONUS_VERSION = 2;
+const TAXI_RACE_FORCE_BONUS_VERSION = 3;
 
 let taxiRaceState = null; // null = no race has happened yet (or none kept around) - see taxiRaceNextStartAt for the countdown
 let taxiRaceNextStartAt = 0;
@@ -1219,9 +1219,26 @@ function finishTaxiRace(raceId) {
 function startTaxiRaceScheduler() {
   if (taxiRaceState && taxiRaceState.status === 'running') {
     taxiRaceFinishTimer = setTimeout(() => finishTaxiRace(taxiRaceState.id), Math.max(0, taxiRaceState.endsAt - Date.now()));
+    // scheduleNextTaxiRace() was already called when this race started running,
+    // so taxiRaceNextStartAt correctly points to the *next* race's grid draw -
+    // but a restart destroys every in-memory timer, including that one, so it
+    // must be re-armed here too. Without this, the whole cycle would stall
+    // forever (stuck showing the old countdown) the instant this race ends.
+    const gridAt = taxiRaceNextStartAt - TAXI_RACE_PICK_AHEAD_MS;
+    if (taxiRaceNextStartAt && gridAt > Date.now()) {
+      taxiRaceGridTimer = setTimeout(drawTaxiRaceGrid, gridAt - Date.now());
+    } else if (taxiRaceNextStartAt && taxiRaceNextStartAt > Date.now()) {
+      taxiRaceGridTimer = setTimeout(drawTaxiRaceGrid, 0);
+    } else {
+      scheduleNextTaxiRace();
+    }
     return;
   }
   if (taxiRaceState && taxiRaceState.status === 'grid') {
+    // taxiRaceNextStartAt still refers to *this* grid's own start time here
+    // (scheduleNextTaxiRace() for the race after it only runs once this grid
+    // turns into a running race), so only the run timer needs resuming - the
+    // following grid draw gets scheduled naturally once that happens.
     const raceId = taxiRaceState.id;
     taxiRaceRunTimer = setTimeout(() => startDrawnTaxiRace(raceId), Math.max(0, taxiRaceState.startsAt - Date.now()));
     return;
@@ -5221,6 +5238,16 @@ function shutdown(signal) {
 }
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+// Safety net: without this, a single unexpected error anywhere (e.g. in a
+// background timer like the Taxi Race scheduler) would crash the entire
+// process by default, taking down chat/withdrawals/everything else with it.
+// Logging and continuing is far safer for a long-running server than dying.
+process.on('uncaughtException', (error) => {
+  console.error('[fatal] uncaught exception (server kept running): ' + (error && error.stack || error));
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[fatal] unhandled promise rejection (server kept running): ' + (reason && reason.stack || reason));
+});
 
 // ---------------------------------------------------------------
 // Monster Crash: multiplayer arena mini-game, mounted on the same
