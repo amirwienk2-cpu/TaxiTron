@@ -531,6 +531,23 @@
   .lvreward-track{height:4px;border-radius:99px;background:#050a2e;overflow:hidden}
   .lvreward-track i{display:block;height:100%;background:var(--zombie)}
   .lvreward small{font-size:9px;color:var(--ink-dim)}
+  .advc{display:flex;align-items:center;gap:10px;margin:10px 10px 0;padding:10px 12px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(98,198,255,.12),rgba(138,77,255,.1));border:1px solid rgba(98,198,255,.32);box-shadow:0 4px 14px rgba(0,0,0,.22)}
+  .advc.done{background:linear-gradient(135deg,rgba(91,227,74,.12),rgba(91,227,74,.04));border-color:rgba(91,227,74,.4)}
+  .advc-ic{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:18px;background:linear-gradient(180deg,#62c6ff,#2d6bff);box-shadow:0 0 10px rgba(98,198,255,.5)}
+  .advc.done .advc-ic{background:linear-gradient(180deg,#8dff6b,#2e9f1a);box-shadow:0 0 10px rgba(91,227,74,.5)}
+  .advc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .advc-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .advc-top b{font-size:12.5px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .advc-reward{flex:none;font-family:var(--display);font-size:11.5px;color:var(--taxi)}
+  .advc-track{height:5px;border-radius:99px;background:#050a2e;overflow:hidden}
+  .advc-track i{display:block;height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#62c6ff,#8a4dff);transition:width .3s}
+  .advc.done .advc-track i{background:var(--zombie)}
+  .advc-body small{font-size:10px;color:var(--ink-dim)}
+  .advc-btn{flex:none;width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;font-size:15px;color:#1b1300;
+    background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
+  .advc-btn:disabled{color:rgba(255,255,255,.4);background:#262c54;box-shadow:none}
+  .advc.done .advc-btn{color:#0b2a05;background:linear-gradient(180deg,#8dff6b,#5be34a 45%,#2e9f1a);box-shadow:0 3px 0 #1d6b0e}
   .lvbtn{width:100%;border:0;border-radius:9px;padding:6px 2px;font-family:var(--display);font-size:13px;display:flex;align-items:center;justify-content:center;gap:4px}
   .lvbtn .zc{width:13px;height:13px}
   .lvbtn.buy{color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
@@ -1546,6 +1563,23 @@
   .lvbonus .bar{flex:1;height:4px;border-radius:99px;background:var(--db4);overflow:hidden}
   .lvbonus .bar i{display:block;height:100%;background:var(--lc)}
   .lvbonus b{flex:none;font-size:10px;color:#5be34a}
+  .advc{display:flex;align-items:center;gap:10px;margin:10px 10px 0;padding:10px 12px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(98,198,255,.12),rgba(138,77,255,.1));border:1px solid rgba(98,198,255,.32);box-shadow:0 4px 14px rgba(0,0,0,.22)}
+  .advc.done{background:linear-gradient(135deg,rgba(91,227,74,.12),rgba(91,227,74,.04));border-color:rgba(91,227,74,.4)}
+  .advc-ic{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:18px;background:linear-gradient(180deg,#62c6ff,#2d6bff);box-shadow:0 0 10px rgba(98,198,255,.5)}
+  .advc.done .advc-ic{background:linear-gradient(180deg,#8dff6b,#2e9f1a);box-shadow:0 0 10px rgba(91,227,74,.5)}
+  .advc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .advc-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .advc-top b{font-size:12.5px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .advc-reward{flex:none;font-family:var(--display);font-size:11.5px;color:var(--taxi)}
+  .advc-track{height:5px;border-radius:99px;background:#050a2e;overflow:hidden}
+  .advc-track i{display:block;height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#62c6ff,#8a4dff);transition:width .3s}
+  .advc.done .advc-track i{background:var(--zombie)}
+  .advc-body small{font-size:10px;color:var(--ink-dim)}
+  .advc-btn{flex:none;width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;font-size:15px;color:#1b1300;
+    background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
+  .advc-btn:disabled{color:rgba(255,255,255,.4);background:#262c54;box-shadow:none}
+  .advc.done .advc-btn{color:#0b2a05;background:linear-gradient(180deg,#8dff6b,#5be34a 45%,#2e9f1a);box-shadow:0 3px 0 #1d6b0e}
   .lvbtn{width:100%;border:0;border-radius:9px;padding:6px 2px;font-family:var(--display);font-size:13px;display:flex;align-items:center;justify-content:center;gap:4px}
   .lvbtn .zc{width:13px;height:13px}
   .lvbtn.buy{color:#1b1300;background:linear-gradient(180deg,#ffe066,var(--taxi) 45%,var(--taxi-deep));box-shadow:0 3px 0 #8a5a00}
@@ -2925,10 +2959,14 @@
             <span class="srvload"><i data-roomload="de"></i></span></span>
           <span class="srvgo">›</span>
         </button>
-        <div class="chrow" id="adVideoCard">
-          <button class="chk" id="adVideoBtn">▶</button>
-          <span class="chname" id="adVideoLabel"><span class="tgc">🎬</span><span id="adVideoText"></span></span>
-          <div class="chnote" id="adVideoNote"></div>
+        <div class="advc" id="adVideoCard">
+          <div class="advc-ic">🎬</div>
+          <div class="advc-body">
+            <div class="advc-top"><b id="adVideoText"></b><span class="advc-reward">+250 TT</span></div>
+            <div class="advc-track"><i id="adVideoBar"></i></div>
+            <small id="adVideoNote"></small>
+          </div>
+          <button class="advc-btn" id="adVideoBtn" aria-label="Watch">▶</button>
         </div>
         <p class="rpnote muted" data-t="rp_note">Be kind · no spam · no scams. Admins are marked with a badge.</p>
       </div>
@@ -4260,13 +4298,15 @@ function loadAdsgramScript(){
   return adsgramLoadPromise;
 }
 function renderAdVideoTask(){
-  const btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote');
-  if (!btn || !label || !note) return;
+  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar');
+  if (!card || !btn || !label || !note || !bar) return;
   const watched = SHOP_ACCOUNT.adVideosWatched || 0, completed = SHOP_ACCOUNT.adRewardClaimed === true || watched >= 10;
+  card.classList.toggle('done', completed);
   label.textContent = S.lang==='de' ? 'Tägliche Videos ansehen' : S.lang==='fa' ? 'تماشای ویدیوهای روزانه' : 'Watch daily videos';
   note.textContent = completed
-    ? (S.lang==='de' ? '✓ Erledigt · +250 TT' : S.lang==='fa' ? '✓ انجام شد · ۲۵۰+ TT' : '✓ Done · +250 TT')
-    : `${watched}/10 · +250 TT`;
+    ? (S.lang==='de' ? 'Heute erledigt — komm morgen wieder' : S.lang==='fa' ? 'امروز انجام شد — فردا دوباره بیا' : 'Done for today — come back tomorrow')
+    : (S.lang==='de' ? `${watched} von 10 Videos` : S.lang==='fa' ? `${watched} از ۱۰ ویدیو` : `${watched} of 10 videos`);
+  bar.style.width = Math.min(100, (watched / 10) * 100) + '%';
   btn.disabled = completed || adVideoBusy || !SHOP_ACCOUNT.token;
   btn.textContent = completed ? '✓' : '▶';
 }
