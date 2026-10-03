@@ -3400,7 +3400,7 @@ app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   user.adVideosWatched = watched + 1;
   let rewardTT = 0;
   if (user.adVideosWatched === 10 && user.adRewardClaimed !== true) {
-    rewardTT = 50;
+    rewardTT = 250;
     user.ttBalance = Number(user.ttBalance || 0) + rewardTT;
     user.adRewardClaimed = true;
   }
@@ -3428,7 +3428,7 @@ app.get('/api/adsgram-reward', (req, res) => {
   if (watched >= 10) {
     user.adVideosWatched = 10;
     user.adRewardClaimed = true;
-    user.ttBalance = Number(user.ttBalance || 0) + 50;
+    user.ttBalance = Number(user.ttBalance || 0) + 250;
     reward = 0;
     completed = true;
   } else {
@@ -3436,7 +3436,7 @@ app.get('/api/adsgram-reward', (req, res) => {
   }
 
   persist();
-  return res.status(200).json({ ok: true, rewarded: completed, reward, rewardTT: completed ? 50 : 0, completed, watched: user.adVideosWatched, state: publicState(user) });
+  return res.status(200).json({ ok: true, rewarded: completed, reward, rewardTT: completed ? 250 : 0, completed, watched: user.adVideosWatched, state: publicState(user) });
 });
 
 async function tonApiJson(pathname) {

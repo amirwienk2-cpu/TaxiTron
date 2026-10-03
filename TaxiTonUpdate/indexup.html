@@ -2925,6 +2925,11 @@
             <span class="srvload"><i data-roomload="de"></i></span></span>
           <span class="srvgo">›</span>
         </button>
+        <div class="chrow" id="adVideoCard">
+          <button class="chk" id="adVideoBtn">▶</button>
+          <span class="chname" id="adVideoLabel"><span class="tgc">🎬</span><span id="adVideoText"></span></span>
+          <div class="chnote" id="adVideoNote"></div>
+        </div>
         <p class="rpnote muted" data-t="rp_note">Be kind · no spam · no scams. Admins are marked with a badge.</p>
       </div>
       <div class="tabs" role="tablist" id="chatTabs">
@@ -3440,7 +3445,7 @@ const CARS = [
   {id:'luna',   lvl:5, skin:'luna',   price:25, dailyReward:1.66, rewardDays:30, limit:20, body:'#eee8ff', trim:'#b83cff', bonus:45},
   {id:'nikto',  lvl:6, soon:true, price:0, body:'#1a1f4a', trim:'#ff3b4e', bonus:60},
 ];
-const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,badge4:false,chatMuted:false,online:false};
+const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,badge4:false,chatMuted:false,adVideosWatched:0,adRewardClaimed:false,online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
 const PROFILE_BIO_SYNCING = new Set();
 const profileBioSyncKey = uid => 'taxiton.profileBioSynced_' + String(uid);
@@ -3528,6 +3533,8 @@ function applyShopAccountState(state, preferredCar){
   SHOP_ACCOUNT.ownedSkins = Array.isArray(state.ownedSkins) ? state.ownedSkins.slice() : ['yellow'];
   if (!SHOP_ACCOUNT.ownedSkins.includes('yellow')) SHOP_ACCOUNT.ownedSkins.unshift('yellow');
   SHOP_ACCOUNT.skinRewards = state.skinRewards && typeof state.skinRewards === 'object' ? state.skinRewards : {};
+  SHOP_ACCOUNT.adVideosWatched = Math.min(10, Math.max(0, Number(state.adVideosWatched) || 0));
+  SHOP_ACCOUNT.adRewardClaimed = state.adRewardClaimed === true;
   SHOP_ACCOUNT.isChatAdmin = state.isChatAdmin === true;
   SHOP_ACCOUNT.adminBadge = state.adminBadge === 'girl' ? 'girl' : 'boy';
   SHOP_ACCOUNT.isDesigner = state.isDesigner === true;
@@ -4087,6 +4094,7 @@ function renderChat(){
   const liveChat = !!SHOP_ACCOUNT.token || CARD_EVENT_TEST;
   ensureChatEventStream();
   refreshOnlineCounts();
+  renderAdVideoTask();
   const cardEventActive=chatRoom==='fa'&&serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
   const cardEventTimer=document.querySelector('[data-live-card-timer]');
   if(cardEventTimer&&cardEventActive)cardEventTimer.textContent=Math.max(0,Math.ceil((Number(serverCardEvent.endsAt)-Date.now())/1000))+' ثانیه';
@@ -4232,6 +4240,55 @@ function renderChans(){
       <div class="chnote ${st===2?'got':''}">▼ ${st===2 ? esc(t('ch_got')) : '+5 TT'}</div>`;
   }).join('');
 }
+// ---- Daily "watch 10 videos" task (AdsGram rewarded ads), shown on the chat
+// room picker below the 3 language servers. ----
+const ADSGRAM_BLOCK_ID = '48235';
+let adVideoBusy = false, adsgramLoadPromise = null;
+function loadAdsgramScript(){
+  if (window.Adsgram && typeof window.Adsgram.init === 'function') return Promise.resolve();
+  if (!adsgramLoadPromise){
+    adsgramLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://sad.adsgram.ai/js/sad.min.js';
+      script.async = true;
+      const timeout = setTimeout(() => { script.remove(); adsgramLoadPromise = null; reject(new Error('adsgram-timeout')); }, 15000);
+      script.onload = () => { clearTimeout(timeout); if (window.Adsgram && typeof window.Adsgram.init === 'function') resolve(); else { adsgramLoadPromise = null; reject(new Error('adsgram-unavailable')); } };
+      script.onerror = () => { clearTimeout(timeout); adsgramLoadPromise = null; reject(new Error('adsgram-unavailable')); };
+      document.head.appendChild(script);
+    });
+  }
+  return adsgramLoadPromise;
+}
+function renderAdVideoTask(){
+  const btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote');
+  if (!btn || !label || !note) return;
+  const watched = SHOP_ACCOUNT.adVideosWatched || 0, completed = SHOP_ACCOUNT.adRewardClaimed === true || watched >= 10;
+  label.textContent = S.lang==='de' ? 'Tägliche Videos ansehen' : S.lang==='fa' ? 'تماشای ویدیوهای روزانه' : 'Watch daily videos';
+  note.textContent = completed
+    ? (S.lang==='de' ? '✓ Erledigt · +250 TT' : S.lang==='fa' ? '✓ انجام شد · ۲۵۰+ TT' : '✓ Done · +250 TT')
+    : `${watched}/10 · +250 TT`;
+  btn.disabled = completed || adVideoBusy || !SHOP_ACCOUNT.token;
+  btn.textContent = completed ? '✓' : '▶';
+}
+async function watchRewardedAdVideo(){
+  if (adVideoBusy || !SHOP_ACCOUNT.token || SHOP_ACCOUNT.adRewardClaimed || (SHOP_ACCOUNT.adVideosWatched || 0) >= 10) return;
+  adVideoBusy = true; renderAdVideoTask();
+  try {
+    await loadAdsgramScript();
+    const controller = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+    await controller.show();
+    const response = await fetch('/api/tasks/ad-video-claim', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:SHOP_ACCOUNT.token})});
+    const data = await response.json();
+    if (!response.ok || !data.state) throw new Error('ad-reward-failed');
+    applyShopAccountState(data.state, S.car);
+    if (data.rewardTT > 0) toast('+' + data.rewardTT + ' TT');
+  } catch (e) {
+    toast(t('lim_err'));
+  } finally {
+    adVideoBusy = false; renderAdVideoTask();
+  }
+}
+$('#adVideoBtn').onclick = () => void watchRewardedAdVideo();
 function campLeft(){
   let s = Math.max(0, Math.floor((CAMP_END - Date.now())/1000));
   const d = Math.floor(s/86400); s%=86400; const h = Math.floor(s/3600); s%=3600; const m = Math.floor(s/60); s%=60;
