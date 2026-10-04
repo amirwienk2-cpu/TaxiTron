@@ -5583,18 +5583,38 @@ async function refreshLeaderboard(){
     }
   } catch (e) {} finally { leaderboardLoading = false; }
 }
+// Mirrors the server's berlinWeekKey() reset rule (next Sunday 00:00
+// Europe/Berlin) instead of the browser's own local time/weekday. The
+// previous version used the visitor's local timezone AND a "next Monday"
+// formula, so players east of Berlin (e.g. Iran) saw the countdown hit
+// zero hours before the server actually reset the leaderboard, leaving
+// last week's names/scores visible even though the timer said "done".
+function berlinOffsetMinutesNow(){
+  const now = new Date();
+  const berlin = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+  const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return Math.round((berlin - utc) / 60000);
+}
+function msUntilNextBerlinSundayMidnight(){
+  const now = new Date();
+  const berlinNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+  const target = new Date(berlinNow.getFullYear(), berlinNow.getMonth(), berlinNow.getDate());
+  target.setDate(target.getDate() + ((7 - target.getDay()) % 7 || 7));
+  const offsetMin = berlinOffsetMinutesNow();
+  const targetUtcMs = Date.UTC(target.getFullYear(), target.getMonth(), target.getDate(), 0, 0, 0) - offsetMin * 60000;
+  return Math.max(0, targetUtcMs - now.getTime());
+}
 function weeklyLeft(){
-  const n = new Date(), r = new Date(n); r.setHours(0,0,0,0);
-  r.setDate(r.getDate() + ((8 - r.getDay()) % 7 || 7));
-  let sec = Math.max(0, Math.floor((r - n)/1000));
+  let sec = Math.floor(msUntilNextBerlinSundayMidnight() / 1000);
   const d = Math.floor(sec/86400); sec %= 86400;
   const p = v => String(v).padStart(2,'0');
   const hms = `${p(Math.floor(sec/3600))}:${p(Math.floor(sec%3600/60))}:${p(sec%60)}`;
   return d ? `${d}${S.lang==='fa'?' روز ':'d '}${hms}` : hms;
 }
 // kurze Anzeige für die Top-Grafik (passt in das Feld unter "Reset in")
-function weeklyShort(){ const n = new Date(), r = new Date(n); r.setHours(0,0,0,0); r.setDate(r.getDate() + ((8 - r.getDay()) % 7 || 7));
-  let sec = Math.max(0, Math.floor((r - n)/1000)); const d = Math.floor(sec/86400); sec %= 86400; const p = v => String(v).padStart(2,'0');
+function weeklyShort(){
+  let sec = Math.floor(msUntilNextBerlinSundayMidnight() / 1000);
+  const d = Math.floor(sec/86400); sec %= 86400; const p = v => String(v).padStart(2,'0');
   const h = p(Math.floor(sec/3600)), m = p(Math.floor(sec%3600/60)), s2 = p(sec%60);
   return d ? (S.lang === 'fa' ? `${d} روز ${h}:${m}` : `${d}d ${h}:${m}`) : `${h}:${m}:${s2}`; }
 setInterval(() => { if (current==='top') $('#vTimer').textContent = weeklyShort(); }, 1000);
