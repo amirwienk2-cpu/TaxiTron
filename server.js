@@ -2850,7 +2850,7 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}.daily-status-table{width:100%;border-collapse:collapse;margin-top:10px}.daily-status-table td,.daily-status-table th{padding:8px 10px;border-bottom:1px solid #302d40;text-align:left;font-size:13px}.daily-status-table th{background:#181824;color:#ffd93d}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="loadTournamentDebug">Turnier-Diagnose</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -3028,7 +3028,30 @@ document.getElementById('loadPurchases').onclick=loadPurchases;
 document.getElementById('loadWithdrawals').onclick=()=>loadWithdrawals();
 const completedWithdrawalsButton=document.createElement('button');completedWithdrawalsButton.textContent='Completed withdrawals';document.getElementById('loadWithdrawals').insertAdjacentElement('afterend',completedWithdrawalsButton);completedWithdrawalsButton.onclick=loadCompletedWithdrawals;
 document.getElementById('loadRejectedWithdrawals').onclick=loadRejectedWithdrawals;
+async function loadTournamentDebug(){
+  currentView='tournamentDebug';
+  const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
+  status('Turnier-Diagnose wird geladen...');
+  let r,d;
+  try{r=await fetch('/admin/tournament-debug',{headers:{'x-admin-secret':s}});d=await r.json();}catch(e){status('Request failed');return}
+  if(!r.ok){status(d.error||'Request failed');return}
+  const list=document.getElementById('list');
+  list.innerHTML='<div style="padding:14px;border-radius:8px;margin-bottom:14px;border:1px solid #3b3850;background:#181824"><b>Aktuelle Serverwoche:</b> '+d.currentWeek+'<br><b>Serverzeit (UTC):</b> '+d.now+'</div>';
+  if(!d.entries.length){list.insertAdjacentHTML('beforeend','<div>Keine Turnier-Eintr\u00e4ge vorhanden.</div>');status('0 Eintr\u00e4ge geladen.');return}
+  d.entries.forEach(e=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:12px 0;border-bottom:1px solid #302d40';
+    const stale = e.tournamentWeekKey !== d.currentWeek;
+    row.innerHTML='<div><b>Spieler</b><div>'+e.name+' <span class="muted">('+e.uid+')</span></div></div>'+
+      '<div><b>Gespeicherter Best</b><div>'+e.tournamentBest+'</div></div>'+
+      '<div><b>Gespeicherte Woche</b><div style="color:'+(stale?'#ff5c6c':'#3ddc84')+'">'+(e.tournamentWeekKey||'(leer)')+(stale?' \u26a0 veraltet':' \u2713 aktuell')+'</div></div>'+
+      '<div><b>Effektiv auf Rangliste</b><div>'+e.effectiveBest+'</div></div>';
+    list.appendChild(row);
+  });
+  status(d.entries.length+' Eintr\u00e4ge geladen.');
+}
 document.getElementById('loadTtWithdrawals').onclick=loadTtWithdrawals;
+document.getElementById('loadTournamentDebug').onclick=loadTournamentDebug;
 function updateTtShopEnableToggle(enabled){const btn=document.getElementById('withdrawEnableToggle');btn.textContent=enabled?'💸 TT Shop ist AN — jetzt ausschalten':'🚫 TT Shop ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
 document.getElementById('withdrawEnableToggle').onclick=async()=>{const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}const enabled=document.getElementById('withdrawEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/tt-shop/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateTtShopEnableToggle(dd.ttShopEnabled);status(dd.ttShopEnabled?'TT Shop wurde aktiviert.':'TT Shop wurde deaktiviert.')}else status((await rr.json()).error||'Request failed')};
 async function loadTtShopToggleStatus(){const s=secret();if(!s)return;try{const rr=await fetch('/admin/tt-shop/settings',{headers:{'x-admin-secret':s}});if(rr.ok){const dd=await rr.json();updateTtShopEnableToggle(dd.ttShopEnabled===true)}}catch(e){}}
@@ -5533,6 +5556,7 @@ app.get('/admin/players', requireAdmin, (req, res) => {
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
     referralLink: 'https://t.me/TaxiTronBot?start=' + encodeURIComponent(referralCodeFor(user.id)),
     tournamentBest: Number(user.tournamentBest) || 0,
+    tournamentWeekKey: user.tournamentWeekKey || '',
     createdAt: Number(user.createdAt) || 0,
     isBanned: user.isBanned === true,
   })).sort((a, b) => b.ton - a.ton);
@@ -5543,8 +5567,30 @@ app.get('/admin/players', requireAdmin, (req, res) => {
     totalReferrals: players.reduce((sum, player) => sum + player.referralCount, 0),
     totalReferralRewards: players.reduce((sum, player) => sum + player.referralRewardCount, 0),
     totalReferralRewardZombies: players.reduce((sum, player) => sum + player.referralRewardZombies, 0),
+    currentTournamentWeek: berlinWeekKey(),
     players,
   });
+});
+
+// Read-only diagnostic for the weekly tournament leaderboard: shows each
+// player's raw stored tournamentBest/tournamentWeekKey next to the
+// "effective" value /api/leaderboard would actually use (0 once their
+// stored week no longer matches the current one), so a "leaderboard looks
+// frozen" report can be confirmed or ruled out directly from real data.
+app.get('/admin/tournament-debug', requireAdmin, (req, res) => {
+  const week = berlinWeekKey();
+  const entries = Object.values(users)
+    .map((u) => ({
+      uid: String(u.id),
+      name: u.name || ('Player ' + u.id),
+      tournamentBest: Number(u.tournamentBest) || 0,
+      tournamentWeekKey: u.tournamentWeekKey || '',
+      effectiveBest: u.tournamentWeekKey === week ? (Number(u.tournamentBest) || 0) : 0,
+    }))
+    .filter((e) => e.tournamentBest > 0)
+    .sort((a, b) => b.tournamentBest - a.tournamentBest)
+    .slice(0, 30);
+  res.json({ currentWeek: week, now: new Date().toISOString(), entries });
 });
 
 app.get('/admin/chat-users', requireAdmin, (req, res) => {
