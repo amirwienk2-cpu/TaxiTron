@@ -4968,11 +4968,19 @@ app.post('/api/tt/withdraw', requireUserFromBody, rejectBannedUser, async (req, 
       treasury.getTtBalance(TT_DECIMALS),
       treasury.getTonBalance(),
     ]);
-    if (treasuryTtBalance < amount) return res.status(503).json({ error: 'tt-treasury-insufficient-tt' });
+    console.log('[tt-withdraw] pre-flight check uid=' + user.id + ' amount=' + amount +
+      ' treasuryTT=' + treasuryTtBalance + ' treasuryTON=' + treasuryTonBalance);
+    if (treasuryTtBalance < amount) {
+      console.error('[tt-withdraw] REJECTED - treasury has only ' + treasuryTtBalance + ' TT, requested ' + amount + ' TT (uid ' + user.id + ')');
+      return res.status(503).json({ error: 'tt-treasury-insufficient-tt' });
+    }
     if (treasuryTonBalance < TT_WITHDRAW_GAS_TON + TT_MIN_TREASURY_TON_RESERVE) {
+      console.error('[tt-withdraw] REJECTED - treasury has only ' + treasuryTonBalance + ' TON, needs at least ' +
+        (TT_WITHDRAW_GAS_TON + TT_MIN_TREASURY_TON_RESERVE) + ' TON (gas + reserve) (uid ' + user.id + ')');
       return res.status(503).json({ error: 'tt-treasury-insufficient-ton-reserve' });
     }
   } catch (e) {
+    console.error('[tt-withdraw] REJECTED - treasury balance check threw: ' + (e && e.message) + ' (uid ' + user.id + ')');
     return res.status(503).json({ error: 'tt-treasury-unreachable' });
   }
 
