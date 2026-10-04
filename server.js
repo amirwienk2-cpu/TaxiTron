@@ -3297,6 +3297,7 @@ app.post('/api/taxi-race/predict', requireUserFromBody, rejectBannedUser, (req, 
 // GET returns messages newer than ?after=<id> (or the last ~50 if omitted), for polling.
 app.get('/api/chat/messages', (req, res) => {
   const after = Number(req.query.after) || 0;
+  const before = Number(req.query.before) || 0;
   const requestedRoom = String(req.query.room || '').toLowerCase();
   const room = ['en', 'fa', 'de'].includes(requestedRoom) ? requestedRoom : '';
   const viewerPayload = verifyToken(req.query.token);
@@ -3313,9 +3314,13 @@ app.get('/api/chat/messages', (req, res) => {
   const roomMessages = room
     ? chatMessages.filter((message) => (message.room || 'en') === room)
     : chatMessages;
-  const storedMessages = after > 0
-    ? roomMessages.filter((message) => message.id > after)
-    : roomMessages.slice(-50);
+  // "before" lets the client page further back in history (used for scroll-up
+  // infinite loading and for jumping to an older reply that isn't loaded yet).
+  const storedMessages = before > 0
+    ? roomMessages.filter((message) => message.id < before).slice(-50)
+    : after > 0
+      ? roomMessages.filter((message) => message.id > after)
+      : roomMessages.slice(-50);
   const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
   res.json({ messages, enabled: chatEnabled, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null, taxiRace: room === TAXI_RACE_ROOM ? publicTaxiRace(viewerUid) : null });
 });

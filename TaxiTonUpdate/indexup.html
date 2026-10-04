@@ -2974,6 +2974,45 @@
   .itseg button img{width:40px!important;height:40px!important;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));transition:transform .2s}
   .itseg button[aria-selected="true"] img{transform:scale(1.12)}
   .itseg button img.it-bub,.itseg button img.it-ban{width:60px!important;height:40px!important}
+  /* ==== Chat redesign: dünne Telegram-Bubbles, Reaktions-Button außerhalb, Uhrzeit inline (siehe Hinweis am Ende der Antwort) ==== */
+  #chatlog .bub{padding:3px 8px!important;min-height:0!important;min-width:0!important;width:fit-content!important;max-width:72%!important}
+  #chatlog .bub.sk-autumn,#chatlog .bub.sk-cozy,#chatlog .bub.sk-fox{padding:3px 8px!important}
+  #chatlog .bh{margin-bottom:0!important;min-height:0!important;gap:5px!important}
+  #chatlog .bh b{font-size:11px!important}
+  #chatlog .bt{font-size:14px!important;line-height:1.25!important;display:inline}
+  #chatlog .bt .tm,#chatlog .tm{position:static!important;float:none!important;display:inline!important;margin-inline-start:6px!important;top:auto!important;bottom:auto!important;right:auto!important;left:auto!important;font-size:11px!important;white-space:nowrap!important}
+  #chatlog .bub.sk-autumn .tm,#chatlog .bub.sk-cozy .tm,#chatlog .bub.sk-fox .tm{margin-top:0!important}
+  #chatlog .uav,#chatlog .uav.sm{width:26px!important;height:26px!important}
+  #chatlog .uav i{width:8px!important;height:8px!important}
+  #chatlog .mrow{margin-bottom:0!important;gap:5px!important;align-items:flex-end!important}
+  #chatlog.chatlog{gap:3px!important}
+  #chatlog .mrow:has(.sk-autumn),#chatlog .mrow:has(.sk-cozy),#chatlog .mrow:has(.sk-fox){margin-bottom:3px!important}
+  /* Lösch-/Bearbeiten-Button: nur im Antipp-Menü (mPop), nicht mehr dauerhaft in der Bubble */
+  #chatlog [data-edit-msg],#chatlog [data-mod-del]{display:none!important}
+  /* Reaktions-Button jetzt außerhalb der Bubble, als eigenes Flex-Kind von .mrow, unten ausgerichtet */
+  #chatlog .mrow:not(.mine) .bub{margin-inline-end:0!important}
+  #chatlog .mrow>.chat-reactions{flex:none;margin:0;gap:5px}
+  #chatlog .mrow.mine>.chat-reactions{margin-inline-end:5px}
+  #chatlog .mrow:not(.mine)>.chat-reactions{margin-inline-start:5px}
+  #chatlog .chat-react-add{width:20px!important;height:20px!important;min-height:0!important;padding:0!important}
+  #chatlog .chat-react-add svg{width:12px!important;height:12px!important}
+  #chatlog .chat-react-pill{min-height:20px!important;font-size:10px!important}
+  /* Reply-Vorschau: einzeilig, abgeschnitten */
+  #chatlog .rq{display:flex!important;align-items:baseline!important;gap:6px!important;padding:2px 6px!important;white-space:nowrap!important;overflow:hidden!important;max-width:100%!important;cursor:pointer}
+  #chatlog .rq div{display:flex!important;align-items:baseline!important;gap:6px!important;min-width:0;overflow:hidden}
+  #chatlog .rq b{font-size:11px!important;margin:0!important;flex:none}
+  #chatlog .rq span{font-size:11px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  #chatlog .rq:active{transform:scale(.98)}
+  /* Nach-unten-springen-Button mit Zähler für neue Nachrichten */
+  .chwrap{position:relative}
+  .chat-jump-btn{position:absolute;right:14px;bottom:74px;width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;background:linear-gradient(180deg,#2d6bff,#1c46c4);color:#fff;box-shadow:0 4px 10px rgba(0,0,0,.35);z-index:5;cursor:pointer}
+  .chat-jump-btn svg{width:20px;height:20px}
+  .chat-jump-count{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:#ff5c6c;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1}
+  #app[dir="rtl"] .chat-jump-btn{right:auto;left:14px}
+  #app[dir="rtl"] .chat-jump-count{right:auto;left:-4px}
+  /* Hervorhebung der Zielnachricht beim Reply-Sprung */
+  .msg-flash .bub{animation:msgFlash 1.5s ease-out}
+  @keyframes msgFlash{0%,35%{box-shadow:0 0 0 3px rgba(98,198,255,.7),0 0 16px rgba(98,198,255,.55)}100%{box-shadow:none}}
 </style>
 
 <div id="app" dir="ltr">
@@ -3087,6 +3126,7 @@
         <div class="typing" id="typing" hidden><span class="tdots"><i></i><i></i><i></i></span><span id="typingTxt"></span></div>
         <div class="replybar" id="replyBar" hidden><span class="rbic">↩</span><div class="grow"><small class="rb-label" id="rbLabel"></small><b id="rbName"></b><span id="rbText"></span></div><button type="button" class="rbx" id="rbX" aria-label="Cancel">✕</button></div>
         <div class="stkpick" id="stkPick" hidden></div>
+        <button type="button" class="chat-jump-btn" id="chatJumpBtn" hidden aria-label="Jump to latest messages"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 16 4 8l1.4-1.4L12 13.2l6.6-6.6L20 8z"/></svg><span class="chat-jump-count" id="chatJumpCount" hidden>0</span></button>
         <form class="composer" id="chatForm">
           <button type="button" class="stkbtn" id="stkBtn" aria-label="Stickers" aria-expanded="false"><img src="assets/stk-sara-4.webp" alt=""></button>
           <textarea id="chatIn" rows="1" maxlength="500" autocomplete="off" aria-label="Message"></textarea>
@@ -3793,6 +3833,7 @@ let current = 'home';
 function go(page){
   const prevPage = current; current = page;
   if (page === 'garage' && prevPage !== 'garage') requestAnimationFrame(() => runLoadBar(prevPage === 'home'));
+  if (page === 'chat' && prevPage !== 'chat') chatForceScrollBottom = true;
   document.querySelectorAll('.page').forEach(p => p.hidden = p.dataset.page !== page);
   document.querySelectorAll('#nav button').forEach(b => { if (b.dataset.go===page) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   $('#main').scrollTop = 0;
@@ -3907,6 +3948,17 @@ const LIVE_LINES = ['who else is grinding the weekly race? 🏁','just hit level
 const chatNow = Date.now();
 let onlineN = 0, onlineCounts = {en:0,fa:0,de:0}, onlineCountBusy = false, onlineCountUpdatedAt = 0, chatTab = 'chat';
 let serverChat = [], serverChatLastByRoom = {en:0,fa:0,de:0}, serverChatBusy = false, serverCardEvent = null;
+// ---- Chat scroll/unread-counter state (siehe renderChat): verhindert ungewolltes
+// Auto-Scrollen nach unten, wenn der Nutzer hochgescrollt hat. ----
+let chatForceScrollBottom = false, chatSuppressUnreadBump = false, chatUnreadCount = 0;
+const chatRenderedCountByRoom = {};
+function updateChatJumpButton(){
+  const btn = $('#chatJumpBtn'), countEl = $('#chatJumpCount');
+  if (!btn || !countEl) return;
+  const show = chatUnreadCount > 0;
+  btn.hidden = !show; countEl.hidden = !show;
+  if (show) countEl.textContent = chatUnreadCount > 99 ? '99+' : String(chatUnreadCount);
+}
 function renderOnlineCounts(){
   $('#rpTotal').textContent = fmt(onlineN);
   const max = Math.max(0, ...CHAT_ROOMS.map(room => onlineCounts[room] || 0));
@@ -3975,7 +4027,7 @@ const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: type
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,reply:message.replyTo?{ts:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,reply:message.replyTo?{id:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -4029,7 +4081,7 @@ async function sendServerChat(payload){
     const response=await fetch('/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,token:SHOP_ACCOUNT.token})});
     const data=await response.json();
     if(!response.ok||!data.message){toast(t('lim_err'));return false;}
-    receiveServerChatMessage(data.message); renderChat(); return true;
+    receiveServerChatMessage(data.message); chatForceScrollBottom=true; renderChat(); return true;
   }catch(e){toast(t('lim_err'));return false;}
 }
 function ensureChatEventStream(){
@@ -4285,6 +4337,9 @@ function renderChat(){
   $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive || (chatRoom === 'fa' && TAXI_RACE.race && TAXI_RACE.race.status === 'running');
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
+  const chatLogEl = $('#chatlog');
+  const prevScrollHeight = chatLogEl.scrollHeight, prevScrollTop = chatLogEl.scrollTop, prevClientHeight = chatLogEl.clientHeight;
+  const wasNearBottom = prevScrollHeight === 0 || (prevScrollHeight - prevScrollTop - prevClientHeight < 100);
   $('#chatlog').innerHTML = msgs.map((m, i) => {
     const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isChatAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, isSupporter:m.isSupporter===true||peer.isSupporter===true, isDeveloper:m.isDeveloper===true||peer.isDeveloper===true, badge4:m.badge4===true||peer.badge4===true, badge5:m.badge5===true||peer.badge5===true, hasLevel4:m.hasLevel4===true||peer.hasLevel4===true, hasLevel5:m.hasLevel5===true||peer.hasLevel5===true};
     const chatStyle = m.chatItems && typeof m.chatItems === 'object' ? m.chatItems : {};
@@ -4293,6 +4348,7 @@ function renderChat(){
     const prev = msgs[i-1], grouped = prev && !!prev.mine === mine && (prev.who === m.who) && (m.ts - prev.ts < 5*60000);
     const nx = msgs[i+1], lastG = !(nx && !!nx.mine === mine && nx.who === m.who && (nx.ts - m.ts < 5*60000));
     const dk = new Date(m.ts).toDateString(), sep = dk !== lastDay ? `<div class="dsep"><span>${esc(dayLabel(m.ts))}</span></div>` : ''; lastDay = dk;
+    const domId = m.id != null ? String(m.id) : 't' + m.ts;
     chatIdx.set(String(m.ts), {id:m.id,ts:m.ts, who: mine ? '@me' : m.who, name:u.n, c:u.c, text:m.text, stk:m.stk});
     const showFrame = messageFrame && messageFrame !== 'none';
     const messageAvatar = mine
@@ -4301,12 +4357,35 @@ function renderChat(){
     const reactionMarkup = chatReactionMarkup(m);
     const messageCardEvent=m.cardEventResult||(m.cardEventId&&serverCardEvent?.id===m.cardEventId?serverCardEvent:null);
     const cardEventMarkup=renderServerCardEvent(messageCardEvent);
-    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" data-ts="${m.ts}">${messageAvatar}
-      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span>${mine && Number.isFinite(m.id) && !m.stk ? `<button type="button" data-edit-msg="${esc(m.ts)}" title="${S.lang==='de'?'Bearbeiten':S.lang==='fa'?'ویرایش':'Edit'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(98,198,255,.35);background:rgba(98,198,255,.12);color:#62c6ff;font-size:11px;line-height:1.4">✎</button>` : ''}${SHOP_ACCOUNT.isChatAdmin || SHOP_ACCOUNT.isSupporter || SHOP_ACCOUNT.isDeveloper ? (Number.isFinite(m.id) ? `<button type="button" data-mod-del="${esc(m.id)}" title="${S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete'}" style="margin-inline-start:4px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.12);color:#ff6b6b;font-size:11px;line-height:1.4">🗑</button>` : '') : ''}</div>${m.reply ? replyQuote(m.reply) : ''}
-      ${cardEventMarkup|| (m.cardEventTest ? renderCardEventTest(m.cardEventTest) : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">` : `<div class="bt" dir="auto">${esc(m.text)}</div>`)}${reactionMarkup}<span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span></div></div>`;
+    const tmMarkup = `<span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span>`;
+    // Bei reinem Text läuft die Uhrzeit inline im selben Textfluss (Teil 1 Pkt.3);
+    // bei Sticker/Karten-Event bleibt sie als Zeile darunter (kein Fließtext vorhanden).
+    const bodyMarkup = cardEventMarkup
+      ? cardEventMarkup
+      : m.cardEventTest ? renderCardEventTest(m.cardEventTest)
+      : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">`
+      : `<div class="bt" dir="auto">${esc(m.text)}${tmMarkup}</div>`;
+    const isPlainText = !cardEventMarkup && !m.cardEventTest && !m.stk;
+    const contentMarkup = isPlainText ? bodyMarkup : bodyMarkup + tmMarkup;
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
+      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
+      ${contentMarkup}</div>${reactionMarkup}</div>`;
   }).join('');
   renderStkPick();
-  const log = $('#chatlog'); log.scrollTop = log.scrollHeight;
+  const doForce = chatForceScrollBottom; chatForceScrollBottom = false;
+  const suppressBump = chatSuppressUnreadBump; chatSuppressUnreadBump = false;
+  const prevCount = chatRenderedCountByRoom[chatRoom] || 0;
+  const addedCount = Math.max(0, msgs.length - prevCount);
+  chatRenderedCountByRoom[chatRoom] = msgs.length;
+  requestAnimationFrame(() => {
+    const logEl = $('#chatlog');
+    if (doForce || wasNearBottom) {
+      logEl.scrollTop = logEl.scrollHeight;
+      chatUnreadCount = 0; updateChatJumpButton();
+    } else if (addedCount > 0 && !suppressBump) {
+      chatUnreadCount += addedCount; updateChatJumpButton();
+    }
+  });
 }
 let walTab = 'wal', dwTab = 'dep';
 const WD_MIN = 1, WD_FEE = 0.01, WD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -5318,8 +5397,8 @@ const chatIn = $('#chatIn');
 function growChatIn(){ chatIn.style.height = 'auto'; chatIn.style.height = Math.min(chatIn.scrollHeight + 3, 120) + 'px'; const log = $('#chatlog'); log.scrollTop = log.scrollHeight; }
 chatIn.addEventListener('input', growChatIn);
 chatIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatForm').requestSubmit(); } });
-$('#tabChat').onclick = () => { chatTab = 'chat'; renderChat(); };
-document.querySelectorAll('[data-room]').forEach(b => b.onclick = () => { chatRoom = b.dataset.room; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; if (chatRoom !== TAXI_RACE_ROOM && TAXI_RACE.viewOpen) closeRaceView(); renderChat(); renderRaceButton(); pollServerChat(); });
+$('#tabChat').onclick = () => { chatTab = 'chat'; chatForceScrollBottom = true; renderChat(); };
+document.querySelectorAll('[data-room]').forEach(b => b.onclick = () => { chatRoom = b.dataset.room; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; chatForceScrollBottom = true; if (chatRoom !== TAXI_RACE_ROOM && TAXI_RACE.viewOpen) closeRaceView(); renderChat(); renderRaceButton(); pollServerChat(); });
 $('#roomBack').onclick = () => { if (TAXI_RACE.viewOpen) closeRaceView(); chatRoom = null; renderChat(); };
 $('#tabOnline').onclick = () => { chatTab = 'on'; if(SHOP_ACCOUNT.token)loadOnlinePlayers(); renderChat(); };
 $('#tabFr').onclick = () => { chatTab = 'fr'; renderChat(); };
@@ -5973,7 +6052,54 @@ let replyTo = null, mPopTs = null, editingMessageId = null;
 const rqText = r => r.stk ? '🖼 ' + t('rp_sticker') : String(r.text || '').slice(0, 90);
 function replyQuote(r){
   const name = r.who === '@me' ? t('you') : r.name;
-  return `<div class="rq" data-jump="${esc(String(r.ts))}" style="--rc:${esc(r.c || '#62c6ff')}">${r.stk ? `<img src="assets/stk-${esc(r.stk)}.webp" alt="">` : ''}<div><b>${esc(name)}</b><span dir="auto">${esc(rqText(r))}</span></div></div>`;
+  return `<div class="rq" data-jump="${esc(String(r.id))}" style="--rc:${esc(r.c || '#62c6ff')}">${r.stk ? `<img src="assets/stk-${esc(r.stk)}.webp" alt="">` : ''}<div><b>${esc(name)}</b><span dir="auto">${esc(rqText(r))}</span></div></div>`;
+}
+/* ---- Nachladen älterer Nachrichten (scroll-up / Reply-Sprung) ---- */
+let chatLoadingOlder = false;
+const chatHasMoreByRoom = {};
+async function loadOlderChatMessages(targetRoom){
+  const room = targetRoom || chatRoom;
+  if (!room || !SHOP_ACCOUNT.token || chatLoadingOlder || chatHasMoreByRoom[room] === false) return false;
+  const roomMsgs = serverChat.filter(m => m.room === room && Number.isFinite(m.id));
+  if (!roomMsgs.length) return false;
+  const oldestId = roomMsgs.reduce((min, m) => m.id < min ? m.id : min, Infinity);
+  if (!Number.isFinite(oldestId)) return false;
+  chatLoadingOlder = true;
+  try {
+    const url = `/api/chat/messages?room=${encodeURIComponent(room)}&before=${oldestId}&token=${encodeURIComponent(SHOP_ACCOUNT.token)}`;
+    const response = await fetch(url, {cache:'no-store'});
+    const data = await response.json();
+    if (!response.ok || !Array.isArray(data.messages)) return false;
+    if (!data.messages.length) { chatHasMoreByRoom[room] = false; return false; }
+    const isActivePane = room === chatRoom && current === 'chat' && chatTab === 'chat';
+    const log = isActivePane ? $('#chatlog') : null;
+    const prevScrollHeight = log ? log.scrollHeight : 0, prevScrollTop = log ? log.scrollTop : 0;
+    data.messages.forEach(receiveServerChatMessage);
+    if (isActivePane) {
+      chatSuppressUnreadBump = true;
+      renderChat();
+      requestAnimationFrame(() => {
+        const logEl = $('#chatlog');
+        logEl.scrollTop = logEl.scrollHeight - prevScrollHeight + prevScrollTop;
+      });
+    }
+    return true;
+  } catch (e) { return false; } finally { chatLoadingOlder = false; }
+}
+async function jumpToMessage(id){
+  if (!id) return;
+  let el = document.getElementById('msg-' + id);
+  let attempts = 0;
+  while (!el && attempts < 10) {
+    const got = await loadOlderChatMessages(chatRoom);
+    if (!got) break;
+    el = document.getElementById('msg-' + id);
+    attempts++;
+  }
+  if (!el) { toast(S.lang==='de'?'Nachricht wurde gelöscht':S.lang==='fa'?'پیام حذف شده است':'Message was deleted'); return; }
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.remove('msg-flash'); void el.offsetWidth; el.classList.add('msg-flash');
+  setTimeout(() => el.classList.remove('msg-flash'), 1500);
 }
 function setReply(ts){
   const m = chatIdx.get(String(ts)); if (!m) return;
@@ -6014,9 +6140,15 @@ let mPopShownAt = 0;
 function hideMPop(){ $('#mPop').hidden = true; mPopTs = null; }
 function showMPop(row){
   const ts = row.dataset.ts;
-  if (!chatIdx.get(String(ts))) return;
+  const m = chatIdx.get(String(ts));
+  if (!m) return;
   mPopTs = ts;
   const pop = $('#mPop'), app = $('#app');
+  const canEdit = m.who === '@me' && Number.isFinite(m.id) && !m.stk;
+  const canDelete = (SHOP_ACCOUNT.isChatAdmin || SHOP_ACCOUNT.isSupporter || SHOP_ACCOUNT.isDeveloper) && Number.isFinite(m.id);
+  pop.innerHTML = '<button id="mPopReply" class="mpop-sm"><span class="upi">↩</span><span><b>' + esc(t('rp_reply')) + '</b></span></button>'
+    + (canEdit ? '<button id="mPopEdit" class="mpop-sm"><span class="upi">✎</span><span><b>' + esc(S.lang==='de'?'Bearbeiten':S.lang==='fa'?'ویرایش':'Edit') + '</b></span></button>' : '')
+    + (canDelete ? '<button id="mPopDelete" class="mpop-sm"><span class="upi">🗑</span><span><b>' + esc(S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete') + '</b></span></button>' : '');
   pop.hidden = false;
   const appRect = app.getBoundingClientRect(), rowRect = row.getBoundingClientRect();
   const popWidth = pop.offsetWidth || 110, popHeight = pop.offsetHeight || 40;
@@ -6026,16 +6158,29 @@ function showMPop(row){
   if (top + popHeight > appRect.height - 8) top = Math.max(8, rowRect.top - appRect.top - popHeight - 4);
   pop.style.left = left + 'px'; pop.style.top = top + 'px';
   mPopShownAt = Date.now();
+  $('#mPopReply').onclick = () => { const activeTs = mPopTs; hideMPop(); if (activeTs) setReply(activeTs); };
+  if (canEdit) $('#mPopEdit').onclick = () => { const activeTs = mPopTs; hideMPop(); if (activeTs) startEdit(activeTs); };
+  if (canDelete) $('#mPopDelete').onclick = () => { const active = chatIdx.get(String(mPopTs)); hideMPop(); if (active && Number.isFinite(active.id)) void deleteServerChatMessage(active.id); };
 }
 document.addEventListener('click', e => {
   if (e.target.closest('#mPop')) return;
   const q = e.target.closest('[data-jump]');
-  if (q) { hideMPop(); const row = document.querySelector(`#chatlog .mrow[data-ts="${CSS.escape(q.dataset.jump)}"]`);
-    if (row) { row.scrollIntoView({block:'center', behavior:'smooth'}); row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); } return; }
+  if (q) { hideMPop(); void jumpToMessage(q.dataset.jump); return; }
   const rb = e.target.closest('[data-rp]'); if (rb) { e.stopPropagation(); setReply(rb.dataset.rp); return; }
   if (!$('#mPop').hidden && Date.now() - mPopShownAt > 250) hideMPop();
 });
 $('#chatlog').addEventListener('scroll', hideMPop);
+$('#chatlog').addEventListener('scroll', () => {
+  const log = $('#chatlog');
+  const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 100;
+  if (nearBottom && chatUnreadCount > 0) { chatUnreadCount = 0; updateChatJumpButton(); }
+  if (log.scrollTop < 60) void loadOlderChatMessages();
+});
+$('#chatJumpBtn').addEventListener('click', () => {
+  const log = $('#chatlog');
+  log.scrollTo({top: log.scrollHeight, behavior:'smooth'});
+  chatUnreadCount = 0; updateChatJumpButton();
+});
 (() => { const log = $('#chatlog'); let sw = null;
   log.addEventListener('pointerdown', e => { const row = e.target.closest('.mrow[data-ts]'); if (!row || e.target.closest('[data-user],[data-rp],[data-jump],[data-react],[data-react-open],[data-mod-del],[data-edit-msg],[data-server-card-vote],[data-card-test-vote],[data-imgview]')) return; sw = {row, x: e.clientX, y: e.clientY, dx: 0, on: false}; });
   log.addEventListener('pointermove', e => { if (!sw) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
@@ -6052,7 +6197,6 @@ $('#chatlog').addEventListener('scroll', hideMPop);
   };
   log.addEventListener('pointerup', end); log.addEventListener('pointercancel', () => { sw = null; }); log.addEventListener('pointerleave', () => { sw = null; });
 })();
-$('#mPopReply').onclick = () => { const ts = mPopTs; hideMPop(); if (ts) setReply(ts); };
 let popWho = null;
 function hidePop(){ $('#uPop').hidden = true; popWho = null; }
 document.addEventListener('click', e => {
@@ -6859,6 +7003,16 @@ limRefresh(); setInterval(limRefresh, 30000);
 try { const tg = window.Telegram && window.Telegram.WebApp; if (tg) { tg.ready(); tg.expand(); try{tg.setHeaderColor('#060826');tg.setBackgroundColor('#060826');tg.setBottomBarColor&&tg.setBottomBarColor('#070b30');tg.disableVerticalSwipes&&tg.disableVerticalSwipes();}catch(e){} const lc = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code; if (!S.langSet) S.lang = lc === 'fa' ? 'fa' : lc === 'de' ? 'de' : 'en'; } } catch(e){}
 loadShopAccount();
 setInterval(pollServerChat, 4000);
+// Beim Zurückkehren in die App (Tab-Wechsel oder Telegram-WebApp-Resume):
+// neue Nachrichten holen und danach sofort ganz nach unten springen (Teil 5).
+async function handleChatAppResumed(){
+  if (!(current === 'chat' && chatTab === 'chat' && chatRoom)) return;
+  await pollServerChat();
+  chatForceScrollBottom = true;
+  renderChat();
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void handleChatAppResumed(); });
+try { window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.onEvent && window.Telegram.WebApp.onEvent('activated', () => void handleChatAppResumed()); } catch(e){}
 const hash = (location.hash||'').slice(1);
 const valid = ['home','chat','wallet','top','tasks','shop','garage'];
 go(valid.includes(hash) ? hash : 'garage');
