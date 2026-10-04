@@ -51,6 +51,8 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { attachMonsterCrash } = require('./monster-crash/monster-crash');
+const treasury = require('./ton-treasury');
+const { Address: TonAddress } = require('@ton/core');
 
 // ---------------------------------------------------------------
 // Config
@@ -72,6 +74,36 @@ const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
+
+// ---- TT jetton withdrawals (on-chain payouts to a user's own TON wallet) ----
+// SECURITY: TREASURY_MNEMONIC must only ever come from this Railway env var -
+// never hardcode it, never log it, never send it to the client. This repo is
+// public, so this file must never contain real secrets.
+const TREASURY_MNEMONIC = process.env.TREASURY_MNEMONIC || '';
+const TT_JETTON_MASTER = process.env.TT_JETTON_MASTER || '';
+const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || '';
+const TT_DECIMALS = Number(process.env.TT_DECIMALS || 9);
+const TONCENTER_URL = process.env.TONCENTER_URL || 'https://toncenter.com/api/v2/jsonRPC';
+const TONCENTER_API_KEY = process.env.TONCENTER_API_KEY || '';
+// Default OFF on purpose: TT withdrawals must be explicitly turned on once the
+// treasury is configured and tested.
+const TT_WITHDRAW_ENABLED = String(process.env.TT_WITHDRAW_ENABLED || 'false').toLowerCase() === 'true';
+// Default ON on purpose: while admin-only mode is active, only Telegram IDs in
+// TT_WITHDRAW_ALLOWLIST (comma-separated) may withdraw TT, so the feature can
+// be tested live with a single real account before opening it to everyone.
+const TT_WITHDRAW_ADMIN_ONLY = String(process.env.TT_WITHDRAW_ADMIN_ONLY || 'true').toLowerCase() === 'true';
+const TT_WITHDRAW_ALLOWLIST = new Set(
+  String(process.env.TT_WITHDRAW_ALLOWLIST || '').split(',').map((id) => id.trim()).filter(Boolean)
+);
+const TT_MIN_WITHDRAW = Number(process.env.TT_MIN_WITHDRAW || 30000);
+const TT_WITHDRAW_COOLDOWN_MS = Number(process.env.TT_WITHDRAW_COOLDOWN_MS || 24 * 60 * 60 * 1000);
+const TT_GLOBAL_DAILY_LIMIT = Number(process.env.TT_GLOBAL_DAILY_LIMIT || 500000);
+// Safety reserves checked right before every single send.
+const TT_WITHDRAW_GAS_TON = Number(process.env.TT_WITHDRAW_GAS_TON || 0.08);
+const TT_MIN_TREASURY_TON_RESERVE = Number(process.env.TT_MIN_TREASURY_TON_RESERVE || 1); // 1 whole TON ("1 GRAM")
+const TT_WITHDRAW_ACCEPT_TIMEOUT_MS = Number(process.env.TT_WITHDRAW_ACCEPT_TIMEOUT_MS || 90000);
+const TT_WITHDRAW_CONFIRM_TIMEOUT_MS = Number(process.env.TT_WITHDRAW_CONFIRM_TIMEOUT_MS || 120000);
+const TT_INTEGRITY_EPSILON = 0.01; // TT - rounding slack for the ttBalance <= ttCreditedLifetime sanity check
 const INVITE_EVENT_ENDS_AT = Date.parse(process.env.INVITE_EVENT_ENDS_AT || '2026-09-19T13:50:22.986Z');
 if (!Number.isFinite(INVITE_EVENT_ENDS_AT)) throw new Error('INVITE_EVENT_ENDS_AT must be a valid date');
 const RANDOM_BOT_INTERVAL_MS = Number(process.env.RANDOM_BOT_INTERVAL_MS);
@@ -330,6 +362,22 @@ function loadUsers() {
 }
 
 let users = loadUsers(); // keyed by Telegram user id (string)
+
+// Backfill TT accounting fields for users written before the TT withdrawal
+// feature existed. Their historical ttBalance is treated as already
+// "credited" (we have no finer-grained ledger for anything earned before
+// this field existed), so the integrity check below doesn't false-flag
+// every pre-existing player the first time it runs.
+Object.values(users).forEach((user) => {
+  if (!Array.isArray(user.ttLedger)) user.ttLedger = [];
+  if (!Array.isArray(user.ttWithdrawals)) user.ttWithdrawals = [];
+  if (!Number.isFinite(Number(user.ttWithdrawnLifetime))) user.ttWithdrawnLifetime = 0;
+  if (!Number.isFinite(Number(user.lastTtWithdrawalAt))) user.lastTtWithdrawalAt = 0;
+  if (!Number.isFinite(Number(user.ttCreditedLifetime))) {
+    user.ttCreditedLifetime = Number(user.ttBalance || 0) + Number(user.ttWithdrawnLifetime || 0);
+  }
+});
+
 let rpsGames = {};
 try {
   if (fs.existsSync(RPS_FILE)) rpsGames = readJsonFile(RPS_FILE);
@@ -928,7 +976,7 @@ async function finishCardEvent(eventId) {
     if (!user.cardEventRewards || typeof user.cardEventRewards !== 'object') user.cardEventRewards = {};
     if (!Object.hasOwn(user.cardEventRewards, event.id)) {
       user.cardEventRewards[event.id] = reward;
-      if (reward > 0) user.ttBalance = Number((Number(user.ttBalance || 0) + reward).toFixed(6));
+      if (reward > 0) creditTT(user, reward, 'card-event-vote');
     }
     voterNames[index].push(user.name || ('Player ' + uid));
   });
@@ -1225,13 +1273,13 @@ function finishTaxiRace(raceId) {
     race.payoutDone = true; // set before the async persist() call so a near-simultaneous restart can't double-pay
     const winner = users[String(race.winnerUid)];
     if (winner) {
-      winner.ttBalance = Number((Number(winner.ttBalance || 0) + rewardTT).toFixed(6));
+      creditTT(winner, rewardTT, 'taxi-race-winner');
     }
     const correctUids = Object.entries(race.predictions || {}).filter(([, pick]) => String(pick) === String(race.winnerUid)).map(([uid]) => uid);
     race.correctNames = correctUids.map((uid) => (users[uid] && users[uid].name) || ('Player ' + uid));
     correctUids.forEach((uid) => {
       const predictor = users[uid];
-      if (predictor) predictor.ttBalance = Number((Number(predictor.ttBalance || 0) + tipRewardTT).toFixed(6));
+      if (predictor) creditTT(predictor, tipRewardTT, 'taxi-race-tip');
     });
     persist();
   }
@@ -1513,6 +1561,11 @@ function newUser(id, name) {
     coins: 0,
     ton: 0,
     ttBalance: 0,
+    ttCreditedLifetime: 0,
+    ttWithdrawnLifetime: 0,
+    ttLedger: [],
+    ttWithdrawals: [],
+    lastTtWithdrawalAt: 0,
     chatItems: { bub: [], frm: [], ban: [], eq: { bub: 'classic', frm: 'none', ban: 'classic' } },
     stickerPacks: [],
     friends: [],
@@ -1576,6 +1629,41 @@ function newUser(id, name) {
 }
 
 function referralCodeFor(uid) { return 'ref_' + String(uid); }
+
+// ---------------------------------------------------------------
+// TT balance ledger
+// ------------------------------------------------------------------
+// Every legitimate way a player's ttBalance can go UP funnels through this
+// helper so we keep an audit trail (ttLedger) and a running lifetime total
+// (ttCreditedLifetime) that can never be produced by the client - only by
+// server code explicitly calling creditTT() with a server-computed amount.
+// Before an on-chain TT withdrawal is allowed, we check that the player's
+// current balance is actually explainable by that lifetime total (see
+// ttBalanceIsPlausible below) as a sanity net against any future accounting
+// bug that might otherwise let a withdrawal pay out TT that was never
+// really credited by the server.
+// ------------------------------------------------------------------
+function creditTT(user, amount, reason) {
+  const amt = Number(amount);
+  if (!Number.isFinite(amt) || amt <= 0) return Number(user.ttBalance || 0);
+  user.ttBalance = Number((Number(user.ttBalance || 0) + amt).toFixed(6));
+  user.ttCreditedLifetime = Number((Number(user.ttCreditedLifetime || 0) + amt).toFixed(6));
+  if (!Array.isArray(user.ttLedger)) user.ttLedger = [];
+  user.ttLedger.push({ ts: Date.now(), delta: amt, reason: String(reason || ''), balanceAfter: user.ttBalance });
+  if (user.ttLedger.length > 200) user.ttLedger = user.ttLedger.slice(-200);
+  return user.ttBalance;
+}
+
+// Lifetime-credited total must always be able to explain the balance the
+// player currently has plus whatever they've already withdrawn on-chain.
+// A mismatch means ttBalance was changed by something other than creditTT()
+// (or debited without using the ttBalance field consistently) and must be
+// treated as suspicious rather than paid out.
+function ttBalanceIsPlausible(user) {
+  const credited = Number(user.ttCreditedLifetime || 0);
+  const owed = Number(user.ttBalance || 0) + Number(user.ttWithdrawnLifetime || 0);
+  return owed <= credited + TT_INTEGRITY_EPSILON;
+}
 
 // Settles the invite leaderboard once, the first time this is called after
 // the campaign end date. Idempotent: safe to call from every request and
@@ -1691,6 +1779,26 @@ async function notifyAdminDeposit(user, amountTon) {
     }
   } catch (error) {
     console.error('[telegram] admin deposit notify failed', error.message);
+  }
+}
+
+// Generic best-effort admin DM, used by the TT withdrawal worker for
+// low-balance warnings and cases that need a human to check the chain.
+async function notifyAdminText(text) {
+  if (!BOT_TOKEN || !ADMIN_CHAT_ID) return;
+  try {
+    const chatId = /^-?\d+$/.test(ADMIN_CHAT_ID) ? Number(ADMIN_CHAT_ID) : ADMIN_CHAT_ID;
+    const response = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body || body.ok !== true) {
+      console.error('[telegram] admin notify failed', { httpStatus: response.status, body });
+    }
+  } catch (error) {
+    console.error('[telegram] admin notify failed', error.message);
   }
 }
 
@@ -2003,6 +2111,8 @@ function publicState(user) {
       chatItems: friend.chatItems && friend.chatItems.eq ? { ...friend.chatItems.eq } : { bub: 'classic', frm: 'none', ban: 'classic' },
     })),
     ttOrders: Array.isArray(user.ttOrders) ? user.ttOrders.slice(-50).reverse() : [],
+    ttWithdrawals: Array.isArray(user.ttWithdrawals) ? user.ttWithdrawals.slice(-10).reverse().map(publicTtWithdrawal) : [],
+    ttWithdrawPending: !!activeTtWithdrawal(user),
     figCount: user.figCount,
     mine: { last: user.mine.last, acc: user.mine.acc },
     tonToday: user.tonToday,
@@ -2736,7 +2846,7 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}.daily-status-table{width:100%;border-collapse:collapse;margin-top:10px}.daily-status-table td,.daily-status-table th{padding:8px 10px;border-bottom:1px solid #302d40;text-align:left;font-size:13px}.daily-status-table th{background:#181824;color:#ffd93d}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -2807,6 +2917,56 @@ async function loadCompletedWithdrawals(){
   });
   status(data.withdrawals.length+' abgeschlossene Auszahlung(en) geladen.');
 }
+async function loadTtWithdrawals(){
+  currentView='ttWithdrawals';
+  const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
+  status('TT-Auszahlungen werden geladen...');
+  let treasuryData=null;
+  try{const tr=await fetch('/admin/tt-treasury-status',{headers:{'x-admin-secret':s}});if(tr.ok)treasuryData=await tr.json();}catch(e){}
+  let r,d;
+  try{r=await fetch('/admin/tt-withdrawals',{headers:{'x-admin-secret':s}});d=await r.json();}catch(e){status('Request failed');return}
+  if(!r.ok){status(d.error||'Request failed');return}
+  const list=document.getElementById('list');
+  list.innerHTML='';
+  if(treasuryData){
+    const banner=document.createElement('div');
+    banner.style.cssText='padding:14px;border-radius:8px;margin-bottom:14px;border:1px solid '+(treasuryData.ready?'#3ddc84':'#ff5c6c')+';background:'+(treasuryData.ready?'rgba(61,220,132,0.1)':'rgba(255,92,108,0.12)');
+    const warn=[];
+    if(!treasuryData.enabled)warn.push('⚠️ TT_WITHDRAW_ENABLED ist AUS.');
+    if(!treasuryData.ready)warn.push('🚨 Treasury NICHT bereit: '+(treasuryData.initError||'unbekannter Fehler'));
+    if(treasuryData.ready&&treasuryData.tonBalance<treasuryData.minTonReserve)warn.push('🚨 Treasury-TON knapp: '+treasuryData.tonBalance.toFixed(4)+' TON (Reserve-Minimum '+treasuryData.minTonReserve+').');
+    if(treasuryData.usedTodayTT>=treasuryData.dailyLimitTT)warn.push('⚠️ Tageslimit erreicht: '+treasuryData.usedTodayTT.toFixed(2)+' / '+treasuryData.dailyLimitTT+' TT.');
+    banner.innerHTML='<b>Treasury-Status</b><br>'+
+      'Bereit: '+(treasuryData.ready?'✅ Ja':'❌ Nein')+' | Enabled: '+(treasuryData.enabled?'✅':'❌')+' | Admin-only: '+(treasuryData.adminOnly?'Ja':'Nein')+'<br>'+
+      'Treasury-Wallet: '+(treasuryData.address||'?')+'<br>'+
+      'TON-Guthaben: '+treasuryData.tonBalance.toFixed(4)+' TON | TT-Guthaben: '+treasuryData.ttBalance.toFixed(2)+' TT<br>'+
+      'Heute ausgezahlt: '+treasuryData.usedTodayTT.toFixed(2)+' / '+treasuryData.dailyLimitTT+' TT'+
+      (warn.length?'<br><br>'+warn.map(w=>'<div>'+w+'</div>').join(''):'');
+    list.appendChild(banner);
+  }
+  if(!d.withdrawals.length){list.insertAdjacentHTML('beforeend','<div>Keine TT-Auszahlungen vorhanden.</div>');status('0 TT-Auszahlungen geladen.');return}
+  d.withdrawals.forEach(w=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:14px 0;border-bottom:1px solid #302d40';
+    const addCell=(label,value)=>{const cell=document.createElement('div'),title=document.createElement('b'),content=document.createElement('div');title.textContent=label;content.innerHTML=value;cell.append(title,content);row.appendChild(cell);};
+    const statusColors={pending:'#aaa3b8',processing:'#ffd93d',completed:'#3ddc84',failed:'#ff5c6c','needs-review':'#ff9f43'};
+    addCell('Spieler / UID',String(w.name||'Unbekannt')+' / '+String(w.uid||''));
+    addCell('Betrag',Number(w.amount||0).toFixed(2)+' TT');
+    addCell('Adresse',String(w.address||''));
+    addCell('Status','<span style="color:'+(statusColors[w.status]||'#fff')+';font-weight:700">'+String(w.status||'?')+'</span>'+(w.failReason?'<br><span class="muted">'+w.failReason+'</span>':''));
+    addCell('Zeit',new Date(w.ts).toLocaleString());
+    if(w.status==='needs-review'){
+      const actionCell=document.createElement('div');
+      const completeBtn=document.createElement('button');completeBtn.textContent='Als erledigt markieren';
+      const refundBtn=document.createElement('button');refundBtn.className='danger';refundBtn.textContent='Zurückbuchen';
+      completeBtn.onclick=async()=>{const txId=prompt('TON-Transaktions-ID (optional, für die eigene Dokumentation):')||'';if(!confirm('Wirklich als ERLEDIGT markieren? Nur tun, wenn auf Tonviewer bestätigt, dass die TT wirklich angekommen sind!'))return;const rr=await fetch('/admin/tt-withdrawals/resolve',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts,action:'complete',txId})});if(rr.ok)loadTtWithdrawals();else status((await rr.json()).error||'Request failed')};
+      refundBtn.onclick=async()=>{if(!confirm('Wirklich ZURÜCKBUCHEN? Nur tun, wenn auf Tonviewer bestätigt, dass NICHTS verschickt wurde, sonst doppelte Auszahlung!'))return;const rr=await fetch('/admin/tt-withdrawals/resolve',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts,action:'refund'})});if(rr.ok)loadTtWithdrawals();else status((await rr.json()).error||'Request failed')};
+      actionCell.append(completeBtn,refundBtn);row.appendChild(actionCell);
+    }
+    list.appendChild(row);
+  });
+  status(d.withdrawals.length+' TT-Auszahlung(en) geladen.');
+}
 async function loadRejectedWithdrawals(){currentView='rejectedWithdrawals';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Abgelehnte Auszahlungen werden geladen...');const r=await fetch('/admin/withdrawals?status=rejected',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML=d.withdrawals.length?'':'Keine abgelehnten Auszahlungen.';d.withdrawals.forEach(w=>{const row=document.createElement('div');row.className='row';const gross=Number(w.grossAmount!=null?w.grossAmount:w.amount);row.innerHTML='<span>'+w.name+'<br><span class="muted">UID '+w.uid+'</span></span><span><b>'+gross.toFixed(6)+' TON</b><br><span class="muted">Wegen Betrug abgelehnt</span></span><span>'+w.address+'</span><span class="muted">'+new Date(w.ts).toLocaleString()+'</span><button class="sound-on">↩ Zurückholen</button>';const memo=document.createElement('div');memo.className='muted withdrawal-memo';memo.textContent='Memo: '+(w.memo||'?');row.children[2].appendChild(memo);row.querySelector('button').onclick=async()=>{if(!confirm('Diese Auszahlung wieder als offen markieren?'))return;const rr=await fetch('/admin/withdrawals/restore',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({uid:w.uid,ts:w.ts})});const dd=await rr.json();if(rr.ok){status('Auszahlung wurde zurückgeholt und ist wieder offen.');loadRejectedWithdrawals()}else status(dd.error||'Request failed')};list.appendChild(row)});status(d.withdrawals.length+' abgelehnte Auszahlung(en) geladen.')}
 async function loadPurchases(){currentView='purchases';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}status('Level-Käufe werden geladen...');const r=await fetch('/admin/purchases',{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}const list=document.getElementById('list');list.innerHTML='<div class="row purchase-row"><b>Nutzer</b><b>Level</b><b>Preis</b><b>Gekauft am</b></div>';if(!d.purchases.length){list.innerHTML+='<p>Keine Level-Käufe gespeichert.</p>'}d.purchases.forEach(p=>{const row=document.createElement('div');row.className='row purchase-row';const level=Number(p.level)||'?';const price=Number(p.price);const date=p.ts?new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'medium',timeZone:'Europe/Berlin'}).format(new Date(p.ts)):'Nicht erfasst';row.innerHTML='<span><b>'+String(p.name||'Unbekannt')+'</b><br><span class="muted">UID '+String(p.uid)+'</span></span><span>Level '+level+'<br><span class="muted">'+String(p.key||'')+'</span></span><span>'+(Number.isFinite(price)?price.toFixed(6):'?')+' TON</span><span>'+date+'</span>';list.appendChild(row)});status(d.purchases.length+' Level-Käufe geladen.')}
 function addLevelControls(row){
@@ -2864,6 +3024,7 @@ document.getElementById('loadPurchases').onclick=loadPurchases;
 document.getElementById('loadWithdrawals').onclick=()=>loadWithdrawals();
 const completedWithdrawalsButton=document.createElement('button');completedWithdrawalsButton.textContent='Completed withdrawals';document.getElementById('loadWithdrawals').insertAdjacentElement('afterend',completedWithdrawalsButton);completedWithdrawalsButton.onclick=loadCompletedWithdrawals;
 document.getElementById('loadRejectedWithdrawals').onclick=loadRejectedWithdrawals;
+document.getElementById('loadTtWithdrawals').onclick=loadTtWithdrawals;
 function updateTtShopEnableToggle(enabled){const btn=document.getElementById('withdrawEnableToggle');btn.textContent=enabled?'💸 TT Shop ist AN — jetzt ausschalten':'🚫 TT Shop ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
 document.getElementById('withdrawEnableToggle').onclick=async()=>{const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}const enabled=document.getElementById('withdrawEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/tt-shop/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateTtShopEnableToggle(dd.ttShopEnabled);status(dd.ttShopEnabled?'TT Shop wurde aktiviert.':'TT Shop wurde deaktiviert.')}else status((await rr.json()).error||'Request failed')};
 async function loadTtShopToggleStatus(){const s=secret();if(!s)return;try{const rr=await fetch('/admin/tt-shop/settings',{headers:{'x-admin-secret':s}});if(rr.ok){const dd=await rr.json();updateTtShopEnableToggle(dd.ttShopEnabled===true)}}catch(e){}}
@@ -3886,6 +4047,19 @@ app.get('/api/deposit-info', requireUserFromQuery, (req, res) => {
   });
 });
 
+// Lets the client know whether it should even show the on-chain TT
+// withdrawal UI for this specific user, without exposing treasury
+// internals (balances, allowlist, etc. stay admin-only).
+app.get('/api/tt/withdraw-info', requireUserFromQuery, (req, res) => {
+  const available = TT_WITHDRAW_ENABLED && treasury.isReady() &&
+    (!TT_WITHDRAW_ADMIN_ONLY || TT_WITHDRAW_ALLOWLIST.has(String(req.uid)));
+  res.json({
+    available,
+    minWithdraw: TT_MIN_WITHDRAW,
+    cooldownMs: TT_WITHDRAW_COOLDOWN_MS,
+  });
+});
+
 function limitedSkinSoldCount(key) {
   return Object.values(users).filter((user) => Array.isArray(user.ownedSkins) && user.ownedSkins.includes(key)).length;
 }
@@ -3987,7 +4161,7 @@ app.post('/api/mining/claim', requireUserFromBody, rejectBannedUser, (req, res) 
   const amount = Math.floor((Number(user.mine.acc) + 1e-9) * 100) / 100;
   if (amount < 0.01) return res.status(400).json({ error: 'mining-not-ready', state: publicState(user) });
   user.mine.acc = Math.max(0, Number((user.mine.acc - amount).toFixed(9)));
-  user.ttBalance = Number((Number(user.ttBalance || 0) + amount).toFixed(2));
+  creditTT(user, amount, 'mining-claim');
   persist();
   res.json({ amount, rate, state: publicState(user) });
 });
@@ -4013,7 +4187,7 @@ app.post('/api/tasks/channel-claim', requireUserFromBody, async (req, res) => {
     if (!joined) return res.status(403).json({ error: 'channel-membership-required', joined: false });
 
     user.taskChannelRewardClaimed = true;
-    user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
+    creditTT(user, 5, 'channel-claim');
     syncCampaignInvite(user);
     let referralReward = 0;
     if (user.referredBy && !user.referralRewardClaimed) {
@@ -4076,7 +4250,7 @@ app.post('/api/tasks/withdraw-channel-claim', requireUserFromBody, async (req, r
     );
     if (!joined) return res.status(403).json({ error: 'withdraw-channel-membership-required', joined: false });
     user.withdrawChannelTaskRewardClaimed = true;
-    user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
+    creditTT(user, 5, 'withdraw-channel-claim');
     syncCampaignInvite(user);
     persist();
     res.json({ claimed: true, joined: true, rewardTT: 5, state: publicState(user) });
@@ -4105,7 +4279,7 @@ app.post('/api/tasks/third-channel-claim', requireUserFromBody, async (req, res)
     );
     if (!joined) return res.status(403).json({ error: 'third-channel-membership-required', joined: false });
     user.thirdChannelTaskRewardClaimed = true;
-    user.ttBalance = Number((Number(user.ttBalance || 0) + 5).toFixed(6));
+    creditTT(user, 5, 'third-channel-claim');
     syncCampaignInvite(user);
     persist();
     res.json({ claimed: true, joined: true, rewardTT: 5, state: publicState(user) });
@@ -4127,7 +4301,7 @@ app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   let rewardTT = 0;
   if (user.adVideosWatched === 10 && user.adRewardClaimed !== true) {
     rewardTT = 250;
-    user.ttBalance = Number(user.ttBalance || 0) + rewardTT;
+    creditTT(user, rewardTT, 'ad-video-claim');
     user.adRewardClaimed = true;
   }
   persist();
@@ -4154,7 +4328,7 @@ app.get('/api/adsgram-reward', (req, res) => {
   if (watched >= 10) {
     user.adVideosWatched = 10;
     user.adRewardClaimed = true;
-    user.ttBalance = Number(user.ttBalance || 0) + 250;
+    creditTT(user, 250, 'adsgram-reward');
     reward = 0;
     completed = true;
   } else {
@@ -4399,7 +4573,7 @@ app.post('/api/run', requireUserFromBody, rejectBannedUser, (req, res) => {
 app.post('/api/tt/pickup', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user;
   const amount = Math.max(1, Math.min(1, Math.floor(Number(req.body && req.body.amount) || 1)));
-  user.ttBalance = Number((Number(user.ttBalance || 0) + amount).toFixed(6));
+  creditTT(user, amount, 'tt-pickup');
   persist();
   res.json({ amount, state: publicState(user) });
 });
@@ -4624,6 +4798,198 @@ app.post('/api/withdraw', requireUserFromBody, rejectBannedUser, (req, res) => {
 
   persist();
   res.json({ state: publicState(user), withdrawal });
+});
+
+// ---------------------------------------------------------------
+// TT jetton withdrawal (on-chain payout via a user's own TON Connect wallet)
+// ------------------------------------------------------------------
+function isValidTonDestinationAddress(address) {
+  try {
+    TonAddress.parse(String(address || '').trim());
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function ttWithdrawalCooldownMs(user, now = Date.now()) {
+  const last = Number(user.lastTtWithdrawalAt) || 0;
+  return last ? Math.max(0, last + TT_WITHDRAW_COOLDOWN_MS - now) : 0;
+}
+
+function activeTtWithdrawal(user) {
+  return (user.ttWithdrawals || []).find((w) => w.status === 'pending' || w.status === 'processing' || w.status === 'needs-review');
+}
+
+function ttWithdrawnTodayTotal() {
+  const today = berlinDayKey();
+  let total = 0;
+  Object.values(users).forEach((u) => {
+    (u.ttWithdrawals || []).forEach((w) => {
+      if (w.status === 'failed') return;
+      if (berlinDayKey(new Date(Number(w.ts) || 0)) === today) total += Number(w.amount || 0);
+    });
+  });
+  return total;
+}
+
+function publicTtWithdrawal(w) {
+  return {
+    ts: w.ts,
+    address: w.address,
+    amount: w.amount,
+    status: w.status,
+    failReason: w.failReason || undefined,
+    completedAt: w.completedAt || undefined,
+  };
+}
+
+// All TT sends share one treasury wallet, which (like any TON wallet)
+// processes external messages strictly in seqno order - so every withdrawal,
+// no matter which user requested it, runs through this single serial queue
+// to avoid seqno races. Each job does the full build -> send -> confirm (or
+// refund) cycle before the next one starts.
+let ttWithdrawQueue = Promise.resolve();
+function enqueueTtWithdrawal(job) {
+  ttWithdrawQueue = ttWithdrawQueue.then(job).catch((e) => {
+    console.error('[tt-withdraw] worker job threw unexpectedly: ' + (e && e.message));
+  });
+  return ttWithdrawQueue;
+}
+
+async function processTtWithdrawal(user, withdrawal) {
+  withdrawal.status = 'processing';
+  persist();
+  try {
+    const [treasuryTtBalance, treasuryTonBalance] = await Promise.all([
+      treasury.getTtBalance(TT_DECIMALS),
+      treasury.getTonBalance(),
+    ]);
+    if (treasuryTtBalance < withdrawal.amount) {
+      throw Object.assign(new Error('treasury-insufficient-tt'), { safeToRefund: true });
+    }
+    if (treasuryTonBalance < TT_WITHDRAW_GAS_TON + TT_MIN_TREASURY_TON_RESERVE) {
+      throw Object.assign(new Error('treasury-insufficient-ton-reserve'), { safeToRefund: true });
+    }
+
+    const beforeUnits = await treasury.getTtBalanceUnits();
+    const { seqnoBefore, queryId, amountUnits } = await treasury.sendJettonTransfer({
+      toAddressStr: withdrawal.address,
+      amountTT: withdrawal.amount,
+      decimals: TT_DECIMALS,
+      gasTon: TT_WITHDRAW_GAS_TON,
+    });
+    // From here on a message may already be on its way to the chain, so any
+    // further failure must NOT be auto-refunded - see the catch block below.
+    withdrawal.sendAttempted = true;
+    withdrawal.seqnoBefore = seqnoBefore;
+    withdrawal.queryId = queryId;
+    persist();
+
+    const accepted = await treasury.waitSeqnoChange(seqnoBefore, TT_WITHDRAW_ACCEPT_TIMEOUT_MS, 4000);
+    if (!accepted) throw new Error('not-accepted-timeout');
+
+    const confirmed = await treasury.waitBalanceDrop(beforeUnits, BigInt(amountUnits), TT_WITHDRAW_CONFIRM_TIMEOUT_MS, 5000);
+    if (!confirmed) {
+      withdrawal.status = 'needs-review';
+      withdrawal.failReason = 'accepted-but-balance-drop-unconfirmed';
+      persist();
+      void notifyAdminText(
+        '⚠️ TT-Auszahlung braucht manuelle Prüfung.\nUID ' + user.id + ', Betrag ' + withdrawal.amount +
+        ' TT, queryId ' + queryId + '.\nBitte in /admin prüfen (Tonviewer) und manuell abschließen oder zurückbuchen.'
+      );
+      return;
+    }
+
+    withdrawal.status = 'completed';
+    withdrawal.completedAt = Date.now();
+    user.ttWithdrawnLifetime = Number((Number(user.ttWithdrawnLifetime || 0) + withdrawal.amount).toFixed(6));
+    persist();
+    console.log('[tt-withdraw] completed uid=' + user.id + ' amount=' + withdrawal.amount + ' queryId=' + queryId);
+  } catch (e) {
+    const reason = e && e.message ? e.message : String(e);
+    if (withdrawal.sendAttempted && !e.safeToRefund) {
+      withdrawal.status = 'needs-review';
+      withdrawal.failReason = reason;
+      persist();
+      void notifyAdminText(
+        '⚠️ TT-Auszahlung: Fehler nach Sendeversuch.\nUID ' + user.id + ', Betrag ' + withdrawal.amount +
+        ' TT.\nGrund: ' + reason + '\nBitte in /admin prüfen, bevor zurückgebucht wird.'
+      );
+    } else {
+      withdrawal.status = 'failed';
+      withdrawal.failReason = reason;
+      user.ttBalance = Number((Number(user.ttBalance || 0) + withdrawal.amount).toFixed(6));
+      persist();
+      console.error('[tt-withdraw] failed before/without send for uid ' + user.id + ': ' + reason);
+      if (reason.startsWith('treasury-insufficient')) {
+        void notifyAdminText('🚨 TT-Treasury niedrig: ' + reason + '. Auszahlungen pausieren, bis aufgefüllt wird.');
+      }
+    }
+  }
+}
+
+app.post('/api/tt/withdraw', requireUserFromBody, rejectBannedUser, async (req, res) => {
+  const user = req.user;
+  if (!TT_WITHDRAW_ENABLED) return res.status(503).json({ error: 'tt-withdraw-disabled' });
+  if (TT_WITHDRAW_ADMIN_ONLY && !TT_WITHDRAW_ALLOWLIST.has(String(user.id))) {
+    return res.status(403).json({ error: 'tt-withdraw-admin-only' });
+  }
+  if (!treasury.isReady()) return res.status(503).json({ error: 'tt-treasury-not-ready' });
+
+  const address = String(req.body && req.body.address || '').trim();
+  const amount = Number(req.body && req.body.amount);
+  if (!isValidTonDestinationAddress(address)) return res.status(400).json({ error: 'invalid-address' });
+  if (!Number.isFinite(amount) || amount < TT_MIN_WITHDRAW) {
+    return res.status(400).json({ error: 'amount-too-small', minimum: TT_MIN_WITHDRAW });
+  }
+  if (amount > Number(user.ttBalance || 0)) return res.status(400).json({ error: 'insufficient-funds' });
+
+  if (activeTtWithdrawal(user)) return res.status(409).json({ error: 'tt-withdrawal-already-in-progress' });
+  const retryAfterMs = ttWithdrawalCooldownMs(user);
+  if (retryAfterMs > 0) {
+    return res.status(409).json({ error: 'tt-withdrawal-cooldown', retryAfterMs, nextAllowedAt: Date.now() + retryAfterMs });
+  }
+  if (!ttBalanceIsPlausible(user)) {
+    console.error('[tt-withdraw] BLOCKED - ttBalance integrity check failed for uid ' + user.id +
+      ' (ttBalance=' + user.ttBalance + ', ttCreditedLifetime=' + user.ttCreditedLifetime + ', ttWithdrawnLifetime=' + user.ttWithdrawnLifetime + ')');
+    void notifyAdminText('🚨 TT-Guthaben von UID ' + user.id + ' besteht die Plausibilitätsprüfung nicht. Auszahlung blockiert, bitte Konto prüfen.');
+    return res.status(409).json({ error: 'tt-balance-integrity-check-failed' });
+  }
+  if (ttWithdrawnTodayTotal() + amount > TT_GLOBAL_DAILY_LIMIT) {
+    return res.status(429).json({ error: 'tt-global-daily-limit-reached', limit: TT_GLOBAL_DAILY_LIMIT });
+  }
+
+  // Live reserve check right before accepting the request (the worker checks
+  // again, right before spending, since other queued withdrawals can shift
+  // these balances in the meantime).
+  try {
+    const [treasuryTtBalance, treasuryTonBalance] = await Promise.all([
+      treasury.getTtBalance(TT_DECIMALS),
+      treasury.getTonBalance(),
+    ]);
+    if (treasuryTtBalance < amount) return res.status(503).json({ error: 'tt-treasury-insufficient-tt' });
+    if (treasuryTonBalance < TT_WITHDRAW_GAS_TON + TT_MIN_TREASURY_TON_RESERVE) {
+      return res.status(503).json({ error: 'tt-treasury-insufficient-ton-reserve' });
+    }
+  } catch (e) {
+    return res.status(503).json({ error: 'tt-treasury-unreachable' });
+  }
+
+  user.ttBalance = Number((Number(user.ttBalance || 0) - amount).toFixed(6));
+  user.lastTtWithdrawalAt = Date.now();
+  const withdrawal = { ts: Date.now(), address, amount, status: 'pending', sendAttempted: false };
+  if (!Array.isArray(user.ttWithdrawals)) user.ttWithdrawals = [];
+  user.ttWithdrawals.push(withdrawal);
+  if (user.ttWithdrawals.length > 200) user.ttWithdrawals = user.ttWithdrawals.slice(-200);
+  persist();
+
+  enqueueTtWithdrawal(() => processTtWithdrawal(user, withdrawal));
+  res.json({ state: publicState(user), withdrawal: publicTtWithdrawal(withdrawal) });
+});
+
+app.get('/api/tt/withdrawals', requireUserFromQuery, (req, res) => {
+  res.json({ withdrawals: (req.user.ttWithdrawals || []).slice(-50).map(publicTtWithdrawal) });
 });
 
 function isValidTtPayoutAddress(coin, address) {
@@ -5304,6 +5670,78 @@ app.get('/admin/withdrawals', requireAdmin, (req, res) => {
   res.json({ withdrawals: out });
 });
 
+// ---- TT jetton withdrawal admin views ----
+app.get('/admin/tt-withdrawals', requireAdmin, (req, res) => {
+  const statusFilter = req.query.status;
+  const out = [];
+  Object.values(users).forEach((u) => (u.ttWithdrawals || []).forEach((w) => {
+    if (!statusFilter || w.status === statusFilter) out.push({ uid: u.id, name: u.name, ...w });
+  }));
+  out.sort((a, b) => b.ts - a.ts);
+  res.json({ withdrawals: out });
+});
+
+app.get('/admin/tt-treasury-status', requireAdmin, async (req, res) => {
+  const ready = treasury.isReady();
+  let tonBalance = 0;
+  let ttBalance = 0;
+  if (ready) {
+    try {
+      [tonBalance, ttBalance] = await Promise.all([treasury.getTonBalance(), treasury.getTtBalance(TT_DECIMALS)]);
+    } catch (e) {
+      // leave at 0 - the "ready" + initError fields already explain chain issues
+    }
+  }
+  res.json({
+    ready,
+    initError: treasury.getInitError(),
+    enabled: TT_WITHDRAW_ENABLED,
+    adminOnly: TT_WITHDRAW_ADMIN_ONLY,
+    allowlist: [...TT_WITHDRAW_ALLOWLIST],
+    address: treasury.getTreasuryAddress(),
+    jettonWalletAddress: treasury.getTreasuryJettonWalletAddress(),
+    tonBalance,
+    ttBalance,
+    minTonReserve: TT_MIN_TREASURY_TON_RESERVE,
+    gasTonPerSend: TT_WITHDRAW_GAS_TON,
+    dailyLimitTT: TT_GLOBAL_DAILY_LIMIT,
+    usedTodayTT: ttWithdrawnTodayTotal(),
+    minWithdrawTT: TT_MIN_WITHDRAW,
+  });
+});
+
+// Manual resolution for withdrawals stuck in 'needs-review' (e.g. after a
+// server restart mid-send, or an unconfirmed on-chain result). ALWAYS verify
+// on Tonviewer/tonscan first - 'complete' records it as paid (no refund);
+// 'refund' credits the TT back to the player (only safe if nothing was ever
+// actually sent on-chain).
+app.post('/admin/tt-withdrawals/resolve', requireAdmin, (req, res) => {
+  const uid = String(req.body && req.body.uid || '');
+  const ts = Number(req.body && req.body.ts);
+  const action = String(req.body && req.body.action || '');
+  const txId = String(req.body && req.body.txId || '').trim().slice(0, 200);
+  const user = users[uid];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const withdrawal = (user.ttWithdrawals || []).find((w) => Number(w.ts) === ts);
+  if (!withdrawal) return res.status(404).json({ error: 'unknown-tt-withdrawal' });
+  if (withdrawal.status !== 'needs-review') return res.status(409).json({ error: 'tt-withdrawal-not-in-review' });
+  if (action === 'complete') {
+    withdrawal.status = 'completed';
+    withdrawal.completedAt = Date.now();
+    withdrawal.manuallyResolvedTxId = txId || undefined;
+    user.ttWithdrawnLifetime = Number((Number(user.ttWithdrawnLifetime || 0) + withdrawal.amount).toFixed(6));
+  } else if (action === 'refund') {
+    withdrawal.status = 'failed';
+    withdrawal.failReason = 'manually-refunded-by-admin';
+    user.ttBalance = Number((Number(user.ttBalance || 0) + withdrawal.amount).toFixed(6));
+  } else {
+    return res.status(400).json({ error: 'invalid-action' });
+  }
+  persist();
+  console.log('[admin] resolved TT withdrawal uid=' + uid + ' ts=' + ts + ' action=' + action);
+  res.json({ ok: true, withdrawal: publicTtWithdrawal(withdrawal) });
+});
+
 // Admin on/off switch for TT Shop payouts (see /api/tt-shop/order, which
 // rejects with 'tt-shop-disabled' while this is off). Does NOT affect the
 // real Wallet TON withdrawal (/api/withdraw).
@@ -5372,7 +5810,7 @@ app.post('/admin/tt-orders/reject', requireAdmin, (req, res) => {
   const order = (user.ttOrders || []).find((item) => Number(item.ts) === ts);
   if (!order) return res.status(404).json({ error: 'unknown-tt-order' });
   if (order.status !== 'pending') return res.status(409).json({ error: 'tt-order-already-resolved' });
-  user.ttBalance = Number((Number(user.ttBalance || 0) + Number(order.tt || 0)).toFixed(6));
+  creditTT(user, Number(order.tt || 0), 'tt-shop-order-rejected-refund');
   order.status = 'rejected';
   order.reason = reason;
   order.rejectedAt = Date.now();
@@ -5578,7 +6016,17 @@ app.post('/admin/users/:uid/adjust-tt', requireAdmin, (req, res) => {
   const delta = Number(req.body && req.body.delta);
   if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ error: 'invalid-delta' });
   const before = Number(user.ttBalance) || 0;
-  user.ttBalance = Number(Math.max(0, before + delta).toFixed(6));
+  if (delta > 0) {
+    creditTT(user, delta, 'admin-adjust-tt');
+  } else {
+    // Admin corrections that remove TT are assumed to be reversing TT that
+    // should never have been credited in the first place (e.g. an exploit
+    // or duplicate-claim bug), so the lifetime-credited total is reduced by
+    // the same amount - otherwise the integrity check below would keep
+    // treating the removed TT as still "explainable" and withdrawable.
+    user.ttBalance = Number(Math.max(0, before + delta).toFixed(6));
+    user.ttCreditedLifetime = Number(Math.max(0, Number(user.ttCreditedLifetime || 0) + delta).toFixed(6));
+  }
   user.adminCorrections = Array.isArray(user.adminCorrections) ? user.adminCorrections : [];
   user.adminCorrections.push({ type: 'admin-adjust-tt', ts: Date.now(), before, after: user.ttBalance, requestedDelta: delta });
   persist();
@@ -5762,6 +6210,35 @@ const monsterCrashEconomy = {
   },
 };
 
+function reconcileTtWithdrawalsOnStartup() {
+  let changed = false;
+  Object.values(users).forEach((user) => {
+    (user.ttWithdrawals || []).forEach((w) => {
+      if (w.status === 'pending') {
+        changed = true;
+        enqueueTtWithdrawal(() => processTtWithdrawal(user, w));
+      } else if (w.status === 'processing') {
+        changed = true;
+        if (w.sendAttempted) {
+          // We don't know if the message actually made it onto the chain -
+          // never auto-refund here, a human has to check Tonviewer first.
+          w.status = 'needs-review';
+          w.failReason = 'server-restarted-while-processing';
+          void notifyAdminText(
+            '⚠️ Server-Neustart während einer TT-Auszahlung.\nUID ' + user.id + ', Betrag ' + w.amount +
+            ' TT.\nBitte in /admin manuell prüfen (Tonviewer), bevor etwas zurückgebucht wird.'
+          );
+        } else {
+          w.status = 'failed';
+          w.failReason = 'server-restarted-before-send';
+          user.ttBalance = Number((Number(user.ttBalance || 0) + w.amount).toFixed(6));
+        }
+      }
+    });
+  });
+  if (changed) persist();
+}
+
 const server = http.createServer(app);
 attachMonsterCrash(server, {
   verifyUser: verifyMonsterCrashUser,
@@ -5806,4 +6283,21 @@ server.listen(PORT, () => {
     setInterval(scanDeposits, DEPOSIT_POLL_MS);
   }
   if (SESSION_SECRET === 'dev-insecure-secret-change-me') console.warn('WARNING: using the default SESSION_SECRET — set a real one in production.');
+
+  treasury.init({
+    mnemonic: TREASURY_MNEMONIC,
+    treasuryAddress: TREASURY_ADDRESS,
+    jettonMaster: TT_JETTON_MASTER,
+    tonCenterUrl: TONCENTER_URL,
+    tonCenterApiKey: TONCENTER_API_KEY,
+  }).then(() => {
+    reconcileTtWithdrawalsOnStartup();
+    if (!TT_WITHDRAW_ENABLED) {
+      console.log('[tt-withdraw] feature flag TT_WITHDRAW_ENABLED is off — TT withdrawals stay disabled regardless of treasury status.');
+    } else if (!treasury.isReady()) {
+      console.error('[tt-withdraw] TT_WITHDRAW_ENABLED is on but the treasury is NOT ready (' + treasury.getInitError() + ') — withdrawals will be rejected.');
+    } else {
+      console.log('[tt-withdraw] enabled. admin-only=' + TT_WITHDRAW_ADMIN_ONLY + ' allowlist=[' + [...TT_WITHDRAW_ALLOWLIST].join(',') + ']');
+    }
+  });
 });
