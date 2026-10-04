@@ -79,7 +79,6 @@ const RANDOM_BOT_MIN_INTERVAL_MS = 15 * 60 * 1000;
 const RANDOM_BOT_MAX_INTERVAL_MS = 45 * 60 * 1000;
 const RANDOM_BOT_UID = 'random-bot';
 const RANDOM_BOT_NAME = 'ZombieBot';
-const RANDOM_BOT_IS_ZOMBIEBOT = true;
 const RANDOM_PROMO_START_MS = Date.parse('2026-09-22T22:30:00+02:00');
 const RANDOM_PROMO_END_MS = RANDOM_PROMO_START_MS + 72 * 60 * 60 * 1000;
 const RANDOM_GIFT_EVENT_START_MS = Date.parse(
@@ -639,7 +638,6 @@ function ensureChatLikeEventDrop() {
     replyTo: null,
     likeEventBar: true,
     likeEventRoundId: round.roundId,
-    isZombieBot: RANDOM_BOT_IS_ZOMBIEBOT,
   };
   chatMessages.push(message);
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
@@ -712,7 +710,6 @@ function ensureChatLikeEventWinnerMessage(round) {
       photoUrl: photoUrl || '',
       reward,
     })),
-    isZombieBot: RANDOM_BOT_IS_ZOMBIEBOT,
   };
   chatMessages.push(message);
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
@@ -898,7 +895,7 @@ function startScheduledCardEvent() {
     id: chatNextId++, uid: RANDOM_BOT_UID, name: RANDOM_BOT_NAME,
     room: 'fa', text: 'ZombieBot یک رویداد کارت شروع کرد! ۳۰ ثانیه فرصت دارید یک کارت انتخاب کنید.',
     ts: now, isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
-    cardEventId: event.id, isZombieBot: RANDOM_BOT_IS_ZOMBIEBOT,
+    cardEventId: event.id,
   };
   event.announcementMessageId = message.id;
   chatMessages.push(message);
@@ -1127,7 +1124,7 @@ function postTaxiRaceBotMessage(text, raceId, kind) {
   chatMessages.push({
     id: chatNextId++, uid: RANDOM_BOT_UID, name: RANDOM_BOT_NAME, room: TAXI_RACE_ROOM, text,
     ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
-    taxiRaceId: raceId, taxiRaceKind: kind, isZombieBot: RANDOM_BOT_IS_ZOMBIEBOT,
+    taxiRaceId: raceId, taxiRaceKind: kind,
   });
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
@@ -1295,10 +1292,10 @@ function startTaxiRaceScheduler() {
 const MONSTER_EVENT_ENABLED = true;
 const MONSTER_ROOM = 'fa'; // same room convention as the taxi race
 const MONSTER_FILE = path.join(DATA_DIR, 'monster-event.json');
-const MONSTER_INTERVAL_MS = 20 * 60 * 1000; // a new boss every 20 minutes
-const MONSTER_WARN_MS = 60 * 1000; // "boss in 1 minute" heads-up
+const MONSTER_INTERVAL_MS = 30 * 1000; // a new boss every 20 minutes
+const MONSTER_WARN_MS = 8 * 1000; // "boss in 1 minute" heads-up
 const MONSTER_INTRO_MS = 3000; // 3..2..1..fight countdown
-const MONSTER_FIGHT_MS = 180 * 1000; // 3 minutes to kill it
+const MONSTER_FIGHT_MS = 60 * 1000; // 3 minutes to kill it
 const MONSTER_HP_PER_PLAYER = 1750;
 const MONSTER_MIN_PLAYERS = 1;
 const MONSTER_REWARD_TOP = [0.2, 0.1, 0.1]; // TON for the top 3 damage dealers
@@ -1335,7 +1332,7 @@ function persistMonsterState() {
 function postMonsterBotMessage(text) {
   chatMessages.push({
     id: chatNextId++, uid: RANDOM_BOT_UID, name: RANDOM_BOT_NAME, room: MONSTER_ROOM, text,
-    ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null, isZombieBot: RANDOM_BOT_IS_ZOMBIEBOT,
+    ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
   });
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
@@ -3750,7 +3747,6 @@ app.post('/api/chat/send', requireUserFromBody, (req, res) => {
       randomWinnerName: gift.giftWinnerName,
       randomPrizeTon: gift.giftPrizeTon,
       randomGiftNumber: gift.giftNumber,
-      isZombieBot: RANDOM_BOT_IS_ZOMBIEBOT,
     };
   }
   const replyToId = Number(req.body && req.body.replyTo) || 0;
@@ -5806,3 +5802,4 @@ server.listen(PORT, () => {
   }
   if (SESSION_SECRET === 'dev-insecure-secret-change-me') console.warn('WARNING: using the default SESSION_SECRET — set a real one in production.');
 });
+

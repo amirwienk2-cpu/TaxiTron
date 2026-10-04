@@ -1628,6 +1628,8 @@
   .chatlog{display:flex;flex-direction:column;gap:8px}
   .msg{max-width:84%;padding:8px 12px;border-radius:14px;background:var(--panel-2);border:1px solid var(--edge-soft);align-self:flex-start}
   .msg .who{font-size:11px;font-weight:800;color:var(--taxi)}
+  .mrow.isZombieBot .bub{background:#3a1a2a;border:1px solid rgba(255,61,94,.5)}
+  .mrow.isZombieBot .bh b{color:#fff;font-weight:900;font-size:12px}
   .msg.mine{align-self:flex-end;background:var(--gh3);border-color:var(--gh4)}
   .msg.mine .who{color:#dfe8ff}
   .composer{display:flex;gap:8px;margin-top:12px}
@@ -4506,7 +4508,7 @@ function renderChat(){
       : `<div class="bt" dir="auto">${esc(m.text)}${tmMarkup}</div>`;
     const isPlainText = !cardEventMarkup && !m.cardEventTest && !m.stk;
     const contentMarkup = isPlainText ? bodyMarkup : bodyMarkup + tmMarkup;
-    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''} ${m.isZombieBot?'isZombieBot':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${contentMarkup}</div>${reactionMarkup}</div>`;
   }).join('');

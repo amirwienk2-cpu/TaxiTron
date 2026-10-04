@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TaxiTon · Taxi Race</title>
+<style>
+:root{
+  --bg:#12131c; --panel:#1c1e2b; --panel2:#232637; --line:#2e3248;
+  --navy:#141a45; --gold:#ffc61a; --gold2:#f0a500; --goldtxt:#2a1e00;
+  --text:#eef0fa; --muted:#9aa0bd; --name:#9db0ff; --green:#2bd45a; --red:#ff4d5e;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#12131c; } }
+:root[data-theme="dark"]{ --bg:#12131c; }
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Rounded","Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.app{max-width:480px;margin:0 auto;padding:12px 12px 120px}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* tabs */
+.tabs{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.tab{flex:1;height:46px;border-radius:14px;background:linear-gradient(#2a2d3d,#1d2030);font-weight:800;font-size:16px;box-shadow:inset 0 2px 0 rgba(255,255,255,.06),0 3px 0 #0c0d14}
+.tab.on{background:linear-gradient(#ffd84a,var(--gold2));color:var(--goldtxt);box-shadow:0 4px 0 #b77a00,0 0 18px rgba(255,198,26,.35)}
+.tab .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);margin-right:6px;vertical-align:1px}
+.cd{height:46px;padding:0 12px;border-radius:14px;background:var(--panel2);display:flex;align-items:center;gap:4px;font-weight:800;color:var(--gold);white-space:nowrap}
+
+/* race card */
+.race{background:linear-gradient(180deg,#1b2150,#171a2a 60%);border:1.5px solid #3a3f6b;border-radius:20px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden}
+.race.win{border-color:var(--gold);box-shadow:0 0 24px rgba(255,198,26,.25)}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.rtitle{font-size:20px;font-weight:900;color:var(--gold);letter-spacing:.2px}
+.rsub{font-size:13px;color:var(--muted);margin-top:2px}
+.pot{text-align:right}
+.pot b{display:block;font-size:22px;font-weight:900}
+.pot span{font-size:12px;color:var(--muted)}
+.timer{height:5px;border-radius:5px;background:#2a2e47;margin:12px 0 10px;overflow:hidden}
+.timer i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ff8a00);transition:width 1s linear}
+
+.lane{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid rgba(255,255,255,.05)}
+.lane:first-of-type{border-top:0}
+.lane.winner .track{background:linear-gradient(90deg,rgba(255,198,26,.08),rgba(255,198,26,.25))}
+.ava{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;color:#fff;border:2px solid #4b5180;flex:none}
+.lmid{min-width:0}
+.lname{font-size:13px;font-weight:800;color:var(--name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{position:relative;height:26px;margin-top:3px;border-radius:8px;background:repeating-linear-gradient(90deg,#262a40 0 14px,#22263a 14px 28px)}
+.track::after{content:"";position:absolute;right:0;top:0;bottom:0;width:8px;border-radius:0 8px 8px 0;background:repeating-conic-gradient(#fff 0 25%,#111 0 50%) 0 0/8px 8px}
+.car{position:absolute;top:0;font-size:22px;line-height:26px;transform:scaleX(-1)}
+.fx{position:absolute;top:-2px;font-size:13px}
+.lright{text-align:right;min-width:74px}
+.odds{font-size:12px;color:var(--muted);white-space:nowrap}
+.odds b{color:var(--text)}
+.betbtn{margin-top:3px;padding:5px 12px;border-radius:10px;background:linear-gradient(#ffd84a,var(--gold2));color:var(--goldtxt);font-weight:900;font-size:13px;box-shadow:0 2px 0 #b77a00}
+.mine{display:inline-block;margin-top:3px;font-size:12px;font-weight:800;color:var(--gold)}
+.result{margin-top:10px;padding:12px;border-radius:14px;background:rgba(255,198,26,.1);border:1px solid rgba(255,198,26,.35);text-align:center}
+.result h3{margin:0 0 4px;font-size:18px}
+.result p{margin:0;color:var(--muted);font-size:14px}
+.result .won{color:var(--gold);font-weight:900;font-size:17px;margin-top:6px}
+.result .lost{color:var(--muted);font-weight:700;margin-top:6px}
+.next{margin-top:10px;width:100%;height:44px;border-radius:12px;background:linear-gradient(#ffd84a,var(--gold2));color:var(--goldtxt);font-weight:900;box-shadow:0 3px 0 #b77a00}
+
+/* list */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.phead{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line);font-size:17px;color:var(--muted)}
+.phead b{color:var(--text);font-size:20px}
+.gdot{width:10px;height:10px;border-radius:50%;background:var(--green)}
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #262a3c}
+.row:first-of-type{border-top:0}
+.row .ava{width:46px;height:46px;font-size:16px;position:relative}
+.row .ava::after{content:"";position:absolute;right:-1px;bottom:1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--panel)}
+.rinfo{flex:1;min-width:0}
+.rname{display:flex;align-items:center;gap:6px;font-weight:800;font-size:16px;color:var(--name)}
+.rname span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lv{flex:none;font-size:12px;font-weight:800;color:var(--gold);background:#3b3220;padding:2px 8px;border-radius:9px}
+.rstat{font-size:14px;color:var(--muted);margin-top:2px}
+.tag{flex:none;text-align:right;font-size:12px;font-weight:800}
+.tag .racing{display:inline-block;padding:4px 9px;border-radius:9px;background:rgba(255,198,26,.14);color:var(--gold);border:1px solid rgba(255,198,26,.4)}
+.tag .bets{display:block;color:var(--muted);margin-top:4px;font-weight:700}
+.tag .champ{display:inline-block;padding:4px 9px;border-radius:9px;background:linear-gradient(#ffd84a,var(--gold2));color:var(--goldtxt)}
+
+/* chat */
+.msgs{padding:12px;display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto}
+.msg{display:flex;gap:8px;align-items:flex-end}
+.bubble{background:var(--panel2);border-radius:16px;padding:9px 12px;max-width:80%}
+.bubble .who{font-size:13px;font-weight:800;color:var(--name);margin-bottom:2px}
+.bubble.bot{background:linear-gradient(180deg,#2a2410,#1f1c12);border:1px solid rgba(255,198,26,.35)}
+.bubble.bot .who{color:var(--gold)}
+.bubble .t{font-size:15px;line-height:1.35}
+.composer{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}
+.composer div{flex:1;height:44px;border-radius:22px;border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;padding:0 16px}
+.composer span{width:44px;height:44px;border-radius:50%;background:var(--gold);display:grid;place-items:center;color:var(--goldtxt);font-weight:900}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.scrim.open{display:flex}
+.sheet{width:100%;max-width:480px;background:var(--panel);border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.sheet h4{margin:0 0 4px;font-size:18px}
+.sheet p{margin:0 0 14px;color:var(--muted);font-size:14px}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chip{height:44px;border-radius:12px;background:var(--panel2);font-weight:800;border:1.5px solid transparent}
+.chip.on{border-color:var(--gold);color:var(--gold)}
+.chip:disabled{opacity:.35}
+.sheet .row2{display:flex;gap:8px;margin-top:14px}
+.ghost{flex:1;height:46px;border-radius:12px;background:var(--panel2);font-weight:800}
+.place{flex:2;height:46px;border-radius:12px;background:linear-gradient(#ffd84a,var(--gold2));color:var(--goldtxt);font-weight:900;box-shadow:0 3px 0 #b77a00}
+.place:disabled{opacity:.4}
+.hidden{display:none}
+@media (prefers-reduced-motion:reduce){.timer i{transition:none}}
+</style>
+<style>
+.prize{text-align:right}
+.prize b{display:block;font-size:22px;font-weight:900;color:var(--gold)}
+.prize span{font-size:12px;color:var(--muted)}
+.wait{padding:18px 6px 6px;text-align:center;color:var(--muted);font-size:14px}
+.wait b{display:block;font-size:40px;font-weight:900;color:var(--text);letter-spacing:1px;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.skip{margin-top:10px;background:none;color:var(--muted);font-size:12px;text-decoration:underline}
+.pos{font-size:12px;font-weight:900;color:var(--muted);min-width:28px;text-align:right}
+.lane.winner .pos{color:var(--gold)}
+.tag .won{display:inline-block;padding:4px 9px;border-radius:9px;background:linear-gradient(#ffd84a,var(--gold2));color:var(--goldtxt)}
+.race.inchat{margin:12px;}
+.racebtn{padding:8px 12px;border-radius:12px;background:linear-gradient(#ffd84a,var(--gold2));color:var(--goldtxt);font-weight:900;font-size:14px;box-shadow:0 3px 0 #b77a00;font-variant-numeric:tabular-nums}
+.racebtn.live{background:linear-gradient(#ff6b6b,#d63345);color:#fff;box-shadow:0 3px 0 #8f1f2b;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.racebtn.live{animation:none}}
+.paused{margin:0 12px;padding:10px;border-radius:12px;background:var(--panel2);color:var(--muted);text-align:center;font-size:14px}
+.back{display:block;width:calc(100% - 24px);margin:10px 12px 14px;height:44px;border-radius:12px;background:var(--panel2);font-weight:800}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="tabs">
+    <button class="tab on" data-tab="chat">Chat</button>
+    <button class="tab" data-tab="online"><span class="dot"></span>Online</button>
+  </div>
+
+
+
+  <section id="online" class="panel hidden">
+    <div class="phead"><span class="gdot"></span><b id="cnt">11</b> online</div>
+    <div id="list"></div>
+  </section>
+
+  <section id="chat" class="panel">
+    <div class="phead chead"><span style="color:var(--gold);font-weight:900;flex:1">TaxiTon Chat · FA</span>
+      <button class="racebtn" id="raceBtn">🏁 5:00</button></div>
+    <div id="chatBody">
+      <div class="msgs" id="msgs"></div>
+      <div class="composer"><div>Write a message…</div><span>➤</span></div>
+    </div>
+    <div id="raceView" class="hidden">
+  <section class="race inchat" id="race" aria-live="polite">
+    <div class="rhead">
+      <div>
+        <div class="rtitle">🏁 Taxi Race</div>
+        <div class="rsub" id="rsub">Every 5 minutes · 5 random drivers</div>
+      </div>
+      <div class="prize"><b>250 TT</b><span>for the winner</span></div>
+    </div>
+    <div class="timer"><i id="timer" style="width:100%"></i></div>
+    <div id="lanes"></div>
+    <div id="result"></div>
+  </section>
+      <div class="paused" id="paused">💬 Chat is paused during the race</div>
+      <button class="back" id="backBtn">Back to chat</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const COLORS=["#7b5cff","#ff6b6b","#1fb5a4","#f59f00","#4c8dff","#e64980","#20c997","#845ef7","#fa5252","#15aabf","#94d82d"];
+const USERS=[
+  {id:"sup",name:"TaxiTonSupport",lv:1,st:"🚕 Driving now"},
+  {id:"ali",name:"Alireza_kh9090",lv:1,st:"online"},
+  {id:"me",name:"TaxiTonAgent",lv:4,st:"You are online",me:true},
+  {id:"yon",name:"Yonesbalooch",lv:1,st:"🚕 Driving now"},
+  {id:"fae",name:"Faez",lv:1,st:"online"},
+  {id:"imo",name:"imo051",lv:1,st:"online"},
+  {id:"mah",name:"Mahsa",lv:1,st:"🚕 Driving now"},
+  {id:"mhz",name:"mhz8102",lv:1,st:"online"},
+  {id:"mus",name:"mustafa11120",lv:1,st:"online"},
+  {id:"nas",name:"Nasri Samuel",lv:1,st:"🚕 Driving now"},
+  {id:"ram",name:"Ramin",lv:1,st:"online"}
+];
+USERS.forEach((u,i)=>{u.color=COLORS[i%COLORS.length];u.ini=u.name.replace(/[^A-Za-z ]/g,"").split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";});
+const $=id=>document.getElementById(id);
+const PRIZE=250, INTERVAL=300; // seconds
+let raceStart=0, phase="wait", left=INTERVAL, racers=[], progress={}, fx={}, order=[], winner=null, lastWinner=null, raf, msgs=[];
+
+function avatar(u){return `<div class="ava" style="background:linear-gradient(135deg,${u.color},#1b1e2e)">${u.ini}</div>`}
+function mmss(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function say(who,t,bot){msgs.push({who,t,bot});if(msgs.length>40)msgs.shift();renderChat()}
+
+setInterval(()=>{
+  if(phase!=="wait")return;
+  left--;
+  if(left<=0)startRace();else renderHead();
+},1000);
+
+function openRace(){$("chatBody").classList.add("hidden");$("raceView").classList.remove("hidden");render()}
+function closeRace(){if(phase==="race")return;$("raceView").classList.add("hidden");$("chatBody").classList.remove("hidden");renderChat()}
+function startRace(){
+  showTab("chat");openRace();
+  racers=[...USERS].sort(()=>Math.random()-.5).slice(0,5);
+  progress={};fx={};order=[];winner=null;
+  racers.forEach(r=>{progress[r.id]=0;fx[r.id]=""});
+  phase="race";$("result").innerHTML="";$("race").classList.remove("win");
+  say("Race Bot",`🚦 Taxi Race starts! Drivers: ${racers.map(r=>r.name).join(", ")}. Winner gets ${PRIZE} TT!`,true);
+  render();
+  let last=performance.now();raceStart=last;
+  const step=now=>{
+    const el=Math.floor((now-raceStart)/1000);$("rsub").textContent="Race in progress · "+mmss(el);
+    const dt=Math.min(.05,(now-last)/1000);last=now;
+    racers.forEach(r=>{
+      if(progress[r.id]>=100)return;
+      if(fx[r.id]==="💨"&&Math.random()<.02)fx[r.id]="";
+      if(fx[r.id]==="⚡"&&Math.random()<.03)fx[r.id]="";
+      if(!fx[r.id]){const x=Math.random();if(x<.0025)fx[r.id]="⚡";else if(x<.0045)fx[r.id]="💨";}
+      const mult=fx[r.id]==="⚡"?2.2:fx[r.id]==="💨"?0.15:1;
+      progress[r.id]=Math.min(100,progress[r.id]+(2.3+Math.random()*1.6)*mult*dt);
+      if(progress[r.id]>=100){fx[r.id]="";order.push(r.id);if(!winner)winner=r;}
+    });
+    renderLanes();
+    if(order.length===racers.length)return endRace();
+    raf=requestAnimationFrame(step);
+  };
+  raf=requestAnimationFrame(step);
+}
+function endRace(){
+  phase="wait";left=INTERVAL;lastWinner=winner.id;
+  $("race").classList.add("win");
+  $("result").innerHTML=`<div class="result"><h3>🏆 ${winner.name} wins!</h3>
+    <div class="won">+${PRIZE} TT</div><p style="margin-top:6px">Next race in <b id="nextIn">${mmss(left)}</b></p></div>`;
+  say("Race Bot",`🏆 ${winner.name} crossed the line first and wins ${PRIZE} TT! Next race in 5 minutes.`,true);
+  render();
+  setTimeout(closeRace,6000);
+}
+
+function renderHead(){
+  const b=$("raceBtn");b.classList.toggle("live",phase==="race");b.textContent=phase==="race"?"🏁 LIVE":"🏁 "+mmss(left);
+  $("paused").style.display=phase==="race"?"":"none";$("backBtn").style.display=phase==="race"?"none":"";
+  $("timer").style.width=phase==="wait"?(left/INTERVAL*100)+"%":"0%";
+  if(phase!=="race")$("rsub").textContent="Every 5 minutes · 5 random drivers";
+  const n=$("nextIn");if(n)n.textContent=mmss(left);
+  const w=$("waitT");if(w)w.textContent=mmss(left);
+}
+function renderLanes(){
+  if(phase==="wait"&&!racers.length){
+    $("lanes").innerHTML=`<div class="wait"><b id="waitT">${mmss(left)}</b>until the next race · 5 drivers are picked at random from the online users<br><button class="skip" id="skip">Demo: start now</button></div>`;
+    $("skip").onclick=startRace;return;
+  }
+  $("lanes").innerHTML=racers.map(r=>{
+    const p=progress[r.id],pl=order.indexOf(r.id);
+    return `<div class="lane ${winner&&winner.id===r.id?"winner":""}">${avatar(r)}
+      <div class="lmid"><div class="lname">${r.name}${r.me?" (You)":""}</div>
+        <div class="track"><span class="car" style="left:calc(${p}% - ${p*0.3}px)">🚕</span>${fx[r.id]?`<span class="fx" style="left:calc(${p}% - ${p*0.3}px - 14px)">${fx[r.id]}</span>`:""}</div></div>
+      <div class="pos">${pl>=0?(pl===0?"🏆":"#"+(pl+1)):""}</div></div>`;
+  }).join("")+(phase==="wait"?`<div style="text-align:center"><button class="skip" id="skip">Demo: start now</button></div>`:"");
+  const s=$("skip");if(s)s.onclick=startRace;
+}
+function renderList(){
+  $("cnt").textContent=USERS.length;
+  $("list").innerHTML=USERS.map(u=>{
+    let tag="",st=u.st;
+    if(phase==="race"&&racers.includes(u)){tag=`<span class="racing">🏁 Racing</span>`;st="🏁 In the race";}
+    else if(lastWinner===u.id)tag=`<span class="won">🏆 +${PRIZE} TT</span>`;
+    return `<div class="row">${avatar(u)}<div class="rinfo">
+      <div class="rname"><span>${u.name}</span><span class="lv">${u.me?"You":"Lv "+u.lv}</span></div>
+      <div class="rstat">${st}</div></div><div class="tag">${tag}</div></div>`;
+  }).join("");
+}
+function renderChat(){
+  const el=$("msgs");
+  el.innerHTML=msgs.map(m=>{const u=USERS.find(x=>x.name===m.who);
+    return `<div class="msg">${m.bot||!u?`<div class="ava" style="background:linear-gradient(135deg,#ffc61a,#b77a00);color:#2a1e00">🏁</div>`:avatar(u)}
+      <div class="bubble ${m.bot?"bot":""}"><div class="who">${m.who}</div><div class="t">${m.t}</div></div></div>`}).join("");
+  el.scrollTop=el.scrollHeight;
+}
+function render(){renderHead();renderLanes();renderList()}
+
+function showTab(name){
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.tab===name));
+  $("online").classList.toggle("hidden",name!=="online");
+  $("chat").classList.toggle("hidden",name!=="chat");
+  renderChat();
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.tab));
+$("raceBtn").onclick=openRace;
+$("backBtn").onclick=closeRace;
+say("Alireza_kh9090","سلام بچه‌ها 😂");
+say("Mahsa","who's ready for the race? 🏁");
+say("Faez","😂😂");
+say("Race Bot","🏁 Taxi Race: every 5 minutes, 5 random online drivers race. The winner gets 250 TT!",true);
+render();
+</script>
+</body>
+</html>
