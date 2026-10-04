@@ -5164,6 +5164,9 @@ app.get('/admin/users/:uid/daily-status', requireAdmin, (req, res) => {
     isResetForToday: user.tonDate === today,
     tonTodayByLevel: user.tonTodayByLevel,
     zombiesTodayByLevel: user.zombiesTodayByLevel,
+    ownedSkins: user.ownedSkins,
+    skinRewards: user.skinRewards,
+    level: user.level,
     lastRunAt: user.lastRunAt ? new Date(user.lastRunAt).toISOString() : null,
     lastSeenAt: user.lastSeenAt ? new Date(user.lastSeenAt).toISOString() : null,
   });
