@@ -2977,6 +2977,12 @@
   /* ==== Chat redesign: dünne Telegram-Bubbles, Reaktions-Button außerhalb, Uhrzeit inline (siehe Hinweis am Ende der Antwort) ==== */
   #chatlog .bub{padding:3px 8px!important;min-height:0!important;min-width:0!important;width:fit-content!important;max-width:72%!important}
   #chatlog .bub.sk-autumn,#chatlog .bub.sk-cozy,#chatlog .bub.sk-fox{padding:3px 8px!important}
+  /* Gekaufte Rahmen-Bubbles (Gift/Pixel/Racer) sollen genau wie alle anderen schrumpfen
+     (kein erzwungener Mindest-Breite mehr, dadurch wirkte Name/Text "mittig"), aber ihr
+     eigenes Padding behalten, damit die Grafik nicht verrutscht. */
+  #chatlog .bub.sk-gift{padding:2px 6px 13px 4px!important}
+  #chatlog .bub.sk-pixel{padding:2px 0 12px!important}
+  #chatlog .bub.sk-racer{padding:2px 2px 12px!important}
   #chatlog .bh{margin-bottom:0!important;min-height:0!important;gap:5px!important}
   #chatlog .bh b{font-size:11px!important;color:#9aa6d8!important;font-weight:800!important}
   #chatlog .bh .ubadge{height:13px!important;margin:0!important}
