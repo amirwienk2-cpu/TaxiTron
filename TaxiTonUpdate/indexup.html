@@ -3099,8 +3099,8 @@
   .monster-lbr{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;font-size:13px;padding:3px 0}
   .monster-lbr.me{color:#ffc61a;font-weight:800}
   .monster-lbr b{font-variant-numeric:tabular-nums}
-  .monster-shieldfx{position:absolute;left:50%;top:50%;width:230px;height:290px;transform:translate(-50%,-50%) scale(.6);border-radius:50%;border:3px solid rgba(110,200,255,.9);background:radial-gradient(circle,rgba(110,200,255,.08) 40%,rgba(110,200,255,.35) 100%);box-shadow:0 0 30px rgba(110,200,255,.6),inset 0 0 30px rgba(110,200,255,.4);opacity:0;transition:opacity .15s,transform .2s;pointer-events:none}
-  .monster-arena.shielded .monster-shieldfx{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .monster-shieldfx{position:absolute;left:50%;top:50%;width:230px;height:290px;transform:translate(-50%,-50%) scale(.6);border-radius:50%;border:3px solid rgba(110,200,255,.9);background:radial-gradient(circle,rgba(110,200,255,.08) 40%,rgba(110,200,255,.35) 100%);box-shadow:0 0 30px rgba(110,200,255,.6),inset 0 0 30px rgba(110,200,255,.4);opacity:0;transition:opacity .15s,transform .2s;pointer-events:none;--shield-left:50%;--shield-top:50%}
+  .monster-arena.shielded .monster-shieldfx{opacity:1;transform:translate(calc(-50% + var(--shield-offset-x, 0px)), calc(-50% + var(--shield-offset-y, 0px))) scale(1)}
   .monster-arena.shielded{background:radial-gradient(120% 80% at 50% 30%,#123a5a 0%,#101c36 50%,#121427 100%)}
   .monster-wait{text-align:center;padding:20px 10px;color:#9aa0bd}
   .monster-wait b{display:block;font-size:30px;color:#fff;font-weight:900;font-variant-numeric:tabular-nums}
@@ -5084,6 +5084,12 @@ function monsterDraw(){
   $('#monsterHpTxt').textContent = faDigits(m.hp) + ' / ' + faDigits(m.maxHp) + ' جان';
   $('#monsterHpPct').textContent = faDigits(pct.toFixed(1)).replace('.', '٫') + '٪';
   $('#monsterArena').classList.toggle('rage', !!m.rage);
+  if (m.shield && !$('#monsterArena').classList.contains('shielded')) {
+    const offsetX = (Math.random() - 0.5) * 100;
+    const offsetY = (Math.random() - 0.5) * 80;
+    $('#monsterArena').style.setProperty('--shield-offset-x', offsetX + 'px');
+    $('#monsterArena').style.setProperty('--shield-offset-y', offsetY + 'px');
+  }
   $('#monsterArena').classList.toggle('shielded', !!m.shield);
   const tap = $('#monsterTap');
   tap.classList.toggle('shieldbtn', !!m.shield);
