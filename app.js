@@ -421,11 +421,17 @@
     return DAILY_ZOMBIE_CAPS[Number(level)] || DAILY_ZOMBIE_CAPS[2];
   }
   function dailyEarningsComplete(){
+    // Only the server-CONFIRMED zombiesTodayByLevel counts here - never locally
+    // pending/not-yet-submitted zombies. Counting pending used to be able to
+    // permanently lock a player out of a level: if a batch of pending zombies
+    // ever got stuck without being submitted (e.g. a past exchange bug), that
+    // leftover local number alone could keep reporting "today's goal already
+    // reached" forever, even though the server still shows 0% for today - with
+    // no way left to start a run that would flush/fix the stale local data.
     const level = activeAttemptLevel();
     if (level < 2) return false;
     const zombiesToday = Number(store.zombiesTodayByLevel && store.zombiesTodayByLevel[level]) || 0;
-    const pending = Number(pendingZombiesByLevel[level]) || 0;
-    return zombiesToday + pending >= getDailyZombieCap(level);
+    return zombiesToday >= getDailyZombieCap(level);
   }
 
   function todayStr(){

@@ -4769,9 +4769,21 @@ function walletDailyGoal(levelOverride){
 // players from selecting (or continuing to drive/play) that level in the shop
 // until tomorrow's reset, instead of letting them burn tries on a level that
 // can't pay out any more today.
+// IMPORTANT: this only looks at the server-CONFIRMED zombiesTodayByLevel, never
+// locally-pending (not yet submitted/exchanged) zombies - unlike walletDailyGoal()'s
+// progress display. Counting unconfirmed pending here used to be able to lock a
+// player out of ever playing a level again: if a batch of pending zombies ever got
+// stuck client-side without being submitted (e.g. a past exchange bug), the
+// leftover local count alone could make this permanently report "goal reached"
+// even though the server still shows 0% for today, with no way left for the
+// player to generate a fresh run that would flush/fix that stale local data.
 function levelDailyCapReached(level){
-  const goal = walletDailyGoal(level);
-  return goal.totalZombies > 0 && goal.earnedZombies >= goal.totalZombies;
+  const lvl = Number(level) || Number(CARS.find(c => c.id === S.car)?.lvl) || 1;
+  if (lvl < 2) return false;
+  const totalByLevel = {2:7500, 3:7000, 4:6000, 5:5000};
+  const totalZombies = totalByLevel[lvl] || totalByLevel[2];
+  const zombiesToday = Math.max(0, Number(SHOP_ACCOUNT.zombiesTodayByLevel[lvl] || 0));
+  return zombiesToday >= totalZombies;
 }
 function renderWallet(){
   $('#walTabs').dataset.i = walTab === 'wal' ? 0 : 1;
