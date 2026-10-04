@@ -2805,6 +2805,10 @@ app.get('/vendor/three-r128.min.js', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   res.sendFile(path.join(__dirname, 'node_modules', 'three', 'build', 'three.min.js'));
 });
+app.get('/vendor/tonconnect-ui.min.js', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, 'node_modules', '@tonconnect', 'ui', 'dist', 'tonconnect-ui.min.js'));
+});
 app.use(express.static(__dirname, {
   index: false,
   setHeaders: (res, filePath) => {
