@@ -5147,6 +5147,28 @@ app.post('/admin/withdrawals/restore', requireAdmin, (req, res) => {
   res.json({ ok: true, withdrawal });
 });
 
+// Read-only: lets support quickly check whether a user's daily zombie/TON
+// cap has actually rolled over for "today" (Europe/Berlin) or is still
+// showing yesterday's numbers (see ensureDailyReset()/berlinDayKey()). Does
+// NOT call ensureDailyReset() itself - that would force the rollover just by
+// looking, masking whether it had genuinely already happened on its own.
+app.get('/admin/users/:uid/daily-status', requireAdmin, (req, res) => {
+  const user = users[String(req.params.uid)];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const today = berlinDayKey();
+  res.json({
+    uid: user.id,
+    name: user.name,
+    serverTodayBerlin: today,
+    userTonDate: user.tonDate,
+    isResetForToday: user.tonDate === today,
+    tonTodayByLevel: user.tonTodayByLevel,
+    zombiesTodayByLevel: user.zombiesTodayByLevel,
+    lastRunAt: user.lastRunAt ? new Date(user.lastRunAt).toISOString() : null,
+    lastSeenAt: user.lastSeenAt ? new Date(user.lastSeenAt).toISOString() : null,
+  });
+});
+
 app.post('/admin/users/:uid/reset-attempts', requireAdmin, (req, res) => {
   const user = users[String(req.params.uid)];
   if (!user) return res.status(404).json({ error: 'unknown-user' });
