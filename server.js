@@ -3380,6 +3380,7 @@ function publicChatMessage(message, viewerUid) {
   publicMessage.chatMuted = users[String(message.uid)]
     ? users[String(message.uid)].chatMuted === true : message.chatMuted === true;
   publicMessage.reactions = publicChatReactions(message, viewerUid);
+  publicMessage.isZombieBot = message.isZombieBot === true;
   if (message.likeEventBar) {
     publicMessage.likeEventRoundId = String(message.likeEventRoundId || message.id);
   }
