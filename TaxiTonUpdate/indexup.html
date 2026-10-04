@@ -5571,17 +5571,32 @@ function renderWallet(){
 const SAMPLE_BOARD = [['Arash',8420],['Nika',6150],['Dmitri',5210],['Sara',4480],['Omid',3320],['Lena',2610],['Reza',1740],['Mina',990]];
 let LIVE_BOARD = null;
 let leaderboardLoading = false;
+let leaderboardLoadError = '';
 async function refreshLeaderboard(){
-  if (!SHOP_ACCOUNT.token || leaderboardLoading) return;
+  if (!SHOP_ACCOUNT.token) {
+    leaderboardLoadError = S.lang==='de' ? 'Nicht angemeldet - Beispieldaten werden angezeigt.' : 'Not signed in - showing example data.';
+    if (current === 'top') paintBoard();
+    return;
+  }
+  if (leaderboardLoading) return;
   leaderboardLoading = true;
   try {
     const response = await fetch(`/api/leaderboard?token=${encodeURIComponent(SHOP_ACCOUNT.token)}`, {cache:'no-store'});
-    const data = await response.json();
-    if (response.ok && Array.isArray(data.top)) {
+    const data = await response.json().catch(() => null);
+    if (response.ok && data && Array.isArray(data.top)) {
       LIVE_BOARD = data;
-      if (current === 'top') renderBoard();
+      leaderboardLoadError = '';
+    } else {
+      console.error('[leaderboard] request failed', response.status, data);
+      leaderboardLoadError = (S.lang==='de' ? 'Rangliste konnte nicht geladen werden' : 'Could not load leaderboard') + ' (' + (response.status + (data && data.error ? ': ' + data.error : '')) + ')';
     }
-  } catch (e) {} finally { leaderboardLoading = false; }
+  } catch (e) {
+    console.error('[leaderboard] request threw', e);
+    leaderboardLoadError = (S.lang==='de' ? 'Rangliste konnte nicht geladen werden (Netzwerk?)' : 'Could not load leaderboard (network?)');
+  } finally {
+    leaderboardLoading = false;
+    if (current === 'top') paintBoard();
+  }
 }
 // Mirrors the server's berlinWeekKey() reset rule (next Sunday 00:00
 // Europe/Berlin) instead of the browser's own local time/weekday. The
@@ -5618,7 +5633,8 @@ function weeklyShort(){
   const h = p(Math.floor(sec/3600)), m = p(Math.floor(sec%3600/60)), s2 = p(sec%60);
   return d ? (S.lang === 'fa' ? `${d} روز ${h}:${m}` : `${d}d ${h}:${m}`) : `${h}:${m}:${s2}`; }
 setInterval(() => { if (current==='top') $('#vTimer').textContent = weeklyShort(); }, 1000);
-function renderBoard(){
+setInterval(() => { if (current==='top') void refreshLeaderboard(); }, 20000);
+function paintBoard(){
   const lx = S.lang !== 'fa'; $('#topBanner').classList.toggle('lx', lx);
   const ti = $('#topImg'), want = lx ? 'top-x.webp' : 'top-fa.webp'; if (!(ti.getAttribute('src') || '').endsWith(want)) ti.src = 'assets/' + want;
   $('#vTimer').textContent = weeklyShort();
@@ -5628,7 +5644,22 @@ function renderBoard(){
   rows.sort((a,b)=>b.s-a.s);
   $('#board').innerHTML = rows.map((r,i) => `<div class="card row ${r.me?'me':''}" style="padding:10px 14px">
     <span class="rank r${i+1}">${i+1}</span><b class="grow">${esc(r.n)}</b><span class="pill gold num">${fmt(r.s)}</span></div>`).join('');
-  refreshLeaderboard();
+  const noteEl = document.querySelector('[data-t="boardNote"]');
+  if (noteEl) {
+    if (LIVE_BOARD) { noteEl.hidden = true; }
+    else {
+      noteEl.hidden = false;
+      noteEl.textContent = leaderboardLoadError ? leaderboardLoadError + ' — ' + t('boardNote') : t('boardNote');
+    }
+  }
+}
+// renderBoard() paints from whatever we currently have, then kicks off a
+// fresh fetch - refreshLeaderboard() only repaints (paintBoard), it never
+// triggers another fetch itself, so a failing request can't turn into a
+// rapid retry loop.
+function renderBoard(){
+  paintBoard();
+  void refreshLeaderboard();
 }
 const DAILY = [100,150,200,300,400,600,1000];
 function canClaimDaily(){ return S.daily.last !== today(); }
