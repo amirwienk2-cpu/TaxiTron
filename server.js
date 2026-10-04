@@ -2546,8 +2546,8 @@ app.get('/admin', (req, res) => {
 body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-width:1000px;margin:32px auto;padding:0 18px}h1{color:#ffd93d}button,input{padding:10px;border-radius:8px;border:1px solid #3b3850;background:#1c1c2a;color:#fff}button{cursor:pointer;background:#ffd93d;color:#261f00;font-weight:700}.danger{background:#ff5c6c;color:#260b10}.sound-off{background:#3b3850;color:#f5f2ff}.sound-on{background:#3ddc84;color:#062012}.toolbar{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}.player-search{flex:1;min-width:260px}.search-result-count{align-self:center;color:#aaa3b8;font-size:13px}.status{color:#aaa3b8;margin:12px 0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat{padding:14px;border:1px solid #3b3850;border-radius:8px;background:#181824}.stat b{display:block;font-size:24px;color:#ffd93d}.row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #302d40}.row.new-withdrawal{background:rgba(61,220,132,0.16);border-left:4px solid #3ddc84;animation:flash-row 1.4s ease-in-out 4}@keyframes flash-row{0%,100%{background:rgba(61,220,132,0.16)}50%{background:rgba(61,220,132,0.38)}}.purchase-row{grid-template-columns:1.5fr 1fr 1fr 1fr;background:#181824}.muted{color:#aaa3b8;font-size:12px}.reset-attempts{background:#3b3850;color:#f5f2ff;font-size:12px;padding:8px}@media(max-width:650px){.stats{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
-.chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+.chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}.daily-status-table{width:100%;border-collapse:collapse;margin-top:10px}.daily-status-table td,.daily-status-table th{padding:8px 10px;border-bottom:1px solid #302d40;text-align:left;font-size:13px}.daily-status-table th{background:#181824;color:#ffd93d}
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -2723,6 +2723,50 @@ document.getElementById('chatUserSearch').addEventListener('keydown',e=>{if(e.ke
 runSearch();
 }
 document.getElementById('loadChatAdmin').onclick=loadChatAdmin;
+function renderDailyStatusTable(d){
+  var rows=[
+    ['UID',d.uid],
+    ['Name',d.name],
+    ['Heute (Server, Berlin)',d.serverTodayBerlin],
+    ['Gespeichertes Datum beim Nutzer',d.userTonDate],
+    ['Für heute zurückgesetzt?',d.isResetForToday?'OK Ja':'NEIN - zeigt noch alte Werte'],
+    ['TON-Guthaben gesamt',Number(d.ton||0).toFixed(6)],
+    ['Runs gesamt',d.runs],
+    ['Level (höchstes besessenes)',d.level],
+    ['Besessene Skins',Array.isArray(d.ownedSkins)?d.ownedSkins.join(', '):'-'],
+    ['Letzter Run',d.lastRunAt||'-'],
+    ['Zuletzt gesehen',d.lastSeenAt||'-']
+  ];
+  var zLevels=[2,3,4,5], zGoals={2:7500,3:7000,4:6000,5:5000}, skinByLevel={2:'red',3:'white',4:'green',5:'luna'};
+  var zRows=zLevels.map(function(l){
+    var z=Number((d.zombiesTodayByLevel||{})[l]||0), goal=zGoals[l];
+    var t=Number((d.tonTodayByLevel||{})[l]||0);
+    var reward=(d.skinRewards||{})[skinByLevel[l]];
+    var remainingDays=reward?reward.remainingDays:'-';
+    return '<tr><td>Level '+l+'</td><td>'+z+' / '+goal+'</td><td>'+t+' TON heute</td><td>Reward-Tage uebrig: '+remainingDays+'</td></tr>';
+  }).join('');
+  var lvl1=(d.attemptsByLevel||{})[1]||{};
+  var lvl1Row='<tr><td>Level 1 (2h-Fenster)</td><td>'+(lvl1.windowZombies||0)+' / 4000</td><td>Bonus vergeben: '+(lvl1.windowRewardGiven?'OK Ja':'NEIN noch nicht')+'</td><td>Versuche uebrig: '+(lvl1.left!=null?lvl1.left:'-')+(lvl1.resetAt?(' (Reset: '+new Date(lvl1.resetAt).toLocaleString()+')'):'')+'</td></tr>';
+  return '<table class="daily-status-table"><tbody>'+
+    rows.map(function(pair){return '<tr><td><b>'+pair[0]+'</b></td><td colspan="3">'+(pair[1]==null?'-':pair[1])+'</td></tr>';}).join('')+
+    '<tr><th>Level</th><th>Zombies heute / Ziel</th><th>TON/Bonus</th><th>Details</th></tr>'+
+    lvl1Row+zRows+
+    '</tbody></table>';
+}
+async function loadDailyStatus(){
+  const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
+  const uid=prompt('Spieler-UID eingeben:');
+  if(!uid||!uid.trim())return;
+  status('Tagesstatus wird geladen...');
+  try{
+    const r=await fetch('/admin/users/'+encodeURIComponent(uid.trim())+'/daily-status',{headers:{'x-admin-secret':s}});
+    const d=await r.json();
+    if(!r.ok){status(d.error||'Request failed');return}
+    document.getElementById('list').innerHTML=renderDailyStatusTable(d);
+    status('Tagesstatus für '+d.name+' (UID '+d.uid+') geladen.');
+  }catch(e){status('Request failed')}
+}
+document.getElementById('loadDailyStatus').onclick=loadDailyStatus;
 document.getElementById('reset').onclick=async()=>{const s=secret();if(!s){status('Enter the admin secret.');return}if(!confirm("WARNING: This resets all players' coins, TON, level, skins, stats, and withdrawals. Deposits and one-time invite reward claims remain protected. Continue?"))return;status('Resetting all players...');const r=await fetch('/admin/reset-users',{method:'POST',headers:{'x-admin-secret':s}});const d=await r.json();status(r.ok?'Reset complete for '+d.count+' players.':(d.error||'Reset failed'));if(r.ok)load()};
 setInterval(()=>{if(secret())loadWithdrawals({silent:true})},15000);
 setInterval(()=>{if(secret())pollMoneyEvents()},15000);
