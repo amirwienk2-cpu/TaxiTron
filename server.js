@@ -3036,7 +3036,13 @@ async function loadTournamentDebug(){
   try{r=await fetch('/admin/tournament-debug',{headers:{'x-admin-secret':s}});d=await r.json();}catch(e){status('Request failed');return}
   if(!r.ok){status(d.error||'Request failed');return}
   const list=document.getElementById('list');
-  list.innerHTML='<div style="padding:14px;border-radius:8px;margin-bottom:14px;border:1px solid #3b3850;background:#181824"><b>Aktuelle Serverwoche:</b> '+d.currentWeek+'<br><b>Serverzeit (UTC):</b> '+d.now+'</div>';
+  list.innerHTML='<div style="padding:14px;border-radius:8px;margin-bottom:14px;border:1px solid #3b3850;background:#181824"><b>Aktuelle Serverwoche:</b> '+d.currentWeek+'<br><b>Serverzeit (UTC):</b> '+d.now+'<br><br><button id="tournamentResetNowBtn" class="danger">🔄 Rangliste JETZT für alle zur\u00fccksetzen</button></div>';
+  document.getElementById('tournamentResetNowBtn').onclick=async()=>{
+    if(!confirm('Wirklich die Wochen-Rangliste JETZT f\u00fcr ALLE Spieler auf 0 zur\u00fccksetzen? TON/TT/Coins bleiben unber\u00fchrt, nur die Bestenliste.'))return;
+    const rr=await fetch('/admin/tournament-debug/reset-now',{method:'POST',headers:{'x-admin-secret':s}});
+    if(rr.ok){const dd=await rr.json();status('Rangliste zur\u00fcckgesetzt ('+dd.resetCount+' Spieler betroffen).');loadTournamentDebug()}
+    else status((await rr.json()).error||'Request failed')
+  };
   if(!d.entries.length){list.insertAdjacentHTML('beforeend','<div>Keine Turnier-Eintr\u00e4ge vorhanden.</div>');status('0 Eintr\u00e4ge geladen.');return}
   d.entries.forEach(e=>{
     const row=document.createElement('div');
@@ -5591,6 +5597,25 @@ app.get('/admin/tournament-debug', requireAdmin, (req, res) => {
     .sort((a, b) => b.tournamentBest - a.tournamentBest)
     .slice(0, 30);
   res.json({ currentWeek: week, now: new Date().toISOString(), entries });
+});
+
+// Manual "start this week's race over" button: zeroes out every player's
+// tournamentBest/tournamentDistance right now (stamped with the current
+// week), independent of the normal Sunday-00:00-Berlin schedule. Only
+// touches the weekly tournament fields - coins/TON/TT/everything else is
+// untouched.
+app.post('/admin/tournament-debug/reset-now', requireAdmin, (req, res) => {
+  const week = berlinWeekKey();
+  let count = 0;
+  Object.values(users).forEach((u) => {
+    if (Number(u.tournamentBest) > 0 || u.tournamentWeekKey) count += 1;
+    u.tournamentBest = 0;
+    u.tournamentDistance = 0;
+    u.tournamentWeekKey = week;
+  });
+  persist();
+  console.log('[admin] manually reset the weekly tournament leaderboard for ' + count + ' player(s) with prior scores (week=' + week + ')');
+  res.json({ ok: true, week, resetCount: count });
 });
 
 app.get('/admin/chat-users', requireAdmin, (req, res) => {
