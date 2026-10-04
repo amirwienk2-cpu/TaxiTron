@@ -3022,6 +3022,95 @@
   /* Hervorhebung der Zielnachricht beim Reply-Sprung */
   .msg-flash .bub{animation:msgFlash 1.5s ease-out}
   @keyframes msgFlash{0%,35%{box-shadow:0 0 0 3px rgba(98,198,255,.7),0 0 16px rgba(98,198,255,.55)}100%{box-shadow:none}}
+  /* ==== Monster-Boss-Event (NICHT deployed - nur lokal zum Testen, siehe server.js MONSTER_EVENT_ENABLED) ====
+     1:1 aus MonsterTaxi.html übernommen (nur Klassen mit "monster-" Präfix versehen,
+     damit nichts mit dem Rest der App kollidiert) - siehe JS-Kommentar weiter unten. */
+  .race-btn.monster-btn{background:linear-gradient(180deg,#ff8a3d,#c8213a);box-shadow:0 3px 0 #7a1222}
+  .race-btn.monster-btn.live{background:linear-gradient(180deg,#ff5a6e,#c8213a);animation:monsterPulse 1s infinite}
+  @keyframes monsterPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,.55)}50%{box-shadow:0 0 0 6px rgba(255,45,85,0)}}
+  .monsterwrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:14px 12px;overflow-y:auto}
+  .monster-arena{position:relative;margin:0;padding:14px 14px 10px;border-radius:20px;background:radial-gradient(120% 80% at 50% 30%,#3a1430 0%,#1a1030 45%,#121427 100%);overflow:hidden}
+  .monster-arena.rage{background:radial-gradient(120% 80% at 50% 30%,#5a0f1c 0%,#2a0d1c 50%,#140d18 100%)}
+  .monster-arena.shake{animation:monsterShake .18s}
+  @keyframes monsterShake{25%{transform:translate(-3px,2px)}75%{transform:translate(3px,-2px)}}
+  .monster-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .monster-name{font-weight:900;font-size:15px;letter-spacing:.3px;color:#eef0fa}
+  .monster-name small{display:block;color:#9aa0bd;font-weight:700;font-size:11px;letter-spacing:1px}
+  .monster-ring{position:relative;width:52px;height:52px;flex:none}
+  .monster-ring svg{transform:rotate(-90deg)}
+  .monster-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums;color:#eef0fa}
+  .monster-ring.low b{color:#ff4d5e}
+  .monster-hpwrap{margin-top:10px}
+  .monster-hpbar{position:relative;height:18px;border-radius:9px;background:#1b0f18;border:1.5px solid #4a2236;overflow:hidden}
+  .monster-hpbar .monster-trail{position:absolute;inset:0 auto 0 0;background:#fff;opacity:.55;transition:width .6s ease-out .15s}
+  .monster-hpbar .monster-fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#ff2d55,#ff7a3d 70%,#ffc61a);transition:width .08s}
+  .monster-arena.rage .monster-hpbar .monster-fill{background:linear-gradient(90deg,#b0002a,#ff2d55)}
+  .monster-hpbar .monster-seg{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(0,0,0,.45) calc(10% - 1px) 10%)}
+  .monster-hpmeta{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#9aa0bd;margin-top:4px;font-variant-numeric:tabular-nums}
+  .monster-stage{position:relative;height:290px;display:grid;place-items:center;touch-action:manipulation;user-select:none;-webkit-user-select:none;cursor:pointer}
+  .monster-bosswrap{height:100%;display:grid;place-items:center;animation:monsterIdle 2.4s ease-in-out infinite;transform-origin:50% 100%}
+  @keyframes monsterIdle{50%{transform:scaleY(1.025) translateY(-2px)}}
+  .monster-arena.rage .monster-bosswrap{animation-duration:.9s}
+  .monster-arena.dead .monster-bosswrap{animation:none}
+  .monster-boss{height:270px;width:auto;max-width:100%;transition:transform .07s,filter .07s;filter:drop-shadow(0 14px 16px rgba(0,0,0,.65));-webkit-user-drag:none;pointer-events:none}
+  .monster-boss.hurt{transform:scale(.95) rotate(-2.5deg);filter:brightness(1.9) drop-shadow(0 0 10px rgba(255,255,255,.6))}
+  .monster-arena.rage .monster-boss{filter:drop-shadow(0 0 20px rgba(255,30,60,.85)) saturate(1.35)}
+  .monster-arena.rage .monster-boss.hurt{filter:brightness(1.9) drop-shadow(0 0 20px rgba(255,30,60,.85))}
+  .monster-arena.dead .monster-boss{filter:grayscale(1) brightness(.55);transform:rotate(-78deg) translate(-40px,40px);transition:transform .9s cubic-bezier(.5,0,.8,.4),filter .9s}
+  .monster-floor{position:absolute;bottom:8px;left:50%;width:180px;height:22px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(rgba(0,0,0,.55),transparent 70%)}
+  .monster-slash{position:absolute;width:70px;height:4px;border-radius:2px;background:linear-gradient(90deg,transparent,#fff,transparent);box-shadow:0 0 10px #fff,0 0 18px rgba(255,90,110,.8);pointer-events:none;animation:monsterSlash .22s ease-out forwards}
+  @keyframes monsterSlash{0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--r)) scaleX(.2)}40%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--r)) scaleX(1.2)}}
+  .monster-spark{position:absolute;width:5px;height:5px;border-radius:50%;background:#ffd84a;pointer-events:none;animation:monsterSpark .35s ease-out forwards}
+  @keyframes monsterSpark{to{transform:translate(var(--x),var(--y));opacity:0}}
+  .monster-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 60px rgba(255,0,40,0);transition:box-shadow .3s}
+  .monster-arena.rage .monster-vignette{box-shadow:inset 0 0 70px rgba(255,0,40,.45)}
+  .monster-num{position:absolute;font-weight:900;pointer-events:none;animation:monsterPop .8s ease-out forwards;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.6);white-space:nowrap}
+  .monster-num.me{color:#fff;font-size:20px}
+  .monster-num.other{color:#c9a7ff;font-size:13px;opacity:.85}
+  .monster-num.crit{color:#ffc61a;font-size:28px}
+  .monster-num.blk{color:#9aa0bd;font-size:15px}
+  .monster-num.pen{color:#ff4d5e;font-size:18px}
+  @keyframes monsterPop{0%{transform:translate(-50%,0) scale(.6)}20%{transform:translate(-50%,-14px) scale(1.15)}100%{transform:translate(-50%,-70px) scale(1);opacity:0}}
+  .monster-combo{position:absolute;right:6px;top:8px;text-align:right;font-weight:900;opacity:0;transition:opacity .2s}
+  .monster-combo.on{opacity:1}
+  .monster-combo b{display:block;font-size:26px;color:#ffc61a;line-height:1;text-shadow:0 0 12px rgba(255,198,26,.5)}
+  .monster-combo span{font-size:11px;color:#9aa0bd;letter-spacing:1px}
+  .monster-combo.hot b{color:#ff7a3d}
+  #app[dir="rtl"] .monster-combo{right:auto;left:6px;text-align:left}
+  .monster-banner{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:3}
+  .monster-banner div{font-size:30px;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 18px rgba(255,45,85,.9),0 3px 0 #000;animation:monsterBan 1.4s forwards}
+  @keyframes monsterBan{0%{transform:scale(2);opacity:0}15%{transform:scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}
+  .monster-count{font-size:72px!important}
+  .monster-ticker{height:18px;margin-top:2px;font-size:12px;color:#9aa0bd;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .monster-tapbtn{position:relative;display:block;width:100%;height:64px;margin-top:10px;border-radius:18px;background:linear-gradient(#ff5a6e,#c8213a);color:#fff;font-weight:900;font-size:20px;letter-spacing:1px;box-shadow:0 5px 0 #7a1222,0 10px 24px rgba(255,45,85,.3);overflow:hidden;touch-action:manipulation}
+  .monster-tapbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #7a1222}
+  .monster-tapbtn small{display:block;font-size:11px;font-weight:700;opacity:.8;letter-spacing:.5px}
+  .monster-tapbtn.shieldbtn{background:linear-gradient(#5ab8ff,#2a6fd6);box-shadow:0 5px 0 #173f80,0 10px 24px rgba(90,184,255,.35)}
+  .monster-rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:monsterRip .45s ease-out forwards;pointer-events:none}
+  @keyframes monsterRip{to{transform:scale(4);opacity:0}}
+  .monster-mystats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .monster-mystats div{background:rgba(0,0,0,.25);border-radius:12px;padding:8px;text-align:center}
+  .monster-mystats b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+  .monster-mystats span{font-size:10px;color:#9aa0bd;font-weight:800;letter-spacing:.8px}
+  .monster-lb{margin-top:10px;background:rgba(0,0,0,.25);border-radius:12px;padding:10px}
+  .monster-lb h5{margin:0 0 6px;font-size:11px;color:#9aa0bd;letter-spacing:1px}
+  .monster-lbr{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;font-size:13px;padding:3px 0}
+  .monster-lbr.me{color:#ffc61a;font-weight:800}
+  .monster-lbr b{font-variant-numeric:tabular-nums}
+  .monster-shieldfx{position:absolute;left:50%;top:50%;width:230px;height:290px;transform:translate(-50%,-50%) scale(.6);border-radius:50%;border:3px solid rgba(110,200,255,.9);background:radial-gradient(circle,rgba(110,200,255,.08) 40%,rgba(110,200,255,.35) 100%);box-shadow:0 0 30px rgba(110,200,255,.6),inset 0 0 30px rgba(110,200,255,.4);opacity:0;transition:opacity .15s,transform .2s;pointer-events:none}
+  .monster-arena.shielded .monster-shieldfx{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .monster-arena.shielded{background:radial-gradient(120% 80% at 50% 30%,#123a5a 0%,#101c36 50%,#121427 100%)}
+  .monster-wait{text-align:center;padding:20px 10px;color:#9aa0bd}
+  .monster-wait b{display:block;font-size:30px;color:#fff;font-weight:900;font-variant-numeric:tabular-nums}
+  .monster-result{text-align:center;padding:10px}
+  .monster-result h3{margin:4px 0 2px;font-size:20px;color:#eef0fa}
+  .monster-result p{margin:0;color:#9aa0bd;font-size:13px}
+  .monster-result .monster-rw{margin-top:12px;text-align:start}
+  .monster-result .monster-rw div{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(255,255,255,.07);font-size:14px;color:#eef0fa}
+  .monster-result .monster-rw div b{color:#ffc61a}
+  .monster-result .mine{margin-top:12px;padding:12px;border-radius:14px;background:linear-gradient(180deg,rgba(255,198,26,.18),rgba(255,198,26,.06));border:1px solid rgba(255,198,26,.4);font-weight:900;font-size:18px;color:#ffc61a}
+  .monster-result .mine.none{background:rgba(0,0,0,.2);border-color:#2a2e47;color:#9aa0bd;font-size:13px}
+  @media (prefers-reduced-motion:reduce){.monster-arena.shake,.monster-num,.monster-banner div{animation-duration:.01s}}
 </style>
 
 <div id="app" dir="ltr">
@@ -3030,6 +3119,7 @@
     <section class="page" data-page="home" hidden>
       <div class="gameshub">
         <div class="ghwrap"><img class="ghead" src="assets/games-head.webp" alt=""><span class="gov gtitle fit" data-t="g_title">Games</span></div>
+
         <div class="glabel"><span class="pkkick" data-t="g_all">All games</span><span class="gsum"><span class="dot"></span> <b>1</b> <span data-t="g_live">live</span> · <b>3</b> <span data-t="g_soon">soon</span></span></div>
         <button class="gcard live" data-game="tower"><span class="gchip live"><span class="dot"></span> LIVE</span><span class="gshine"></span><span class="gov gjoin fit" style="top:47.5%" data-t="g_join">Join</span><span class="gov gname fit" style="top:84.5%;transform:translateY(-50%)" data-t="g_tower"></span><img src="assets/game-tower.webp" alt="Zombie Tower" loading="lazy"></button>
         <button class="gcard locked" data-game="nard"><span class="gchip soon" data-t="g_soonChip">SOON</span><span class="glock"><span class="padlock"></span><b data-t="comingSoon">Coming soon</b></span><span class="gov gjoin fit" style="top:44.8%" data-t="g_join">Join</span><span class="gov gname fit" style="top:82%;transform:translateY(-50%)" data-t="g_nard"></span><img src="assets/game-nard.webp" alt="Backgammon" loading="lazy"></button>
@@ -3110,9 +3200,40 @@
             <div class="chstat"><span class="dot"></span><span class="num" id="onCount">0</span> <span data-t="ch_online">online</span></div>
           </div>
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
+          <button type="button" class="race-btn monster-btn" id="monsterBtn" hidden><span id="monsterBtnText">👹 --:--</span></button>
           <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
         <div class="chatlog" id="chatlog"></div>
+        <div class="monsterwrap" id="monsterView" hidden>
+          <div id="monsterFightUI">
+            <div class="monster-arena" id="monsterArena">
+              <div class="monster-top">
+                <div class="monster-name"><small>باس جهانی · سطح ۹۹</small>زامبی اره‌برقی</div>
+                <div class="monster-ring" id="monsterRing"><svg width="52" height="52"><circle cx="26" cy="26" r="22" fill="none" stroke="#2a2e47" stroke-width="5"/><circle id="monsterRingC" cx="26" cy="26" r="22" fill="none" stroke="#ffc61a" stroke-width="5" stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg><b id="monsterRingT">۳:۰۰</b></div>
+              </div>
+              <div class="monster-hpwrap">
+                <div class="monster-hpbar"><i class="monster-trail" id="monsterTrail" style="width:100%"></i><i class="monster-fill" id="monsterFill" style="width:100%"></i><i class="monster-seg"></i></div>
+                <div class="monster-hpmeta"><span id="monsterHpTxt"></span><span id="monsterHpPct"></span></div>
+              </div>
+              <div class="monster-stage" id="monsterStage">
+                <div class="monster-bosswrap" id="monsterBosswrap"><img class="monster-boss" id="monsterBossImg" src="assets/monster-boss.webp" alt="زامبی اره‌برقی" draggable="false"></div>
+                <div class="monster-combo" id="monsterCombo"><b id="monsterComboN">×۰</b><span>کمبو</span></div>
+                <div class="monster-floor"></div><div class="monster-shieldfx"></div><div class="monster-vignette"></div><div class="monster-banner" id="monsterBanner"></div>
+              </div>
+              <div class="monster-ticker" id="monsterTicker"></div>
+            </div>
+            <button type="button" class="monster-tapbtn" id="monsterTap">⚔️ برای حمله ضربه بزنید<small>تا می‌توانید سریع بزنید · کمبو ۲۰+ = ۱٫۵ برابر · هرگز به 🛡️ سپر نزنید</small></button>
+            <div class="monster-mystats">
+              <div><b id="monsterSDmg">0</b><span>آسیب شما</span></div>
+              <div><b id="monsterSRank">–</b><span>رتبه‌ی شما</span></div>
+              <div><b id="monsterSShield">0</b><span>ضربه به سپر</span></div>
+            </div>
+            <div class="monster-lb"><h5>بیشترین آسیب · زنده</h5><div id="monsterLb"></div></div>
+          </div>
+          <div class="monster-wait" id="monsterWait" hidden><b id="monsterWaitCd">--:--</b><small>تا باس جهانی بعدی</small></div>
+          <div class="monster-result" id="monsterResult" hidden></div>
+          <button type="button" class="race-back" id="monsterBack"><span>بازگشت به چت</span></button>
+        </div>
         <div class="racewrap" id="raceView" hidden>
           <div class="race-card" id="raceCardWin">
             <div class="race-bonus-banner" id="raceBonusBanner" hidden>🔥 رنس بونوس! جایزه x10</div>
@@ -4079,6 +4200,7 @@ async function pollServerChat(){
       const previousEvent=JSON.stringify(serverCardEvent);
       updateServerCardEvent(chatRoom==='fa'?data.cardEvent:null);
       applyTaxiRaceEvent(data.taxiRace||null);
+      applyMonsterEvent(data.monster||null);
       data.messages.forEach(receiveServerChatMessage);
       if(current==='chat'&&(data.messages.length||previousEvent!==JSON.stringify(serverCardEvent)))renderChat();
       if(previousEvent!==JSON.stringify(serverCardEvent)&&serverCardEvent?.status==='complete')refreshShopAccount();
@@ -4100,8 +4222,11 @@ function ensureChatEventStream(){
   }
   if(chatEventSource)return;
   chatEventSource=new EventSource('/api/chat/events');
+  chatEventSource.onopen=()=>console.log('[sse] connected');
+  chatEventSource.onerror=(e)=>console.log('[sse] error/disconnected, readyState=',chatEventSource&&chatEventSource.readyState,e);
   chatEventSource.addEventListener('chat-update',event=>{
     let update;try{update=JSON.parse(event.data);}catch(e){return;}
+    if(update.type==='monster')console.log('[sse] monster event received', update.event && update.event.status, update.event && update.event.hp);
     if(update.type==='message'){pollServerChat();return;}
     if(update.type==='card-event'){
       const previousStatus=serverCardEvent?.status;
@@ -4123,6 +4248,10 @@ function ensureChatEventStream(){
     }
     if(update.type==='taxi-race'){
       applyTaxiRaceEvent(update.event);
+      return;
+    }
+    if(update.type==='monster'){
+      applyMonsterEvent(update.event);
       return;
     }
     if(update.type!=='reaction')return;
@@ -4298,6 +4427,7 @@ function renderChat(){
   refreshOnlineCounts();
   renderAdVideoTask();
   renderRaceButton();
+  renderMonsterButton();
   if (TAXI_RACE.race && TAXI_RACE.race.status === 'running' && chatTab === 'chat' && !TAXI_RACE.viewOpen) { openRaceView(); TAXI_RACE.autoOpened = true; }
   const cardEventActive=chatRoom==='fa'&&serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
   const cardEventTimer=document.querySelector('[data-live-card-timer]');
@@ -4800,6 +4930,290 @@ async function initTaxiRace(){
   }, 1000);
 }
 void initTaxiRace();
+
+// ---- Monster-Boss-Event: server-authoritative raid shown inside the Farsi chat ----
+// NOT YET DEPLOYED (per request) - matches server.js MONSTER_EVENT_ENABLED.
+// The rendering/animation code below is a direct 1:1 port of MonsterTaxi.html's
+// own draw()/hit()/showNum()/slashFx()/ripple()/banner() functions (only
+// renamed with a "monster" prefix) - only the DATA SOURCE changed: the
+// original simulated fake bots locally, this pulls real HP/damage/leaderboard
+// from the server (poll + SSE) and sends taps to /api/monster/hit, which is
+// the only place damage rolls/crits/blocks/shield-penalties/payouts happen.
+const MONSTER_ROOM = 'fa';
+const MONSTER_FIGHT_MS_CLIENT = 180 * 1000; // matches server.js MONSTER_FIGHT_MS, only used for the ring timer
+const MONSTER_TAP_RATE_LIMIT_CLIENT = 8; // matches server.js, just to avoid firing requests that the server would reject anyway
+const MONSTER = {
+  state:null, viewOpen:false,
+  combo:0, lastTapAt:0, comboTimer:null, tapTimes:[],
+  lastFightId:null, lastRankDmg:{}, shieldHitsMe:0, ticker:'',
+};
+const faDigits = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+function monsterCountdownText(ms){
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function renderMonsterButton(){
+  const btn = $('#monsterBtn'), txt = $('#monsterBtnText');
+  if (!btn || !txt) return;
+  if (chatRoom !== MONSTER_ROOM) { btn.hidden = true; btn.classList.remove('live'); return; }
+  const m = MONSTER.state;
+  if (m && (m.status === 'intro' || m.status === 'fight')) {
+    btn.hidden = false; btn.classList.add('live'); txt.textContent = '👹 نبرد';
+    return;
+  }
+  btn.classList.remove('live');
+  if (m && m.status === 'finished') { btn.hidden = false; txt.textContent = '👹 ۰:۰۰'; return; }
+  if (m && m.nextStartAt > Date.now()) { btn.hidden = false; txt.textContent = '👹 ' + monsterCountdownText(m.nextStartAt - Date.now()); return; }
+  btn.hidden = true;
+}
+function renderMonsterWaitScreen(){
+  if (!MONSTER.viewOpen) return;
+  $('#monsterFightUI').hidden = true; $('#monsterResult').hidden = true; $('#monsterWait').hidden = false;
+  const m = MONSTER.state;
+  $('#monsterWaitCd').textContent = m && m.nextStartAt ? monsterCountdownText(m.nextStartAt - Date.now()) : '--:--';
+}
+function applyMonsterEvent(event){
+  const prevStatus = MONSTER.state ? MONSTER.state.status : null;
+  MONSTER.state = event;
+  renderMonsterButton();
+  // Auto-open the fight view for everyone in the Farsi chat the instant a new
+  // intro starts, even if nobody currently has the view open.
+  if (event && event.status === 'intro' && prevStatus !== 'intro' && chatRoom === MONSTER_ROOM && current === 'chat' && chatTab === 'chat' && !MONSTER.viewOpen) {
+    openMonsterView();
+    return; // openMonsterView() already rendered the fresh intro state
+  }
+  if (!MONSTER.viewOpen) return;
+  if (!event) { renderMonsterWaitScreen(); return; }
+  if (event.status === 'intro') {
+    renderMonsterIntro();
+  } else if (event.status === 'fight') {
+    monsterDraw();
+  } else if (event.status === 'finished') {
+    if (prevStatus !== 'finished') renderMonsterResult();
+  } else {
+    // Back to "scheduled" (or no state at all) while the view is still open -
+    // without this, a missed/coalesced SSE update could leave the fight UI
+    // frozen on its last frame forever, with the tap button silently doing
+    // nothing (it correctly refuses to tap a fight that's no longer active).
+    renderMonsterWaitScreen();
+  }
+}
+function openMonsterView(){
+  MONSTER.viewOpen = true;
+  $('#chatlog').hidden = true; $('#chatForm').hidden = true;
+  $('#monsterView').hidden = false;
+  const m = MONSTER.state;
+  if (m && m.status === 'finished') renderMonsterResult();
+  else if (m && (m.status === 'intro' || m.status === 'fight')) { $('#monsterWait').hidden = true; $('#monsterResult').hidden = true; $('#monsterFightUI').hidden = false; monsterDraw(); }
+  else { $('#monsterFightUI').hidden = true; $('#monsterResult').hidden = true; $('#monsterWait').hidden = false; $('#monsterWaitCd').textContent = m && m.nextStartAt ? monsterCountdownText(m.nextStartAt - Date.now()) : '--:--'; }
+}
+function closeMonsterView(){
+  MONSTER.viewOpen = false;
+  $('#monsterView').hidden = true;
+  $('#chatlog').hidden = false;
+  if (current === 'chat') renderChat(); else $('#chatForm').hidden = !SHOP_ACCOUNT.token;
+}
+$('#monsterBtn').onclick = () => { if (MONSTER.viewOpen) closeMonsterView(); else openMonsterView(); };
+$('#monsterBack').onclick = () => closeMonsterView();
+function renderMonsterIntro(){
+  if (!MONSTER.viewOpen) return;
+  $('#monsterWait').hidden = true; $('#monsterResult').hidden = true; $('#monsterFightUI').hidden = false;
+  $('#monsterFill').style.width = '100%'; $('#monsterTrail').style.width = '100%'; $('#monsterHpTxt').textContent = ''; $('#monsterHpPct').textContent = '';
+  $('#monsterArena').classList.remove('rage', 'dead', 'shielded');
+  MONSTER.lastFightId = null; MONSTER.shieldHitsMe = 0; MONSTER.ticker = '';
+  const m = MONSTER.state;
+  const left = Math.max(0, Math.ceil(((m.introEndsAt || Date.now()) - Date.now()) / 1000));
+  monsterBanner(left > 0 ? faDigits(left) : 'بجنگید!', left > 0);
+}
+function monsterBanner(t, isCount){
+  const b = $('#monsterBanner'); if (!b) return;
+  b.innerHTML = `<div class="${isCount ? 'monster-count' : ''}">${t}</div>`;
+}
+function monsterRipple(e){
+  const btn = e.currentTarget, r = btn.getBoundingClientRect(), el = document.createElement('span');
+  const size = 60; el.className = 'monster-rip'; el.style.width = el.style.height = size + 'px';
+  el.style.left = ((e.clientX || r.left + r.width / 2) - r.left - size / 2) + 'px';
+  el.style.top = ((e.clientY || r.top + r.height / 2) - r.top - size / 2) + 'px';
+  btn.appendChild(el); setTimeout(() => el.remove(), 450);
+}
+function monsterShowNum(text, cls, x, y){
+  const stage = $('#monsterStage'); if (!stage) return;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const el = document.createElement('div'); el.className = 'monster-num ' + cls; el.textContent = text;
+  el.style.left = (x != null ? x : w * 0.2 + Math.random() * w * 0.6) + 'px';
+  el.style.top = (y != null ? y : h * 0.25 + Math.random() * h * 0.4) + 'px';
+  stage.appendChild(el); setTimeout(() => el.remove(), 800);
+}
+function monsterSlashFx(x, y){
+  const stage = $('#monsterStage'); if (!stage) return;
+  const slash = document.createElement('div'); slash.className = 'monster-slash';
+  slash.style.left = x + 'px'; slash.style.top = y + 'px'; slash.style.setProperty('--r', (Math.random() * 120 - 60) + 'deg');
+  stage.appendChild(slash); setTimeout(() => slash.remove(), 230);
+  for (let i = 0; i < 4; i++) {
+    const p = document.createElement('div'); p.className = 'monster-spark';
+    p.style.left = x + 'px'; p.style.top = y + 'px';
+    const a = Math.random() * Math.PI * 2, d = 20 + Math.random() * 30;
+    p.style.setProperty('--x', Math.cos(a) * d + 'px'); p.style.setProperty('--y', Math.sin(a) * d + 'px');
+    stage.appendChild(p); setTimeout(() => p.remove(), 360);
+  }
+}
+function renderMonsterRing(){
+  const m = MONSTER.state;
+  const c = $('#monsterRingC'), t = $('#monsterRingT'), ring = $('#monsterRing');
+  if (!c || !m || !m.endsAt) return;
+  const left = Math.max(0, m.endsAt - Date.now());
+  const frac = Math.min(1, left / MONSTER_FIGHT_MS_CLIENT);
+  c.setAttribute('stroke-dashoffset', 138.2 * (1 - frac));
+  c.setAttribute('stroke', left <= 20000 ? '#ff2d55' : '#ffc61a');
+  t.textContent = faDigits(monsterCountdownText(left));
+  if (ring) ring.classList.toggle('low', left <= 20000);
+}
+// 1:1 port of the original's draw(): renders the HP bar, boss state classes,
+// combo counter, ticker and leaderboard from the current server-confirmed
+// MONSTER.state + ranking - called after every poll/SSE update while the
+// fight view is open, exactly like the original's requestAnimationFrame loop
+// called draw() whenever something changed (dirty=true).
+function monsterDraw(){
+  if (!MONSTER.viewOpen) return;
+  const m = MONSTER.state; if (!m || !$('#monsterFill')) return;
+  $('#monsterWait').hidden = true; $('#monsterResult').hidden = true; $('#monsterFightUI').hidden = false;
+  const pct = Math.max(0, Math.min(100, (m.hp / m.maxHp) * 100));
+  $('#monsterFill').style.width = pct + '%'; $('#monsterTrail').style.width = pct + '%';
+  $('#monsterHpTxt').textContent = faDigits(m.hp) + ' / ' + faDigits(m.maxHp) + ' جان';
+  $('#monsterHpPct').textContent = faDigits(pct.toFixed(1)).replace('.', '٫') + '٪';
+  $('#monsterArena').classList.toggle('rage', !!m.rage);
+  $('#monsterArena').classList.toggle('shielded', !!m.shield);
+  const tap = $('#monsterTap');
+  tap.classList.toggle('shieldbtn', !!m.shield);
+  tap.firstChild.textContent = m.shield ? '🛡️ سپر — ضربه نزنید!' : '⚔️ برای حمله ضربه بزنید';
+  renderMonsterRing();
+  $('#monsterSShield').textContent = faDigits(MONSTER.shieldHitsMe);
+  const comboEl = $('#monsterCombo');
+  comboEl.classList.toggle('on', MONSTER.combo >= 3); comboEl.classList.toggle('hot', MONSTER.combo >= 20);
+  $('#monsterComboN').textContent = '×' + faDigits(MONSTER.combo);
+  $('#monsterTicker').textContent = MONSTER.ticker;
+
+  const myDmg = Number(m.myDamage) || 0;
+  const ranking = m.ranking || [];
+  if (MONSTER.lastFightId !== m.id) { MONSTER.lastFightId = m.id; MONSTER.lastRankDmg = {}; }
+  // Everyone else's hits also flash a (dimmer, smaller) floating number,
+  // scattered across the boss exactly like MonsterTaxi.html's .num.other -
+  // one per player whose confirmed damage total grew since the last poll
+  // (not just one combined number), with an unusually big jump called out
+  // on the ticker line like the original's "critical hit <name>: X!".
+  ranking.forEach(r => {
+    const prev = MONSTER.lastRankDmg[r.uid] || 0;
+    const delta = r.dmg - prev;
+    if (delta > 0 && String(r.uid) !== String(SHOP_ACCOUNT.uid)) {
+      monsterShowNum('-' + faDigits(delta), 'other');
+      if (delta >= 15) MONSTER.ticker = '⚡ ضربه‌ی بحرانی ' + r.name + ': ' + faDigits(delta) + '!';
+    }
+    MONSTER.lastRankDmg[r.uid] = r.dmg;
+  });
+  const pos = ranking.findIndex(r => String(r.uid) === String(SHOP_ACCOUNT.uid)) + 1;
+  const top = ranking.length ? ranking[0].dmg : 1;
+  $('#monsterSDmg').textContent = faDigits(myDmg);
+  $('#monsterSRank').textContent = pos ? '#' + faDigits(pos) : '–';
+  let rows = ranking.slice(0, 5);
+  if (pos > 5) rows = rows.slice(0, 4).concat([ranking[pos - 1]]);
+  $('#monsterLb').innerHTML = rows.map(r => {
+    const i = ranking.indexOf(r);
+    const isMe = String(r.uid) === String(SHOP_ACCOUNT.uid);
+    return `<div class="monster-lbr ${isMe ? 'me' : ''}"><span>${['🥇','🥈','🥉'][i] || ('#' + faDigits(i + 1))}</span><span>${esc(isMe ? 'شما' : r.name)}</span><b>${faDigits(r.dmg)}</b></div>`;
+  }).join('') || '<div class="monster-lbr"><span></span><span style="color:#9aa0bd">هنوز ضربه‌ای نیست</span></div>';
+}
+async function monsterTap(e){
+  try {
+    const m = MONSTER.state;
+    if (!m || m.status !== 'fight') return;
+    if (!SHOP_ACCOUNT.token) return;
+    const now = performance.now();
+    MONSTER.tapTimes = MONSTER.tapTimes.filter(t => now - t < 1000);
+    if (MONSTER.tapTimes.length >= MONSTER_TAP_RATE_LIMIT_CLIENT) return;
+    MONSTER.tapTimes.push(now);
+    MONSTER.combo = (now - MONSTER.lastTapAt < 600) ? MONSTER.combo + 1 : 1;
+    MONSTER.lastTapAt = now;
+    clearTimeout(MONSTER.comboTimer);
+    MONSTER.comboTimer = setTimeout(() => { MONSTER.combo = 0; monsterDraw(); }, 650);
+    const stage = $('#monsterStage');
+    const stageRect = stage ? stage.getBoundingClientRect() : null;
+    let x = stageRect ? stageRect.width / 2 + (Math.random() * 80 - 40) : 0;
+    let y = stageRect ? stageRect.height / 2 + (Math.random() * 40 - 30) : 0;
+    if (e && e.currentTarget === stage && e.clientX) { x = e.clientX - stageRect.left; y = e.clientY - stageRect.top; }
+    if (!m.shield) {
+      // Instant local feedback (0ms) - the shielded case is deliberately NOT
+      // shown optimistically, since the whole point of the shield mechanic is
+      // teaching players to stop attacking, so it must only ever show the
+      // server-confirmed penalty, never a guessed number.
+      monsterSlashFx(x, y);
+    }
+    const bossImg = $('#monsterBossImg'); if (bossImg) { bossImg.classList.add('hurt'); setTimeout(() => bossImg.classList.remove('hurt'), 70); }
+    const arena = $('#monsterArena'); if (arena) { arena.classList.remove('shake'); void arena.offsetWidth; arena.classList.add('shake'); }
+    if (navigator.vibrate) try { navigator.vibrate(8); } catch (err) {}
+    monsterDraw();
+    const response = await fetch('/api/monster/hit', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:SHOP_ACCOUNT.token})});
+    const data = await response.json();
+    if (!response.ok) { if (data.error === 'no-active-fight') closeMonsterView(); return; }
+    if (data.penalized) {
+      MONSTER.shieldHitsMe++;
+      monsterShowNum('−' + faDigits(data.penalty) + ' 🛡️', 'pen', x, y);
+    } else {
+      if (data.type === 'blk') monsterShowNum('دفع', 'blk', x, y);
+      else if (data.type === 'crit') { monsterShowNum('⚡' + faDigits(data.dmg), 'crit', x, y); MONSTER.ticker = '⚡ ضربه‌ی بحرانی شما: ' + faDigits(data.dmg) + '!'; }
+      else if (data.dmg > 0) monsterShowNum('-' + faDigits(data.dmg), 'me', x, y);
+    }
+    monsterDraw();
+  } catch (err) {
+    console.error('[monster] monsterTap() threw:', err);
+  }
+}
+$('#monsterTap').addEventListener('pointerdown', e => { e.preventDefault(); monsterRipple(e); void monsterTap(e); });
+$('#monsterStage').addEventListener('pointerdown', e => { e.preventDefault(); void monsterTap(e); });
+function renderMonsterResult(){
+  if (!MONSTER.viewOpen) return;
+  const m = MONSTER.state; if (!m) return;
+  $('#monsterFightUI').hidden = true; $('#monsterWait').hidden = true;
+  const result = $('#monsterResult'); result.hidden = false;
+  const ranking = m.ranking || [];
+  const myRank = ranking.findIndex(r => String(r.uid) === String(SHOP_ACCOUNT.uid));
+  const topRewards = [0.2, 0.1, 0.1];
+  let mineReward = 0;
+  if (m.won && myRank >= 0) mineReward = myRank < 3 ? topRewards[myRank] : 0.01;
+  result.innerHTML = `<h3>${m.won ? '🎉 باس شکست خورد!' : '💀 باس فرار کرد'}</h3>
+    <p>${m.won ? faDigits(ranking.length) + ' مبارز · ' + faDigits(m.maxHp) + ' آسیب' : 'زمان تمام شد — کافی نبود'}</p>
+    ${m.won ? `<div class="monster-rw">${ranking.slice(0, 3).map((r, i) => `<div><span>${['🥇','🥈','🥉'][i]} ${esc(String(r.uid) === String(SHOP_ACCOUNT.uid) ? 'شما' : r.name)} · ${faDigits(r.dmg)}</span><b>+${topRewards[i]} TON</b></div>`).join('')}</div>` : ''}
+    ${m.won ? `<div class="mine ${mineReward ? '' : 'none'}">${mineReward ? ('شما +' + mineReward + ' TON دریافت کردید') : 'این بار حمله نکردید'}</div>` : ''}`;
+}
+async function syncMonsterState(){
+  try {
+    const url = SHOP_ACCOUNT.token ? `/api/monster/state?token=${encodeURIComponent(SHOP_ACCOUNT.token)}` : '/api/monster/state';
+    const response = await fetch(url, {cache:'no-store'});
+    const data = await response.json();
+    if (response.ok) applyMonsterEvent(data.monster);
+  } catch (e) {}
+}
+async function initMonster(){
+  await syncMonsterState();
+  renderMonsterButton();
+  setInterval(renderMonsterButton, 1000);
+  setInterval(() => { if (MONSTER.viewOpen && MONSTER.state && MONSTER.state.status === 'fight') renderMonsterRing(); }, 1000);
+  setInterval(() => { if (MONSTER.viewOpen && !$('#monsterWait').hidden && MONSTER.state) $('#monsterWaitCd').textContent = monsterCountdownText((MONSTER.state.nextStartAt || 0) - Date.now()); }, 1000);
+  // Fallback polling alongside the SSE broadcasts, in case SSE never connects
+  // or drops silently (some browsers/proxies are unreliable with long-lived
+  // connections) - this alone must be enough to feel real-time on its own.
+  // Fast (400ms) while a fight is actually running and the view is open,
+  // much slower (4s) otherwise so idle tabs don't hammer the server.
+  let monsterPollBusy = false;
+  setInterval(() => {
+    if (monsterPollBusy) return;
+    const fastPath = MONSTER.viewOpen && MONSTER.state && (MONSTER.state.status === 'fight' || MONSTER.state.status === 'intro');
+    if (!fastPath && !MONSTER.viewOpen) return; // the 4s pollServerChat cycle already covers the fully-idle case
+    monsterPollBusy = true;
+    syncMonsterState().finally(() => { monsterPollBusy = false; });
+  }, 400);
+}
+void initMonster();
+
 function campLeft(){
   let s = Math.max(0, Math.floor((CAMP_END - Date.now())/1000));
   const d = Math.floor(s/86400); s%=86400; const h = Math.floor(s/3600); s%=3600; const m = Math.floor(s/60); s%=60;
@@ -5407,7 +5821,7 @@ function growChatIn(){ chatIn.style.height = 'auto'; chatIn.style.height = Math.
 chatIn.addEventListener('input', growChatIn);
 chatIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatForm').requestSubmit(); } });
 $('#tabChat').onclick = () => { chatTab = 'chat'; chatForceScrollBottom = true; renderChat(); };
-document.querySelectorAll('[data-room]').forEach(b => b.onclick = () => { chatRoom = b.dataset.room; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; chatForceScrollBottom = true; if (chatRoom !== TAXI_RACE_ROOM && TAXI_RACE.viewOpen) closeRaceView(); renderChat(); renderRaceButton(); pollServerChat(); });
+document.querySelectorAll('[data-room]').forEach(b => b.onclick = () => { chatRoom = b.dataset.room; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; chatForceScrollBottom = true; if (chatRoom !== TAXI_RACE_ROOM && TAXI_RACE.viewOpen) closeRaceView(); if (chatRoom !== MONSTER_ROOM && MONSTER.viewOpen) closeMonsterView(); renderChat(); renderRaceButton(); renderMonsterButton(); pollServerChat(); });
 $('#roomBack').onclick = () => { if (TAXI_RACE.viewOpen) closeRaceView(); chatRoom = null; renderChat(); };
 $('#tabOnline').onclick = () => { chatTab = 'on'; if(SHOP_ACCOUNT.token)loadOnlinePlayers(); renderChat(); };
 $('#tabFr').onclick = () => { chatTab = 'fr'; renderChat(); };

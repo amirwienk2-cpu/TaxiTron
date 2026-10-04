@@ -1279,6 +1279,192 @@ function startTaxiRaceScheduler() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Monster-Boss-Event ("Raid"): every MONSTER_INTERVAL_MS a boss shows up in the
+// chat (Farsi room, same convention as the taxi race) with HP scaled to how
+// many users are online. Everyone online can tap/hit it together within a
+// fixed time limit; the server is authoritative for HP, damage rolls, the
+// shield-penalty phases, and the one-time TON payout (clients only render
+// what the server broadcasts and never decide anything themselves).
+// NOT YET DEPLOYED ON PURPOSE (per request): keep MONSTER_EVENT_ENABLED = true
+// for local testing only. Flip to a flag file / env var once approved, the
+// same way TAXI_RACE_ENABLED works, before this ever reaches production.
+const MONSTER_EVENT_ENABLED = true;
+const MONSTER_ROOM = 'fa'; // same room convention as the taxi race
+const MONSTER_FILE = path.join(DATA_DIR, 'monster-event.json');
+const MONSTER_INTERVAL_MS = 20 * 60 * 1000; // a new boss every 20 minutes
+const MONSTER_WARN_MS = 60 * 1000; // "boss in 1 minute" heads-up
+const MONSTER_INTRO_MS = 3000; // 3..2..1..fight countdown
+const MONSTER_FIGHT_MS = 180 * 1000; // 3 minutes to kill it
+const MONSTER_HP_PER_PLAYER = 1750;
+const MONSTER_MIN_PLAYERS = 1;
+const MONSTER_REWARD_TOP = [0.2, 0.1, 0.1]; // TON for the top 3 damage dealers
+const MONSTER_REWARD_ALL = 0.01; // TON for every other attacker, once the boss dies
+const MONSTER_SHIELD_PENALTY = 150; // damage subtracted from YOUR OWN total if you hit a shielded boss
+const MONSTER_TAP_RATE_LIMIT = 8; // max taps/second counted per user (anti-spam)
+const MONSTER_BROADCAST_MS = 200; // coalesce rapid hits into one SSE update every 200ms
+
+let monsterState = null; // null = no fight in progress
+let monsterNextStartAt = 0;
+let monsterWarnTimer = null;
+let monsterIntroTimer = null;
+let monsterFightTimer = null;
+let monsterShieldTimer = null;
+let monsterBroadcastTimer = null;
+let monsterDirty = false;
+try {
+  if (fs.existsSync(MONSTER_FILE)) {
+    const loaded = readJsonFile(MONSTER_FILE);
+    if (loaded && typeof loaded === 'object') monsterNextStartAt = Number(loaded.nextStartAt) || 0;
+  }
+} catch (error) {
+  console.error('[monster] state read failed: ' + error.message);
+}
+function persistMonsterState() {
+  try {
+    const tmp = MONSTER_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({ nextStartAt: monsterNextStartAt }));
+    fs.renameSync(tmp, MONSTER_FILE);
+  } catch (error) {
+    console.error('[monster] state write failed: ' + error.message);
+  }
+}
+function postMonsterBotMessage(text) {
+  chatMessages.push({
+    id: chatNextId++, uid: RANDOM_BOT_UID, name: RANDOM_BOT_NAME, room: MONSTER_ROOM, text,
+    ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
+  });
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  persistChat();
+}
+function publicMonster(viewerUid) {
+  if (!MONSTER_EVENT_ENABLED) return null;
+  if (!monsterState) return monsterNextStartAt ? { status: 'scheduled', nextStartAt: monsterNextStartAt } : null;
+  const m = monsterState;
+  const ranking = Object.entries(m.dmg)
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([uid, v]) => ({ uid, name: m.names[uid] || ('Player ' + uid), dmg: Math.round(v) }));
+  const result = {
+    id: m.id,
+    status: m.status, // 'intro' | 'fight' | 'finished'
+    introEndsAt: m.introEndsAt || null,
+    startedAt: m.startedAt || null,
+    endsAt: m.endsAt || null,
+    maxHp: m.maxHp,
+    hp: Math.max(0, Math.round(m.hp)),
+    rage: m.hp <= m.maxHp * 0.25,
+    shield: !!m.shield,
+    ranking: ranking.slice(0, 10),
+    won: m.status === 'finished' ? m.won : null,
+  };
+  if (viewerUid != null) result.myDamage = Math.round(m.dmg[String(viewerUid)] || 0);
+  if (monsterNextStartAt) result.nextStartAt = monsterNextStartAt;
+  return result;
+}
+function scheduleMonsterBroadcast() {
+  monsterDirty = true;
+  if (monsterBroadcastTimer) return;
+  monsterBroadcastTimer = setTimeout(() => {
+    monsterBroadcastTimer = null;
+    if (!monsterDirty) return;
+    monsterDirty = false;
+    broadcastChatEvent('monster', { event: publicMonster() });
+  }, MONSTER_BROADCAST_MS);
+}
+function scheduleNextMonster() {
+  if (monsterWarnTimer) clearTimeout(monsterWarnTimer);
+  monsterNextStartAt = Date.now() + MONSTER_INTERVAL_MS;
+  monsterWarnTimer = setTimeout(warnMonster, Math.max(0, MONSTER_INTERVAL_MS - MONSTER_WARN_MS));
+  persistMonsterState();
+  broadcastChatEvent('monster', { event: publicMonster() });
+}
+function warnMonster() {
+  if (monsterState) { monsterWarnTimer = setTimeout(warnMonster, 5000); return; } // previous fight still wrapping up
+  postMonsterBotMessage('👹 در یک دقیقه‌ی دیگر یک باس ظاهر می‌شود! آنلاین بمانید و برای نبرد گروهی آماده شوید.');
+  broadcastChatEvent('message');
+  monsterIntroTimer = setTimeout(startMonsterIntro, MONSTER_WARN_MS);
+}
+function startMonsterIntro() {
+  const now = Date.now();
+  const onlineUsers = Object.values(users).filter((u) => now - Number(u.lastSeenAt || 0) < ONLINE_WINDOW_MS && u.isBanned !== true);
+  if (onlineUsers.length < MONSTER_MIN_PLAYERS) { scheduleNextMonster(); return; }
+  const maxHp = onlineUsers.length * MONSTER_HP_PER_PLAYER;
+  monsterState = {
+    id: 'monster-' + now + '-' + crypto.randomBytes(5).toString('hex'),
+    status: 'intro',
+    introEndsAt: now + MONSTER_INTRO_MS,
+    maxHp, hp: maxHp,
+    dmg: {}, names: {}, tapLog: {},
+    shield: false,
+    won: null,
+    payoutDone: false,
+  };
+  persistMonsterState();
+  broadcastChatEvent('monster', { event: publicMonster() });
+  monsterFightTimer = setTimeout(startMonsterFight, MONSTER_INTRO_MS);
+}
+function startMonsterFight() {
+  if (!monsterState || monsterState.status !== 'intro') return;
+  const now = Date.now();
+  monsterState.status = 'fight';
+  monsterState.startedAt = now;
+  monsterState.endsAt = now + MONSTER_FIGHT_MS;
+  postMonsterBotMessage('👹 یک باس با ' + Math.round(monsterState.maxHp).toLocaleString('fa-IR') + ' جان ظاهر شد! تا می‌توانید سریع ضربه بزنید — ۳ دقیقه وقت دارید!');
+  broadcastChatEvent('message');
+  broadcastChatEvent('monster', { event: publicMonster() });
+  scheduleMonsterShield();
+  monsterFightTimer = setTimeout(() => finishMonster(false), MONSTER_FIGHT_MS);
+}
+function scheduleMonsterShield() {
+  if (monsterShieldTimer) clearTimeout(monsterShieldTimer);
+  monsterShieldTimer = setTimeout(() => {
+    if (!monsterState || monsterState.status !== 'fight') return;
+    monsterState.shield = true;
+    scheduleMonsterBroadcast();
+    const len = 2000 + Math.random() * 1200;
+    monsterShieldTimer = setTimeout(() => {
+      if (!monsterState || monsterState.status !== 'fight') return;
+      monsterState.shield = false;
+      scheduleMonsterBroadcast();
+      scheduleMonsterShield();
+    }, len);
+  }, 12000 + Math.random() * 6000);
+}
+function finishMonster(won) {
+  if (!monsterState || monsterState.status === 'finished') return;
+  const m = monsterState;
+  m.status = 'finished';
+  m.won = won;
+  if (monsterShieldTimer) { clearTimeout(monsterShieldTimer); monsterShieldTimer = null; }
+  const ranking = Object.entries(m.dmg).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  if (won && !m.payoutDone) {
+    m.payoutDone = true; // set before persist() so a near-simultaneous restart can't double-pay
+    ranking.forEach(([uid, dmgDone], index) => {
+      const user = users[uid];
+      if (!user) return;
+      const reward = index < 3 ? MONSTER_REWARD_TOP[index] : MONSTER_REWARD_ALL;
+      user.ton = Number(((Number(user.ton) || 0) + reward).toFixed(6));
+      user.monsterRewards = Array.isArray(user.monsterRewards) ? user.monsterRewards : [];
+      user.monsterRewards.push({ ts: Date.now(), amount: reward, rank: index + 1, monsterId: m.id, dmg: Math.round(dmgDone) });
+    });
+    persist();
+  }
+  const topLine = ranking.slice(0, 3).map((e, i) => (m.names[e[0]] || ('Player ' + e[0])) + ' (+' + MONSTER_REWARD_TOP[i] + ' TON)').join('، ');
+  if (won) postMonsterBotMessage('🎉 باس شکست خورد! بیشترین آسیب: ' + topLine + '. بقیه‌ی مبارزان ' + MONSTER_REWARD_ALL + ' TON دریافت کردند.');
+  else postMonsterBotMessage('💀 زمان تمام شد — باس فرار کرد! این بار جایزه‌ای نیست.');
+  broadcastChatEvent('message');
+  broadcastChatEvent('monster', { event: publicMonster() });
+  setTimeout(() => { monsterState = null; scheduleNextMonster(); }, 10000);
+}
+function startMonsterScheduler() {
+  if (monsterNextStartAt && monsterNextStartAt > Date.now()) {
+    monsterWarnTimer = setTimeout(warnMonster, Math.max(0, monsterNextStartAt - MONSTER_WARN_MS - Date.now()));
+  } else {
+    scheduleNextMonster();
+  }
+}
+
 function flushSync() {
   try {
     const tmp = DATA_FILE + '.shutdown.tmp';
@@ -3291,6 +3477,49 @@ app.post('/api/taxi-race/predict', requireUserFromBody, rejectBannedUser, (req, 
   res.json({ ok: true, myPrediction: racerUid });
 });
 
+// Lets a client that just opened the app (or missed the SSE broadcast) catch up
+// on the current monster-boss countdown/intro/fight/finished state.
+app.get('/api/monster/state', (req, res) => {
+  const viewerPayload = verifyToken(req.query.token);
+  const viewerUid = viewerPayload ? String(viewerPayload.uid) : null;
+  res.json({ monster: publicMonster(viewerUid) });
+});
+
+// Server-authoritative "tap to deal damage" - the client only sends the tap,
+// every roll (damage amount, crit, block, shield-penalty) happens here so
+// nobody can cheat their way onto the reward leaderboard.
+app.post('/api/monster/hit', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const m = monsterState;
+  if (!m || m.status !== 'fight') return res.status(409).json({ error: 'no-active-fight' });
+  const uid = String(req.uid);
+  const now = Date.now();
+  const log = (m.tapLog[uid] = (m.tapLog[uid] || []).filter((t) => now - t < 1000));
+  if (log.length >= MONSTER_TAP_RATE_LIMIT) return res.status(429).json({ error: 'rate-limited' });
+  log.push(now);
+  m.names[uid] = req.user.name || ('Player ' + uid);
+  if (m.shield) {
+    const penalty = Math.min(MONSTER_SHIELD_PENALTY, m.dmg[uid] || 0);
+    m.dmg[uid] = (m.dmg[uid] || 0) - penalty;
+    scheduleMonsterBroadcast();
+    return res.json({ ok: true, penalized: true, penalty, hp: Math.round(m.hp), maxHp: m.maxHp });
+  }
+  const roll = Math.random();
+  let type = '', dmg;
+  if (roll < 0.06) { type = 'blk'; dmg = 0; }
+  else {
+    dmg = 3 + Math.floor(Math.random() * 6);
+    if (roll > 0.93) { type = 'crit'; dmg *= 3; }
+  }
+  if (m.hp <= m.maxHp * 0.25) dmg = type === 'blk' ? 0 : Math.max(1, Math.round(dmg * 0.7)); // rage: boss takes less damage below 25% HP
+  dmg = Math.min(dmg, m.hp);
+  m.hp = Math.max(0, m.hp - dmg);
+  m.dmg[uid] = (m.dmg[uid] || 0) + dmg;
+  scheduleMonsterBroadcast();
+  const won = m.hp <= 0;
+  if (won) finishMonster(true);
+  res.json({ ok: true, dmg, type, hp: Math.round(m.hp), maxHp: m.maxHp, won });
+});
+
 
 
 // ---- Global chat (shown on Home, under the online-player count) ----
@@ -3322,7 +3551,7 @@ app.get('/api/chat/messages', (req, res) => {
       ? roomMessages.filter((message) => message.id > after)
       : roomMessages.slice(-50);
   const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
-  res.json({ messages, enabled: chatEnabled, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null, taxiRace: room === TAXI_RACE_ROOM ? publicTaxiRace(viewerUid) : null });
+  res.json({ messages, enabled: chatEnabled, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null, taxiRace: room === TAXI_RACE_ROOM ? publicTaxiRace(viewerUid) : null, monster: room === MONSTER_ROOM ? publicMonster(viewerUid) : null });
 });
 
 app.post('/api/chat/card-event/vote', requireUserFromBody, rejectBannedUser, (req, res) => {
@@ -5546,6 +5775,13 @@ server.listen(PORT, () => {
     taxiRaceState = null;
     taxiRaceNextStartAt = 0;
     persistTaxiRaceState();
+  }
+  if (MONSTER_EVENT_ENABLED) {
+    startMonsterScheduler();
+  } else if (monsterState || monsterNextStartAt) {
+    monsterState = null;
+    monsterNextStartAt = 0;
+    persistMonsterState();
   }
   if (!STORAGE_PERSISTENT) {
     console.error('==================================================================');
