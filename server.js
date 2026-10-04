@@ -5314,6 +5314,18 @@ app.post('/admin/users/:uid/set-level', requireAdmin, (req, res) => {
 // Lets an admin manually correct a user's TON balance (e.g. to undo a double-credited
 // deposit) by a positive or negative delta. Clamped at 0 so a mistaken large deduction
 // can't push the balance negative.
+app.post('/admin/users/:uid/set-campaign-invites', requireAdmin, (req, res) => {
+  const user = users[String(req.params.uid)];
+  if (!user) return res.status(404).json({ error: 'unknown-user' });
+  const count = Number(req.body && req.body.count);
+  if (!Number.isFinite(count) || count < 0) return res.status(400).json({ error: 'invalid-count' });
+  const before = Number(user.campaignInvites) || 0;
+  user.campaignInvites = Math.floor(count);
+  persist();
+  console.log('[admin] set campaignInvites for user ' + user.id + ': ' + before + ' -> ' + user.campaignInvites);
+  res.json({ ok: true, uid: user.id, campaignInvites: user.campaignInvites });
+});
+
 app.post('/admin/users/:uid/adjust-ton', requireAdmin, (req, res) => {
   const user = users[String(req.params.uid)];
   if (!user) return res.status(404).json({ error: 'unknown-user' });
