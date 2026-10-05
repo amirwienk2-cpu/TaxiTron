@@ -22,14 +22,14 @@
     --nav-h:74px;
   }
   [hidden]{display:none!important}
-  html{background:var(--night);height:100%;overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  html{background:var(--night);height:100%;height:100dvh;overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
   *{touch-action:manipulation}
   #cv{touch-action:none}
   input,textarea,select{font-size:16px!important}
-  body{height:100%;min-height:100%;overscroll-behavior:none;background:var(--night);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden}
-  #app{position:fixed;top:env(safe-area-inset-top,0px);bottom:0;left:0;right:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
+  body{height:100%;height:100dvh;min-height:100%;min-height:100dvh;overscroll-behavior:none;background:var(--night);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden}
+  #app{position:fixed;top:var(--safe-top, env(safe-area-inset-top,0px));bottom:0;left:0;right:0;min-height:var(--tg-viewport-stable-height, 100dvh);display:flex;flex-direction:column;max-width:560px;margin:0 auto;
     background:linear-gradient(180deg,rgba(6,8,38,.55),rgba(6,8,38,.72) 55%,rgba(6,8,38,.85)),url(assets/bg-blur.webp) center/cover no-repeat,var(--night)}
-  main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 16px calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 24px);-webkit-overflow-scrolling:touch}
+  main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 16px calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 24px);-webkit-overflow-scrolling:touch}
   button{font:inherit;color:inherit;cursor:pointer}
   button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--taxi);outline-offset:2px}
   .page[hidden]{display:none!important}
@@ -605,7 +605,7 @@
   .tabs button[aria-selected="true"]{background:var(--edge);border-color:var(--edge)}
 
   /* Bottom nav */
-  nav{position:absolute;left:0;right:0;bottom:0;z-index:5;height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));padding:0 4px env(safe-area-inset-bottom,0px);
+  nav{position:absolute;left:0;right:0;bottom:0;z-index:5;height:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)));padding:0 4px var(--safe-bottom, env(safe-area-inset-bottom,0px));
     display:grid;grid-template-columns:repeat(7,1fr);align-items:end;
     background:linear-gradient(180deg,rgba(12,20,70,.92),#070b30);border-top:2px solid var(--edge);box-shadow:0 -6px 24px rgba(45,107,255,.35);
     backdrop-filter:blur(8px)}
@@ -630,7 +630,7 @@
   #powers{position:absolute;top:60px;left:10px;display:flex;gap:6px;pointer-events:none}
   .modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(2,3,26,.72);padding:16px;z-index:2}
   #realGameFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#060826;z-index:5}
-  #realGameBack{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;z-index:7;border:1px solid rgba(255,255,255,.3);border-radius:10px;
+  #realGameBack{position:absolute;top:calc(var(--safe-top, env(safe-area-inset-top,0px)) + 10px);left:10px;z-index:7;border:1px solid rgba(255,255,255,.3);border-radius:10px;
     padding:8px 12px;background:rgba(6,8,38,.85);font-weight:700}
   #realGameLoading{position:absolute;inset:0;z-index:6;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;background:#060826;font-family:var(--display);font-size:20px;color:var(--taxi)}
   #realGameRetry{padding:10px 18px;border:1px solid var(--taxi);border-radius:10px;background:#111a45;color:var(--taxi);font:inherit;font-size:15px}
@@ -648,7 +648,7 @@
   /* ---- compact sizing for Telegram Mini App ---- */
   :root{--nav-h:60px}
   body{font-size:13px}
-  main{padding:8px 12px calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px)}
+  main{padding:8px 12px calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 14px)}
   .stack{gap:8px}
   h2{font-size:22px}
   .head{gap:8px;margin:2px 0 10px}
@@ -1003,7 +1003,7 @@
 
   /* ---- tab bar v2 ---- */
   :root{--nav-h:66px}
-  nav{left:0!important;right:0!important;bottom:0!important;height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))!important;padding:0 4px env(safe-area-inset-bottom,0px)!important;
+  nav{left:0!important;right:0!important;bottom:0!important;height:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)))!important;padding:0 4px var(--safe-bottom, env(safe-area-inset-bottom,0px))!important;
     display:grid!important;grid-template-columns:repeat(7,1fr)!important;align-items:stretch!important;column-gap:3px!important;
     border:0!important;border-top:1px solid rgba(120,170,255,.25)!important;border-radius:0;
     background:linear-gradient(180deg,rgba(10,16,62,.96),#050826)!important;box-shadow:0 -8px 20px rgba(0,0,0,.45)!important}
@@ -1025,8 +1025,8 @@
   #nav #setBtn::before{display:none!important}
   #nav #setBtn svg{width:20px;height:20px;padding:0;border-radius:0;color:var(--taxi);background:none}
   #nav #setBtn:active{transform:translateX(-50%) scale(.94)}
-  main{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 18px)!important}
-  #toast{bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px)!important}
+  main{padding-bottom:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 18px)!important}
+  #toast{bottom:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 14px)!important}
   /* TON Connect wallet modal: reset our app's glow/gradient text styling so
      its own UI renders crisp instead of blurry - scoped to the widget only,
      nothing else in the app is affected. */
@@ -1068,14 +1068,14 @@
   #app.dark nav{background:#0d0d12!important;border-color:#23242e!important}
 
   [hidden]{display:none!important}
-  html{background:var(--night);height:100%;overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  html{background:var(--night);height:100%;height:100dvh;overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
   *{touch-action:manipulation}
   #cv{touch-action:none}
   input,textarea,select{font-size:16px!important}
-  body{height:100%;min-height:100%;overscroll-behavior:none;background:var(--night);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden}
-  #app{position:fixed;top:env(safe-area-inset-top,0px);bottom:0;left:0;right:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
+  body{height:100%;height:100dvh;min-height:100%;min-height:100dvh;overscroll-behavior:none;background:var(--night);color:var(--ink);font-family:var(--body);font-size:15px;overflow:hidden}
+  #app{position:fixed;top:var(--safe-top, env(safe-area-inset-top,0px));bottom:0;left:0;right:0;min-height:var(--tg-viewport-stable-height, 100dvh);display:flex;flex-direction:column;max-width:560px;margin:0 auto;
     background:var(--appov),url(assets/bg-blur.webp) center/cover no-repeat,var(--night)}
-  main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 16px calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 24px);-webkit-overflow-scrolling:touch}
+  main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 16px calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 24px);-webkit-overflow-scrolling:touch}
   button{font:inherit;color:inherit;cursor:pointer}
   button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--taxi);outline-offset:2px}
   .page[hidden]{display:none!important}
@@ -1653,7 +1653,7 @@
   .tabs button[aria-selected="true"]{background:var(--edge);border-color:var(--edge)}
 
   /* Bottom nav */
-  nav{position:absolute;left:0;right:0;bottom:0;z-index:5;height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));padding:0 4px env(safe-area-inset-bottom,0px);
+  nav{position:absolute;left:0;right:0;bottom:0;z-index:5;height:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)));padding:0 4px var(--safe-bottom, env(safe-area-inset-bottom,0px));
     display:grid;grid-template-columns:repeat(7,1fr);align-items:end;
     background:linear-gradient(180deg,rgba(12,20,70,.92),var(--db10));border-top:2px solid var(--edge);box-shadow:0 -6px 24px rgba(var(--gl2),.35);
     backdrop-filter:blur(8px)}
@@ -1672,7 +1672,7 @@
 
   /* Zombie Tower lobby */
   #tower{position:absolute;inset:0;z-index:30;overflow-y:auto;-webkit-overflow-scrolling:touch;background:radial-gradient(120% 60% at 50% 0,#0c3a1a,#03140a 70%);color:#eaffdf}
-  .twwrap{display:flex;flex-direction:column;gap:10px;padding:10px 12px calc(18px + env(safe-area-inset-bottom))}
+  .twwrap{display:flex;flex-direction:column;gap:10px;padding:10px 12px calc(18px + var(--safe-bottom, env(safe-area-inset-bottom)))}
   .twhero{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 0 22px rgba(93,255,58,.35)}
   .twhero img,.twrules img,.twrooms img{display:block;width:100%;height:auto}
   .twback{position:absolute;top:12px;left:12px;z-index:2;width:38px;height:38px;border-radius:12px;border:1.5px solid rgba(140,255,90,.6);
@@ -1738,7 +1738,7 @@
   /* ---- compact sizing for Telegram Mini App ---- */
   :root{--nav-h:60px}
   body{font-size:13px}
-  main{padding:8px 12px calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px)}
+  main{padding:8px 12px calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 14px)}
   .stack{gap:8px}
   h2{font-size:22px}
   .head{gap:8px;margin:2px 0 10px}
@@ -2309,7 +2309,7 @@
   .upop button.mpop-sm b{font-size:11.5px}
   #profOv{z-index:46;align-items:end;padding:0}
   .profsheet{position:relative;width:100%;max-height:92%;overflow-y:auto;border-radius:24px 24px 0 0;background:linear-gradient(180deg,var(--db36),var(--db37) 60%);
-    border:1.5px solid rgba(var(--gl3),.3);border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.6);animation:sheetUp .28s cubic-bezier(.2,1,.3,1);padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+    border:1.5px solid rgba(var(--gl3),.3);border-bottom:0;box-shadow:0 -12px 40px rgba(0,0,0,.6);animation:sheetUp .28s cubic-bezier(.2,1,.3,1);padding-bottom:calc(14px + var(--safe-bottom, env(safe-area-inset-bottom)))}
   @keyframes sheetUp{from{transform:translateY(40%);opacity:0}}
   .pfgrab{position:absolute;top:7px;left:50%;z-index:3;width:40px;height:4px;margin-left:-20px;border-radius:9px;background:rgba(255,255,255,.35)}
   .pfban{position:relative;height:118px;border-radius:24px 24px 0 0;overflow:hidden;
@@ -2773,7 +2773,7 @@
 
   /* ---- tab bar v2 ---- */
   :root{--nav-h:66px}
-  nav{left:0!important;right:0!important;bottom:0!important;height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))!important;padding:0 4px env(safe-area-inset-bottom,0px)!important;
+  nav{left:0!important;right:0!important;bottom:0!important;height:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)))!important;padding:0 4px var(--safe-bottom, env(safe-area-inset-bottom,0px))!important;
     display:grid!important;grid-template-columns:repeat(7,1fr)!important;align-items:stretch!important;column-gap:3px!important;
     border:0!important;border-top:1px solid rgba(var(--gl3),.25)!important;border-radius:0;
     background:linear-gradient(180deg,rgba(10,16,62,.96),var(--db49))!important;box-shadow:0 -8px 20px rgba(0,0,0,.45)!important}
@@ -2788,8 +2788,8 @@
   nav button[aria-current="page"] img{filter:drop-shadow(0 0 6px rgba(255,198,26,.55))!important;transform:scale(1.1)!important}
   nav button:active img{transform:scale(.88)!important}
   nav span{white-space:nowrap;letter-spacing:-.03em;font-size:9px;overflow:visible}
-  main{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 18px)!important}
-  #toast{bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px)!important}
+  main{padding-bottom:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 18px)!important}
+  #toast{bottom:calc(var(--nav-h) + var(--safe-bottom, env(safe-area-inset-bottom,0px)) + 14px)!important}
   /* Chat: Nachrichten dürfen nicht zusammengedrückt werden (sonst wird der Sticker abgeschnitten) */
   .chatlog>*{flex-shrink:0}
   /* Die Klasse .mine gehört eigentlich zur Mining-Karte – im Chat ihren Rahmen/Hintergrund entfernen */
@@ -2801,7 +2801,7 @@
   .imgbtn.busy{opacity:.5;pointer-events:none}
   .bub.imgb{padding:4px 4px 18px!important}
   .bub.imgb img{display:block;max-width:min(220px,62vw);max-height:280px;border-radius:12px;cursor:zoom-in}
-  .imgview{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(0,0,0,.88);padding:env(safe-area-inset-top,0) 12px env(safe-area-inset-bottom,0)}
+  .imgview{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(0,0,0,.88);padding:var(--safe-top, env(safe-area-inset-top,0)) 12px var(--safe-bottom, env(safe-area-inset-bottom,0))}
   .imgview[hidden]{display:none}
   .imgview img{max-width:100%;max-height:90vh;border-radius:10px}
   .mrow.mine{border:0;border-radius:0;padding:0;margin-bottom:0;background:none;box-shadow:none;overflow:visible}
@@ -2920,7 +2920,7 @@
   .tlemptyx b{font-size:3.4cqw;font-weight:900} .tlemptyx span{font-size:2.6cqw;font-weight:800}
   .lx .tlempty{display:none}
   /* Zombie Tower: sichtbarer Zurück-Pfeil (Lobby -> Games, Spiel -> Aufgeben) */
-  .twarrow{position:absolute;left:3%;top:calc(1.6% + env(safe-area-inset-top,0px));z-index:5;width:10cqw;height:10cqw;max-width:52px;max-height:52px;border-radius:50%;
+  .twarrow{position:absolute;left:3%;top:calc(1.6% + var(--safe-top, env(safe-area-inset-top,0px)));z-index:5;width:10cqw;height:10cqw;max-width:52px;max-height:52px;border-radius:50%;
     display:grid;place-items:center;padding:0;cursor:pointer;color:#fff;background:rgba(4,20,12,.72);border:.5cqw solid #5dff3a;
     box-shadow:0 0 1.6cqw rgba(93,255,58,.7),inset 0 0 1cqw rgba(93,255,58,.35);-webkit-tap-highlight-color:transparent}
   .twarrow svg{width:58%;height:58%;margin-left:-6%}
@@ -7734,9 +7734,52 @@ document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, 
 document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && ['+','-','=','0'].includes(e.key)) e.preventDefault(); });
 document.addEventListener('dblclick', e => e.preventDefault());
 
+// ---------- Telegram safe-area handling (Android fullscreen fix) ----------
+// On Android, the Telegram client draws the status bar and its own floating
+// close/menu buttons ON TOP of the WebView in fullscreen mode, and the
+// Android system gesture/navigation bar sits below it - but the standard CSS
+// env(safe-area-inset-*) values are unreliable there (usually just 0),
+// unlike iOS where they work correctly out of the box. Telegram.WebApp
+// exposes the real insets itself (safeAreaInset covers the client's own UI,
+// contentSafeAreaInset additionally covers the system status/nav bars), so
+// we read both and publish them as --safe-top/--safe-bottom (wrapped in
+// max() with the plain CSS env() value as a fallback, so iOS - where env()
+// already works - is completely unaffected). Re-read on every event that
+// can change these values, not just once at startup.
+function applyTelegramSafeArea(){
+  try {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const root = document.documentElement.style;
+    const sa = (tg && tg.safeAreaInset) || {};
+    const csa = (tg && tg.contentSafeAreaInset) || {};
+    const top = (Number(sa.top) || 0) + (Number(csa.top) || 0);
+    const bottom = (Number(sa.bottom) || 0) + (Number(csa.bottom) || 0);
+    const left = (Number(sa.left) || 0) + (Number(csa.left) || 0);
+    const right = (Number(sa.right) || 0) + (Number(csa.right) || 0);
+    root.setProperty('--safe-top', 'max(env(safe-area-inset-top,0px), ' + top + 'px)');
+    root.setProperty('--safe-bottom', 'max(env(safe-area-inset-bottom,0px), ' + bottom + 'px)');
+    root.setProperty('--safe-left', 'max(env(safe-area-inset-left,0px), ' + left + 'px)');
+    root.setProperty('--safe-right', 'max(env(safe-area-inset-right,0px), ' + right + 'px)');
+    if (tg && tg.viewportStableHeight) root.setProperty('--tg-viewport-stable-height', tg.viewportStableHeight + 'px');
+  } catch (e) { /* outside Telegram (plain browser testing) - CSS env() fallback already covers this */ }
+}
+
 // ---------- boot ----------
 limRefresh(); setInterval(limRefresh, 30000);
-try { const tg = window.Telegram && window.Telegram.WebApp; if (tg) { tg.ready(); tg.expand(); try{tg.setHeaderColor('#060826');tg.setBackgroundColor('#060826');tg.setBottomBarColor&&tg.setBottomBarColor('#070b30');tg.disableVerticalSwipes&&tg.disableVerticalSwipes();}catch(e){} const lc = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code; if (!S.langSet) S.lang = lc === 'fa' ? 'fa' : lc === 'de' ? 'de' : 'en'; } } catch(e){}
+try {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) {
+    tg.ready(); tg.expand();
+    try{tg.setHeaderColor('#060826');tg.setBackgroundColor('#060826');tg.setBottomBarColor&&tg.setBottomBarColor('#070b30');tg.disableVerticalSwipes&&tg.disableVerticalSwipes();}catch(e){}
+    applyTelegramSafeArea();
+    if (tg.onEvent) {
+      ['safeAreaChanged', 'contentSafeAreaChanged', 'viewportChanged', 'fullscreenChanged'].forEach((eventName) => {
+        try { tg.onEvent(eventName, applyTelegramSafeArea); } catch (e) {}
+      });
+    }
+    const lc = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code; if (!S.langSet) S.lang = lc === 'fa' ? 'fa' : lc === 'de' ? 'de' : 'en';
+  }
+} catch(e){}
 loadShopAccount();
 setInterval(pollServerChat, 4000);
 // Beim Zurückkehren in die App (Tab-Wechsel oder Telegram-WebApp-Resume):
