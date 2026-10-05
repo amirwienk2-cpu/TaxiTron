@@ -2162,11 +2162,12 @@ function hasActiveLevelReward(user, level) {
   return Number(user.skinRewards && user.skinRewards[skin] && user.skinRewards[skin].remainingDays) > 0;
 }
 
-// Supporter and Developer are both full admin-equivalent roles (same
-// chat-moderation and chat-override powers as isChatAdmin) - just separate
-// flags/badges so staff can be given either without the "Chat-Admin" label.
+// Supporter, Developer and Designer are all full admin-equivalent roles in
+// chat (same chat-moderation and chat-override powers as isChatAdmin) - just
+// separate flags/badges so staff can be given any of them without the
+// "Chat-Admin" label.
 function isAdminOrSupporter(user) {
-  return !!(user && (user.isChatAdmin === true || user.isSupporter === true || user.isDeveloper === true));
+  return !!(user && (user.isChatAdmin === true || user.isSupporter === true || user.isDeveloper === true || user.isDesigner === true));
 }
 
 function canModerateChat(user) {

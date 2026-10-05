@@ -4381,7 +4381,7 @@ $('#chatlog').addEventListener('click',event=>{
   if(editBtn){event.stopPropagation();startEdit(editBtn.dataset.editMsg);}
 });
 async function deleteServerChatMessage(messageId){
-  if(!SHOP_ACCOUNT.token||!(SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDeveloper)||!Number.isFinite(messageId))return;
+  if(!SHOP_ACCOUNT.token||!(SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDeveloper||SHOP_ACCOUNT.isDesigner)||!Number.isFinite(messageId))return;
   if(!confirm(S.lang==='de'?'Diese Nachricht löschen?':S.lang==='fa'?'این پیام حذف شود؟':'Delete this message?'))return;
   try{
     const response=await fetch('/api/chat/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,messageId})});
@@ -6881,7 +6881,7 @@ function showMPop(row){
   mPopTs = ts;
   const pop = $('#mPop'), app = $('#app');
   const canEdit = m.who === '@me' && Number.isFinite(m.id) && !m.stk;
-  const canDelete = (SHOP_ACCOUNT.isChatAdmin || SHOP_ACCOUNT.isSupporter || SHOP_ACCOUNT.isDeveloper) && Number.isFinite(m.id);
+  const canDelete = (SHOP_ACCOUNT.isChatAdmin || SHOP_ACCOUNT.isSupporter || SHOP_ACCOUNT.isDeveloper || SHOP_ACCOUNT.isDesigner) && Number.isFinite(m.id);
   pop.innerHTML = '<button id="mPopReply" class="mpop-sm"><span class="upi">↩</span><span><b>' + esc(t('rp_reply')) + '</b></span></button>'
     + (canEdit ? '<button id="mPopEdit" class="mpop-sm"><span class="upi">✎</span><span><b>' + esc(S.lang==='de'?'Bearbeiten':S.lang==='fa'?'ویرایش':'Edit') + '</b></span></button>' : '')
     + (canDelete ? '<button id="mPopDelete" class="mpop-sm"><span class="upi">🗑</span><span><b>' + esc(S.lang==='de'?'Löschen':S.lang==='fa'?'حذف':'Delete') + '</b></span></button>' : '');
