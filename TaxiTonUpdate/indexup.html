@@ -3068,8 +3068,6 @@
   #fishOv{position:fixed;inset:0;z-index:9000;background:#060826}
   #fishOv[hidden]{display:none}
   #fishFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#060826}
-  #fishBack{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;z-index:2;border:1px solid rgba(255,255,255,.3);border-radius:10px;
-    background:rgba(0,0,0,.45);color:#fff;font:700 15px/1 var(--body);width:36px;height:36px;display:grid;place-items:center}
   .monsterwrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:14px 12px;overflow-y:auto}
   .monster-arena{position:relative;margin:0;padding:14px 14px 10px;border-radius:20px;background:radial-gradient(120% 80% at 50% 30%,#3a1430 0%,#1a1030 45%,#121427 100%);overflow:hidden}
   .monster-arena.rage{background:radial-gradient(120% 80% at 50% 30%,#5a0f1c 0%,#2a0d1c 50%,#140d18 100%)}
@@ -3706,7 +3704,6 @@
   <!-- ZOMBIE-ANGELN (Chat-Event, alle 20 Minuten) -->
   <div id="fishOv" hidden>
     <iframe id="fishFrame" title="Zombie-Angeln" allow="autoplay" hidden></iframe>
-    <button id="fishBack" type="button" aria-label="Back to TaxiTon">←</button>
   </div>
 
   <!-- GAME -->
@@ -5547,7 +5544,6 @@ function closeFishView(){
   frame.src = 'about:blank'; frame.hidden = true; ov.hidden = true;
 }
 $('#fishBtn').onclick = openFishView;
-$('#fishBack').onclick = closeFishView;
 window.addEventListener('message', event => {
   if (event.data && event.data.type === 'zombie-angeln-close') closeFishView();
 });
