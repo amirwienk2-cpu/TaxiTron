@@ -244,7 +244,7 @@ const LEVEL_ONE_WINDOW_TON_REWARD = 0.01;
 const FIGURE_PACKS = {
   red: { price: 0.5, weights: { sara: 800, nova: 120, zero: 75, berlin: 5, luna: 0 } },
   purple: { price: 1, weights: { sara: 700, nova: 149, zero: 130, berlin: 20, luna: 1 } },
-  gold: { price: 2, weights: { sara: 250, nova: 350, zero: 375, berlin: 20, luna: 5 } },
+  gold: { price: 2, weights: { sara: 100, nova: 4620, zero: 4950, berlin: 264, luna: 66 } },
 };
 const FIGURE_IDS = ['sara', 'nova', 'zero', 'berlin', 'luna'];
 const FIGURE_MINING_RATES = { sara: 100, nova: 250, zero: 600, berlin: 1200, luna: 2500 };
