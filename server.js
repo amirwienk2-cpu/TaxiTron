@@ -257,9 +257,9 @@ const TT_SHOP_TRON_ADDRESS = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const TT_SHOP_EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 const TT_SHOP_LTC_ADDRESS = /^(?:[LM3][1-9A-HJ-NP-Za-km-z]{25,34}|ltc1[ac-hj-np-z02-9]{39,59})$/i;
 const TT_CHAT_ITEMS = {
-  bub: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000 },
-  frm: { none: 0, autumn: 2000, cozy: 2000, fox: 2000 },
-  ban: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000 },
+  bub: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000, shadows: 2000 },
+  frm: { none: 0, autumn: 2000, cozy: 2000, fox: 2000, shadows: 2000 },
+  ban: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000, shadows: 2000 },
   stk: { sara: 5000, berlin: 5000, zero: 5000, nova: 5000, luna: 5000, nikto: 5000, zombie: 5000, autumn: 5000 },
 };
 function dailyTonCapForLevel(level) {
