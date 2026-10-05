@@ -1037,7 +1037,7 @@
   // const SERVER_URL = "https://your-server.example.com";
   const SERVER_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
     ? ''
-    : "https://taxitron-production.up.railway.app";
+    : "https://taxiton.org";
   const serverSession = { token: null, online: false, isBanned: false };
   let inviteEventEndsAt = 0;
   let inviteLeaderboardData = null;

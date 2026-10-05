@@ -42,7 +42,7 @@ npm start
   selected. Each winner's 0.2 TON reward is credited to their account balance.
 4. Deploy. Railway provides `PORT` automatically.
 5. In `app.js`, make sure `SERVER_URL` points at the Railway domain.
-  The current production fallback is `https://taxitron-production.up.railway.app`.
+  The current production fallback is `https://taxiton.org`.
 6. Set `ADMIN_SECRET` and open `/admin` to review and complete manual payouts.
 
 Railway's generated public domain must be configured in the service's

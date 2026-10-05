@@ -57,12 +57,12 @@ const { attachMonsterCrash } = require('./monster-crash/monster-crash');
 // ---------------------------------------------------------------
 const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '';
-const TELEGRAM_WEBHOOK_URL = process.env.TELEGRAM_WEBHOOK_URL || 'https://taxitron-production.up.railway.app/telegram/webhook';
+const TELEGRAM_WEBHOOK_URL = process.env.TELEGRAM_WEBHOOK_URL || 'https://taxiton.org/telegram/webhook';
 const WITHDRAWAL_CHANNEL_ID = process.env.WITHDRAWAL_CHANNEL_ID || '-1004440778638';
 const PLAY_GAME_URL = process.env.PLAY_GAME_URL || 'https://t.me/TaxiiTonBot';
 const NEWS_CHANNEL_URL = process.env.NEWS_CHANNEL_URL || 'https://t.me/TaxiiTon';
 const TON_EXPLORER_URL = process.env.TON_EXPLORER_URL || 'https://tonviewer.com/transaction/';
-const MINI_APP_URL = process.env.MINI_APP_URL || 'https://taxitron-production.up.railway.app';
+const MINI_APP_URL = process.env.MINI_APP_URL || 'https://taxiton.org';
 const TELEGRAM_MINI_APP_URL = new URL('/TaxiTonUpdate/indexup.html?v=taxiton-admin-badges-20261001', MINI_APP_URL).toString();
 const TON_USD_RATE = Number(process.env.TON_USD_RATE || 0);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';

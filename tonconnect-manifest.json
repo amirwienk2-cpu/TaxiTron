@@ -1,7 +1,7 @@
 {
-  "url": "https://taxitron-production.up.railway.app",
+  "url": "https://taxiton.org",
   "name": "TaxiTon",
-  "iconUrl": "https://taxitron-production.up.railway.app/TaxiTonUpdate/assets/tticon.webp",
-  "termsOfUseUrl": "https://taxitron-production.up.railway.app/TaxiTonUpdate/indexup.html",
-  "privacyPolicyUrl": "https://taxitron-production.up.railway.app/TaxiTonUpdate/indexup.html"
+  "iconUrl": "https://taxiton.org/TaxiTonUpdate/assets/tticon.webp",
+  "termsOfUseUrl": "https://taxiton.org/TaxiTonUpdate/indexup.html",
+  "privacyPolicyUrl": "https://taxiton.org/TaxiTonUpdate/indexup.html"
 }
