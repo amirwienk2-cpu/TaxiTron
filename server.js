@@ -3616,7 +3616,7 @@ app.get('/api/online-users', (req, res) => {
   const list = Object.values(users)
     .filter((user) => now - Number(user.lastSeenAt || 0) < ONLINE_WINDOW_MS)
     .sort((a, b) => {
-      const adminDiff = (b.isChatAdmin === true || b.isSupporter === true || b.isDeveloper === true ? 1 : 0) - (a.isChatAdmin === true || a.isSupporter === true || a.isDeveloper === true ? 1 : 0);
+      const adminDiff = (b.isChatAdmin === true || b.isSupporter === true || b.isDeveloper === true || b.isDesigner === true ? 1 : 0) - (a.isChatAdmin === true || a.isSupporter === true || a.isDeveloper === true || a.isDesigner === true ? 1 : 0);
       if (adminDiff !== 0) return adminDiff;
       const badgeDiff = (b.badge4 === true || b.badge5 === true ? 1 : 0) - (a.badge4 === true || a.badge5 === true ? 1 : 0);
       if (badgeDiff !== 0) return badgeDiff;
