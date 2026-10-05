@@ -1415,17 +1415,15 @@
     background:rgba(6,8,38,.85);border:1.5px solid rgba(255,198,26,.6);text-shadow:0 2px 0 #5a2200}
   .gcard.locked:active{transform:none}
   .gcard:active{transform:scale(.98);box-shadow:0 0 22px rgba(255,198,26,.6)}
-  .shoptabs{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:4px;margin-bottom:10px;border-radius:16px;
+  .shoptabs{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:4px;margin-bottom:10px;border-radius:16px;
     background:linear-gradient(180deg,var(--db10),var(--db15));border:1.5px solid rgba(var(--gl3),.28);box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.35)}
-  .stglide{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/4);border-radius:12px;z-index:0;
+  .stglide{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:12px;z-index:0;
     background:linear-gradient(180deg,#ffe066,#ffc61a 45%,#e39a00);box-shadow:0 3px 0 #8a5a00,0 0 16px rgba(255,198,26,.45),inset 0 1px 0 rgba(255,255,255,.6);
     transition:transform .28s cubic-bezier(.3,1.3,.5,1)}
   .shoptabs[data-i="1"] .stglide{transform:translateX(100%)}
   .shoptabs[data-i="2"] .stglide{transform:translateX(200%)}
   #app[dir="rtl"] .shoptabs[data-i="1"] .stglide{transform:translateX(-100%)}
   #app[dir="rtl"] .shoptabs[data-i="2"] .stglide{transform:translateX(-200%)}
-  .shoptabs[data-i="3"] .stglide{transform:translateX(300%)}
-  #app[dir="rtl"] .shoptabs[data-i="3"] .stglide{transform:translateX(-300%)}
   #shopTabs button{flex-direction:column;gap:2px;font-size:13px;padding:6px 2px}
   #shopTabs button span{white-space:nowrap}
   #app[dir="rtl"] .stglide{left:auto;right:4px}
@@ -3029,14 +3027,17 @@
   #chatlog .mrow:has(.sk-autumn),#chatlog .mrow:has(.sk-cozy),#chatlog .mrow:has(.sk-fox),#chatlog .mrow:has(.sk-shadows){margin-bottom:3px!important}
   /* Lösch-/Bearbeiten-Button: nur im Antipp-Menü (mPop), nicht mehr dauerhaft in der Bubble */
   #chatlog [data-edit-msg],#chatlog [data-mod-del]{display:none!important}
-  /* Reaktions-Button jetzt außerhalb der Bubble, als eigenes Flex-Kind von .mrow, unten ausgerichtet */
+  /* Reaktions-Button außerhalb der Bubble, als eigenes Flex-Kind von .mrow, unten ausgerichtet */
   #chatlog .mrow:not(.mine) .bub{margin-inline-end:0!important}
-  #chatlog .mrow>.chat-reactions{display:none!important}
-  #chatlog .mrow.mine>.chat-reactions{margin-inline-end:5px}
-  #chatlog .mrow:not(.mine)>.chat-reactions{margin-inline-start:5px}
-  #chatlog .chat-react-add{width:20px!important;height:20px!important;min-height:0!important;padding:0!important}
+  #chatlog .mrow>.chat-reactions{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:3px!important;margin:0!important;max-width:84px}
+  #chatlog .mrow.mine>.chat-reactions{align-items:flex-end!important;margin-inline-end:4px}
+  #chatlog .mrow:not(.mine)>.chat-reactions{margin-inline-start:4px}
+  #chatlog .chat-react-add{width:20px!important;height:20px!important;min-height:0!important;padding:0!important;opacity:.55;background:rgba(255,255,255,.06)!important;border-color:rgba(255,255,255,.1)!important}
+  #chatlog .chat-react-add:active{opacity:1}
+  #chatlog .chat-react-pill{min-height:20px!important;font-size:10px!important;background:rgba(10,14,32,.65)!important;backdrop-filter:blur(2px)}
+  #chatlog .chat-react-pill:active{transform:scale(.93)}
   #chatlog .chat-react-add svg{width:12px!important;height:12px!important}
-  #chatlog .chat-react-pill{min-height:20px!important;font-size:10px!important}
+  #chatlog .chat-react-picker{max-width:150px}
   /* Reply-Vorschau: einzeilig, abgeschnitten */
   #chatlog .rq{display:flex!important;align-items:baseline!important;gap:6px!important;padding:2px 6px!important;white-space:nowrap!important;overflow:hidden!important;max-width:100%!important;cursor:pointer}
   #chatlog .rq div{display:flex!important;align-items:baseline!important;gap:6px!important;min-width:0;overflow:hidden}
@@ -3508,7 +3509,6 @@
         <span class="stglide"></span>
         <button role="tab" id="tabCars" aria-selected="true"><img src="assets/badge-lvl4.webp" alt=""><span data-t="cars">Levels</span></button>
         <button role="tab" id="tabBoost" aria-selected="false"><img src="assets/pack-gold.webp" alt=""><span data-t="boosts">Packs</span></button>
-        <button role="tab" id="tabTT" aria-selected="false"><img src="assets/tticon.webp" alt="" class="rnd"><span>TTShop</span></button>
         <button role="tab" id="tabStk" aria-selected="false"><img src="assets/stk-sara-4.webp" alt=""><span data-t="it_tab">Items</span></button>
       </div>
       <div class="stack" id="shopList"></div>
@@ -3559,26 +3559,6 @@
 
   <div id="toast" hidden></div>
 
-  <div class="modal" id="ttOv" hidden>
-    <div class="sheet ttsheet" id="ttSheet">
-      <div class="row" style="justify-content:space-between"><div class="row" style="gap:10px"><img id="ttImg" class="ttimg" alt=""><div><h3 id="ttSym"></h3><span class="muted" id="ttName"></span></div></div>
-        <button class="xbtn" id="ttClose" aria-label="Close">✕</button></div>
-      <div class="okbox" id="ttDisabledNote" style="border-color:rgba(255,107,107,.4)" hidden>
-        <div class="wdline"><div class="ok" style="background:#ff6b6b">!</div><p id="ttDisabledText"></p></div>
-      </div>
-      <span class="pkkick" data-t="tt_amount">Amount</span>
-      <div class="ttamts" id="ttAmts"></div>
-      <p class="muted tt-min-note" id="ttMinNote"></p>
-      <span class="pkkick"><span data-t="tt_addr">Your wallet address</span> · <span id="ttNet"></span></span>
-      <textarea id="ttAddr" rows="1" autocomplete="off" spellcheck="false" placeholder="0x… / T…"></textarea>
-      <div id="ttMemoWrap" hidden><span class="pkkick"><span data-t="tt_memo">Memo / comment</span> <span class="memoopt" data-t="tt_memoOpt">(if needed)</span></span>
-        <input id="ttMemo" maxlength="120" autocomplete="off" spellcheck="false"></div>
-      <div class="ttsum"><span data-t="tt_cost">Cost</span><b id="ttCost"></b></div>
-      <div class="ttsum"><span data-t="tt_have">Your TT</span><b id="ttHave"></b></div>
-      <button class="bigbtn" id="ttBuy" style="width:100%;margin:8px 0 0"></button>
-      <p class="muted" style="margin:8px 0 0;font-size:10.5px" data-t="tt_warn">Double-check the address and network. Payouts are sent manually after review.</p>
-    </div>
-  </div>
   <div class="modal" id="infoOv" hidden>
     <div class="biobox">
       <button class="xbtn bioclose" id="infoClose" aria-label="Close">✕</button>
@@ -5971,45 +5951,7 @@ function carSVG(c){
     <rect x="8" y="36" width="10" height="7" rx="2" fill="#11152e"/><rect x="46" y="36" width="10" height="7" rx="2" fill="#11152e"/></svg>`;
 }
 let shopTab = 'cars';
-const TT_PER_USD = 10000, TT_MIN_USD = 3, TT_AMOUNTS = [3, 5, 10, 25];
-const COINS = [
-  {id:'ton',  sym:'TON',  name:'Gram · Toncoin', c:'#0098ea', net:'TON', ton:true},
-  {id:'usdt', sym:'USDT', name:'Tether · TRON', c:'#26d19a', net:'TRC20 (TRON)', tron:true},
-  {id:'trx',  sym:'TRX',  name:'TRON',    c:'#ff3b3b', net:'TRON', tron:true},
-  {id:'bnb',  sym:'BNB',  name:'BNB',     c:'#f3ba2f', net:'BEP20'},
-  {id:'ltc',  sym:'LTC',  name:'Litecoin',c:'#3d7bff', net:'Litecoin'},
-  {id:'shib', sym:'SHIB', name:'Shiba Inu',c:'#ff5a2a', net:'BEP20'},
-];
-let ttSel = null, ttAmt = TT_MIN_USD;
-const coinImg = id => id === 'ton' ? 'assets/ton-logo.webp' : `assets/coin-${id}.webp`;
-const addrOk = (c, v) => c.ton ? TON_RE.test(v)
-  : c.tron ? /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(v)
-    : c.id === 'bnb' || c.id === 'shib' ? /^0x[a-fA-F0-9]{40}$/.test(v)
-      : c.id === 'ltc' ? /^(?:[LM3][1-9A-HJ-NP-Za-km-z]{25,34}|ltc1[ac-hj-np-z02-9]{39,59})$/i.test(v)
-        : false;
-const TT_MIN_TEXT = {en:'Minimum payout: $3',de:'Mindestauszahlung: 3 $',fa:'حداقل برداشت: ۳ دلار'};
-function openCoin(id){
-  ttSel = COINS.find(c => c.id === id); ttAmt = TT_MIN_USD;
-  $('#ttImg').src = coinImg(id); $('#ttSym').textContent = ttSel.sym; $('#ttName').textContent = ttSel.name;
-  $('#ttNet').textContent = ttSel.net; $('#ttMemoWrap').hidden = !ttSel.ton; $('#ttMemo').value = ''; $('#ttMemo').placeholder = t('tt_memoPh');
-  $('#ttAddr').placeholder = ttSel.tron ? 'T… (TRON address)' : ttSel.ton ? 'UQ… / EQ… (TON address)' : '0x… / L…'; $('#ttAddr').value = (S.ttAddr && S.ttAddr[id]) || '';
-  $('#ttSheet').style.setProperty('--cc', ttSel.c); renderCoin(); $('#ttOv').hidden = false; requestAnimationFrame(growAddr);
-}
-function renderCoin(){
-  const tt = S.tt || 0, cost = ttAmt * TT_PER_USD;
-  $('#ttAmts').innerHTML = TT_AMOUNTS.map(a => `<button class="ttamt ${a===ttAmt?'on':''}" data-amt="${a}"><b>$${a}</b><span>${fmt(a*TT_PER_USD)} TT</span></button>`).join('');
-  $('#ttMinNote').textContent = TT_MIN_TEXT[S.lang] || TT_MIN_TEXT.en;
-  $('#ttCost').textContent = fmt(cost) + ' TT'; $('#ttHave').textContent = fmt(tt) + ' TT';
-  const av = $('#ttAddr').value.trim(), ok = tt >= cost, addr = addrOk(ttSel, av);
-  // TT Shop payouts can be paused server-side (see /api/tt-shop/order's
-  // 'tt-shop-disabled' error) while a known issue is being looked at.
-  const ttShopOff = SHOP_ACCOUNT.ttShopEnabled !== true;
-  $('#ttDisabledNote').hidden = !ttShopOff;
-  if (ttShopOff) $('#ttDisabledText').textContent = t('tt_shop_disabled');
-  $('#ttAddr').disabled = ttShopOff; $('#ttMemo').disabled = ttShopOff;
-  const b = $('#ttBuy'); b.disabled = ttShopOff || !SHOP_ACCOUNT.online || ttAmt < TT_MIN_USD || !ok || !addr;
-  b.textContent = ttShopOff ? t('tt_shop_disabled') : !SHOP_ACCOUNT.online ? t('lim_tg') : !ok ? t('tt_poor') : !addr ? (ttSel.tron && av ? t('tt_badtron') : av ? t('wd_badaddr') : t('tt_needaddr')) : `${t('tt_buy')} $${ttAmt} ${ttSel.sym}`;
-}
+const TT_PER_USD = 10000;
 const PADLOCK_SVG = `<svg viewBox="0 0 64 72" aria-hidden="true"><defs>
   <linearGradient id="plB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a8"/><stop offset=".35" stop-color="#ffd21a"/><stop offset=".7" stop-color="#f0a000"/><stop offset="1" stop-color="#b86a00"/></linearGradient>
   <linearGradient id="plS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8e97b8"/><stop offset=".45" stop-color="#f2f5ff"/><stop offset="1" stop-color="#6b7394"/></linearGradient></defs>
@@ -6078,22 +6020,10 @@ function revealPack(){
 }
 function closePack(){ $('#packOv').hidden = true; packState = null; render(); }
 function renderShop(){
-  $('#shopTabs').dataset.i = {cars:0, boost:1, tt:2, stk:3}[shopTab]; $('#tabStk').setAttribute('aria-selected', shopTab==='stk');
-  $('#tabBoost').setAttribute('aria-selected', shopTab==='boost'); $('#tabTT').setAttribute('aria-selected', shopTab==='tt'); $('#tabCars').setAttribute('aria-selected', shopTab==='cars');
+  $('#shopTabs').dataset.i = {cars:0, boost:1, stk:2}[shopTab]; $('#tabStk').setAttribute('aria-selected', shopTab==='stk');
+  $('#tabBoost').setAttribute('aria-selected', shopTab==='boost'); $('#tabCars').setAttribute('aria-selected', shopTab==='cars');
   const list = $('#shopList');
-  if (shopTab === 'stk') { renderItems(list); } else if (shopTab === 'tt') {
-    const tt = S.tt || 0;
-    list.innerHTML = `<div class="tthead">
-        <div class="grow"><span class="pkkick">${esc(t('tt_bal'))}</span><div class="ttbalbig"><img src="assets/tticon.webp" alt=""><b class="num">${fmt(tt)}</b><span>TT</span></div>
-          <span class="muted">≈ $${(tt / TT_PER_USD).toFixed(2)}</span></div>
-        <div class="ttrate"><b>10,000 TT</b><span>= $1</span></div>
-      </div>
-      <div class="coingrid">${COINS.map(c => `<button class="coincard" data-coin="${c.id}" style="--cc:${c.c}">
-          <img src="${coinImg(c.id)}" alt="${c.sym}"><b>${c.sym}</b><span class="muted">${c.name}</span>
-          <span class="coinfrom">${esc(t('tt_from'))} ${fmt(TT_PER_USD * TT_AMOUNTS[0])} TT</span></button>`).join('')}</div>
-      ${S.ttOrders && S.ttOrders.length ? `<div class="ttorders"><b class="pkkick">${esc(t('tt_orders'))}</b>${S.ttOrders.slice(0,5).map(o => `<div class="ttord"><img src="${coinImg(o.coin)}" alt=""><span class="grow">$${o.usd} ${COINS.find(c=>c.id===o.coin).sym}<small class="muted">${new Date(o.at).toLocaleString()}</small></span><span class="pend">${esc(t('tt_pending'))}</span></div>`).join('')}</div>` : ''}
-      <p class="pknote muted">${esc(t('tt_note'))}</p>`;
-  } else if (shopTab === 'boost') {
+  if (shopTab === 'stk') { renderItems(list); } else if (shopTab === 'boost') {
     const RC = {common:'#9fb3d9', rare:'#3d8bff', epic:'#c86bff', legend:'#ffc61a'};
     const odds = pk => { const tot = Object.values(pk.w).reduce((a,b)=>a+b,0), o = {common:0,rare:0,epic:0,legend:0};
       for (const [id,v] of Object.entries(pk.w)) o[RARITY[id]] += v / tot * 100; return o; };
@@ -6228,7 +6158,6 @@ $('#chatForm').addEventListener('submit', async e => { e.preventDefault(); const
   S.chat.push({mine:true, text:v, ts:Date.now(), room:chatRoom, ...(replyTo ? {reply:replyTo} : {})}); clearReply(); addPxp(PX.chat, 'chat'); S.chat = S.chat.slice(-40); $('#chatIn').value=''; growChatIn(); save(); renderChat(); });
 $('#tabBoost').onclick = () => { shopTab='boost'; renderShop(); };
 $('#tabCars').onclick = () => { shopTab='cars'; renderShop(); };
-$('#tabTT').onclick = () => { shopTab='tt'; renderShop(); };
 $('#tabStk').onclick = () => { shopTab='stk'; renderShop(); };
 document.querySelectorAll('.glock .padlock').forEach(el => el.innerHTML = PADLOCK_SVG);
 /* ---- Zombie Tower lobby ---- */
@@ -7249,32 +7178,6 @@ $('#stkPick').addEventListener('click', e => {
   stkOpen = false; save(); renderChat();
 });
 document.addEventListener('click', e => { const g = e.target.closest('[data-game]'); if (!g) return; if (g.dataset.game === 'tower') { openTower(); return; } toast(`${t('g_'+g.dataset.game)} · ${t('comingSoon')}`); });
-document.addEventListener('click', e => { const c = e.target.closest('[data-coin]'); if (c) openCoin(c.dataset.coin); const a = e.target.closest('[data-amt]'); if (a) { ttAmt = +a.dataset.amt; renderCoin(); } });
-const growAddr = () => { const a = $('#ttAddr'); a.style.height = 'auto'; a.style.height = a.scrollHeight + 2 + 'px'; };
-$('#ttAddr').addEventListener('input', () => { growAddr(); renderCoin(); });
-$('#ttClose').onclick = () => { $('#ttOv').hidden = true; };
-$('#ttOv').addEventListener('click', e => { if (e.target.id === 'ttOv') $('#ttOv').hidden = true; });
-$('#ttBuy').onclick = async () => {
-  if (SHOP_ACCOUNT.ttShopEnabled !== true) { toast(t('tt_shop_disabled')); return; }
-  const cost = ttAmt * TT_PER_USD, addr = $('#ttAddr').value.trim();
-  if (!SHOP_ACCOUNT.online || ttAmt < TT_MIN_USD || (S.tt||0) < cost || !addrOk(ttSel, addr)) return;
-  const button = $('#ttBuy'); button.disabled = true;
-  try {
-    const response = await fetch('/api/tt-shop/order', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      token:SHOP_ACCOUNT.token, coin:ttSel.id, usd:ttAmt, address:addr, memo:ttSel.ton ? $('#ttMemo').value.trim() : ''
-    })});
-    const data = await response.json();
-    if (!response.ok || !data.state) {
-      if (data.state) applyShopAccountState(data.state, S.car);
-      toast(data.error === 'insufficient-tt' ? t('tt_poor') : data.error === 'amount-too-small' ? TT_MIN_TEXT[S.lang] : data.error === 'invalid-address' ? t('wd_badaddr') : data.error === 'tt-shop-disabled' ? t('tt_shop_disabled') : t('buyErr'));
-      return;
-    }
-    S.ttAddr = S.ttAddr || {}; S.ttAddr[ttSel.id] = addr; save();
-    applyShopAccountState(data.state, S.car);
-    $('#ttOv').hidden = true; renderShop(); toast(t('tt_done'));
-  } catch(e) { toast(t('lim_err')); }
-  finally { renderCoin(); }
-};
 document.addEventListener('click', e => {
   const q = e.target.closest('[data-info]'); if (!q) return;
   e.stopPropagation(); const c = CARS.find(x => x.id === q.dataset.info);
