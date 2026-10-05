@@ -63,6 +63,10 @@ html[lang=fa] body{font-family:"Vazirmatn","Baloo 2",system-ui,sans-serif}
 
 /* ---------- bottom ---------- */
 .dock{padding:10px 14px 14px;background:var(--water-deep);border-top:2px solid #0f2e2a}
+.fishReturn{display:block;width:100%;border:1px solid rgba(234,247,228,.25);border-radius:12px;padding:9px 10px;margin-bottom:10px;
+  font:700 14px var(--font);color:var(--ink);background:rgba(10,28,33,.55);cursor:pointer}
+html[lang=fa] .fishReturn{font-family:"Vazirmatn",sans-serif}
+.fishReturn:active{background:rgba(10,28,33,.8)}
 .prizes{display:flex;justify-content:space-between;gap:4px;margin-bottom:12px}
 .prize{flex:1;text-align:center;min-width:0}
 .prize img{height:46px;width:100%;object-fit:contain;display:block}
@@ -135,6 +139,7 @@ html[lang=fa] .cast{font-family:"Vazirmatn",sans-serif}
   </div>
 
   <div class="dock">
+    <button class="fishReturn" id="fishReturnBtn" type="button"></button>
     <div class="prizes" id="prizes"></div>
     <button class="cast" id="castBtn" disabled></button>
   </div>
@@ -171,7 +176,7 @@ let PRIZES = [
 const DEMO_WEIGHTS = { sleep:43, love:28, cry:17, arms:10, punch:2 };
 
 const T = {
-  de:{ cast:"Angel auswerfen", waitOthers:"Angel ist drin – alle ziehen gleich", reeling:"Alle ziehen …",
+  de:{ back:"Zurück", cast:"Angel auswerfen", waitOthers:"Angel ist drin – alle ziehen gleich", reeling:"Alle ziehen …",
        next:"Nächste Babys in", castLeft:"Angel werfen noch", casters:"werfen mit", today:"Heute noch",
        limit:"Für heute aufgebraucht – morgen geht's weiter", tooLate:"Zu spät – nächste Runde",
        won:"Gefangen!", credited:"Wurde deiner Balance gutgeschrieben", demo:"Demo-Modus – nichts wird gutgeschrieben",
@@ -182,7 +187,7 @@ const T = {
              daily_limit:"Für heute aufgebraucht", auth:"Bitte die App über Telegram öffnen",
              server:"Verbindung fehlgeschlagen. Versuch es nochmal." },
        names:{ cry:"Heulsuse", love:"Verliebt", punch:"Boxer", arms:"Grummel", sleep:"Schlafmütze" } },
-  fa:{ cast:"قلاب بنداز", waitOthers:"قلابت توی آبه – همه با هم می‌کشن", reeling:"همه دارن می‌کشن …",
+  fa:{ back:"بازگشت", cast:"قلاب بنداز", waitOthers:"قلابت توی آبه – همه با هم می‌کشن", reeling:"همه دارن می‌کشن …",
        next:"بچه‌های بعدی در", castLeft:"وقت قلاب انداختن", casters:"نفر قلاب انداختن", today:"دفعات باقی‌مانده امروز",
        limit:"سهم امروزت تموم شد – فردا دوباره", tooLate:"دیر شد – دور بعد",
        won:"گرفتی!", credited:"به موجودیت اضافه شد", demo:"حالت نمایشی – چیزی اضافه نمیشه",
@@ -209,6 +214,22 @@ document.documentElement.dir = LANG === "fa" ? "rtl" : "ltr";
 const $ = id => document.getElementById(id);
 const pond = $("pond"), castBtn = $("castBtn");
 const HDR = () => ({ "X-Telegram-Init-Data": initData });
+
+// "Zurück/بازگشت" oben im Dock: der Zurück-Button der Haupt-App sitzt oben
+// links außerhalb dieser Seite (eigenes Overlay) und wird dort durch die
+// Status-Pillen dieser Seite verdeckt/überlagert - dieser Button hier ist
+// immer sichtbar und sauber erreichbar, direkt über dem Angel-Button.
+const fishReturnBtn = $("fishReturnBtn");
+fishReturnBtn.textContent = L.back;
+fishReturnBtn.onclick = () => {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: "zombie-angeln-close" }, "*");
+  } else if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.close();
+  }
+};
 
 let demo = !initData;
 let everyMs = 120000, castMs = 15000, showMs = 45000, anchor = 0, offset = 0;

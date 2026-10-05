@@ -5548,6 +5548,9 @@ function closeFishView(){
 }
 $('#fishBtn').onclick = openFishView;
 $('#fishBack').onclick = closeFishView;
+window.addEventListener('message', event => {
+  if (event.data && event.data.type === 'zombie-angeln-close') closeFishView();
+});
 setInterval(renderFishButton, 1000);
 renderFishButton();
 
