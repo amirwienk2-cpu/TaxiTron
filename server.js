@@ -137,12 +137,12 @@ if (CHAT_LIKE_EVENT_END_MS - CHAT_LIKE_EVENT_START_MS !== 72 * 60 * 60 * 1000) {
 const INVITE_LEADERBOARD_STARTS_AT = Date.parse(
   process.env.INVITE_LEADERBOARD_CAMPAIGN_STARTS_AT ||
   process.env.INVITE_LEADERBOARD_STARTS_AT ||
-  '2026-09-27T17:13:24.368Z'
+  '2026-10-06T21:07:01.362Z'
 );
 const INVITE_LEADERBOARD_ENDS_AT = Date.parse(
   process.env.INVITE_LEADERBOARD_CAMPAIGN_ENDS_AT ||
   process.env.INVITE_LEADERBOARD_ENDS_AT ||
-  '2026-10-04T17:13:24.368Z'
+  '2026-10-13T21:07:01.362Z'
 );
 if (!Number.isFinite(INVITE_LEADERBOARD_STARTS_AT)) throw new Error('Invite leaderboard campaign start must be a valid date');
 if (!Number.isFinite(INVITE_LEADERBOARD_ENDS_AT)) throw new Error('Invite leaderboard campaign end must be a valid date');
