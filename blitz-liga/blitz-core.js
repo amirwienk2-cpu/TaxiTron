@@ -37,8 +37,14 @@ function clock(now) {
   if (t < TIP + PLAY) return { id, ph: 'live', min: (t - TIP) / PLAY * 90, left: TIP + PLAY - t };
   return { id, ph: 'post', min: 90, left: CYCLE - t };
 }
-const seasonOf = (id) => Math.floor(id / SEASON);
-const firstOf = (s) => s * SEASON;
+// Anchor so a season always starts at "game 1" from this match id onward,
+// instead of the deploy moment landing somewhere in the middle of an
+// otherwise purely Unix-epoch-aligned 10-game window (id*CYCLE since epoch,
+// with no regard for when this app went live). Must match index.html's copy
+// exactly, or client and server would disagree on match numbering.
+const SEASON_ANCHOR_ID = 1714186;
+const seasonOf = (id) => Math.floor((id - SEASON_ANCHOR_ID) / SEASON);
+const firstOf = (s) => SEASON_ANCHOR_ID + s * SEASON;
 const kickoffAt = (id) => id * CYCLE + TIP;
 
 // Public, deterministic from the match id alone - safe to reveal at any time
