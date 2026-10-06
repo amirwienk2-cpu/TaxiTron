@@ -4195,7 +4195,7 @@ const userOf = n => {
   const sample=CHAT_USERS.find(u=>u.n===n); if(sample)return sample;
   const online=SHOP_ACCOUNT.onlineUsers.find(u=>u.name===n);
   const social=friendTargetByName(n);
-  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:online?.isChatAdmin===true,adminBadge:online?.adminBadge,isDesigner:online?.isDesigner===true,isSupporter:online?.isSupporter===true,isDeveloper:online?.isDeveloper===true,badge4:online?.badge4===true,badge5:online?.badge5===true,hasLevel4:online?.hasLevel4===true,hasLevel5:online?.hasLevel5===true,chatMuted:online?.chatMuted===true};
+  return {n,uid:online?.uid||social?.uid,img:online?.photoUrl||social?.photoUrl||null,lvl:1,c:'#9aa6d8',car:'sara',isChatAdmin:online?.isChatAdmin===true,adminBadge:online?.adminBadge,isDesigner:online?.isDesigner===true,isSupporter:online?.isSupporter===true,isDeveloper:online?.isDeveloper===true,badge4:online?.badge4===true,badge5:online?.badge5===true,hasLevel4:online?.hasLevel4===true,hasLevel5:online?.hasLevel5===true,chatMuted:online?.chatMuted===true,isBanned:online?.isBanned===true};
 };
 function friendTargetByName(name){
   return SHOP_ACCOUNT.friends.find(u=>u.name===name)
@@ -4276,6 +4276,7 @@ async function sendServerChat(payload){
     const data=await response.json();
     if(!response.ok||!data.message){
       if(data.error==='chat-locked-developer'){chatLockedToDeveloper=true;renderChat();toast(S.lang==='de'?'Chat ist geschlossen':S.lang==='fa'?'چت بسته شده است':'Chat is closed');}
+      else if(data.error==='user-banned'){toast(S.lang==='de'?'Du wurdest gebannt':S.lang==='fa'?'شما مسدود شده‌اید':'You have been banned');}
       else toast(t('lim_err'));
       return false;
     }
@@ -4412,6 +4413,19 @@ async function moderateChatUser(targetUid,muted,who){
     if(!response.ok)throw new Error(data.error||'chat-moderate-failed');
     const target=SHOP_ACCOUNT.onlineUsers.find(u=>String(u.uid)===String(targetUid));
     if(target)target.chatMuted=muted;
+    renderChat();
+    if(who)openProfile(who);
+  }catch(e){toast(t('lim_err'));}
+}
+async function banChatUser(targetUid,banned,who){
+  if(!SHOP_ACCOUNT.token||SHOP_ACCOUNT.isDeveloper!==true)return;
+  if(banned&&!confirm(S.lang==='de'?'Diesen Nutzer wirklich bannen? Er kann den Bot dann nicht mehr benutzen.':S.lang==='fa'?'این کاربر مسدود شود؟ او دیگر نمی‌تواند از ربات استفاده کند.':'Really ban this user? They will no longer be able to use the bot.'))return;
+  try{
+    const response=await fetch('/api/chat/moderate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:SHOP_ACCOUNT.token,targetUid,banned})});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'chat-moderate-failed');
+    const target=SHOP_ACCOUNT.onlineUsers.find(u=>String(u.uid)===String(targetUid));
+    if(target)target.isBanned=banned;
     renderChat();
     if(who)openProfile(who);
   }catch(e){toast(t('lim_err'));}
@@ -6972,7 +6986,10 @@ function openProfile(who, liveProfile, profileResolved){
         <span class="pfchip onl"><i></i>${esc(t('ch_online'))}</span></div>
       ${bioHtml(P)}
       ${P.me ? '' : frButtons(u.n)}
-      ${!P.me && (SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDeveloper||SHOP_ACCOUNT.isDesigner) && u.uid && String(u.uid)!==SHOP_ACCOUNT.uid ? `<button type="button" id="pfMute" style="margin-top:8px;padding:6px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:${u.chatMuted?'rgba(46,224,122,.15)':'rgba(255,107,107,.15)'};color:${u.chatMuted?'#2ee07a':'#ff6b6b'};font-size:13px">${u.chatMuted ? (S.lang==='de'?'🔈 Entmuten':S.lang==='fa'?'🔈 رفع بی‌صدا':'🔈 Unmute') : (S.lang==='de'?'🔇 Muten':S.lang==='fa'?'🔇 بی‌صدا کردن':'🔇 Mute')}</button>` : ''}</div>
+      ${!P.me && (SHOP_ACCOUNT.isChatAdmin||SHOP_ACCOUNT.isSupporter||SHOP_ACCOUNT.isDeveloper||SHOP_ACCOUNT.isDesigner) && u.uid && String(u.uid)!==SHOP_ACCOUNT.uid ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button type="button" id="pfMute" style="padding:6px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:${u.chatMuted?'rgba(46,224,122,.15)':'rgba(255,107,107,.15)'};color:${u.chatMuted?'#2ee07a':'#ff6b6b'};font-size:13px">${u.chatMuted ? (S.lang==='de'?'🔈 Entmuten':S.lang==='fa'?'🔈 رفع بی‌صدا':'🔈 Unmute') : (S.lang==='de'?'🔇 Muten':S.lang==='fa'?'🔇 بی‌صدا کردن':'🔇 Mute')}</button>
+        ${SHOP_ACCOUNT.isDeveloper ? `<button type="button" id="pfBan" style="padding:6px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:${u.isBanned?'rgba(46,224,122,.15)':'rgba(255,61,61,.2)'};color:${u.isBanned?'#2ee07a':'#ff3d3d'};font-size:13px">${u.isBanned ? (S.lang==='de'?'✓ Entbannen':S.lang==='fa'?'✓ رفع مسدودیت':'✓ Unban') : (S.lang==='de'?'🚫 Bannen':S.lang==='fa'?'🚫 مسدود کردن':'🚫 Ban')}</button>` : ''}
+      </div>` : ''}</div>
     ${P.me ? `<div class="pfpick" id="pfPick" hidden><h4>${esc(t('pf_photo'))}</h4>
         <div class="pfpgrid">${AV_PRESETS.map((src, i) => `<button data-avset="${i}" data-av="${src.replace(/^assets\/av-|\.webp$/g, '')}" class="${u.img === src ? 'on' : ''}"><img src="${src}" alt=""></button>`).join('')}</div>
         <div class="pfpbtns"><label class="btn pfup">⬆ ${esc(t('pf_upload'))}<input type="file" accept="image/*" id="pfFile" hidden></label>
@@ -6998,6 +7015,8 @@ function openProfile(who, liveProfile, profileResolved){
   $('#pfAll').onclick = () => openAllItems(who);
   const pfMuteBtn = $('#pfMute');
   if (pfMuteBtn) pfMuteBtn.onclick = () => void moderateChatUser(u.uid, !u.chatMuted, who);
+  const pfBanBtn = $('#pfBan');
+  if (pfBanBtn) pfBanBtn.onclick = () => void banChatUser(u.uid, !u.isBanned, who);
   if (P.me) {
     const bb = $('#bioBox'), edit = () => { bb.classList.add('edit'); const ta = $('#bioIn'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); };
     $('#bioEdit').onclick = edit; if (!P.bio) $('#bioShow').onclick = edit;

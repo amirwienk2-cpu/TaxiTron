@@ -2798,6 +2798,9 @@ if (BOT_TOKEN) {
     const existing = users[String(telegramUser.id)];
     const accountAgeMs = Date.now() - Number(existing && existing.createdAt || 0);
     const hasPlayed = !!existing && Number(existing.runs || 0) >= 1;
+    if (existing && existing.isBanned === true) {
+      return res.status(403).json({ error: 'user-banned' });
+    }
     if (!existing || accountAgeMs < LOTTO_MIN_ACCOUNT_AGE_MS || !hasPlayed) {
       console.warn('[lotto] ticket blocked (new/throwaway account): uid=' + telegramUser.id + ' ageMs=' + accountAgeMs + ' runs=' + (existing && existing.runs || 0));
       return res.status(403).json({ error: 'lotto-not-eligible' });
@@ -3702,6 +3705,7 @@ app.get('/api/online-users', (req, res) => {
       hasLevel4: Array.isArray(user.ownedSkins) && user.ownedSkins.includes('green'),
       hasLevel5: Array.isArray(user.ownedSkins) && user.ownedSkins.includes('luna'),
       chatMuted: user.chatMuted === true,
+      isBanned: user.isBanned === true,
       racing: racingUids ? racingUids.has(String(user.id)) : false,
       racePhase: racingUids && racingUids.has(String(user.id)) ? racePhase : null,
       lastRaceWinner: lastWinnerUid === String(user.id),
@@ -3946,7 +3950,7 @@ app.get('/api/chat/events', (req, res) => {
   });
 });
 
-app.post('/api/chat/send', requireUserFromBody, (req, res) => {
+app.post('/api/chat/send', requireUserFromBody, rejectBannedUser, (req, res) => {
   if (!chatEnabled && !isAdminOrSupporter(req.user)) return res.status(403).json({ error: 'chat-disabled' });
   if (chatLockedToDeveloper && req.user.isDeveloper !== true) return res.status(423).json({ error: 'chat-locked-developer' });
   const roomForRaceCheck = String((req.body && req.body.room) || 'en').toLowerCase();
@@ -4137,17 +4141,30 @@ app.post('/api/chat/set-developer-lock', requireUserFromBody, (req, res) => {
   broadcastChatEvent('settings', { chatLockedToDeveloper });
 });
 
-// Chat admins and designers can mute/unmute chat users.
+// Chat admins and designers can mute/unmute chat users. Banning (losing all
+// bot access, not just chat) is a much bigger hammer, so it's restricted to
+// the "Amir"/developer badge only - not chat-admins/supporters/designers,
+// unlike the broader mute permission below.
 app.post('/api/chat/moderate', requireUserFromBody, (req, res) => {
-  if (!canModerateChat(req.user)) return res.status(403).json({ error: 'not-a-chat-moderator' });
   const targetUid = String((req.body && req.body.targetUid) || '');
   if (targetUid === String(req.uid)) return res.status(400).json({ error: 'self-moderation-not-allowed' });
   const target = users[targetUid];
   if (!target) return res.status(404).json({ error: 'user-not-found' });
-  target.chatMuted = req.body.muted === true;
+  const wantsBanChange = typeof (req.body && req.body.banned) === 'boolean';
+  const wantsMuteChange = typeof (req.body && req.body.muted) === 'boolean';
+  if (wantsBanChange) {
+    if (req.user.isDeveloper !== true) return res.status(403).json({ error: 'not-developer' });
+    target.isBanned = req.body.banned === true;
+  }
+  if (wantsMuteChange) {
+    if (!canModerateChat(req.user)) return res.status(403).json({ error: 'not-a-chat-moderator' });
+    target.chatMuted = req.body.muted === true;
+  }
+  if (!wantsBanChange && !wantsMuteChange) return res.status(400).json({ error: 'nothing-to-moderate' });
   persist();
-  res.json({ ok: true, uid: targetUid, chatMuted: target.chatMuted });
-  broadcastChatEvent('moderation', { uid: targetUid, chatMuted: target.chatMuted });
+  const result = { uid: targetUid, chatMuted: target.chatMuted === true, isBanned: target.isBanned === true };
+  res.json({ ok: true, ...result });
+  broadcastChatEvent('moderation', result);
 });
 
 // ---- Deposit info ----
