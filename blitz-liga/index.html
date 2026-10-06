@@ -204,6 +204,12 @@ body *{letter-spacing:normal!important}
 </style>
 </head>
 <body>
+<!-- This page is opened as its own full navigation (not an iframe of the
+     main app), so window.Telegram.WebApp does not exist here unless this SDK
+     is loaded again - without it, blitz-api.js always saw an empty
+     initData and every /api/blitz/* call silently failed auth. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>try { window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.ready(); } catch (e) {}</script>
 <script src="/blitz-liga/blitz-api.js"></script>
 <div class="wrap">
   <div class="top">
