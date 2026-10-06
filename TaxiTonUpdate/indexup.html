@@ -3251,7 +3251,7 @@
           </div>
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
           <button type="button" class="race-btn monster-btn" id="monsterBtn" hidden><span id="monsterBtnText">👹 --:--</span></button>
-          <button type="button" class="race-btn lotto-btn" id="lottoBtn"><span>🎰 Lotto</span></button>
+          <button type="button" class="race-btn lotto-btn" id="lottoBtn"><span id="lottoBtnText">🎰 قرعه‌کشی --:--</span></button>
           <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
         <div class="chatlog" id="chatlog"></div>
@@ -5482,8 +5482,25 @@ void initMonster();
 // zombie-lotto/lotto.js) ist unverändert 1:1 und komplett eigenständig (eigene
 // Telegram-Auth, eigene server-seitige Ziehung) - dieser Block öffnet es nur per
 // Vollnavigation als eigene Telegram-WebApp (kein Iframe), damit initData echt
-// ist statt Demo-Modus.
+// ist statt Demo-Modus. Der Countdown hier ist eine reine Funktion der Uhrzeit
+// (floor(now/interval)), identisch zum Zeitplan in zombie-lotto/lotto.js
+// DEFAULTS.DRAW_EVERY_MS, damit kein Netzwerk-Request für die Chat-Anzeige nötig ist.
+const LOTTO_DRAW_EVERY_MS = 10 * 60 * 1000; // matches zombie-lotto/lotto.js DEFAULTS.DRAW_EVERY_MS
+function lottoCountdownText(ms){
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function renderLottoButton(){
+  const txt = $('#lottoBtnText');
+  if (!txt) return;
+  const now = Date.now();
+  const id = Math.floor(now / LOTTO_DRAW_EVERY_MS);
+  const nextDraw = (id + 1) * LOTTO_DRAW_EVERY_MS;
+  txt.textContent = '🎰 قرعه‌کشی ' + lottoCountdownText(nextDraw - now);
+}
 $('#lottoBtn').onclick = () => { location.href = '/lotto'; };
+setInterval(renderLottoButton, 1000);
+renderLottoButton();
 
 function campLeft(){
   let s = Math.max(0, Math.floor((CAMP_END - Date.now())/1000));
