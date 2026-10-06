@@ -7783,8 +7783,13 @@ async function handleChatAppResumed(){
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void handleChatAppResumed(); });
 try { window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.onEvent && window.Telegram.WebApp.onEvent('activated', () => void handleChatAppResumed()); } catch(e){}
 const hash = (location.hash||'').slice(1);
+const [hashPage, hashRoom] = hash.split('-');
 const valid = ['home','chat','wallet','top','tasks','shop','garage'];
-go(valid.includes(hash) ? hash : 'garage');
+go(valid.includes(hashPage) ? hashPage : 'garage');
+if (hashPage === 'chat' && ['en','fa','de'].includes(hashRoom) && !chatRoom) {
+  chatRoom = hashRoom; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; chatForceScrollBottom = true;
+  renderChat(); renderRaceButton(); renderMonsterButton(); pollServerChat();
+}
 if (!S.seen) { S.seen = true; save(); setTimeout(()=>toast(t('welcome')), 600); }
 })();
 </script>
