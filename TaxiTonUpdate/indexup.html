@@ -3066,6 +3066,9 @@
      wird per Vollnavigation geöffnet (kein Iframe), damit Telegram-Auth/initData
      echt ist statt Demo-Modus. */
   .race-btn.lotto-btn{background:linear-gradient(180deg,#ffd86b,#c8891a);box-shadow:0 3px 0 #6e4a0c}
+  /* ==== Chat-Sperre durch die "Amir"-Badge (isDeveloper): nur er kann dann noch schreiben ==== */
+  .race-btn.chat-lock-btn{background:linear-gradient(180deg,#9aa6d8,#3d4a8a);box-shadow:0 3px 0 #1c2454;padding:8px 10px}
+  .race-btn.chat-lock-btn.on{background:linear-gradient(180deg,#ff6b6b,#8a0d16);box-shadow:0 3px 0 #5c0309}
   .monsterwrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding:14px 12px;overflow-y:auto}
   .monster-arena{position:relative;margin:0;padding:14px 14px 10px;border-radius:20px;background:radial-gradient(120% 80% at 50% 30%,#3a1430 0%,#1a1030 45%,#121427 100%);overflow:hidden}
   .monster-arena.rage{background:radial-gradient(120% 80% at 50% 30%,#5a0f1c 0%,#2a0d1c 50%,#140d18 100%)}
@@ -3252,6 +3255,7 @@
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
           <button type="button" class="race-btn monster-btn" id="monsterBtn" hidden><span id="monsterBtnText">👹 --:--</span></button>
           <button type="button" class="race-btn lotto-btn" id="lottoBtn"><span id="lottoBtnText">🎰 قرعه‌کشی --:--</span></button>
+          <button type="button" class="race-btn chat-lock-btn" id="chatLockBtn" hidden><span id="chatLockBtnText">🔒</span></button>
           <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
         <div class="chatlog" id="chatlog"></div>
@@ -3307,6 +3311,7 @@
         <div class="typing" id="typing" hidden><span class="tdots"><i></i><i></i><i></i></span><span id="typingTxt"></span></div>
         <div class="replybar" id="replyBar" hidden><span class="rbic">↩</span><div class="grow"><small class="rb-label" id="rbLabel"></small><b id="rbName"></b><span id="rbText"></span></div><button type="button" class="rbx" id="rbX" aria-label="Cancel">✕</button></div>
         <div class="stkpick" id="stkPick" hidden></div>
+        <div class="chatauth" id="chatLockedNote" hidden></div>
         <button type="button" class="chat-jump-btn" id="chatJumpBtn" hidden aria-label="Jump to latest messages"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 16 4 8l1.4-1.4L12 13.2l6.6-6.6L20 8z"/></svg><span class="chat-jump-count" id="chatJumpCount" hidden>0</span></button>
         <form class="composer" id="chatForm">
           <button type="button" class="stkbtn" id="stkBtn" aria-label="Stickers" aria-expanded="false"><img src="assets/stk-sara-4.webp" alt=""></button>
@@ -4116,6 +4121,7 @@ const ROOM_CHAT = {
 const ROOM_LIVE = {en:['who else is grinding the weekly race? 🏁','just hit level 10 🚕','Legend Pack gave me Sara again 😂'],fa:['سلام به همه 👋','چه کسی لونا داره؟','امروز ۵ بار بازی کردم 🔥'],de:['Wer hat schon Luna? 💜','Gerade 1.200 Punkte geschafft!','Guten Morgen Fahrer ☕']};
 const ROOM_USERS = {en:['Misha','Tina','Arash','Dmitri','Mina','Reza','Kian','Yasmin','Omid'],fa:['Sahar','Tina','Nima','Nika','Omid','Sara_K','Yasmin','Reza','Mina','Arash'],de:['Misha','Nima','Lena','Kian','Dmitri','Mina','Omid']};
 let chatRoom = null;
+let chatLockedToDeveloper = false; // "Amir"-Sperre: solange true, darf nur isDeveloper schreiben
 let cardEventTest = null, cardEventTestMessage = null, cardEventTestTimer = null, cardEventScheduleTimer = null, cardEventNextStartAt = 0, cardEventTestEndsAt = 0;
 const CARD_EVENT_TEST_DURATION_MS = 12 * 60 * 60 * 1000;
 const CARD_EVENT_TEST_MIN_INTERVAL_MS = 10 * 1000;
@@ -4256,8 +4262,10 @@ async function pollServerChat(){
       updateServerCardEvent(chatRoom==='fa'?data.cardEvent:null);
       applyTaxiRaceEvent(data.taxiRace||null);
       applyMonsterEvent(data.monster||null);
+      const previousLock=chatLockedToDeveloper;
+      chatLockedToDeveloper=data.chatLockedToDeveloper===true;
       data.messages.forEach(receiveServerChatMessage);
-      if(current==='chat'&&(data.messages.length||previousEvent!==JSON.stringify(serverCardEvent)))renderChat();
+      if(current==='chat'&&(data.messages.length||previousEvent!==JSON.stringify(serverCardEvent)||previousLock!==chatLockedToDeveloper))renderChat();
       if(previousEvent!==JSON.stringify(serverCardEvent)&&serverCardEvent?.status==='complete')refreshShopAccount();
     }
   }catch(e){}finally{serverChatBusy=false;}
@@ -4266,7 +4274,11 @@ async function sendServerChat(payload){
   try{
     const response=await fetch('/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,token:SHOP_ACCOUNT.token})});
     const data=await response.json();
-    if(!response.ok||!data.message){toast(t('lim_err'));return false;}
+    if(!response.ok||!data.message){
+      if(data.error==='chat-locked-developer'){chatLockedToDeveloper=true;renderChat();toast(S.lang==='de'?'Chat ist geschlossen':S.lang==='fa'?'چت بسته شده است':'Chat is closed');}
+      else toast(t('lim_err'));
+      return false;
+    }
     receiveServerChatMessage(data.message); chatForceScrollBottom=true; renderChat(); return true;
   }catch(e){toast(t('lim_err'));return false;}
 }
@@ -4528,7 +4540,15 @@ function renderChat(){
     $('#onList').innerHTML = '';
     return;
   }
-  $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive || (chatRoom === 'fa' && TAXI_RACE.race && TAXI_RACE.race.status === 'running');
+  const lockBtn = $('#chatLockBtn');
+  lockBtn.hidden = SHOP_ACCOUNT.isDeveloper !== true;
+  lockBtn.classList.toggle('on', chatLockedToDeveloper);
+  $('#chatLockBtnText').textContent = chatLockedToDeveloper ? '🔓' : '🔒';
+  const lockedForMe = chatLockedToDeveloper && SHOP_ACCOUNT.isDeveloper !== true;
+  const lockedNote = $('#chatLockedNote');
+  lockedNote.hidden = !lockedForMe;
+  if (lockedForMe) lockedNote.innerHTML = `<b>${esc(S.lang === 'de' ? 'Chat ist geschlossen' : S.lang === 'fa' ? 'چت بسته شده است' : 'Chat is closed')}</b>${esc(S.lang === 'de' ? 'Nur Amir kann gerade schreiben.' : S.lang === 'fa' ? 'فقط امیر می‌تواند پیام بدهد.' : 'Only Amir can send messages right now.')}`;
+  $('#chatForm').hidden = !SHOP_ACCOUNT.token || cardEventActive || lockedForMe || (chatRoom === 'fa' && TAXI_RACE.race && TAXI_RACE.race.status === 'running');
   let lastDay = ''; chatIdx.clear();
   const dayLabel = ts => { const d = new Date(ts), n = new Date(), y = new Date(n - 864e5); return d.toDateString() === n.toDateString() ? t('ch_today') : d.toDateString() === y.toDateString() ? t('ch_yday') : d.toLocaleDateString(); };
   const chatLogEl = $('#chatlog');
@@ -5501,6 +5521,20 @@ function renderLottoButton(){
 $('#lottoBtn').onclick = () => { location.href = '/lotto'; };
 setInterval(renderLottoButton, 1000);
 renderLottoButton();
+
+// ---- Chat-Sperre durch die "Amir"-Badge (isDeveloper): toggelt chatLockedToDeveloper
+// server-seitig (/api/chat/set-developer-lock), sodass nur noch er schreiben kann.
+$('#chatLockBtn').onclick = async () => {
+  if (!SHOP_ACCOUNT.token || SHOP_ACCOUNT.isDeveloper !== true) return;
+  const nextLocked = !chatLockedToDeveloper;
+  try {
+    const response = await fetch('/api/chat/set-developer-lock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: SHOP_ACCOUNT.token, locked: nextLocked }) });
+    const data = await response.json();
+    if (!response.ok) { toast(t('lim_err')); return; }
+    chatLockedToDeveloper = data.chatLockedToDeveloper === true;
+    renderChat();
+  } catch (e) { toast(t('lim_err')); }
+};
 
 function campLeft(){
   let s = Math.max(0, Math.floor((CAMP_END - Date.now())/1000));

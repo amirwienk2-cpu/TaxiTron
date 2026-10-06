@@ -473,16 +473,22 @@ function broadcastChatEvent(type, details = {}) {
 // Global on/off switch an admin can flip from the /admin panel. When off,
 // regular users cannot send, while chat admins can still moderate the chat.
 let chatEnabled = true;
+// Stricter lockdown the "Amir" (isDeveloper) badge holder can flip themselves
+// from inside the chat: while on, nobody but a developer-badge account can
+// send messages (chat-admins/supporters/designers are NOT exempt here,
+// unlike the broader chatEnabled switch above).
+let chatLockedToDeveloper = false;
 try {
   if (fs.existsSync(CHAT_SETTINGS_FILE)) {
     const loaded = JSON.parse(fs.readFileSync(CHAT_SETTINGS_FILE, 'utf8'));
     if (loaded && typeof loaded.enabled === 'boolean') chatEnabled = loaded.enabled;
+    if (loaded && typeof loaded.developerLock === 'boolean') chatLockedToDeveloper = loaded.developerLock;
   }
 } catch (e) {
   console.error('[chat] settings file unreadable: ' + e.message);
 }
 function persistChatSettings() {
-  try { fs.writeFileSync(CHAT_SETTINGS_FILE, JSON.stringify({ enabled: chatEnabled })); }
+  try { fs.writeFileSync(CHAT_SETTINGS_FILE, JSON.stringify({ enabled: chatEnabled, developerLock: chatLockedToDeveloper })); }
   catch (e) { console.error('[chat] could not write settings: ' + e.message); }
 }
 
@@ -3808,7 +3814,7 @@ app.get('/api/chat/messages', (req, res) => {
       ? roomMessages.filter((message) => message.id > after)
       : roomMessages.slice(-50);
   const messages = storedMessages.map((message) => publicChatMessage(message, viewerUid));
-  res.json({ messages, enabled: chatEnabled, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null, taxiRace: room === TAXI_RACE_ROOM ? publicTaxiRace(viewerUid) : null, monster: room === MONSTER_ROOM ? publicMonster(viewerUid) : null });
+  res.json({ messages, enabled: chatEnabled, chatLockedToDeveloper, cardEvent: room === 'fa' ? publicCardEvent(viewerUid) : null, taxiRace: room === TAXI_RACE_ROOM ? publicTaxiRace(viewerUid) : null, monster: room === MONSTER_ROOM ? publicMonster(viewerUid) : null });
 });
 
 app.post('/api/chat/card-event/vote', requireUserFromBody, rejectBannedUser, (req, res) => {
@@ -3942,6 +3948,7 @@ app.get('/api/chat/events', (req, res) => {
 
 app.post('/api/chat/send', requireUserFromBody, (req, res) => {
   if (!chatEnabled && !isAdminOrSupporter(req.user)) return res.status(403).json({ error: 'chat-disabled' });
+  if (chatLockedToDeveloper && req.user.isDeveloper !== true) return res.status(423).json({ error: 'chat-locked-developer' });
   const roomForRaceCheck = String((req.body && req.body.room) || 'en').toLowerCase();
   if (roomForRaceCheck === TAXI_RACE_ROOM && isTaxiRaceActive() && !isAdminOrSupporter(req.user)) return res.status(423).json({ error: 'taxi-race-active' });
   if (publicChatLikeEvent(req.uid).chatLocked) {
@@ -4116,6 +4123,18 @@ app.post('/api/chat/set-enabled', requireUserFromBody, (req, res) => {
   persistChatSettings();
   res.json({ ok: true, chatEnabled });
   broadcastChatEvent('settings', { chatEnabled });
+});
+
+// Only the "Amir" (isDeveloper) badge can lock the chat down to themselves -
+// while locked, every other role (including chat-admins/supporters/designers)
+// is blocked from sending, see the chatLockedToDeveloper check in
+// /api/chat/send above.
+app.post('/api/chat/set-developer-lock', requireUserFromBody, (req, res) => {
+  if (req.user.isDeveloper !== true) return res.status(403).json({ error: 'not-developer' });
+  chatLockedToDeveloper = req.body.locked === true;
+  persistChatSettings();
+  res.json({ ok: true, chatLockedToDeveloper });
+  broadcastChatEvent('settings', { chatLockedToDeveloper });
 });
 
 // Chat admins and designers can mute/unmute chat users.
