@@ -1342,8 +1342,8 @@ function startTaxiRaceScheduler() {
 // fixed time limit; the server is authoritative for HP, damage rolls, the
 // shield-penalty phases, and the one-time TON payout (clients only render
 // what the server broadcasts and never decide anything themselves).
-// Disabled on purpose: replaced by the Zombie-Angeln chat event (see
-// "Zombie-Angeln" section further below, registerFishing()). Code kept
+// Disabled on purpose: replaced by the Zombie-Lotto chat event (see
+// "Zombie-Lotto" section further below, registerLotto()). Code kept
 // intact in case the Monster-Boss event ever comes back.
 const MONSTER_EVENT_ENABLED = false;
 const MONSTER_ROOM = 'fa'; // same room convention as the taxi race
@@ -2771,75 +2771,34 @@ app.use(cors());
 app.use(express.json());
 
 // ---------------------------------------------------------------
-// Zombie-Angeln: new chat event, replaces Monster-Boss above (every 20 min).
-// Files under zombie-angeln/ are taken over 1:1 per zombie-angeln/AGENT-PROMPT.md
-// - no design/text/odds/prize changes here, only the credit() callback and a
-// small persisted store so the daily catch/TON caps survive a Railway restart.
+// Zombie-Lotto: chat event, replaces Zombie-Angeln above (6 aus 49, draw
+// every 10 minutes). Files under zombie-lotto/ are taken over 1:1 per
+// zombie-lotto/AGENT-PROMPT.md - no design/text/odds/prize changes here,
+// only the credit() callback (same TON/TT balance helpers as every other
+// game in this file).
 // ---------------------------------------------------------------
-const registerFishing = require('./zombie-angeln/fishing');
-const FISHING_FILE = path.join(DATA_DIR, 'fishing-state.json');
-let fishingState = { users: {}, global: {} };
-try {
-  if (fs.existsSync(FISHING_FILE)) {
-    const loaded = readJsonFile(FISHING_FILE);
-    if (loaded && typeof loaded === 'object') {
-      fishingState.users = loaded.users || {};
-      fishingState.global = loaded.global || {};
-    }
-  }
-} catch (error) {
-  console.error('[fishing] state read failed: ' + error.message);
-}
-let fishingSaveTimer = null;
-function persistFishingState() {
-  if (fishingSaveTimer) return;
-  fishingSaveTimer = setTimeout(() => {
-    fishingSaveTimer = null;
-    try {
-      const tmp = FISHING_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(fishingState));
-      fs.renameSync(tmp, FISHING_FILE);
-    } catch (error) {
-      console.error('[fishing] state write failed: ' + error.message);
-    }
-  }, 500);
-}
-const fishingStore = {
-  async getUser(uid, day) {
-    const dayMap = fishingState.users[day];
-    return (dayMap && dayMap[uid]) || { catches: 0, tonWins: 0 };
-  },
-  async saveUser(uid, day, data) {
-    if (!fishingState.users[day]) fishingState.users[day] = {};
-    fishingState.users[day][uid] = data;
-    persistFishingState();
-  },
-  async getGlobal(day) { return fishingState.global[day] || { tonPaid: 0 }; },
-  async saveGlobal(day, data) { fishingState.global[day] = data; persistFishingState(); },
-};
+const registerLotto = require('./zombie-lotto/lotto');
 if (BOT_TOKEN) {
-  registerFishing(app, {
+  registerLotto(app, {
     botToken: BOT_TOKEN,
-    store: fishingStore,
-    config: { ROUND_EVERY_MS: 20 * 60 * 1000 }, // a new round every 20 minutes
     credit: async (telegramUserId, currency, amount, meta) => {
       const user = getOrCreateUser(telegramUserId);
       if (currency === 'TT') {
-        creditTT(user, amount, 'zombie-fishing:' + (meta && meta.prizeId || ''));
+        creditTT(user, amount, 'zombie-lotto:draw-' + (meta && meta.draw) + ':' + (meta && meta.matches) + 'matches');
       } else if (currency === 'TON') {
         user.ton = Number((Number(user.ton || 0) + Number(amount)).toFixed(9));
       } else {
-        throw new Error('fishing: unknown currency ' + currency);
+        throw new Error('lotto: unknown currency ' + currency);
       }
       persist();
     },
   });
-  app.get('/angeln', (req, res) => {
+  app.get('/lotto', (req, res) => {
     res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate' });
-    res.sendFile(path.join(__dirname, 'zombie-angeln', 'zombie-angeln.html'));
+    res.sendFile(path.join(__dirname, 'zombie-lotto', 'zombie-lotto.html'));
   });
 } else {
-  console.warn('[fishing] BOT_TOKEN missing - Zombie-Angeln stays disabled.');
+  console.warn('[lotto] BOT_TOKEN missing - Zombie-Lotto stays disabled.');
 }
 
 // The public entry point must always be the redesigned shell. The legacy game is
