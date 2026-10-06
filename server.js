@@ -2887,6 +2887,7 @@ function blitzAuth(req, res, next) {
   if (!result.ok) return res.status(401).json({ error: result.error || 'auth' });
   req.blitzUid = String(result.id);
   req.blitzUser = getOrCreateUser(result.id, result.name);
+  req.user = req.blitzUser; // so the shared rejectBannedUser middleware (which reads req.user) actually applies here too
   next();
 }
 if (BOT_TOKEN) {
@@ -2936,6 +2937,26 @@ if (BOT_TOKEN) {
       names[uid] = user.name || '';
     }
     res.json({ docs, names });
+  });
+
+  // Diagnostics only (ADMIN_SECRET-protected): dump the raw blitz state across
+  // every user plus the persisted seeds/payout log, to debug "the table only
+  // shows me" style reports without guessing.
+  app.get('/admin/blitz-debug', requireAdmin, (req, res) => {
+    const now = Date.now();
+    const c = blitzCore.clock(now);
+    const participants = Object.values(users)
+      .filter((user) => user.blitzTips && Object.keys(user.blitzTips).length)
+      .map((user) => ({ uid: String(user.id), name: user.name, blitzTips: user.blitzTips, blitzPaid: user.blitzPaid || {}, blitzWon: Number(user.blitzWon) || 0 }));
+    res.json({
+      now, clock: c, season: blitzCore.seasonOf(c.id), anchor: blitzCore.firstOf(blitzCore.seasonOf(c.id)),
+      totalUsers: Object.keys(users).length,
+      participantCount: participants.length,
+      participants,
+      paidSeasons: blitzState.paidSeasons,
+      payoutLogTail: blitzState.payoutLog.slice(-20),
+      seedCount: Object.keys(blitzState.seeds).length,
+    });
   });
 
   // Public (team info isn't secret, see AGENT_PROMPT.md point 5 bullet 1) -
