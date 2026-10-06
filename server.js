@@ -2881,10 +2881,19 @@ function settleBlitzSeasons() {
   if (changed) persist();
   console.log('[blitz] season ' + done + ' settled: ' + rows.slice(0, 10).map((row) => row.rank + '. ' + row.id + ' ' + row.pts + 'P').join(', '));
 }
+const blitzDebugLog = []; // temporary ring buffer to diagnose "tips not saving" reports
+function blitzLog(entry) {
+  blitzDebugLog.push({ at: Date.now(), ...entry });
+  if (blitzDebugLog.length > 50) blitzDebugLog.shift();
+}
 function blitzAuth(req, res, next) {
   if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
-  const result = verifyInitData(req.get('X-Telegram-Init-Data') || '');
-  if (!result.ok) return res.status(401).json({ error: result.error || 'auth' });
+  const rawInitData = req.get('X-Telegram-Init-Data') || '';
+  const result = verifyInitData(rawInitData);
+  if (!result.ok) {
+    blitzLog({ route: req.method + ' ' + req.path, ok: false, error: result.error, initDataLen: rawInitData.length });
+    return res.status(401).json({ error: result.error || 'auth' });
+  }
   req.blitzUid = String(result.id);
   req.blitzUser = getOrCreateUser(result.id, result.name);
   req.user = req.blitzUser; // so the shared rejectBannedUser middleware (which reads req.user) actually applies here too
@@ -2907,13 +2916,18 @@ if (BOT_TOKEN) {
   app.put('/api/blitz/me', blitzAuth, rejectBannedUser, (req, res) => {
     const now = Date.now();
     const last = blitzLastWrite.get(req.blitzUid) || 0;
-    if (now - last < 1000) return res.status(429).json({ error: 'rate-limited' });
+    if (now - last < 1000) {
+      blitzLog({ uid: req.blitzUid, ok: false, reason: 'rate-limited', sinceLastMs: now - last });
+      return res.status(429).json({ error: 'rate-limited' });
+    }
     blitzLastWrite.set(req.blitzUid, now);
     const user = req.blitzUser;
     if (!user.blitzTips || typeof user.blitzTips !== 'object') user.blitzTips = {};
     const c = blitzCore.clock(now);
     const sent = (req.body && req.body.tips) || {};
     const t = sent[c.id];
+    const applied = c.ph === 'tips' && t && (t.ou === 'over' || t.ou === 'under');
+    blitzLog({ uid: req.blitzUid, ok: true, applied, clockId: c.id, clockPh: c.ph, sentKeys: Object.keys(sent), sentForCurrentId: t || null, bodyRaw: JSON.stringify(req.body).slice(0, 300) });
     if (c.ph === 'tips') {
       if (t && (t.ou === 'over' || t.ou === 'under')) {
         const old = user.blitzTips[c.id];
@@ -2957,6 +2971,13 @@ if (BOT_TOKEN) {
       payoutLogTail: blitzState.payoutLog.slice(-20),
       seedCount: Object.keys(blitzState.seeds).length,
     });
+  });
+
+  // Temporary diagnostics (ADMIN_SECRET-protected): last 50 PUT /api/blitz/me
+  // attempts (auth failures, rate-limits, applied writes) to find out why
+  // tips reportedly don't persist even though the client shows success.
+  app.get('/admin/blitz-debug-log', requireAdmin, (req, res) => {
+    res.json({ now: Date.now(), log: blitzDebugLog });
   });
 
   // Public (team info isn't secret, see AGENT_PROMPT.md point 5 bullet 1) -
