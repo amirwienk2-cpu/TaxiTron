@@ -2778,6 +2778,27 @@ app.use(express.json());
 // game in this file).
 // ---------------------------------------------------------------
 const registerLotto = require('./zombie-lotto/lotto');
+// Anti-multi-account guard for ticket submission: a Telegram-ID alone can't be
+// faked (initData is HMAC-signed by Telegram), but someone can still spin up
+// several real throwaway Telegram accounts and submit one ticket per draw with
+// each of them. Registered BEFORE registerLotto() so it runs first for the
+// same route/method; calling next() lets lotto.js's own handler take over
+// as normal, lotto.js itself stays completely untouched.
+const LOTTO_MIN_ACCOUNT_AGE_MS = 10 * 60 * 60 * 1000; // account must exist for >= 10h
+if (BOT_TOKEN) {
+  app.post('/api/lotto/ticket', (req, res, next) => {
+    const telegramUser = registerLotto.verifyInitData(req.get('X-Telegram-Init-Data') || '', BOT_TOKEN);
+    if (!telegramUser || !telegramUser.id) return next(); // let lotto.js reply with the normal auth error
+    const existing = users[String(telegramUser.id)];
+    const accountAgeMs = Date.now() - Number(existing && existing.createdAt || 0);
+    const hasPlayed = !!existing && Number(existing.runs || 0) >= 1;
+    if (!existing || accountAgeMs < LOTTO_MIN_ACCOUNT_AGE_MS || !hasPlayed) {
+      console.warn('[lotto] ticket blocked (new/throwaway account): uid=' + telegramUser.id + ' ageMs=' + accountAgeMs + ' runs=' + (existing && existing.runs || 0));
+      return res.status(403).json({ error: 'lotto-not-eligible' });
+    }
+    next();
+  });
+}
 if (BOT_TOKEN) {
   registerLotto(app, {
     botToken: BOT_TOKEN,
