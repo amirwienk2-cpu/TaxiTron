@@ -17,7 +17,7 @@
 // plays out identically to the supplied index.html/server example.
 // ------------------------------------------------------------------
 
-const TIP = 15 * 60000, PLAY = 120000, POST = 25000, CYCLE = TIP + PLAY + POST, LINE = 2.5;
+const TIP = 5 * 60000, PLAY = 120000, POST = 25000, CYCLE = TIP + PLAY + POST, LINE = 2.5;
 const TEAMS = [["ستاره دانوب","#E94F4F","#FFFFFF","DAN"],["عقاب‌های آلپ","#3D7BE0","#FFFFFF","ALP"],["اتحاد شمال","#F2B84B","#1B1B1B","SHM"],["شیرهای کوهستان","#E94F4F","#2B2B6B","KOH"],["طوفان جنوب","#2FA866","#FFFFFF","TOF"],["دریاشهر","#16A3B8","#0B2A3A","DAR"],["دینامو پراتر","#7A4BD6","#FFFFFF","DIN"],["پلنگ‌های سیاه","#1B1B1B","#F2B84B","PAL"],["قطار غرب","#F28A3B","#FFFFFF","GHA"],["رئال سیمرینگ","#FFFFFF","#C9354A","REA"],["اینتر شهر","#2B4FA8","#111111","INT"],["آدمیرا بندر","#D93A8C","#FFFFFF","BAN"],["المپیا","#4A9E3F","#F2D04B","OLY"],["جنگل‌نشینان","#2E6B4F","#E8D9B0","JAN"],["پیشروان","#B8322E","#F4F4F4","PIS"],["اتحاد بریگیت","#5B6B7A","#FFFFFF","BRI"]];
 const SEASON = 10, PTS = 3, PRIZES = [2, 1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
 
@@ -42,7 +42,7 @@ function clock(now) {
 // otherwise purely Unix-epoch-aligned 10-game window (id*CYCLE since epoch,
 // with no regard for when this app went live). Must match index.html's copy
 // exactly, or client and server would disagree on match numbering.
-const SEASON_ANCHOR_ID = 1714186;
+const SEASON_ANCHOR_ID = 4025454;
 const seasonOf = (id) => Math.floor((id - SEASON_ANCHOR_ID) / SEASON);
 const firstOf = (s) => SEASON_ANCHOR_ID + s * SEASON;
 const kickoffAt = (id) => id * CYCLE + TIP;

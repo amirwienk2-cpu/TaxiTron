@@ -5516,10 +5516,10 @@ function eventCountdownText(ms){
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
 
-// ---- لیگ برق‌آسا (Blitz-Liga): Fußball-Tippspiel, Zyklus 15min Tipp + 120s Spiel
-// + 25s Pause = 17min25s, matches blitz-liga/blitz-core.js TIP/PLAY/POST/CYCLE.
-// Eine Saison (10 Spiele) dauert damit 10 × 17:25 = 2h54m10s.
-const BLITZ_CYCLE_MS = 1045000, BLITZ_TIP_MS = 900000;
+// ---- لیگ برق‌آسا (Blitz-Liga): Fußball-Tippspiel, Zyklus 5min Tipp + 120s Spiel
+// + 25s Pause = 7min25s, matches blitz-liga/blitz-core.js TIP/PLAY/POST/CYCLE.
+// Eine Saison (10 Spiele) dauert damit 10 × 7:25 = 1h14m10s.
+const BLITZ_CYCLE_MS = 445000, BLITZ_TIP_MS = 300000;
 function renderBlitzButton(){
   const txt = $('#blitzBtnText');
   if (!txt) return;
