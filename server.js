@@ -1348,8 +1348,8 @@ function startTaxiRaceScheduler() {
 // fixed time limit; the server is authoritative for HP, damage rolls, the
 // shield-penalty phases, and the one-time TON payout (clients only render
 // what the server broadcasts and never decide anything themselves).
-// Disabled on purpose: replaced by the Zombie-Lotto chat event (see
-// "Zombie-Lotto" section further below, registerLotto()). Code kept
+// Disabled on purpose: replaced by chat events further below (Zombie-Lotto,
+// since removed; "لیگ برق‌آسا"/Blitz-Liga is the current one). Code kept
 // intact in case the Monster-Boss event ever comes back.
 const MONSTER_EVENT_ENABLED = false;
 const MONSTER_ROOM = 'fa'; // same room convention as the taxi race
@@ -1627,6 +1627,9 @@ function newUser(id, name) {
     campaignInvites: 0,
     campaignLastInviteAt: 0,
     campaignInviteCounted: false,
+    blitzTips: {},
+    blitzPaid: {},
+    blitzWon: 0,
     isChatAdmin: false,
     adminBadge: 'boy',
     isDesigner: false,
@@ -2777,58 +2780,185 @@ app.use(cors());
 app.use(express.json());
 
 // ---------------------------------------------------------------
-// Zombie-Lotto: chat event, replaces Zombie-Angeln above (6 aus 49, draw
-// every 10 minutes). Files under zombie-lotto/ are taken over 1:1 per
-// zombie-lotto/AGENT-PROMPT.md - no design/text/odds/prize changes here,
-// only the credit() callback (same TON/TT balance helpers as every other
-// game in this file).
+// (Zombie-Lotto wurde hier registriert, ist aber auf Wunsch wieder komplett
+// entfernt - "لیگ برق‌آسا"/Blitz-Liga übernimmt die Event-Rolle jetzt allein.)
+
 // ---------------------------------------------------------------
-const registerLotto = require('./zombie-lotto/lotto');
-// Anti-multi-account guard for ticket submission: a Telegram-ID alone can't be
-// faked (initData is HMAC-signed by Telegram), but someone can still spin up
-// several real throwaway Telegram accounts and submit one ticket per draw with
-// each of them. Registered BEFORE registerLotto() so it runs first for the
-// same route/method; calling next() lets lotto.js's own handler take over
-// as normal, lotto.js itself stays completely untouched.
-const LOTTO_MIN_ACCOUNT_AGE_MS = 10 * 60 * 60 * 1000; // account must exist for >= 10h
-if (BOT_TOKEN) {
-  app.post('/api/lotto/ticket', (req, res, next) => {
-    const telegramUser = registerLotto.verifyInitData(req.get('X-Telegram-Init-Data') || '', BOT_TOKEN);
-    if (!telegramUser || !telegramUser.id) return next(); // let lotto.js reply with the normal auth error
-    const existing = users[String(telegramUser.id)];
-    const accountAgeMs = Date.now() - Number(existing && existing.createdAt || 0);
-    const hasPlayed = !!existing && Number(existing.runs || 0) >= 1;
-    if (existing && existing.isBanned === true) {
-      return res.status(403).json({ error: 'user-banned' });
+// لیگ برق‌آسا (Blitz-Liga): 3.5-minute virtual-football tipping event
+// (over/under 2.5 goals), 10 matches per season, TON payouts. Files under
+// blitz-liga/ per blitz-liga/AGENT_PROMPT.md: index.html's design/texts/
+// timings/3D stadium are untouched; only its match() function was changed
+// to fetch results from the endpoints below instead of computing them
+// locally (point 5 of the prompt - the original id-seeded PRNG would let
+// anyone precompute a match's outcome before kickoff). blitz-api.js and the
+// backend itself are intentionally NOT 1:1 (the prompt explicitly asks for
+// our own DB/login here) - see blitz-liga/blitz-core.js for the shared
+// scoring/result logic.
+// ---------------------------------------------------------------
+const blitzCore = require('./blitz-liga/blitz-core.js');
+const BLITZ_FILE = path.join(DATA_DIR, 'blitz-liga.json');
+let blitzState = { seeds: {}, paidSeasons: [], payoutLog: [] };
+try {
+  if (fs.existsSync(BLITZ_FILE)) {
+    const loaded = readJsonFile(BLITZ_FILE);
+    if (loaded && typeof loaded === 'object') {
+      blitzState.seeds = loaded.seeds && typeof loaded.seeds === 'object' ? loaded.seeds : {};
+      blitzState.paidSeasons = Array.isArray(loaded.paidSeasons) ? loaded.paidSeasons : [];
+      blitzState.payoutLog = Array.isArray(loaded.payoutLog) ? loaded.payoutLog : [];
     }
-    if (!existing || accountAgeMs < LOTTO_MIN_ACCOUNT_AGE_MS || !hasPlayed) {
-      console.warn('[lotto] ticket blocked (new/throwaway account): uid=' + telegramUser.id + ' ageMs=' + accountAgeMs + ' runs=' + (existing && existing.runs || 0));
-      return res.status(403).json({ error: 'lotto-not-eligible' });
+  }
+} catch (error) {
+  console.error('[blitz] state read failed: ' + error.message);
+}
+let blitzSaveTimer = null;
+function persistBlitzState() {
+  if (blitzSaveTimer) return;
+  blitzSaveTimer = setTimeout(() => {
+    blitzSaveTimer = null;
+    try {
+      const tmp = BLITZ_FILE + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(blitzState));
+      fs.renameSync(tmp, BLITZ_FILE);
+    } catch (error) {
+      console.error('[blitz] state write failed: ' + error.message);
     }
-    next();
-  });
+  }, 500);
+}
+// In-memory memoization of the (expensive-ish) PRNG result build, keyed by
+// match id - the secret seed itself only ever comes from blitzState.seeds.
+const blitzResultCache = {};
+// Lazily creates (and permanently persists) a true-random secret seed for a
+// match - but ONLY from kickoff onward. Called before kickoff it returns
+// null and generates nothing, so there is never a seed to leak even if this
+// function were somehow invoked early.
+function blitzSeedFor(id) {
+  if (Date.now() < blitzCore.kickoffAt(id)) return null;
+  let seed = blitzState.seeds[id];
+  if (!Number.isFinite(seed)) {
+    seed = crypto.randomInt(0, 2 ** 31);
+    blitzState.seeds[id] = seed;
+    // Bounded growth: a new match kicks off every ~3.5 minutes forever, so
+    // keep only the last few seasons' worth of seeds around (enough for the
+    // live table + season settlement; older ones are pruned).
+    const ids = Object.keys(blitzState.seeds).map(Number).sort((a, b) => b - a);
+    for (const old of ids.slice(blitzCore.SEASON * 3)) delete blitzState.seeds[old];
+    persistBlitzState();
+  }
+  return seed;
+}
+function blitzResult(id) {
+  if (blitzResultCache[id]) return blitzResultCache[id];
+  const seed = blitzSeedFor(id);
+  if (seed === null) return null;
+  return blitzResultCache[id] = blitzCore.buildResult(id, seed);
+}
+function settleBlitzSeasons() {
+  const now = Date.now(), c = blitzCore.clock(now), S = blitzCore.seasonOf(c.id);
+  const lastMatchDone = c.id === blitzCore.firstOf(S) + blitzCore.SEASON - 1 && c.ph === 'post';
+  const done = lastMatchDone ? S : S - 1;
+  if (done < 0 || blitzState.paidSeasons.includes(done)) return;
+  const docs = {};
+  for (const user of Object.values(users)) {
+    if (user.blitzTips && Object.keys(user.blitzTips).length) docs[String(user.id)] = { tips: user.blitzTips };
+  }
+  const rows = blitzCore.table(done, docs, now, blitzResult);
+  let changed = false;
+  for (const row of rows.slice(0, 10)) {
+    const ton = blitzCore.PRIZES[row.rank - 1];
+    const user = users[row.id];
+    if (!user) continue;
+    user.ton = Number((Number(user.ton || 0) + ton).toFixed(9));
+    user.blitzWon = Math.round(((Number(user.blitzWon) || 0) + ton) * 10) / 10;
+    if (!user.blitzPaid || typeof user.blitzPaid !== 'object') user.blitzPaid = {};
+    user.blitzPaid[done] = ton;
+    blitzState.payoutLog.push({ season: done, uid: row.id, rank: row.rank, points: row.pts, ton, status: 'paid', at: now });
+    changed = true;
+  }
+  blitzState.payoutLog = blitzState.payoutLog.slice(-500);
+  blitzState.paidSeasons.push(done);
+  blitzState.paidSeasons = blitzState.paidSeasons.slice(-50);
+  persistBlitzState();
+  if (changed) persist();
+  console.log('[blitz] season ' + done + ' settled: ' + rows.slice(0, 10).map((row) => row.rank + '. ' + row.id + ' ' + row.pts + 'P').join(', '));
+}
+function blitzAuth(req, res, next) {
+  if (!BOT_TOKEN) return res.status(503).json({ error: 'server-missing-bot-token' });
+  const result = verifyInitData(req.get('X-Telegram-Init-Data') || '');
+  if (!result.ok) return res.status(401).json({ error: result.error || 'auth' });
+  req.blitzUid = String(result.id);
+  req.blitzUser = getOrCreateUser(result.id, result.name);
+  next();
 }
 if (BOT_TOKEN) {
-  registerLotto(app, {
-    botToken: BOT_TOKEN,
-    credit: async (telegramUserId, currency, amount, meta) => {
-      const user = getOrCreateUser(telegramUserId);
-      if (currency === 'TT') {
-        creditTT(user, amount, 'zombie-lotto:draw-' + (meta && meta.draw) + ':' + (meta && meta.matches) + 'matches');
-      } else if (currency === 'TON') {
-        user.ton = Number((Number(user.ton || 0) + Number(amount)).toFixed(9));
-      } else {
-        throw new Error('lotto: unknown currency ' + currency);
+  app.get('/api/blitz/time', (req, res) => res.json({ now: Date.now() }));
+
+  app.get('/api/blitz/me', blitzAuth, (req, res) => {
+    const user = req.blitzUser;
+    res.json({ uid: req.blitzUid, doc: { tips: user.blitzTips || {}, paid: user.blitzPaid || {}, won: Number(user.blitzWon) || 0 } });
+  });
+
+  // Rules enforced here (blitz-liga/AGENT_PROMPT.md point 3): only the
+  // current match id's tip is ever touched, only during its tips phase, only
+  // over/under, and the timestamp is always the server's own clock - never
+  // whatever the client sends. A simple per-user rate limit guards the
+  // endpoint against spam.
+  const blitzLastWrite = new Map();
+  app.put('/api/blitz/me', blitzAuth, rejectBannedUser, (req, res) => {
+    const now = Date.now();
+    const last = blitzLastWrite.get(req.blitzUid) || 0;
+    if (now - last < 1000) return res.status(429).json({ error: 'rate-limited' });
+    blitzLastWrite.set(req.blitzUid, now);
+    const user = req.blitzUser;
+    if (!user.blitzTips || typeof user.blitzTips !== 'object') user.blitzTips = {};
+    const c = blitzCore.clock(now);
+    const sent = (req.body && req.body.tips) || {};
+    const t = sent[c.id];
+    if (c.ph === 'tips') {
+      if (t && (t.ou === 'over' || t.ou === 'under')) {
+        const old = user.blitzTips[c.id];
+        user.blitzTips[c.id] = { ou: t.ou, ts: old && old.ou === t.ou ? old.ts : now };
+      } else if (!t) {
+        delete user.blitzTips[c.id];
       }
-      persist();
-    },
+    }
+    const keys = Object.keys(user.blitzTips).map(Number).sort((a, b) => b - a);
+    for (const old of keys.slice(30)) delete user.blitzTips[old];
+    persist();
+    res.json({ ok: true, doc: { tips: user.blitzTips, paid: user.blitzPaid || {}, won: Number(user.blitzWon) || 0 } });
   });
-  app.get('/lotto', (req, res) => {
+
+  app.get('/api/blitz/docs', blitzAuth, (req, res) => {
+    const docs = {}, names = {};
+    for (const user of Object.values(users)) {
+      if (!user.blitzTips || !Object.keys(user.blitzTips).length) continue;
+      const uid = String(user.id);
+      docs[uid] = { tips: user.blitzTips, paid: user.blitzPaid || {}, won: Number(user.blitzWon) || 0 };
+      names[uid] = user.name || '';
+    }
+    res.json({ docs, names });
+  });
+
+  // Public (team info isn't secret, see AGENT_PROMPT.md point 5 bullet 1) -
+  // before kickoff this only ever returns {id,h,a}; the full result (with
+  // gh/ga/ev/...) only appears from kickoff onward, once a secret seed for
+  // it exists.
+  app.get('/api/blitz/match/:id', (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 0) return res.status(400).json({ error: 'invalid-id' });
+    const teams = blitzCore.teamsOf(id);
+    if (Date.now() < blitzCore.kickoffAt(id)) return res.json({ id, h: teams.h, a: teams.a });
+    const result = blitzResult(id);
+    res.json(result || { id, h: teams.h, a: teams.a });
+  });
+
+  app.get('/blitz-liga', (req, res) => {
     res.set({ 'Cache-Control': 'no-cache, no-store, must-revalidate' });
-    res.sendFile(path.join(__dirname, 'zombie-lotto', 'zombie-lotto.html'));
+    res.sendFile(path.join(__dirname, 'blitz-liga', 'index.html'));
   });
+
+  setInterval(settleBlitzSeasons, 30000);
 } else {
-  console.warn('[lotto] BOT_TOKEN missing - Zombie-Lotto stays disabled.');
+  console.warn('[blitz] BOT_TOKEN missing - Blitz-Liga stays disabled.');
 }
 
 // The public entry point must always be the redesigned shell. The legacy game is
