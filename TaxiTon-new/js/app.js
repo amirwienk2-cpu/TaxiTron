@@ -1426,7 +1426,7 @@ async function showSectionAdIfDue(section,cooldownMs){
   if(sectionAdInProgress[section])return;
   sectionAdInProgress[section]=true;
   try{
-    const controller=window.Adsgram.init({blockId:'48235'});
+    const controller=window.Adsgram.init({blockId:'52474'});
     if(!controller||typeof controller.show!=='function')return;
     await controller.show();
     try{ localStorage.setItem('tt_'+section+'_ad_last_shown',String(Date.now())); }catch(e){}
