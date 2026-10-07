@@ -1357,8 +1357,8 @@ const ISLAND_OPEN_MS = 30 * 60 * 1000;
 const ISLAND_CLOSED_MS = 10 * 60 * 1000;
 const ISLAND_CYCLE_MS = ISLAND_OPEN_MS + ISLAND_CLOSED_MS; // 40 minutes total
 const ISLAND_SEARCH_MS = 5 * 60 * 1000;
-// Buch 1 = 70%, Buch 2 = 10%, Buch 3 = 0.5% - the remaining 19.5% is "nothing".
-const ISLAND_ODDS = [0.70, 0.10, 0.005];
+// Buch 1 = 50%, Buch 2 = 10%, Buch 3 = 0.5% - the remaining 39.5% is "nothing".
+const ISLAND_ODDS = [0.50, 0.10, 0.005];
 const ISLAND_PRIZE_TON = 0.5;
 const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
 const ISLAND_BOT_UID = 'island-bot';
