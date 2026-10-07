@@ -1,0 +1,466 @@
+<title>جزیره کتاب‌ها</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Lilita+One&family=Vazirmatn:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: TaxiTon mini-app replica — tabs, chat panel with island button beside the admin lock, online list with book icons, game in a bottom sheet */
+:root{
+  --bg:#14151d; --panel:#1d1f2b; --panel-2:#252838; --line:#2f3347;
+  --ink:#eef0f7; --mute:#9aa0b8; --name:#9aa7ff;
+  --yellow:#f6c62b; --yellow-d:#c99512; --lock:#6870c4;
+  --b1:#c08a52; --b2:#e3b33c; --b3:#b07cf0; --gold:#f2c14e; --green:#33c46b;
+  --sea:#0e2a3a; --sand:#e9cf9a;
+  --display:"Lilita One","Vazirmatn",system-ui,sans-serif;
+  --body:-apple-system,"SF Pro Text","Vazirmatn",system-ui,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;margin:0}
+.app{max-width:480px;margin:0 auto;padding-inline:12px;padding-block:12px 24px;display:grid;gap:12px}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+/* tabs */
+.tabs{display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:8px;align-items:center}
+.tab{all:unset;cursor:pointer;text-align:center;font-weight:700;font-size:15px;padding:12px 6px;border-radius:14px;background:#2a2c38;box-shadow:inset 0 3px 0 rgba(255,255,255,.06),0 3px 0 #101118}
+.tab[aria-selected="true"]{background:var(--yellow);color:#2a1f00;box-shadow:0 4px 0 var(--yellow-d)}
+.tab .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);margin-inline-end:5px}
+.tab .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:10px;background:#ef3b4f;color:#fff;font-size:11px;margin-inline-start:6px}
+.flag{width:46px;height:44px;border-radius:12px;background:#2a2c38;display:grid;place-items:center}
+.flag i{display:block;width:30px;height:18px;border-radius:3px;background:linear-gradient(#2fa84f 0 33%,#fff 33% 66%,#d8312c 66%)}
+.me-av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6b5a4a,#2d2621);border:2px solid var(--yellow-d);position:relative;display:grid;place-items:center;font-weight:800}
+.me-av::after{content:"";position:absolute;right:0;bottom:0;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--bg)}
+
+/* panel */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column}
+.phead{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.picon{width:52px;height:52px;border-radius:14px;background:#2a2410;border:1.5px solid #5a4a14;display:grid;place-items:center;flex-shrink:0}
+.ptitle{flex:1;min-width:0}
+.ptitle h1{font-family:var(--display);font-weight:400;font-size:24px;color:var(--yellow);margin:0;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptitle .on{font-size:14px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.ptitle .on b{color:var(--ink);font-family:var(--display);font-weight:400;font-size:16px}
+.gdot{width:9px;height:9px;border-radius:50%;background:var(--green)}
+.actions{display:flex;gap:8px;align-items:center}
+.abtn{all:unset;cursor:pointer;width:60px;height:46px;border-radius:14px;display:grid;place-items:center;position:relative}
+.lock{background:linear-gradient(#7b83d6,#5a61b0);box-shadow:0 4px 0 #3c4285}
+.island{background:linear-gradient(#2c8aa6,#1b5f78);box-shadow:0 4px 0 #0f3e50}
+.island.closed{background:linear-gradient(#4a5163,#353a49);box-shadow:0 4px 0 #23262f}
+.island.closed svg{opacity:.55}
+.island .tag{position:absolute;top:-8px;left:-6px;background:var(--yellow);color:#2a1f00;font-size:10px;font-weight:800;border-radius:8px;padding:1px 6px;font-variant-numeric:tabular-nums;box-shadow:0 2px 0 var(--yellow-d)}
+.island.closed .tag{background:#5b6175;color:#d6d9e4;box-shadow:none}
+.island.ready{animation:ring 1.8s ease-in-out infinite}
+@keyframes ring{0%,100%{box-shadow:0 4px 0 #0f3e50,0 0 0 0 rgba(246,198,43,.0)}50%{box-shadow:0 4px 0 #0f3e50,0 0 0 6px rgba(246,198,43,.35)}}
+
+/* chat */
+.chat{height:520px;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:12px;background:radial-gradient(circle at 50% 20%,#1f2130,#191a24)}
+.row{display:flex;gap:10px;align-items:flex-end}
+.av{width:44px;height:44px;border-radius:50%;flex-shrink:0;border:2px solid #8b93c9;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff}
+.bub{background:var(--panel-2);border-radius:16px;padding:8px 12px;max-width:78%;min-width:0}
+.bub .u{color:var(--name);font-weight:700;font-size:14px;margin-bottom:2px;display:flex;gap:6px;align-items:center}
+.bub .tx{font-size:15px;line-height:1.55;font-family:"Vazirmatn",var(--body)}
+.bub .tm{color:var(--mute);font-size:12px;margin-top:2px}
+.game{background:linear-gradient(135deg,#123546,#1d2d3a);border:1px solid #2c6c86;border-radius:16px;padding:10px 12px;max-width:88%;font-family:"Vazirmatn",var(--body)}
+.game .u{color:var(--sand)}
+.game.win{background:linear-gradient(135deg,#3a2f0d,#2a2416);border-color:var(--gold)}
+.gbtn{all:unset;cursor:pointer;margin-top:8px;display:inline-block;background:var(--yellow);color:#2a1f00;font-weight:800;font-size:13px;padding:6px 14px;border-radius:10px;box-shadow:0 3px 0 var(--yellow-d)}
+.lvl{font-size:10px;font-weight:800;background:#3b2f0c;color:var(--yellow);border-radius:6px;padding:1px 5px}
+.t1{color:#d9a46a}.t2{color:#f2c14e}.t3{color:#c9a2ff}
+.inbar{display:flex;gap:10px;align-items:center;padding:12px;border-top:1px solid var(--line)}
+.inbar .field{flex:1;border:1.5px solid #3a3e55;border-radius:24px;padding:12px 16px;color:var(--mute);font-size:16px}
+.send{width:52px;height:52px;border-radius:50%;background:var(--yellow);display:grid;place-items:center;box-shadow:0 4px 0 var(--yellow-d)}
+
+/* online list */
+.olist{max-height:600px;overflow-y:auto}
+.orow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.orow .av{position:relative}
+.orow .av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid var(--panel)}
+.oinfo{flex:1;min-width:0;display:grid;gap:3px}
+.oname{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.oname b{color:var(--name);font-size:17px;font-weight:700}
+.you{background:#4a3c10;color:var(--yellow);font-size:12px;font-weight:800;border-radius:8px;padding:2px 7px}
+.ostat{color:var(--mute);font-size:14px;display:flex;align-items:center;gap:6px;font-family:"Vazirmatn",var(--body)}
+.ostat .gd{width:9px;height:9px;border-radius:50%;background:#8a8fa3}
+.ostat.srch{color:var(--yellow)}
+.mb{display:inline-flex;gap:3px;align-items:center;background:#262a3a;border-radius:10px;padding:2px 6px}
+.mb img{width:30px;height:27px;object-fit:contain;transition:.3s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.mb img.off{opacity:.18;filter:grayscale(1)}
+.mb img.new{animation:bk .9s}
+.bw{position:relative;display:inline-flex}
+.bw sup{position:absolute;bottom:-3px;left:-3px;background:var(--yellow);color:#2a1f00;font-size:10px;font-weight:800;border-radius:6px;padding:0 4px;line-height:13px}
+.mb em{font-style:normal;color:var(--gold);font-size:11px;font-weight:800;margin-inline-start:2px}
+@keyframes bk{0%{transform:scale(.2) translateY(-8px)}50%{transform:scale(1.6)}100%{transform:scale(1)}}
+.orow.flash{animation:fl 1.4s}
+@keyframes fl{0%,60%{background:rgba(246,198,43,.14)}}
+.rank{font-size:11px;font-weight:800;color:var(--yellow);border:1.5px solid var(--yellow-d);border-radius:8px;padding:2px 6px;flex-shrink:0}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(5,6,10,.6);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.sheet{width:100%;max-width:480px;max-height:92%;overflow-y:auto;background:var(--panel);border-radius:24px 24px 0 0;border:1px solid var(--line);padding:10px 16px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;animation:up .28s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+.grab{width:44px;height:5px;border-radius:3px;background:#3a3e55;margin:0 auto}
+.shead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.shead h2{font-family:"Vazirmatn",var(--body);font-weight:800;font-size:22px;margin:0;color:var(--sand)}
+.x{all:unset;cursor:pointer;width:36px;height:36px;border-radius:50%;background:var(--panel-2);display:grid;place-items:center;font-size:18px}
+
+/* ===== island sheet — user's mockup as base art, live layers on top (image coords 954×1649) ===== */
+.sheet{width:100%;max-width:480px;max-height:94%;overflow-y:auto;background:#0b1430;padding:0;display:block;border:0;border-radius:24px 24px 0 0;animation:up .28s ease-out;scrollbar-width:none}
+.sheet::-webkit-scrollbar{display:none}
+.art{position:relative;width:100%;aspect-ratio:954/1462;background:url(island/base2.jpg) center/100% 100% no-repeat;container-type:inline-size;user-select:none;-webkit-user-select:none;font-family:"Vazirmatn",sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+.ov{position:absolute;margin:0}
+.hit{all:unset;position:absolute;cursor:pointer}
+.hit:focus-visible{outline:2px solid #ffd84d;outline-offset:2px}
+.live{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.live #spots{pointer-events:auto}
+.timer{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.timer .tl{font-weight:800;color:#fff;font-size:2.55cqw;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.timer .tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:6.1cqw;margin-top:.5cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.2cqw}
+.pilltx{display:flex;align-items:center;justify-content:flex-start;padding-right:1.2cqw;box-sizing:border-box;color:#fff;font-weight:800;font-size:2.9cqw;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box}
+.dig span{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:5.9cqw;color:#fff;text-shadow:0 .35cqw 0 #0b2e78,0 0 1.6cqw rgba(80,170,255,.6);white-space:nowrap;font-variant-numeric:tabular-nums;transform:translateY(.4cqw)}
+.dig:active span{transform:translateY(.8cqw)}
+.dig[disabled]{cursor:default}
+.dig.off span{opacity:.75}
+.hint{display:block;text-align:center;line-height:4.6cqw;color:#c9cee3;font-size:2.55cqw;white-space:nowrap}
+.hint b{color:#ffd23f}
+.segs{display:flex;gap:.9cqw}
+.segs i{flex:1;border-radius:9px;background:#37326a}
+.segs i.on{background:linear-gradient(#6cc0ff,#2e86ea)}
+.chip{display:grid;place-items:center;direction:ltr;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:3.6cqw;color:#2a1f00;background:linear-gradient(#ffe680,#f3b917);border:.35cqw solid #7a5a12;border-radius:2cqw;box-shadow:0 .4cqw 0 #6b4a05;z-index:2}
+.gray{object-fit:fill;transition:opacity .5s;pointer-events:none}
+.gray.has{opacity:0}
+.sv{display:flex;align-items:center;justify-content:flex-end;color:#fff;font-family:"Lilita One","Vazirmatn",sans-serif;font-size:4cqw;white-space:nowrap;direction:ltr;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* spots */
+.sp{cursor:default}
+.sp .ring{opacity:0}
+.art.can .sp{cursor:pointer}
+.art.can .sp .ring{opacity:1;animation:pulse 1.8s ease-out infinite}
+.sp:focus{outline:none}
+.sp.dug{display:none}
+@keyframes pulse{0%{r:12;opacity:.8}100%{r:30;opacity:0}}
+/* closed */
+.night{opacity:0;transition:opacity 1.2s}
+.art.closed .night{opacity:1}
+.closedcard{display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .8s}
+.art.closed .closedcard{opacity:1}
+.closedcard>div{background:rgba(30,18,8,.82);border:.5cqw solid #b98a3c;border-radius:2.4cqw;padding:2cqw 5cqw;text-align:center}
+.closedcard b{display:block;font-family:"Lalezar","Vazirmatn";font-weight:400;font-size:5cqw;color:#ffd84d}
+.closedcard span{font-size:2.6cqw;color:#e9dcc0}
+.closedcard .v{font-family:"Lalezar","Vazirmatn";font-size:7cqw;color:#fff;font-variant-numeric:tabular-nums;line-height:1.1}
+/* digging */
+.shovel{animation:dg .45s ease-in-out infinite alternate}
+@keyframes dg{from{transform:rotate(-14deg)}to{transform:rotate(10deg) translateY(4px)}}
+.dirt{animation:dirt 1s ease-out infinite}
+@keyframes dirt{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-28px)}}
+.digger{animation:dig2 .9s ease-in-out infinite alternate}
+@keyframes dig2{to{transform:translateY(-3px)}}
+.spark{animation:spark 1.3s ease-out forwards;transform-box:fill-box;transform-origin:center}
+@keyframes spark{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1) translateY(-24px)}}
+/* reveal */
+.reveal{display:grid;place-items:center;background:rgba(6,14,28,.6);border-radius:2.6cqw;z-index:3;cursor:pointer;overflow:hidden}
+.reveal .card{position:relative;display:grid;justify-items:center;gap:.6cqw;text-align:center;animation:rv .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes rv{from{transform:scale(.3) translateY(30px);opacity:0}}
+.reveal .burst{position:absolute;top:-8cqw;left:50%;margin-left:-26cqw;width:52cqw;height:52cqw;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,222,89,.35) 0 10deg,transparent 10deg 24deg);mask:radial-gradient(circle,#000 30%,transparent 70%);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.reveal img{position:relative;width:30cqw;height:27cqw;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+.reveal .nm{position:relative;font-family:"Lalezar","Vazirmatn";font-size:6cqw;color:#ffd84d;text-shadow:0 .4cqw 0 #6b4a05}
+.reveal .sub{position:relative;font-size:2.8cqw;color:#e8eefc;background:rgba(0,0,0,.4);padding:.6cqw 2cqw;border-radius:2cqw}
+.reveal .empty{font-size:14cqw;position:relative}
+.books{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.book{border-radius:14px;padding:10px 6px;text-align:center;border:1.5px dashed var(--line);display:grid;gap:4px;justify-items:center;font-family:"Vazirmatn",var(--body)}
+.book img{width:84px;height:76px;object-fit:contain;opacity:.22;filter:grayscale(1);transition:.3s}
+.book.have{border-style:solid}.book.have img{opacity:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.cimg{width:44px;height:40px;object-fit:contain;vertical-align:middle;margin-inline-end:4px}
+.book .n{font-weight:700;font-size:12.5px}.book .p{font-size:11px;color:var(--mute)}
+.book.k1.have{border-color:var(--b1);background:rgba(95,174,106,.1)}
+.book.k2.have{border-color:var(--b2);background:rgba(77,143,224,.1)}
+.book.k3.have{border-color:#b07cf0;background:rgba(176,124,240,.12)}
+.book.pop{animation:pop .6s}@keyframes pop{40%{transform:scale(1.12)}}
+.prize{display:flex;justify-content:space-between;align-items:center;background:var(--panel-2);border-radius:14px;padding:10px 14px;font-family:"Vazirmatn",var(--body)}
+.prize b{font-family:var(--display);font-weight:400;font-size:24px;color:var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-family:"Vazirmatn",var(--body)}
+.stat{background:var(--panel-2);border-radius:12px;padding:8px 10px}
+.stat .l{font-size:11px;color:var(--mute)}.stat .v{font-weight:800;font-size:17px;font-variant-numeric:tabular-nums}
+.rules{margin:0;padding-inline-start:18px;color:var(--mute);font-size:13px;line-height:1.9;font-family:"Vazirmatn",var(--body)}
+.rules b{color:var(--ink)}
+.dots3::after{content:"";display:inline-block;width:1.2em;text-align:start;animation:d3 1s steps(4) infinite}
+@keyframes d3{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <nav class="tabs" role="tablist">
+    <div class="flag" aria-hidden="true"><i></i></div>
+    <button class="tab" role="tab" id="tChat" aria-selected="true">Chat</button>
+    <button class="tab" role="tab" id="tOnline" aria-selected="false"><span class="dot"></span>Online</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Friends<span class="badge">7</span></button>
+    <div class="me-av" aria-hidden="true">A</div>
+  </nav>
+
+  <!-- CHAT -->
+  <section class="panel" id="pChat">
+    <div class="phead">
+      <div class="picon"><svg width="34" height="26" viewBox="0 0 34 26"><rect x="1" y="1" width="32" height="18" rx="6" fill="#f6c62b"/><path d="M8 19 l-2 6 l7 -6z" fill="#f6c62b"/><g fill="#2b6fd6"><circle cx="10" cy="10" r="3.2"/><circle cx="17" cy="10" r="3.2"/><circle cx="24" cy="10" r="3.2"/></g></svg></div>
+      <div class="ptitle"><h1>TaxiTon Chat · FA</h1><div class="on"><span class="gdot"></span><b>40</b> online</div></div>
+      <div class="actions">
+        <button class="abtn island" id="islandBtn" aria-label="جزیره کتاب‌ها">
+          <span class="tag" id="islandTag">—</span>
+          <svg width="34" height="30" viewBox="0 0 34 30"><ellipse cx="17" cy="25" rx="15" ry="4" fill="#e9cf9a"/><path d="M13 24 C13 16 14 11 17 7" stroke="#7a5532" stroke-width="2.4" fill="none" stroke-linecap="round"/><g fill="#5fae6a"><path d="M17 7 c-6 -2 -10 0 -12 3 c5 -1 8 -1 12 -3z"/><path d="M17 7 c3 -4 8 -5 11 -3 c-5 1 -8 2 -11 3z"/><path d="M17 7 c-1 -4 -4 -6 -7 -6 c3 2 5 3 7 6z"/></g><rect x="21" y="16" width="8" height="10" rx="1.2" fill="#e0503f"/><rect x="21" y="16" width="2" height="10" fill="#000" opacity=".25"/><circle cx="25.5" cy="21" r="1.6" fill="#f2c14e"/></svg>
+        </button>
+        <button class="abtn lock" aria-label="قفل چت (فقط ادمین)"><svg width="22" height="24" viewBox="0 0 22 24"><path d="M6 10 V7 a5 5 0 0 1 10 0 V10" stroke="#e7d9a3" stroke-width="2.5" fill="none"/><rect x="3" y="10" width="16" height="12" rx="3" fill="#e9c75a"/></svg></button>
+      </div>
+    </div>
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <div class="inbar"><div class="av" style="width:46px;height:46px;background:#3a2b3a">🙂</div><div class="field">Write a message…</div><div class="send"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M3 3 L20 11 L3 19 L6 11z" fill="#1e1b10"/></svg></div></div>
+  </section>
+
+  <!-- ONLINE -->
+  <section class="panel" id="pOnline" hidden>
+    <div class="phead"><div class="ptitle"><div class="on" style="font-size:16px"><span class="gdot"></span><b style="font-size:22px">40</b> online <span id="srchCount" style="margin-inline-start:auto;color:var(--yellow);font-family:Vazirmatn"></span></div></div></div>
+    <div class="olist" id="olist"></div>
+  </section>
+</div>
+
+<!-- GAME SHEET -->
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" dir="rtl" role="dialog" aria-label="جزیره کتاب‌ها">
+    <div class="art" id="scene">
+      <button class="hit" id="close" aria-label="بستن" style="left:3.7%;top:1.58%;width:9.4%;height:6.09%;border-radius:50%"></button>
+      <!-- timer board -->
+      <div class="ov timer" style="left:11.7%;top:14.21%;width:14.7%;height:6.32%">
+        <div class="tl" id="clockL">تا بسته شدن</div><div class="tv" id="clockV">۲۱:۲۴</div>
+      </div>
+      <!-- searchers pill -->
+      <div class="ov pilltx" style="left:67.3%;top:13.53%;width:22.9%;height:3.38%"><span id="hudSearchers">۱ نفر در حال جستجو</span></div>
+      <!-- live layer in image coordinates -->
+      <svg class="live" viewBox="0 0 954 1462" aria-hidden="false">
+        <defs>
+          <linearGradient id="nightg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#081430" stop-opacity=".82"/><stop offset="1" stop-color="#06122a" stop-opacity=".7"/></linearGradient>
+          <linearGradient id="goldr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset=".5" stop-color="#f3b917"/><stop offset="1" stop-color="#b9800b"/></linearGradient>
+        </defs>
+        <g id="diggers"></g>
+        <g id="spots"></g>
+        <g id="fx"></g>
+        <rect class="night" x="30" y="178" width="896" height="486" rx="24" fill="url(#nightg)" pointer-events="none"/>
+      </svg>
+      <div class="ov closedcard" style="left:3.1%;top:12.18%;width:93.9%;height:33.27%"><div><b>🔒 جزیره بسته است</b><span>دوباره باز می‌شود در</span><div class="v" id="closedV">۱۰:۰۰</div></div></div>
+      <div class="ov reveal" id="reveal" hidden style="left:3.1%;top:12.18%;width:93.9%;height:33.27%"></div>
+      <!-- main button -->
+      <button class="hit dig" id="dig" style="left:11.5%;top:47.94%;width:77.6%;height:9.47%"><span id="digTx">در حال جستجو ۰۴:۲۷</span></button>
+      <div class="ov hint" id="digMsg" style="left:19.7%;top:57.52%;width:60.8%;height:3.05%"></div>
+      <!-- progress segments -->
+      <div class="ov segs" id="segs" style="left:4.7%;top:62.71%;width:18.9%;height:0.90%"><i></i><i></i><i></i></div>
+      <!-- grey covers for missing books (card order in art: right=1, middle=2, left=3) -->
+      <img class="ov gray" id="g1" src="island/g1.jpg" alt="" style="left:65.72%;top:64.98%;width:30.82%;height:18.06%">
+      <img class="ov gray" id="g2" src="island/g2.jpg" alt="" style="left:36.58%;top:64.98%;width:26.94%;height:18.06%">
+      <img class="ov gray" id="g3" src="island/g3.jpg" alt="" style="left:3.56%;top:64.98%;width:30.61%;height:18.06%">
+      <div class="ov chip" id="c1" hidden style="left:67.5%;top:65.87%;width:8%;height:2.93%">×۲</div>
+      <div class="ov chip" id="c2" hidden style="left:38%;top:65.87%;width:8%;height:2.93%">×۲</div>
+      <div class="ov chip" id="c3" hidden style="left:5%;top:65.87%;width:8%;height:2.93%">×۲</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const CLOSED=600, WINDOW=1800, PRIZE=0.5, SEARCH_MS=300000; // 5 Minuten suchen
+const ODDS=[0.70,0.10,0.02];
+const BOOKNAMES=["نقشه قدیمی","دفتر ناخدا","کتاب طلایی"];
+const NAMES=["Panah","AmirberlinK","Alireza_kh9090","azadaneh","BabyKnight1","aghamehtii","Alireza65ss","Hm1364d","hossain4461","iMmDKh","Misha_asl","M.M","Kosar_770","sara_tx","Reza.drive","mahsa77","nima_ton","Shirin_k","parsa1380","Yasi.taxi","behnam_x","Golnaz","kian_rd","Farhad98","ladan_m","sina.ton","Arman_kh","neda1366","Pouya_tx","raha.r","milad_az","elnaz77","hamed.dr","Taraneh","omid_ardabil","zahra.k","Babak_ton","Ayda_m","javad1370","sepideh_x"];
+const ADMINS={"Panah":1,"M.M":1,"Kosar_770":1};
+const COLORS=["#8c5a7a","#3d5a80","#6b4f3a","#7a3b3b","#3e6b55","#5a4f8c","#2f6f86","#7c6a2e"];
+const fa=n=>String(n).replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
+const ME=1;
+const users=NAMES.map((n,i)=>({id:i,name:n,books:[0,0,0],wins:0,paid:0,done:false,searching:false,last:"",active:i===ME?1:0.55+Math.random()*0.4,driving:Math.random()<0.35,col:COLORS[i%COLORS.length]}));
+const me=users[ME];
+let sim=0, liveUntil=-1, nextAt=0, round=0, pending=[], totalPaid=0, searches=0, found=[0,0,0];
+const $=id=>document.getElementById(id);
+const hhmm=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+
+const bookSvg=(k,cls="")=>`<img src="b${k+1}.png" class="bk ${cls}" alt="${BOOKNAMES[k]}" draggable="false">`;
+const avatar=u=>`<div class="av" style="background:${u.col}">${u.name[0].toUpperCase()}</div>`;
+
+/* ---------- chat ---------- */
+function post(u,text){
+  const c=$("chat"),d=document.createElement("div");d.className="row";
+  d.innerHTML=`${avatar(u)}<div class="bub"><div class="u">${u.name}${ADMINS[u.name]?'<span class="lvl">ADMIN</span>':'<span class="lvl">Lvl4</span>'}</div><div class="tx">${text}</div><div class="tm">${hhmm()}</div></div>`;
+  add(d);
+}
+function gameMsg(html,win,withBtn){
+  const d=document.createElement("div");d.className="row";d.dir="rtl";
+  d.innerHTML=`<div class="av" style="background:#1b5f78;border-color:#2c8aa6">🏝️</div><div class="game ${win?'win':''}"><div class="u" style="font-weight:800;font-size:13px;margin-bottom:3px">جزیره کتاب‌ها</div><div class="tx" style="font-size:14px;line-height:1.7">${html}</div>${withBtn?'<button class="gbtn" data-open>🔍 برو به جزیره</button>':''}<div class="tm" style="color:var(--mute);font-size:12px;margin-top:4px">${hhmm()}</div></div>`;
+  add(d);
+}
+function add(d){const c=$("chat");c.appendChild(d);while(c.children.length>80)c.firstChild.remove();c.scrollTop=c.scrollHeight}
+$("chat").addEventListener("click",e=>{if(e.target.closest("[data-open]"))openSheet()});
+
+/* ---------- online ---------- */
+let flashId=-1, flashK;
+function renderOnline(){
+  $("olist").innerHTML=users.map(u=>{
+    const books=`<span class="mb">${[0,1,2].map(k=>`<span class="bw">${bookSvg(k,u.books[k]?(u.id===flashId&&flashK===k?'new':''):'off')}${u.books[k]>1?`<sup>${fa(u.books[k])}</sup>`:''}</span>`).join("")}${u.wins?`<em>×${fa(u.wins)}</em>`:''}</span>`;
+    let st;
+    if(u.searching)st=`<div class="ostat srch">🔍 در حال جستجو… <b data-left="${u.id}">${fmtMs(u.endAt-performance.now())}</b></div>`;
+    else if(u.last)st=`<div class="ostat">${u.last}</div>`;
+    else if(u===me)st=`<div class="ostat">You are online</div>`;
+    else st=u.driving?`<div class="ostat">🚕 Driving now</div>`:`<div class="ostat"><span class="gd"></span>online</div>`;
+    return `<div class="orow ${u.id===flashId?'flash':''}">${avatar(u)}<div class="oinfo"><div class="oname"><b>${u.name}</b>${u===me?'<span class="you">You</span>':''}${books}</div>${st}</div>${ADMINS[u.name]?'<span class="rank">ADMIN</span>':''}</div>`}).join("");
+  const n=users.filter(u=>u.searching).length;
+  $("srchCount").textContent=n?fa(n)+" نفر در حال جستجو":"";
+  flashId=-1;
+}
+
+/* ---------- my collection ---------- */
+function renderMine(popK){
+  const n=me.books.filter(b=>b>0).length;
+  document.querySelectorAll("#segs i").forEach((e,i)=>e.classList.toggle("on",i<n));
+  [0,1,2].forEach(k=>{$("g"+(k+1)).classList.toggle("has",me.books[k]>0);const c=$("c"+(k+1));c.textContent="×"+fa(me.books[k]);c.hidden=me.books[k]<2});
+}
+
+/* ---------- game (all coordinates in the art's 954×1649 space) ---------- */
+const NS="http://www.w3.org/2000/svg";
+const SPOTS=[[226,555],[336,573],[410,548],[474,582],[518,548],[607,596],[694,540]];
+const SANDPTS=[[262,598],[300,540],[372,604],[440,610],[560,592],[652,578],[250,530],[730,585],[380,528],[585,560],[200,590],[470,622]];
+let mySpot=-1, myDig=null, revealTimer=null;
+function roll(){const r=Math.random();if(r<ODDS[0])return 0;if(r<ODDS[0]+ODDS[1])return 1;if(r<ODDS[0]+ODDS[1]+ODDS[2])return 2;return -1}
+function el(tag,attrs,html){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(html)e.innerHTML=html;return e}
+function drawSpots(){
+  const g=$("spots");g.innerHTML="";
+  SPOTS.forEach(([x,y],i)=>g.appendChild(el("g",{class:"sp"+(mySpot===i?" dug":""),"data-i":i,tabindex:0,role:"button","aria-label":"اینجا بگرد"},
+    `<circle class="ring" cx="${x}" cy="${y}" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="${x}" cy="${y}" r="30" fill="transparent"/>`)));
+}
+$("spots").addEventListener("click",e=>{const s=e.target.closest(".sp");if(s)startSearch(me,+s.dataset.i)});
+$("spots").addEventListener("keydown",e=>{const s=e.target.closest(".sp");if(s&&(e.key==="Enter"||e.key===" ")){e.preventDefault();startSearch(me,+s.dataset.i)}});
+function spark(x,y,k){
+  const col=k<0?"#e6f6fb":["#e0a35e","#ffd84d","#c79bff"][k];
+  const g=el("g",{class:"spark"},`<circle cx="${x}" cy="${y-20}" r="15" fill="${col}"/><circle cx="${x}" cy="${y-20}" r="26" fill="none" stroke="${col}" stroke-width="3.5"/><path d="M${x} ${y-62} v14 M${x-32} ${y-20} h12 M${x+20} ${y-20} h12" stroke="${col}" stroke-width="3.5" stroke-linecap="round"/>`);
+  $("fx").appendChild(g);setTimeout(()=>g.remove(),1400);
+}
+function renderDiggers(){
+  const g=$("diggers");g.innerHTML="";
+  users.filter(u=>u.searching&&u!==me).slice(0,12).forEach(u=>{
+    const [x,y]=SANDPTS[u.id%SANDPTS.length];
+    g.appendChild(el("g",{class:"digger",style:`animation-delay:-${(u.id%7)/7}s`},
+      `<ellipse cx="${x}" cy="${y+17}" rx="13" ry="4" fill="#000" opacity=".2"/>
+       <path d="M${x+10} ${y+16} l9 -20" stroke="#8d6640" stroke-width="3" stroke-linecap="round"/>
+       <circle cx="${x}" cy="${y}" r="13" fill="${u.col}" stroke="#fff" stroke-width="3"/>
+       <text x="${x}" y="${y+5}" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="system-ui">${u.name[0].toUpperCase()}</text>`));
+  });
+  $("hudSearchers").textContent=fa(users.filter(u=>u.searching).length)+" نفر در حال جستجو";
+}
+function startSearch(u,spotI){
+  if(u.searching||liveUntil<0)return;u.searching=true;u.rs=(u.rs||0)+1;
+  u.endAt=performance.now()+SEARCH_MS;
+  if(u===me){
+    mySpot=spotI==null?Math.floor(Math.random()*SPOTS.length):spotI;
+    const [x,y0]=SPOTS[mySpot],y=y0-12,R=40,C=2*Math.PI*R;
+    const g=el("g",{},`
+      <ellipse cx="${x}" cy="${y+38}" rx="34" ry="8" fill="#000" opacity=".2"/>
+      <circle cx="${x}" cy="${y}" r="${R}" fill="#4a2e18" opacity=".85"/>
+      <ellipse cx="${x}" cy="${y+18}" rx="26" ry="9" fill="#2e1a0b" opacity=".7"/>
+      <circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="#7a5a12" stroke-width="9"/>
+      <circle id="ringP" cx="${x}" cy="${y}" r="${R}" fill="none" stroke="url(#goldr)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 ${x} ${y})"/>
+      <g class="shovel" style="transform-origin:${x}px ${y+20}px"><rect x="${x-3}" y="${y-70}" width="6" height="56" rx="3" fill="#a86b2c"/><path d="M${x-15} ${y-16} h30 l-4 22 q-11 10 -22 0z" fill="#f2f2ee" stroke="#b9b9b0" stroke-width="1.5"/><circle cx="${x+5}" cy="${y-6}" r="3" fill="#e0a33a"/></g>
+      ${[-20,-8,10,22].map((dx,i)=>`<circle class="dirt" style="--dx:${dx}px;animation-delay:${i*.22}s" cx="${x}" cy="${y+18}" r="3.6" fill="#b08445"/>`).join("")}
+      <rect x="${x-44}" y="${y-R-46}" width="88" height="34" rx="17" fill="#1b0f08" stroke="#5a3a1a" stroke-width="2"/>
+      <text id="ringT" x="${x}" y="${y-R-21}" text-anchor="middle" font-family="Lalezar,Vazirmatn" font-size="26" fill="#fff">۰۵:۰۰</text>`);
+    $("fx").appendChild(g);myDig={g,C};
+    drawSpots();setActionState();updateIsland();
+    (function loop(){if(!myDig)return;const left=me.endAt-performance.now(),p=1-Math.max(0,left)/SEARCH_MS;
+      const r=document.getElementById("ringP"),t=document.getElementById("ringT");
+      if(r)r.setAttribute("stroke-dashoffset",myDig.C*(1-p));if(t)t.textContent=fmtMs(left);
+      $("digTx").textContent="در حال جستجو "+fmtMs(left);
+      if(left>0)requestAnimationFrame(loop)})();
+  }
+  renderOnline();renderDiggers();
+  setTimeout(()=>{u.searching=false;finish(u)},SEARCH_MS);
+}
+function finish(u){
+  searches++;const k=roll(),isMe=u===me;
+  const [x,y]=isMe?SPOTS[mySpot]:SANDPTS[u.id%SANDPTS.length];
+  if(isMe&&myDig){myDig.g.remove();myDig=null}
+  spark(x,y,k);
+  let line,isNew=false,won=false;
+  if(k<0){u.last="🌊 چیزی پیدا نکرد";line="این بار چیزی پیدا نکردی"}
+  else if(u.books[k]){u.books[k]++;found[k]++;flashId=u.id;flashK=k;u.last=`📖 ${BOOKNAMES[k]} ×${fa(u.books[k])}`;line=`یک <b>${BOOKNAMES[k]}</b> دیگر! حالا ${fa(u.books[k])} تا داری`}
+  else{
+    isNew=true;u.books[k]=1;found[k]++;flashId=u.id;flashK=k;
+    const cnt=u.books.filter(b=>b>0).length;
+    u.last=`📖 ${BOOKNAMES[k]} پیدا کرد! (${fa(cnt)}/۳)`;line=`<b>${BOOKNAMES[k]}</b> را پیدا کردی! (${fa(cnt)}/۳)`;
+    if(k>=1||isMe)gameMsg(`<img class="cimg" src="b${k+1}.png" alt=""><b>${u.name}</b> ${k===2?'✨ ':''}<b class="t${k+1}">${BOOKNAMES[k]}</b> را پیدا کرد (${fa(cnt)}/۳)`);
+  }
+  if(u.books.every(b=>b>0)){
+    won=true;u.books=u.books.map(b=>b-1);u.wins++;u.paid+=PRIZE;totalPaid+=PRIZE;u.last="🏆 ۰٫۵ TON برد!";flashId=u.id;flashK=undefined;
+    gameMsg(`🏆 <b>${u.name}</b> هر ۳ کتاب را پیدا کرد و <b style="color:var(--gold)">0.5 TON</b> گرفت!`,true);
+    if(isMe)line="🏆 هر ۳ کتاب! <b>0.5 TON</b> به کیف پولت واریز شد";
+  }
+  if(isMe){mySpot=-1;drawSpots();showReveal(k,isNew,won);setActionState();$("digMsg").innerHTML=line+(liveUntil>=0?" · دوباره بگرد!":"")}
+  else if(liveUntil>=0&&Math.random()<u.active)pending.push({u,at:sim+2+Math.random()*90});
+  renderOnline();renderDiggers();renderMine(isMe&&k>=0?k:undefined);updateIsland();
+}
+function showReveal(k,isNew,won){
+  const r=$("reveal");
+  if(k<0)r.innerHTML=`<div class="card"><div class="empty">🐚</div><div class="nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="sub">فقط یک صدف… دور بعد دوباره امتحان کن</div></div>`;
+  else r.innerHTML=`<div class="card"><div class="burst"></div><img src="b${k+1}.png" alt="${BOOKNAMES[k]}"><div class="nm">${won?'🏆 0.5 TON':BOOKNAMES[k]}</div><div class="sub">${won?'هر ۳ کتاب کامل شد!':isNew?'کتاب '+fa(k+1)+' به کلکشن اضافه شد':'حالا '+fa(me.books[k])+' تا از این کتاب داری'}</div></div>`;
+  r.hidden=false;clearTimeout(revealTimer);revealTimer=setTimeout(()=>r.hidden=true,6000);
+}
+$("reveal").onclick=()=>$("reveal").hidden=true;
+function setActionState(){
+  const live=liveUntil>=0,d=$("dig"),t=$("digTx");d.classList.remove("off");
+  if(me.searching){d.disabled=true;$("digMsg").innerHTML="داری می‌گردی... بعد از <b>۵ دقیقه</b> معلوم می‌شود چه پیدا کردی"}
+  else if(!live){d.disabled=true;d.classList.add("off");t.textContent="جزیره بسته است";$("digMsg").innerHTML="جزیره ۱۰ دقیقه بسته است"}
+  else{d.disabled=false;t.textContent="بگرد!";$("digMsg").innerHTML=`این دور: <b>${fa(me.rs||0)}</b> جستجو · هر جستجو <b>۵ دقیقه</b>`}
+  $("scene").classList.toggle("can",live&&!me.searching);
+}
+function openRound(left){
+  round++;liveUntil=sim+(left||WINDOW);users.forEach(u=>{u.rs=0;u.last=""});mySpot=-1;
+  pending=users.filter(u=>u!==me&&Math.random()<u.active).map(u=>({u,at:sim+3+Math.random()*150}));
+  gameMsg(`جزیره باز شد! <b>۳۰ دقیقه</b> وقت دارید، هر <b>۵ دقیقه</b> یک جستجو. ۳ کتاب متفاوت = <b style="color:var(--gold)">0.5 TON</b>`,false,true);
+  drawSpots();setActionState();renderOnline();
+}
+function closeRound(){
+  liveUntil=-1;nextAt=sim+CLOSED;
+  gameMsg(`جزیره بسته شد · ${fa(users.filter(u=>u.rs>0).length)} نفر گشتند. ۱۰ دقیقه دیگر دوباره باز می‌شود.`);
+  setActionState();
+}
+const fmtMs=ms=>fmt(ms/1000);
+const fmt=s=>{s=Math.max(0,Math.ceil(s));return fa(String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"))};
+function updateIsland(){
+  const live=liveUntil>=0,b=$("islandBtn");
+  b.classList.toggle("closed",!live);
+  b.classList.toggle("ready",live&&!me.searching);
+  $("islandTag").textContent=live?Math.ceil((liveUntil-sim)/60)+"′":"بسته";
+}
+
+let last=performance.now();
+function tick(now){
+  sim+=Math.min(1,(now-last)/1000);last=now;
+  if(liveUntil<0&&sim>=nextAt)openRound();
+  if(liveUntil>=0){pending=pending.filter(p=>{if(sim>=p.at){startSearch(p.u);return false}return true});if(sim>=liveUntil)closeRound()}
+  const live=liveUntil>=0;
+  $("scene").classList.toggle("closed",!live);
+  $("clockL").textContent=live?"تا بسته شدن":"تا باز شدن";
+  $("clockV").textContent=fmt(live?liveUntil-sim:nextAt-sim);
+  $("closedV").textContent=fmt(live?0:nextAt-sim);
+  if(Math.floor(now/1000)!==Math.floor((now-16)/1000)){updateIsland();document.querySelectorAll("[data-left]").forEach(el=>{const u=users[+el.dataset.left];el.textContent=fmtMs(u.endAt-performance.now())})}
+  requestAnimationFrame(tick);
+}
+
+/* ---------- ui ---------- */
+function openSheet(){$("scrim").hidden=false;renderMine()}
+$("islandBtn").onclick=openSheet;
+$("close").onclick=()=>$("scrim").hidden=true;
+$("scrim").addEventListener("click",e=>{if(e.target.id==="scrim")$("scrim").hidden=true});
+$("dig").onclick=()=>startSearch(me);
+function tab(on){const c=on==="chat";$("tChat").setAttribute("aria-selected",c);$("tOnline").setAttribute("aria-selected",!c);$("pChat").hidden=!c;$("pOnline").hidden=c}
+$("tChat").onclick=()=>tab("chat");$("tOnline").onclick=()=>tab("online");
+
+/* sample start state (example data) */
+users.forEach(u=>{if(u===me)return;for(let i=0;i<5;i++){const k=roll();if(k>=0){u.books[k]++;found[k]++}}if(u.books.every(b=>b>0))u.books[2]=0});
+post(users[2],"ماشالله به ایدت استرس کشمون کردی 🤣");
+post(users[12],"🚕🚕🚕");
+post(users[4],"با احترام به همه بهترین ایده اعداد بود");
+openRound(WINDOW-480);
+renderMine();updateIsland();renderDiggers();
+requestAnimationFrame(tick);
+})();
+</script>

@@ -3061,7 +3061,91 @@
   .race-btn.monster-btn{background:linear-gradient(180deg,#ff8a3d,#c8213a);box-shadow:0 3px 0 #7a1222}
   .race-btn.monster-btn.live{background:linear-gradient(180deg,#ff5a6e,#c8213a);animation:monsterPulse 1s infinite}
   @keyframes monsterPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,.55)}50%{box-shadow:0 0 0 6px rgba(255,45,85,0)}}
-  /* ==== لیگ برق‌آسا (Blitz-Liga) wurde hier registriert, ist aber auf Wunsch wieder komplett entfernt. ==== */
+  /* ==== جزیره کتاب‌ها (Bücherinsel): Chat-Header-Button neben dem Schloss, für
+     alle sichtbar (Schloss bleibt admin-only). Zeigt Restminuten bzw. بسته. ==== */
+  .race-btn.island-btn{background:linear-gradient(180deg,#2c8aa6,#1b5f78);box-shadow:0 3px 0 #0f3e50}
+  .race-btn.island-btn.closed{background:linear-gradient(180deg,#4a5163,#353a49);box-shadow:0 3px 0 #23262f}
+  .race-btn.island-btn.ready{animation:islandReady 1.8s ease-in-out infinite}
+  @keyframes islandReady{0%,100%{box-shadow:0 3px 0 #0f3e50,0 0 0 0 rgba(246,198,43,0)}50%{box-shadow:0 3px 0 #0f3e50,0 0 0 6px rgba(246,198,43,.35)}}
+  /* ==== Bücherinsel-Spielfenster: 1:1 aus bucherinsel/prototype/index.html übernommen
+     (Design/Positionen nicht verändern), nur mit "isl-" Präfix versehen, damit nichts
+     mit dem Rest der App kollidiert. Bilder liegen unter /bucherinsel/prototype/. ==== */
+  .isl-scrim{position:fixed;inset:0;background:rgba(5,6,10,.6);display:flex;align-items:flex-end;justify-content:center;z-index:9000}
+  .isl-sheet{width:100%;max-width:480px;max-height:94%;overflow-y:auto;background:#0b1430;padding:0;display:block;border:0;border-radius:24px 24px 0 0;animation:islUp .28s ease-out;scrollbar-width:none;direction:rtl}
+  .isl-sheet::-webkit-scrollbar{display:none}
+  @keyframes islUp{from{transform:translateY(40px);opacity:.4}}
+  .isl-art{position:relative;width:100%;aspect-ratio:954/1462;background:url(/bucherinsel/prototype/island/base2.jpg) center/100% 100% no-repeat;container-type:inline-size;user-select:none;-webkit-user-select:none;font-family:"Vazirmatn",sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .isl-ov{position:absolute;margin:0}
+  .isl-hit{all:unset;position:absolute;cursor:pointer}
+  .isl-hit:focus-visible{outline:2px solid #ffd84d;outline-offset:2px}
+  .isl-live{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .isl-live #islSpots{pointer-events:auto}
+  .isl-timer{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+  .isl-timer .isl-tl{font-weight:800;color:#fff;font-size:2.55cqw;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .isl-timer .isl-tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:6.1cqw;margin-top:.5cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.2cqw}
+  .isl-pilltx{display:flex;align-items:center;justify-content:flex-start;padding-right:1.2cqw;box-sizing:border-box;color:#fff;font-weight:800;font-size:2.9cqw;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .isl-dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box}
+  .isl-dig span{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:5.9cqw;color:#fff;text-shadow:0 .35cqw 0 #0b2e78,0 0 1.6cqw rgba(80,170,255,.6);white-space:nowrap;font-variant-numeric:tabular-nums;transform:translateY(.4cqw)}
+  .isl-dig:active span{transform:translateY(.8cqw)}
+  .isl-dig[disabled]{cursor:default}
+  .isl-dig.off span{opacity:.75}
+  .isl-hint{display:block;text-align:center;line-height:4.6cqw;color:#c9cee3;font-size:2.55cqw;white-space:nowrap}
+  .isl-hint b{color:#ffd23f}
+  .isl-segs{display:flex;gap:.9cqw}
+  .isl-segs i{flex:1;border-radius:9px;background:#37326a}
+  .isl-segs i.on{background:linear-gradient(#6cc0ff,#2e86ea)}
+  .isl-chip{display:grid;place-items:center;direction:ltr;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:3.6cqw;color:#2a1f00;background:linear-gradient(#ffe680,#f3b917);border:.35cqw solid #7a5a12;border-radius:2cqw;box-shadow:0 .4cqw 0 #6b4a05;z-index:2}
+  .isl-gray{object-fit:fill;transition:opacity .5s;pointer-events:none}
+  .isl-gray.has{opacity:0}
+  .isl-sp{cursor:default}
+  .isl-sp .isl-ring{opacity:0}
+  .isl-art.can .isl-sp{cursor:pointer}
+  .isl-art.can .isl-sp .isl-ring{opacity:1;animation:islPulse 1.8s ease-out infinite}
+  .isl-sp:focus{outline:none}
+  .isl-sp.dug{display:none}
+  @keyframes islPulse{0%{r:12;opacity:.8}100%{r:30;opacity:0}}
+  .isl-night{opacity:0;transition:opacity 1.2s}
+  .isl-art.closed .isl-night{opacity:1}
+  .isl-closedcard{display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .8s}
+  .isl-art.closed .isl-closedcard{opacity:1}
+  .isl-closedcard>div{background:rgba(30,18,8,.82);border:.5cqw solid #b98a3c;border-radius:2.4cqw;padding:2cqw 5cqw;text-align:center}
+  .isl-closedcard b{display:block;font-family:"Lalezar","Vazirmatn";font-weight:400;font-size:5cqw;color:#ffd84d}
+  .isl-closedcard span{font-size:2.6cqw;color:#e9dcc0}
+  .isl-closedcard .isl-v{font-family:"Lalezar","Vazirmatn";font-size:7cqw;color:#fff;font-variant-numeric:tabular-nums;line-height:1.1}
+  .isl-shovel{animation:islDg .45s ease-in-out infinite alternate}
+  @keyframes islDg{from{transform:rotate(-14deg)}to{transform:rotate(10deg) translateY(4px)}}
+  .isl-dirt{animation:islDirt 1s ease-out infinite}
+  @keyframes islDirt{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-28px)}}
+  .isl-digger{animation:islDig2 .9s ease-in-out infinite alternate}
+  @keyframes islDig2{to{transform:translateY(-3px)}}
+  .isl-spark{animation:islSpark 1.3s ease-out forwards;transform-box:fill-box;transform-origin:center}
+  @keyframes islSpark{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1) translateY(-24px)}}
+  .isl-reveal{display:grid;place-items:center;background:rgba(6,14,28,.6);border-radius:2.6cqw;z-index:3;cursor:pointer;overflow:hidden}
+  .isl-reveal .isl-card{position:relative;display:grid;justify-items:center;gap:.6cqw;text-align:center;animation:islRv .6s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes islRv{from{transform:scale(.3) translateY(30px);opacity:0}}
+  .isl-reveal .isl-burst{position:absolute;top:-8cqw;left:50%;margin-left:-26cqw;width:52cqw;height:52cqw;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,222,89,.35) 0 10deg,transparent 10deg 24deg);mask:radial-gradient(circle,#000 30%,transparent 70%);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);animation:islSpin 8s linear infinite}
+  @keyframes islSpin{to{transform:rotate(360deg)}}
+  .isl-reveal img{position:relative;width:30cqw;height:27cqw;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+  .isl-reveal .isl-nm{position:relative;font-family:"Lalezar","Vazirmatn";font-size:6cqw;color:#ffd84d;text-shadow:0 .4cqw 0 #6b4a05}
+  .isl-reveal .isl-sub{position:relative;font-size:2.8cqw;color:#e8eefc;background:rgba(0,0,0,.4);padding:.6cqw 2cqw;border-radius:2cqw}
+  .isl-reveal .isl-empty{font-size:14cqw;position:relative}
+  /* ==== Online-Tab: 3 Buch-Badges neben jedem Usernamen (nur im Farsi-Chat) ==== */
+  .isl-mb{display:inline-flex;gap:3px;align-items:center;background:#262a3a;border-radius:10px;padding:2px 6px;margin-inline-start:4px}
+  .isl-mb img{width:22px;height:20px;object-fit:contain;transition:.3s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  .isl-mb img.off{opacity:.18;filter:grayscale(1)}
+  .isl-mb img.new{animation:islBk .9s}
+  @keyframes islBk{0%{transform:scale(.2) translateY(-8px)}50%{transform:scale(1.6)}100%{transform:scale(1)}}
+  .isl-bw{position:relative;display:inline-flex}
+  .isl-bw sup{position:absolute;bottom:-3px;left:-3px;background:var(--yellow,#f6c62b);color:#2a1f00;font-size:9px;font-weight:800;border-radius:6px;padding:0 3px;line-height:12px}
+  .isl-mb em{font-style:normal;color:#f2c14e;font-size:10px;font-weight:800;margin-inline-start:2px}
+  @media (prefers-reduced-motion:reduce){.isl-scrim *{animation:none!important;transition:none!important}}
+  /* ==== Chat-Systemnachrichten der Bücherinsel: eigene Karte (teal/gold), wie im Prototyp ==== */
+  .mrow.island-message{width:100%;max-width:100%;align-self:stretch;gap:0}
+  .mrow.island-message .uav,.mrow.island-message .bh{display:none!important}
+  .mrow.island-message .bub{width:100%;min-width:0!important;background:linear-gradient(135deg,#123546,#1d2d3a);border:1px solid #2c6c86;border-radius:16px;padding:10px 12px}
+  .mrow.island-message.win .bub{background:linear-gradient(135deg,#3a2f0d,#2a2416);border-color:#f2c14e}
+  .isl-msg-head{font-weight:800;font-size:13px;margin-bottom:3px;color:#e9cf9a}
+  .isl-chat-btn{all:unset;cursor:pointer;margin-top:8px;display:inline-block;background:var(--yellow,#f6c62b);color:#2a1f00;font-weight:800;font-size:13px;padding:6px 14px;border-radius:10px;box-shadow:0 3px 0 #c99512}
   /* ==== Chat-Sperre durch die "Amir"-Badge (isDeveloper): nur er kann dann noch schreiben ==== */
   .race-btn.chat-lock-btn{background:linear-gradient(180deg,#9aa6d8,#3d4a8a);box-shadow:0 3px 0 #1c2454;padding:8px 10px}
   .race-btn.chat-lock-btn.on{background:linear-gradient(180deg,#ff6b6b,#8a0d16);box-shadow:0 3px 0 #5c0309}
@@ -3250,6 +3334,7 @@
           </div>
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
           <button type="button" class="race-btn monster-btn" id="monsterBtn" hidden><span id="monsterBtnText">👹 --:--</span></button>
+          <button type="button" class="race-btn island-btn" id="islandBtn" hidden><span id="islandBtnText">🏝️ --</span></button>
           <button type="button" class="race-btn chat-lock-btn" id="chatLockBtn" hidden><span id="chatLockBtnText">🔒</span></button>
           <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
@@ -3583,6 +3668,40 @@
         </div></div>
       <div class="setrow"><div class="grow"><b data-t="s_id">Player ID</b><div class="muted num" id="setId">–</div></div>
         <span class="muted">v1.3</span></div>
+    </div>
+  </div>
+
+  <!-- جزیره کتاب‌ها (Bücherinsel): Bottom-Sheet 1:1 nach bucherinsel/prototype/index.html -->
+  <div class="isl-scrim" id="islandScrim" hidden>
+    <div class="isl-sheet" dir="rtl" role="dialog" aria-label="جزیره کتاب‌ها">
+      <div class="isl-art" id="islandScene">
+        <button class="isl-hit" id="islandClose" aria-label="بستن" style="left:3.7%;top:1.58%;width:9.4%;height:6.09%;border-radius:50%"></button>
+        <div class="isl-ov isl-timer" style="left:11.7%;top:14.21%;width:14.7%;height:6.32%">
+          <div class="isl-tl" id="islandClockL">تا بسته شدن</div><div class="isl-tv" id="islandClockV">۰۰:۰۰</div>
+        </div>
+        <div class="isl-ov isl-pilltx" style="left:67.3%;top:13.53%;width:22.9%;height:3.38%"><span id="islandHudSearchers"></span></div>
+        <svg class="isl-live" viewBox="0 0 954 1462" aria-hidden="false">
+          <defs>
+            <linearGradient id="islNightg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#081430" stop-opacity=".82"/><stop offset="1" stop-color="#06122a" stop-opacity=".7"/></linearGradient>
+            <linearGradient id="islGoldr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset=".5" stop-color="#f3b917"/><stop offset="1" stop-color="#b9800b"/></linearGradient>
+          </defs>
+          <g id="islDiggers"></g>
+          <g id="islSpots"></g>
+          <g id="islFx"></g>
+          <rect class="isl-night" x="30" y="178" width="896" height="486" rx="24" fill="url(#islNightg)" pointer-events="none"/>
+        </svg>
+        <div class="isl-ov isl-closedcard" style="left:3.1%;top:12.18%;width:93.9%;height:33.27%"><div><b>🔒 جزیره بسته است</b><span>تا باز شدن: <span class="isl-v" id="islandClosedV">۰۰:۰۰</span></span></div></div>
+        <div class="isl-ov isl-reveal" id="islandReveal" hidden style="left:3.1%;top:12.18%;width:93.9%;height:33.27%"></div>
+        <button class="isl-hit isl-dig" id="islandDig" style="left:11.5%;top:47.94%;width:77.6%;height:9.47%"><span id="islandDigTx">بگرد!</span></button>
+        <div class="isl-ov isl-hint" id="islandDigMsg" style="left:19.7%;top:57.52%;width:60.8%;height:3.05%"></div>
+        <div class="isl-ov isl-segs" id="islandSegs" style="left:4.7%;top:62.71%;width:18.9%;height:0.90%"><i></i><i></i><i></i></div>
+        <img class="isl-ov isl-gray" id="islandG1" src="/bucherinsel/prototype/island/g1.jpg" alt="" style="left:65.72%;top:64.98%;width:30.82%;height:18.06%">
+        <img class="isl-ov isl-gray" id="islandG2" src="/bucherinsel/prototype/island/g2.jpg" alt="" style="left:36.58%;top:64.98%;width:26.94%;height:18.06%">
+        <img class="isl-ov isl-gray" id="islandG3" src="/bucherinsel/prototype/island/g3.jpg" alt="" style="left:3.56%;top:64.98%;width:30.61%;height:18.06%">
+        <div class="isl-ov isl-chip" id="islandC1" hidden style="left:67.5%;top:65.87%;width:8%;height:2.93%"></div>
+        <div class="isl-ov isl-chip" id="islandC2" hidden style="left:38%;top:65.87%;width:8%;height:2.93%"></div>
+        <div class="isl-ov isl-chip" id="islandC3" hidden style="left:5%;top:65.87%;width:8%;height:2.93%"></div>
+      </div>
     </div>
   </div>
 
@@ -3934,6 +4053,7 @@ async function loadShopAccount(){
     applyShopAccountState(data.state);
     await loadDepositAddress();
     loadOnlinePlayers();
+    void fetchIslandState();
   } catch(e) { SHOP_ACCOUNT.online = false; }
   await limRefresh();
 }
@@ -4213,7 +4333,7 @@ const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: type
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,isZombieBot:message.isZombieBot===true,reply:message.replyTo?{id:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,isZombieBot:message.isZombieBot===true,islandKind:message.islandKind||'',reply:message.replyTo?{id:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -4317,6 +4437,10 @@ function ensureChatEventStream(){
       applyMonsterEvent(update.event);
       return;
     }
+    if(update.type==='island'){
+      applyIslandRoundEvent(update.event);
+      return;
+    }
     if(update.type!=='reaction')return;
     const message=serverChat.find(item=>String(item.id)===String(update.messageId));
     if(!message)return;
@@ -4376,6 +4500,8 @@ async function toggleChatReaction(messageId,emoji){
   }catch(e){message.reactions=previous;renderChat();toast(e.message==='like-event-chat-locked'?'Chat reactions are paused during the like event.':e.message==='card-event-active'?'Chat reactions are paused during the card vote.':t('lim_err'));}
 }
 $('#chatlog').addEventListener('click',event=>{
+  const openIsland=event.target.closest('[data-open-island]');
+  if(openIsland){event.stopPropagation();openIslandSheet();return;}
   const serverCard=event.target.closest('[data-server-card-vote]');
   if(serverCard){event.stopPropagation();void voteScheduledCard(Number(serverCard.dataset.serverCardVote));return;}
   const cardVote=event.target.closest('[data-card-test-vote]');
@@ -4504,6 +4630,7 @@ function renderChat(){
   renderAdVideoTask();
   renderRaceButton();
   renderMonsterButton();
+  renderIslandButton();
   if (TAXI_RACE.race && TAXI_RACE.race.status === 'running' && chatTab === 'chat' && !TAXI_RACE.viewOpen) { openRaceView(); TAXI_RACE.autoOpened = true; }
   const cardEventActive=chatRoom==='fa'&&serverCardEvent?.status==='active'&&Date.now()<Number(serverCardEvent.endsAt||0);
   const cardEventTimer=document.querySelector('[data-live-card-timer]');
@@ -4532,12 +4659,13 @@ function renderChat(){
   $('#tabChat').setAttribute('aria-selected', chatTab==='chat'); $('#tabOnline').setAttribute('aria-selected', chatTab==='on'); $('#tabFr').setAttribute('aria-selected', chatTab==='fr'); $('#tabMe').innerHTML = avatar(meUser(), true) + '<span class="medot"></span>';
   $('#chatPane').hidden = chatTab !== 'chat'; $('#onPane').hidden = chatTab !== 'on'; $('#frPane').hidden = chatTab !== 'fr'; renderFriends();
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
-    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,isDeveloper:u.isDeveloper===true,badge4:u.badge4===true,badge5:u.badge5===true,hasLevel4:u.hasLevel4===true,hasLevel5:u.hasLevel5===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true}))
+    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,isDeveloper:u.isDeveloper===true,badge4:u.badge4===true,badge5:u.badge5===true,hasLevel4:u.hasLevel4===true,hasLevel5:u.hasLevel5===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true,islandBook1:Number(u.islandBook1)||0,islandBook2:Number(u.islandBook2)||0,islandBook3:Number(u.islandBook3)||0,islandWins:Number(u.islandWins)||0,islandSearching:u.islandSearching===true,islandSearchEndsAt:Number(u.islandSearchEndsAt)||0,islandLastText:u.islandLastText||''}))
     : [];
   const raceBadgesOn = chatRoom === 'fa';
+  const islandBadgesOn = chatRoom === 'fa';
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
-      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b>${u.isMe ? `<span class="lv">${S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You'}</span>` : ''}${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${raceBadgesOn && u.racing ? `<span class="race-badge racing">${u.racePhase === 'grid' ? '🔮 شروع می‌شود' : '🏁 در حال مسابقه'}</span>` : raceBadgesOn && u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${u.lastRaceRewardTT || TAXI_RACE_REWARD_TT} TT</span>` : raceBadgesOn && u.racePredictedCorrect ? `<span class="race-badge winner">🔮 +${u.lastRaceTipRewardTT || TAXI_RACE_TIP_TT} TT</span>` : raceBadgesOn && u.racePredictionPending ? `<span class="race-badge racing">🔮 پیش‌بینی</span>` : ''}</div>
-      <div class="muted">${raceBadgesOn && u.racing ? (u.racePhase === 'grid' ? '🔮 به‌زودی می‌راند' : '🏁 در حال مسابقه') : u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
+      <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b>${u.isMe ? `<span class="lv">${S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You'}</span>` : ''}${islandBadgesOn ? islandBookBadgesHtml(u) : ''}${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${raceBadgesOn && u.racing ? `<span class="race-badge racing">${u.racePhase === 'grid' ? '🔮 شروع می‌شود' : '🏁 در حال مسابقه'}</span>` : raceBadgesOn && u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${u.lastRaceRewardTT || TAXI_RACE_REWARD_TT} TT</span>` : raceBadgesOn && u.racePredictedCorrect ? `<span class="race-badge winner">🔮 +${u.lastRaceTipRewardTT || TAXI_RACE_TIP_TT} TT</span>` : raceBadgesOn && u.racePredictionPending ? `<span class="race-badge racing">🔮 پیش‌بینی</span>` : ''}</div>
+      <div class="muted">${raceBadgesOn && u.racing ? (u.racePhase === 'grid' ? '🔮 به‌زودی می‌راند' : '🏁 در حال مسابقه') : islandBadgesOn && u.islandSearching ? `🔍 در حال جستجو… <b data-island-left="${esc(u.uid)}">${islandCountdownText(u.islandSearchEndsAt - Date.now())}</b>` : islandBadgesOn && u.islandLastText ? esc(u.islandLastText) : u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>${badgeImg(u, true)}</div>`).join('');
   const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
@@ -4583,14 +4711,16 @@ function renderChat(){
     const tmMarkup = `<span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span>`;
     // Bei reinem Text läuft die Uhrzeit inline im selben Textfluss (Teil 1 Pkt.3);
     // bei Sticker/Karten-Event bleibt sie als Zeile darunter (kein Fließtext vorhanden).
+    const islandMarkup = m.islandKind ? `<div class="isl-msg-head">🏝️ <b>جزیره کتاب‌ها</b></div><div class="bt" dir="auto">${esc(m.text)}</div>${m.islandKind==='open'?'<button type="button" class="isl-chat-btn" data-open-island>🔍 برو به جزیره</button>':''}${tmMarkup}` : '';
     const bodyMarkup = cardEventMarkup
       ? cardEventMarkup
+      : m.islandKind ? islandMarkup
       : m.cardEventTest ? renderCardEventTest(m.cardEventTest)
       : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">`
       : `<div class="bt" dir="auto">${esc(m.text)}${tmMarkup}</div>`;
-    const isPlainText = !cardEventMarkup && !m.cardEventTest && !m.stk;
+    const isPlainText = !cardEventMarkup && !m.islandKind && !m.cardEventTest && !m.stk;
     const contentMarkup = isPlainText ? bodyMarkup : bodyMarkup + tmMarkup;
-    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''} ${m.isZombieBot?'isZombieBot':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${m.islandKind?'island-message '+(m.islandKind==='win'?'win':''):''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''} ${m.isZombieBot?'isZombieBot':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${contentMarkup}</div>${reactionMarkup}</div>`;
   }).join('');
@@ -5514,7 +5644,246 @@ function eventCountdownText(ms){
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
 
-// ---- لیگ برق‌آسا (Blitz-Liga) wurde hier registriert, ist aber auf Wunsch wieder komplett entfernt.
+// ---- جزیره کتاب‌ها (Bücherinsel): server-authoritative treasure hunt in the Farsi
+// chat. The server (see server.js's ISLAND_* block) is the sole source of truth for
+// the round schedule, book odds and the TON payout - everything here only ever
+// displays what /api/island/state and the 'island' SSE broadcast say. Visual
+// design/positions are a 1:1 port of bucherinsel/prototype/index.html (see
+// bucherinsel/SPEC.md); only its result/schedule logic moved to the server.
+const ISLAND_SEARCH_MS = 5 * 60 * 1000; // matches server.js ISLAND_SEARCH_MS, only used for the digging-ring animation
+const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
+const ISLAND_SPOTS = [[226,555],[336,573],[410,548],[474,582],[518,548],[607,596],[694,540]];
+const ISLAND_SANDPTS = [[262,598],[300,540],[372,604],[440,610],[560,592],[652,578],[250,530],[730,585],[380,528],[585,560],[200,590],[470,622]];
+const ISLAND = {
+  round: {open:false, opensAt:0, closesAt:0, searchers:0},
+  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false},
+  sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false,
+};
+function islandCountdownText(ms){
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return faDigits(String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'));
+}
+function islandBookBadgesHtml(u){
+  const counts = [u.islandBook1 || 0, u.islandBook2 || 0, u.islandBook3 || 0];
+  const imgs = [0, 1, 2].map(k => `<span class="isl-bw"><img src="/bucherinsel/prototype/b${k + 1}.png" class="${counts[k] > 0 ? '' : 'off'}" alt="">${counts[k] > 1 ? `<sup>${faDigits(counts[k])}</sup>` : ''}</span>`).join('');
+  return `<span class="isl-mb">${imgs}${u.islandWins > 0 ? `<em>×${faDigits(u.islandWins)}</em>` : ''}</span>`;
+}
+function islandDistinctCount(me){ return [me.book1, me.book2, me.book3].filter(n => n > 0).length; }
+function renderIslandButton(){
+  const btn = $('#islandBtn'), txt = $('#islandBtnText');
+  if (!btn || !txt) return;
+  if (chatRoom !== 'fa' || !SHOP_ACCOUNT.token) { btn.hidden = true; return; }
+  btn.hidden = false;
+  const r = ISLAND.round;
+  btn.classList.toggle('closed', !r.open);
+  btn.classList.toggle('ready', r.open && !(ISLAND.me.searchEndsAt > Date.now()));
+  txt.textContent = r.open ? '🏝️ ' + faDigits(Math.max(0, Math.ceil((r.closesAt - Date.now()) / 60000))) + '′' : '🏝️ بسته';
+}
+async function fetchIslandState(){
+  if (!SHOP_ACCOUNT.token || ISLAND.fetchBusy) return;
+  ISLAND.fetchBusy = true;
+  try {
+    const response = await fetch('/api/island/state?token=' + encodeURIComponent(SHOP_ACCOUNT.token), {cache:'no-store'});
+    const data = await response.json();
+    if (response.ok && data.round) {
+      ISLAND.round = data.round;
+      const prevMe = ISLAND.me, nextMe = data.me || ISLAND.me;
+      const justResolved = prevMe.searchEndsAt > 0 && Number(nextMe.searchEndsAt) === 0 && Number(nextMe.lastAt) > Number(prevMe.lastAt || 0);
+      ISLAND.me = nextMe;
+      if (ISLAND.mySpot < 0 && Number.isInteger(nextMe.spot) && Number(nextMe.searchEndsAt) > Date.now()) ISLAND.mySpot = nextMe.spot;
+      renderIslandButton();
+      if (current === 'chat' && chatTab === 'on') renderChat();
+      if (ISLAND.sheetOpen) {
+        if (justResolved) islandHandleResolved(nextMe);
+        renderIslandScene();
+      }
+    }
+  } catch (e) {} finally { ISLAND.fetchBusy = false; }
+}
+function applyIslandRoundEvent(event){
+  if (!event) return;
+  ISLAND.round = event;
+  renderIslandButton();
+  if (ISLAND.sheetOpen) renderIslandScene();
+  if (current === 'chat' && chatTab === 'on') loadOnlinePlayers();
+  // Personal fields (my own search result) never travel over the shared SSE
+  // broadcast (it only ever carries viewer-agnostic round info) - poll for them directly.
+  void fetchIslandState();
+}
+function openIslandSheet(){
+  if (!SHOP_ACCOUNT.token) return;
+  ISLAND.sheetOpen = true;
+  $('#islandScrim').hidden = false;
+  renderIslandScene();
+  void fetchIslandState();
+  if (!ISLAND.pollTimer) ISLAND.pollTimer = setInterval(fetchIslandState, 3000);
+}
+function closeIslandSheet(){
+  ISLAND.sheetOpen = false;
+  $('#islandScrim').hidden = true;
+  if (ISLAND.pollTimer) { clearInterval(ISLAND.pollTimer); ISLAND.pollTimer = null; }
+}
+$('#islandBtn').onclick = () => openIslandSheet();
+$('#islandClose').onclick = () => closeIslandSheet();
+$('#islandScrim').addEventListener('click', e => { if (e.target.id === 'islandScrim') closeIslandSheet(); });
+
+const islandNS = 'http://www.w3.org/2000/svg';
+function islandSvgEl(tag, attrs, html){
+  const e = document.createElementNS(islandNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (html) e.innerHTML = html;
+  return e;
+}
+function islandDrawSpots(){
+  const g = $('#islSpots'); if (!g) return;
+  g.innerHTML = '';
+  const canDig = ISLAND.round.open && !(ISLAND.me.searchEndsAt > Date.now());
+  $('#islandScene').classList.toggle('can', canDig);
+  ISLAND_SPOTS.forEach(([x, y], i) => {
+    g.appendChild(islandSvgEl('g', {class: 'isl-sp' + (ISLAND.mySpot === i ? ' dug' : ''), 'data-i': i, tabindex: 0, role: 'button', 'aria-label': 'اینجا بگرد'},
+      `<circle class="isl-ring" cx="${x}" cy="${y}" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="${x}" cy="${y}" r="30" fill="transparent"/>`));
+  });
+}
+$('#islSpots').addEventListener('click', e => { const s = e.target.closest('.isl-sp'); if (s) void startIslandSearch(+s.dataset.i); });
+$('#islSpots').addEventListener('keydown', e => { const s = e.target.closest('.isl-sp'); if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); void startIslandSearch(+s.dataset.i); } });
+$('#islandDig').onclick = () => void startIslandSearch();
+async function startIslandSearch(spotIndex){
+  if (!SHOP_ACCOUNT.token || ISLAND.me.searchEndsAt > Date.now() || !ISLAND.round.open) return;
+  const spot = Number.isInteger(spotIndex) ? spotIndex : Math.floor(Math.random() * ISLAND_SPOTS.length);
+  try {
+    const response = await fetch('/api/island/search', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token: SHOP_ACCOUNT.token, spot})});
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || 'island-search-failed');
+    ISLAND.me.searchEndsAt = data.searchEndsAt;
+    ISLAND.mySpot = data.spot;
+    islandStartMyDigVisual(data.spot, data.searchEndsAt);
+    renderIslandButton();
+    renderIslandScene();
+    if (!ISLAND.pollTimer) ISLAND.pollTimer = setInterval(fetchIslandState, 3000);
+  } catch (e) { toast(t('lim_err')); }
+}
+function islandStopMyDigVisual(){
+  if (ISLAND.myDigRaf) { cancelAnimationFrame(ISLAND.myDigRaf); ISLAND.myDigRaf = null; }
+  if (ISLAND.myDigGroup) { ISLAND.myDigGroup.remove(); ISLAND.myDigGroup = null; }
+}
+function islandStartMyDigVisual(spotIndex, endsAt){
+  const fx = $('#islFx'); if (!fx) return;
+  islandStopMyDigVisual();
+  const [x, y0] = ISLAND_SPOTS[spotIndex] || ISLAND_SPOTS[0], y = y0 - 12, R = 40, C = 2 * Math.PI * R;
+  const g = islandSvgEl('g', {}, `
+    <ellipse cx="${x}" cy="${y + 38}" rx="34" ry="8" fill="#000" opacity=".2"/>
+    <circle cx="${x}" cy="${y}" r="${R}" fill="#4a2e18" opacity=".85"/>
+    <ellipse cx="${x}" cy="${y + 18}" rx="26" ry="9" fill="#2e1a0b" opacity=".7"/>
+    <circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="#7a5a12" stroke-width="9"/>
+    <circle id="islRingP" cx="${x}" cy="${y}" r="${R}" fill="none" stroke="url(#islGoldr)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 ${x} ${y})"/>
+    <g class="isl-shovel" style="transform-origin:${x}px ${y + 20}px"><rect x="${x - 3}" y="${y - 70}" width="6" height="56" rx="3" fill="#a86b2c"/><path d="M${x - 15} ${y - 16} h30 l-4 22 q-11 10 -22 0z" fill="#f2f2ee" stroke="#b9b9b0" stroke-width="1.5"/><circle cx="${x + 5}" cy="${y - 6}" r="3" fill="#e0a33a"/></g>
+    ${[-20, -8, 10, 22].map((dx, i) => `<circle class="isl-dirt" style="--dx:${dx}px;animation-delay:${i * .22}s" cx="${x}" cy="${y + 18}" r="3.6" fill="#b08445"/>`).join('')}
+    <rect x="${x - 44}" y="${y - R - 46}" width="88" height="34" rx="17" fill="#1b0f08" stroke="#5a3a1a" stroke-width="2"/>
+    <text id="islRingT" x="${x}" y="${y - R - 21}" text-anchor="middle" font-family="Lalezar,Vazirmatn" font-size="26" fill="#fff">۰۵:۰۰</text>`);
+  fx.appendChild(g);
+  ISLAND.myDigGroup = g;
+  const loop = () => {
+    if (!ISLAND.myDigGroup) return;
+    const left = endsAt - Date.now(), p = Math.max(0, Math.min(1, 1 - left / ISLAND_SEARCH_MS));
+    const ring = document.getElementById('islRingP'), ringT = document.getElementById('islRingT'), digTx = $('#islandDigTx');
+    if (ring) ring.setAttribute('stroke-dashoffset', String(C * (1 - p)));
+    if (ringT) ringT.textContent = islandCountdownText(left);
+    if (digTx) digTx.textContent = 'در حال جستجو ' + islandCountdownText(left);
+    if (left > 0) ISLAND.myDigRaf = requestAnimationFrame(loop);
+  };
+  loop();
+}
+function islandSpark(x, y, k){
+  const fx = $('#islFx'); if (!fx) return;
+  const col = k < 0 ? '#e6f6fb' : ['#e0a35e', '#ffd84d', '#c79bff'][k];
+  const g = islandSvgEl('g', {class: 'isl-spark'}, `<circle cx="${x}" cy="${y - 20}" r="15" fill="${col}"/><circle cx="${x}" cy="${y - 20}" r="26" fill="none" stroke="${col}" stroke-width="3.5"/><path d="M${x} ${y - 62} v14 M${x - 32} ${y - 20} h12 M${x + 20} ${y - 20} h12" stroke="${col}" stroke-width="3.5" stroke-linecap="round"/>`);
+  fx.appendChild(g);
+  setTimeout(() => g.remove(), 1400);
+}
+function islandRenderDiggers(){
+  const g = $('#islDiggers'); if (!g) return;
+  g.innerHTML = '';
+  const others = (SHOP_ACCOUNT.onlineUsers || []).filter(u => u.islandSearching && String(u.uid) !== SHOP_ACCOUNT.uid).slice(0, 12);
+  others.forEach(u => {
+    const hash = String(u.uid).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const [x, y] = ISLAND_SANDPTS[hash % ISLAND_SANDPTS.length];
+    const initial = (u.name || '?').charAt(0).toUpperCase();
+    g.appendChild(islandSvgEl('g', {class: 'isl-digger', style: `animation-delay:-${(hash % 7) / 7}s`},
+      `<ellipse cx="${x}" cy="${y + 17}" rx="13" ry="4" fill="#000" opacity=".2"/>
+       <path d="M${x + 10} ${y + 16} l9 -20" stroke="#8d6640" stroke-width="3" stroke-linecap="round"/>
+       <circle cx="${x}" cy="${y}" r="13" fill="#5a4f8c" stroke="#fff" stroke-width="3"/>
+       <text x="${x}" y="${y + 5}" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="system-ui">${esc(initial)}</text>`));
+  });
+  const hud = $('#islandHudSearchers');
+  if (hud) hud.textContent = ISLAND.round.searchers > 0 ? faDigits(ISLAND.round.searchers) + ' نفر در حال جستجو' : '';
+}
+function islandShowReveal(me){
+  const r = $('#islandReveal'); if (!r) return;
+  const k = Number(me.lastK), won = me.lastWon === true, isNew = me.lastIsNew === true;
+  if (k < 0) {
+    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div></div>`;
+  } else {
+    const sub = won ? 'هر ۳ کتاب کامل شد!' : isNew ? 'کتاب ' + faDigits(k + 1) + ' به کلکسیون اضافه شد' : 'حالا ' + faDigits(me['book' + (k + 1)]) + ' تا از این کتاب داری';
+    r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel/prototype/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.5 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div></div>`;
+  }
+  r.hidden = false;
+  if (ISLAND.revealTimer) clearTimeout(ISLAND.revealTimer);
+  ISLAND.revealTimer = setTimeout(() => { r.hidden = true; }, 6000);
+}
+$('#islandReveal').onclick = () => { $('#islandReveal').hidden = true; };
+function islandHandleResolved(me){
+  islandStopMyDigVisual();
+  const [x, y] = ISLAND_SPOTS[ISLAND.mySpot] || ISLAND_SPOTS[0];
+  islandSpark(x, y, Number(me.lastK));
+  ISLAND.mySpot = -1;
+  islandShowReveal(me);
+  if (me.lastWon === true) void refreshShopAccount();
+}
+function renderIslandScene(){
+  if (!ISLAND.sheetOpen) return;
+  const scene = $('#islandScene'); if (!scene) return;
+  const r = ISLAND.round, me = ISLAND.me, now = Date.now();
+  scene.classList.toggle('closed', !r.open);
+  $('#islandClockL').textContent = r.open ? 'تا بسته شدن' : 'تا باز شدن';
+  $('#islandClockV').textContent = islandCountdownText(r.open ? r.closesAt - now : r.opensAt - now);
+  $('#islandClosedV').textContent = islandCountdownText(Math.max(0, r.opensAt - now));
+  const searching = me.searchEndsAt > now;
+  const digBtn = $('#islandDig'), digTx = $('#islandDigTx'), digMsg = $('#islandDigMsg');
+  digBtn.classList.remove('off'); digBtn.disabled = false;
+  if (searching) {
+    digBtn.disabled = true;
+    digMsg.innerHTML = 'داری می‌گردی... بعد از <b>۵ دقیقه</b> معلوم می‌شود چه پیدا کردی';
+    if (!ISLAND.myDigGroup) islandStartMyDigVisual(Number.isInteger(me.spot) ? me.spot : 0, me.searchEndsAt);
+  } else if (!r.open) {
+    digBtn.disabled = true; digBtn.classList.add('off');
+    digTx.textContent = 'جزیره بسته است';
+    digMsg.innerHTML = 'جزیره ۱۰ دقیقه بسته است';
+  } else {
+    digTx.textContent = 'بگرد!';
+    digMsg.innerHTML = 'هر جستجو <b>۵ دقیقه</b>';
+  }
+  const distinct = islandDistinctCount(me);
+  $('#islandSegs').querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < distinct));
+  [0, 1, 2].forEach(k => {
+    const count = me['book' + (k + 1)] || 0;
+    $('#islandG' + (k + 1)).classList.toggle('has', count > 0);
+    const chip = $('#islandC' + (k + 1));
+    chip.textContent = '×' + faDigits(count);
+    chip.hidden = count < 2;
+  });
+  islandDrawSpots();
+  islandRenderDiggers();
+}
+// SSE 'island' events only carry shared round info; poll personal fields whenever
+// an active search needs its countdown kept fresh even while the sheet is closed.
+setInterval(() => { if (SHOP_ACCOUNT.token && chatRoom === 'fa' && (ISLAND.sheetOpen || ISLAND.me.searchEndsAt > Date.now())) void fetchIslandState(); }, 5000);
+setInterval(renderIslandButton, 1000);
+setInterval(() => {
+  document.querySelectorAll('[data-island-left]').forEach(el => {
+    const u = (SHOP_ACCOUNT.onlineUsers || []).find(x => String(x.uid) === el.dataset.islandLeft);
+    if (u && u.islandSearchEndsAt) el.textContent = islandCountdownText(u.islandSearchEndsAt - Date.now());
+  });
+}, 1000);
 
 // ---- Chat-Sperre durch die "Amir"-Badge (isDeveloper): toggelt chatLockedToDeveloper
 // server-seitig (/api/chat/set-developer-lock), sodass nur noch er schreiben kann.
@@ -6139,7 +6508,7 @@ function growChatIn(){ chatIn.style.height = 'auto'; chatIn.style.height = Math.
 chatIn.addEventListener('input', growChatIn);
 chatIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatForm').requestSubmit(); } });
 $('#tabChat').onclick = () => { chatTab = 'chat'; chatForceScrollBottom = true; renderChat(); };
-document.querySelectorAll('[data-room]').forEach(b => b.onclick = () => { chatRoom = b.dataset.room; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; chatForceScrollBottom = true; if (chatRoom !== TAXI_RACE_ROOM && TAXI_RACE.viewOpen) closeRaceView(); if (chatRoom !== MONSTER_ROOM && MONSTER.viewOpen) closeMonsterView(); renderChat(); renderRaceButton(); renderMonsterButton(); pollServerChat(); });
+document.querySelectorAll('[data-room]').forEach(b => b.onclick = () => { chatRoom = b.dataset.room; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; chatForceScrollBottom = true; if (chatRoom !== TAXI_RACE_ROOM && TAXI_RACE.viewOpen) closeRaceView(); if (chatRoom !== MONSTER_ROOM && MONSTER.viewOpen) closeMonsterView(); if (chatRoom !== 'fa' && ISLAND.sheetOpen) closeIslandSheet(); renderChat(); renderRaceButton(); renderMonsterButton(); renderIslandButton(); if (chatRoom === 'fa') void fetchIslandState(); pollServerChat(); });
 $('#roomBack').onclick = () => { if (TAXI_RACE.viewOpen) closeRaceView(); chatRoom = null; renderChat(); };
 $('#tabOnline').onclick = () => { chatTab = 'on'; if(SHOP_ACCOUNT.token)loadOnlinePlayers(); renderChat(); };
 $('#tabFr').onclick = () => { chatTab = 'fr'; renderChat(); };
@@ -7821,7 +8190,7 @@ const valid = ['home','chat','wallet','top','tasks','shop','garage'];
 go(valid.includes(hashPage) ? hashPage : 'garage');
 if (hashPage === 'chat' && ['en','fa','de'].includes(hashRoom) && !chatRoom) {
   chatRoom = hashRoom; S.lastRoom = chatRoom; save(); chatTab = 'chat'; onlineN = 0; chatForceScrollBottom = true;
-  renderChat(); renderRaceButton(); renderMonsterButton(); pollServerChat();
+  renderChat(); renderRaceButton(); renderMonsterButton(); renderIslandButton(); if (chatRoom === 'fa') void fetchIslandState(); pollServerChat();
 }
 if (!S.seen) { S.seen = true; save(); setTimeout(()=>toast(t('welcome')), 600); }
 })();

@@ -1342,6 +1342,186 @@ function startTaxiRaceScheduler() {
 }
 
 // ---------------------------------------------------------------------------
+// جزیره کتاب‌ها (Bücherinsel): a recurring treasure-hunt mini-game in the
+// Farsi chat (see bucherinsel/SPEC.md). The server is the sole authority on
+// the round schedule, the book odds and the TON payout - the client (see
+// bucherinsel/prototype/index.html, which this is a 1:1 visual port of) only
+// ever displays what these endpoints/broadcasts say. Unlike the island's own
+// prototype (which rolls results client-side, purely for the demo), the
+// result of a search is rolled here with crypto.randomInt AFTER its 5-minute
+// timer has actually elapsed, so nobody can ever read it off in advance.
+// ---------------------------------------------------------------------------
+const ISLAND_EVENT_ENABLED = true;
+const ISLAND_ROOM = 'fa'; // same room convention as the taxi race / monster boss
+const ISLAND_OPEN_MS = 30 * 60 * 1000;
+const ISLAND_CLOSED_MS = 10 * 60 * 1000;
+const ISLAND_CYCLE_MS = ISLAND_OPEN_MS + ISLAND_CLOSED_MS; // 40 minutes total
+const ISLAND_SEARCH_MS = 5 * 60 * 1000;
+// Buch 1 = 70%, Buch 2 = 10%, Buch 3 = 2% - the remaining 18% is "nothing".
+const ISLAND_ODDS = [0.70, 0.10, 0.02];
+const ISLAND_PRIZE_TON = 0.5;
+const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
+const ISLAND_BOT_UID = 'island-bot';
+const ISLAND_BOT_NAME = 'جزیره کتاب‌ها';
+const ISLAND_FILE = path.join(DATA_DIR, 'island-game.json');
+const ISLAND_SEARCH_RATE_LIMIT_MS = 1000;
+
+// Fully stateless round schedule: every 40-minute slice of wall-clock time
+// (since the Unix epoch) is one cycle, the first 30 minutes open and the
+// last 10 closed - so every server instance / restart agrees on the exact
+// same schedule without needing to persist or resume any timer.
+function islandClock(now) {
+  const cycleId = Math.floor(now / ISLAND_CYCLE_MS);
+  const cycleStart = cycleId * ISLAND_CYCLE_MS;
+  const open = now - cycleStart < ISLAND_OPEN_MS;
+  return {
+    cycleId,
+    open,
+    opensAt: cycleStart + ISLAND_CYCLE_MS, // meaningful while closed: when it reopens
+    closesAt: cycleStart + ISLAND_OPEN_MS, // meaningful while open: when it closes
+  };
+}
+
+let islandState = { lastCycleId: -1, lastOpen: null, payoutLog: [] };
+try {
+  if (fs.existsSync(ISLAND_FILE)) {
+    const loaded = readJsonFile(ISLAND_FILE);
+    if (loaded && typeof loaded === 'object') {
+      islandState.lastCycleId = Number.isFinite(Number(loaded.lastCycleId)) ? Number(loaded.lastCycleId) : -1;
+      islandState.lastOpen = typeof loaded.lastOpen === 'boolean' ? loaded.lastOpen : null;
+      islandState.payoutLog = Array.isArray(loaded.payoutLog) ? loaded.payoutLog : [];
+    }
+  }
+} catch (error) {
+  console.error('[island] state read failed: ' + error.message);
+}
+// On a fresh install (no persisted file) just adopt whatever cycle is
+// currently running, silently - otherwise every deploy would immediately
+// "discover" a cycle change and spam an open/close announcement.
+if (islandState.lastCycleId < 0) {
+  const bootClock = islandClock(Date.now());
+  islandState.lastCycleId = bootClock.cycleId;
+  islandState.lastOpen = bootClock.open;
+}
+let islandSearchersThisCycle = new Set(); // in-memory only, just for the "N people searched" close message
+function persistIslandState() {
+  try {
+    const tmp = ISLAND_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({ lastCycleId: islandState.lastCycleId, lastOpen: islandState.lastOpen, payoutLog: islandState.payoutLog.slice(-500) }));
+    fs.renameSync(tmp, ISLAND_FILE);
+  } catch (error) {
+    console.error('[island] state write failed: ' + error.message);
+  }
+}
+function islandBookCount(user, k) { return Math.max(0, Number(user['islandBook' + (k + 1)]) || 0); }
+function islandSetBookCount(user, k, v) { user['islandBook' + (k + 1)] = Math.max(0, v); }
+function islandDistinctBooks(user) { return [0, 1, 2].filter((k) => islandBookCount(user, k) > 0).length; }
+function islandSearchersCount() {
+  const now = Date.now();
+  return Object.values(users).filter((u) => Number(u.islandSearchEndsAt || 0) > now).length;
+}
+function publicIslandRound() {
+  const c = islandClock(Date.now());
+  return { open: c.open, opensAt: c.opensAt, closesAt: c.closesAt, searchers: islandSearchersCount() };
+}
+function postIslandBotMessage(text, kind) {
+  chatMessages.push({
+    id: chatNextId++, uid: ISLAND_BOT_UID, name: ISLAND_BOT_NAME, room: ISLAND_ROOM, text,
+    ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
+    islandKind: kind,
+  });
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  persistChat();
+}
+// Resolves one finished search (idempotent: islandSearchEndsAt is cleared
+// first, so this can never pay out or re-roll the same search twice even if
+// it is reached both from the periodic sweep below and a direct state poll
+// from that same user). The actual roll only ever happens here, strictly
+// after now >= islandSearchEndsAt, with crypto.randomInt - never derivable
+// from the match/search id the way some other games' demo PRNGs are.
+function resolveIslandSearch(user) {
+  if (!user || !(Number(user.islandSearchEndsAt || 0) > 0) || Date.now() < Number(user.islandSearchEndsAt)) return null;
+  user.islandSearchEndsAt = 0;
+  user.islandSearchSpot = null;
+  const roll = crypto.randomInt(0, 1000000) / 1000000; // 0..1, crypto-backed
+  let k = -1;
+  if (roll < ISLAND_ODDS[0]) k = 0;
+  else if (roll < ISLAND_ODDS[0] + ISLAND_ODDS[1]) k = 1;
+  else if (roll < ISLAND_ODDS[0] + ISLAND_ODDS[1] + ISLAND_ODDS[2]) k = 2;
+  let won = false, isNew = false;
+  if (k >= 0) {
+    isNew = islandBookCount(user, k) === 0;
+    islandSetBookCount(user, k, islandBookCount(user, k) + 1);
+  }
+  if (islandBookCount(user, 0) >= 1 && islandBookCount(user, 1) >= 1 && islandBookCount(user, 2) >= 1) {
+    won = true;
+    islandSetBookCount(user, 0, islandBookCount(user, 0) - 1);
+    islandSetBookCount(user, 1, islandBookCount(user, 1) - 1);
+    islandSetBookCount(user, 2, islandBookCount(user, 2) - 1);
+    user.islandWins = Number(user.islandWins || 0) + 1;
+    user.ton = Number((Number(user.ton || 0) + ISLAND_PRIZE_TON).toFixed(9));
+    islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: ISLAND_PRIZE_TON, ts: Date.now() });
+    persistIslandState();
+  }
+  let lastText;
+  if (k < 0) lastText = '🌊 چیزی پیدا نشد';
+  else if (won) lastText = '🏆 ۰٫۵ TON برد!';
+  else if (isNew) lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' پیدا کرد! (' + islandDistinctBooks(user) + '/۳)';
+  else lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' ×' + islandBookCount(user, k);
+  user.islandLastText = lastText;
+  user.islandLastAt = Date.now();
+  user.islandLastK = k;
+  user.islandLastIsNew = isNew;
+  user.islandLastWon = won;
+  persist();
+  // Buch 1 wird bewusst nicht im Chat angekündigt (zu häufig, nur Spam) - siehe SPEC.md Punkt 4.
+  if (k === 1 || k === 2) {
+    postIslandBotMessage((user.name || 'Player') + ' ' + ISLAND_BOOK_NAMES[k] + ' را پیدا کرد (' + islandDistinctBooks(user) + '/۳)', 'found');
+    broadcastChatEvent('message');
+  }
+  if (won) {
+    postIslandBotMessage('🏆 ' + (user.name || 'Player') + ' هر ۳ کتاب را پیدا کرد و 0.5 TON گرفت!', 'win');
+    broadcastChatEvent('message');
+  }
+  return { k, won, isNew, lastText };
+}
+// Periodic sweep: resolves any searches whose 5-minute timer already elapsed
+// (so results reach everyone even if that user never polls again), and
+// announces the open/close transition exactly once per cycle.
+function islandTick() {
+  const now = Date.now();
+  let anyResolved = false;
+  for (const user of Object.values(users)) {
+    if (Number(user.islandSearchEndsAt || 0) > 0 && now >= Number(user.islandSearchEndsAt)) {
+      resolveIslandSearch(user);
+      anyResolved = true;
+    }
+  }
+  const c = islandClock(now);
+  if (c.cycleId !== islandState.lastCycleId) {
+    islandSearchersThisCycle = new Set();
+    islandState.lastCycleId = c.cycleId;
+    islandState.lastOpen = true;
+    persistIslandState();
+    postIslandBotMessage('جزیره باز شد! ۳۰ دقیقه وقت دارید، هر ۵ دقیقه یک جستجو. ۳ کتاب متفاوت = 0.5 TON', 'open');
+    broadcastChatEvent('message');
+    broadcastChatEvent('island', { event: publicIslandRound() });
+  } else if (!c.open && islandState.lastOpen !== false) {
+    islandState.lastOpen = false;
+    persistIslandState();
+    postIslandBotMessage('جزیره بسته شد · ' + islandSearchersThisCycle.size + ' نفر گشتند. ۱۰ دقیقه دیگر دوباره باز می‌شود.', 'close');
+    broadcastChatEvent('message');
+    broadcastChatEvent('island', { event: publicIslandRound() });
+  } else if (anyResolved) {
+    broadcastChatEvent('island', { event: publicIslandRound() });
+  }
+}
+function startIslandScheduler() {
+  islandTick();
+  setInterval(islandTick, 3000);
+}
+
+// ---------------------------------------------------------------------------
 // Monster-Boss-Event ("Raid"): every MONSTER_INTERVAL_MS a boss shows up in the
 // chat (Farsi room, same convention as the taxi race) with HP scaled to how
 // many users are online. Everyone online can tap/hit it together within a
@@ -1630,6 +1810,17 @@ function newUser(id, name) {
     blitzTips: {},
     blitzPaid: {},
     blitzWon: 0,
+    islandBook1: 0,
+    islandBook2: 0,
+    islandBook3: 0,
+    islandWins: 0,
+    islandSearchEndsAt: 0,
+    islandSearchSpot: null,
+    islandLastText: '',
+    islandLastAt: 0,
+    islandLastK: -1,
+    islandLastIsNew: false,
+    islandLastWon: false,
     isChatAdmin: false,
     adminBadge: 'boy',
     isDesigner: false,
@@ -3622,6 +3813,52 @@ app.get('/api/online-count', (req, res) => {
   res.json({ online: activeUsers.length, rooms });
 });
 
+// جزیره کتاب‌ها (Bücherinsel): personal state poll. Also opportunistically
+// resolves this user's own search if its 5-minute timer already elapsed, so
+// a direct poll right after the countdown hits zero never has to wait for
+// the next periodic sweep.
+app.get('/api/island/state', requireUserFromQuery, (req, res) => {
+  const user = req.user;
+  resolveIslandSearch(user);
+  res.json({
+    round: publicIslandRound(),
+    me: {
+      book1: islandBookCount(user, 0), book2: islandBookCount(user, 1), book3: islandBookCount(user, 2),
+      wins: Number(user.islandWins || 0),
+      searchEndsAt: Number(user.islandSearchEndsAt || 0),
+      spot: Number.isInteger(user.islandSearchSpot) ? user.islandSearchSpot : null,
+      lastText: user.islandLastText || '',
+      lastAt: Number(user.islandLastAt || 0),
+      lastK: Number.isInteger(user.islandLastK) ? user.islandLastK : -1,
+      lastIsNew: user.islandLastIsNew === true,
+      lastWon: user.islandLastWon === true,
+    },
+  });
+});
+
+const islandLastWrite = new Map();
+// Rules enforced here (SPEC.md point 2): only while the island is open, only
+// one active search per user, and the result is only ever rolled later, once
+// ISLAND_SEARCH_MS has actually elapsed (see resolveIslandSearch) - never here.
+app.post('/api/island/search', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user, now = Date.now();
+  const last = islandLastWrite.get(req.uid) || 0;
+  if (now - last < ISLAND_SEARCH_RATE_LIMIT_MS) return res.status(429).json({ error: 'rate-limited' });
+  islandLastWrite.set(req.uid, now);
+  resolveIslandSearch(user); // in case this user's own previous search just elapsed
+  const c = islandClock(now);
+  if (!c.open) return res.status(409).json({ error: 'island-closed' });
+  if (Number(user.islandSearchEndsAt || 0) > now) return res.status(409).json({ error: 'already-searching' });
+  const requestedSpot = req.body ? Number(req.body.spot) : NaN;
+  const spot = Number.isInteger(requestedSpot) && requestedSpot >= 0 && requestedSpot <= 6 ? requestedSpot : crypto.randomInt(0, 7);
+  user.islandSearchEndsAt = now + ISLAND_SEARCH_MS;
+  user.islandSearchSpot = spot;
+  islandSearchersThisCycle.add(req.uid);
+  persist();
+  broadcastChatEvent('island', { event: publicIslandRound() });
+  res.json({ ok: true, searchEndsAt: user.islandSearchEndsAt, spot });
+});
+
 // Lightweight list of currently online users (name + TON balance) for the Home chat sidebar.
 app.get('/api/online-users', (req, res) => {
   const now = Date.now();
@@ -3666,6 +3903,14 @@ app.get('/api/online-users', (req, res) => {
       racePredictedCorrect: correctPredictorNames.has(user.name),
       lastRaceTipRewardTT,
       racePredictionPending: pendingPredictionUids ? pendingPredictionUids.has(String(user.id)) : false,
+      islandBook1: islandBookCount(user, 0),
+      islandBook2: islandBookCount(user, 1),
+      islandBook3: islandBookCount(user, 2),
+      islandWins: Number(user.islandWins || 0),
+      islandSearching: Number(user.islandSearchEndsAt || 0) > now,
+      islandSearchEndsAt: Number(user.islandSearchEndsAt || 0),
+      islandLastText: user.islandLastText || '',
+      islandLastAt: Number(user.islandLastAt || 0),
     }));
   res.json({ users: list });
 });
@@ -6411,6 +6656,9 @@ server.listen(PORT, () => {
     monsterState = null;
     monsterNextStartAt = 0;
     persistMonsterState();
+  }
+  if (ISLAND_EVENT_ENABLED) {
+    startIslandScheduler();
   }
   if (!STORAGE_PERSISTENT) {
     console.error('==================================================================');
