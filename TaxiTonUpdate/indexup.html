@@ -359,8 +359,10 @@
     transition:transform .28s cubic-bezier(.3,1.3,.5,1)}
   .shoptabs[data-i="1"] .stglide{transform:translateX(100%)}
   .shoptabs[data-i="2"] .stglide{transform:translateX(200%)}
+  .shoptabs[data-i="3"] .stglide{transform:translateX(300%)}
   #app[dir="rtl"] .shoptabs[data-i="1"] .stglide{transform:translateX(-100%)}
   #app[dir="rtl"] .shoptabs[data-i="2"] .stglide{transform:translateX(-200%)}
+  #app[dir="rtl"] .shoptabs[data-i="3"] .stglide{transform:translateX(-300%)}
   #app[dir="rtl"] .stglide{left:auto;right:4px}
   .shoptabs button{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;padding:8px 4px;border-radius:12px;
     font-family:var(--display);font-size:15px;letter-spacing:.02em;color:#9aa6d8;transition:color .2s}
@@ -368,6 +370,8 @@
   .shoptabs button img.rnd{border-radius:50%}
   .shoptabs.two{grid-template-columns:repeat(2,1fr)}
   .shoptabs.two .stglide{width:calc((100% - 8px)/2)}
+  .shoptabs.four{grid-template-columns:repeat(4,1fr)}
+  .shoptabs.four .stglide{width:calc((100% - 8px)/4)}
   .shoptabs button img.gift{object-fit:cover;object-position:50% 30%;border-radius:6px}
   .shoptabs button[aria-selected="true"]{color:#2a1600}
   .shoptabs button[aria-selected="true"] img{filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));transform:scale(1.1)}
@@ -1422,8 +1426,10 @@
     transition:transform .28s cubic-bezier(.3,1.3,.5,1)}
   .shoptabs[data-i="1"] .stglide{transform:translateX(100%)}
   .shoptabs[data-i="2"] .stglide{transform:translateX(200%)}
+  .shoptabs[data-i="3"] .stglide{transform:translateX(300%)}
   #app[dir="rtl"] .shoptabs[data-i="1"] .stglide{transform:translateX(-100%)}
   #app[dir="rtl"] .shoptabs[data-i="2"] .stglide{transform:translateX(-200%)}
+  #app[dir="rtl"] .shoptabs[data-i="3"] .stglide{transform:translateX(-300%)}
   #shopTabs button{flex-direction:column;gap:2px;font-size:13px;padding:6px 2px}
   #shopTabs button span{white-space:nowrap}
   #app[dir="rtl"] .stglide{left:auto;right:4px}
@@ -1433,6 +1439,8 @@
   .shoptabs button img.rnd{border-radius:50%}
   .shoptabs.two{grid-template-columns:repeat(2,1fr)}
   .shoptabs.two .stglide{width:calc((100% - 8px)/2)}
+  .shoptabs.four{grid-template-columns:repeat(4,1fr)}
+  .shoptabs.four .stglide{width:calc((100% - 8px)/4)}
   .shoptabs button img.gift{object-fit:cover;object-position:50% 30%;border-radius:6px}
   .shoptabs button[aria-selected="true"]{color:#2a1600}
   .shoptabs button[aria-selected="true"] img{filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));transform:scale(1.1)}
@@ -3587,10 +3595,11 @@
 
     <!-- SHOP -->
     <section class="page" data-page="shop" hidden>
-      <div class="shoptabs" role="tablist" id="shopTabs">
+      <div class="shoptabs four" role="tablist" id="shopTabs">
         <span class="stglide"></span>
         <button role="tab" id="tabCars" aria-selected="true"><img src="assets/badge-lvl4.webp" alt=""><span data-t="cars">Levels</span></button>
         <button role="tab" id="tabBoost" aria-selected="false"><img src="assets/pack-gold.webp" alt=""><span data-t="boosts">Packs</span></button>
+        <button type="button" id="tabIsland" aria-selected="false"><span style="font-size:20px;line-height:1">🏝️</span><span data-t="islandTab">Insel</span></button>
         <button role="tab" id="tabStk" aria-selected="false"><img src="assets/stk-sara-4.webp" alt=""><span data-t="it_tab">Items</span></button>
       </div>
       <div class="stack" id="shopList"></div>
@@ -3847,7 +3856,7 @@ const T = {
     chatSub:'Talk with other drivers',chanSub:'News, events and giveaways',chanSub2:'Payout announcements',join:'Join',send:'Send',
     walletSub:'Your balances and swaps',zombies:'Zombies',swapTitle:'Swap Zombies → TAXI',swapInfo:'Collected zombies will be swappable for the TAXI token. The swap opens when the token launches.',
     soon:'Soon',history:'History',noTx:'No activity yet. Finish a run to earn zombies.',topSub:'Best single run',boardNote:'Other drivers shown are example entries until the server leaderboard is connected.',
-    you:'You',tasksSub:'Daily rewards and missions',daily:'Daily reward',claim:'Claim',claimed:'Claimed',day:'Day',shopSub:'Spend zombies on boosts and cabs',boosts:'Packs',cars:'Levels',
+    you:'You',tasksSub:'Daily rewards and missions',daily:'Daily reward',claim:'Claim',claimed:'Claimed',day:'Day',shopSub:'Spend zombies on boosts and cabs',boosts:'Packs',cars:'Levels',islandTab:'Island',
     buy:'Buy',owned:'Owned',garageSub:'Pick the cab you drive',inventory:'Boost inventory',select:'Drive',driving:'Driving',startHint:'Smash zombies, dodge cars, grab ⚡ power-ups.',
     go:'▶ PLAY',back:'Back',swipe:'or swipe',paused:'Paused',resume:'Resume',endRun:'End run',crash:'Crash!',score:'Score',again:'Play again',
     newBest:'New best run!',bestWas:'Best',notEnough:'Not enough zombies',tg_sign:'Zombie Tower',tg_top:'Top of the tower!',tg_lostSign:'You lost!',tg_lostAmt:'Amount lost',tg_s:'s',tg_bal:'Balance',tg_round:'Round',tg_prize:'Prize',tg_you:'You',tg_pick:'Pick!',tg_waitOp:'Waiting for opponent…',tg_hi:'Higher',tg_lo:'Lower',tg_how:'How to play',tg_q:'Is the next card higher or lower?',tg_ok:'Right guess: one step up',tg_bad:'Wrong guess: one step down',tg_goal:'Reach step 12 first and win!',tg_bet:'Stake',tg_rounds:'Rounds',tg_score:'Score',tg_won:'You won!',tg_lost:'You lost',tg_draw:'Draw – stake back',tg_lobby:'Back to lobby',tg_new:'New room',tg_joined:'joined your room!',tg_quit:'Leave the game? You will lose your stake.',fr_photo:'Photo',fr_imgBad:'Please choose an image',fr_imgErr:'Could not send the image',lim_left:'Only {n} left',lim_out:'Sold out',lim_off:'Limited · offline',lim_tg:'Open in Telegram to buy',lim_err:'Purchase failed, try again',bought:'Bought',dailyGot:'Daily reward',comeBack:'Come back tomorrow',
@@ -3860,7 +3869,7 @@ const T = {
     chatSub:'Sprich mit anderen Fahrern',chanSub:'News, Events und Gewinnspiele',chanSub2:'Auszahlungs-News',join:'Beitreten',send:'Senden',
     walletSub:'Deine Guthaben und Tausch',zombies:'Zombies',swapTitle:'Zombies → TAXI tauschen',swapInfo:'Gesammelte Zombies kannst du später in den TAXI-Token tauschen. Der Tausch startet mit dem Token-Launch.',
     soon:'Bald',history:'Verlauf',noTx:'Noch keine Aktivität. Beende eine Fahrt, um Zombies zu verdienen.',topSub:'Bester Einzellauf',boardNote:'Die anderen Fahrer sind Beispiele, bis die Server-Rangliste verbunden ist.',
-    you:'Du',tasksSub:'Tägliche Belohnungen und Missionen',daily:'Tagesbelohnung',claim:'Abholen',claimed:'Abgeholt',day:'Tag',shopSub:'Zombies für Boosts und Taxis ausgeben',boosts:'Packs',cars:'Levels',
+    you:'Du',tasksSub:'Tägliche Belohnungen und Missionen',daily:'Tagesbelohnung',claim:'Abholen',claimed:'Abgeholt',day:'Tag',shopSub:'Zombies für Boosts und Taxis ausgeben',boosts:'Packs',cars:'Levels',islandTab:'Insel',
     buy:'Kaufen',owned:'Gekauft',garageSub:'Wähle dein Taxi',inventory:'Boost-Inventar',select:'Fahren',driving:'Aktiv',startHint:'Zombies überfahren, Autos ausweichen, ⚡ einsammeln.',
     go:'▶ LOS',back:'Zurück',swipe:'oder wischen',paused:'Pause',resume:'Weiter',endRun:'Fahrt beenden',crash:'Crash!',score:'Punkte',again:'Nochmal',
     newBest:'Neuer Rekord!',bestWas:'Rekord',notEnough:'Nicht genug Zombies',tg_sign:'Zombie Tower',tg_top:'Turmspitze!',tg_lostSign:'Verloren!',tg_lostAmt:'Verlust',tg_s:'s',tg_bal:'Guthaben',tg_round:'Runde',tg_prize:'Gewinn',tg_you:'Du',tg_pick:'Wähle!',tg_waitOp:'Warte auf Gegner…',tg_hi:'Höher',tg_lo:'Tiefer',tg_how:'So wird gespielt',tg_q:'Ist die nächste Karte höher oder tiefer?',tg_ok:'Richtig geraten: eine Stufe hoch',tg_bad:'Falsch geraten: eine Stufe runter',tg_goal:'Erreiche zuerst Stufe 12 und gewinne!',tg_bet:'Einsatz',tg_rounds:'Runden',tg_score:'Punkte',tg_won:'Gewonnen!',tg_lost:'Verloren',tg_draw:'Unentschieden – Einsatz zurück',tg_lobby:'Zurück zur Lobby',tg_new:'Neuer Raum',tg_joined:'ist deinem Raum beigetreten!',tg_quit:'Spiel verlassen? Du verlierst deinen Einsatz.',fr_photo:'Foto',fr_imgBad:'Bitte ein Bild auswählen',fr_imgErr:'Bild konnte nicht gesendet werden',lim_left:'Nur noch {n}',lim_out:'Ausverkauft',lim_off:'Limitiert · offline',lim_tg:'Zum Kaufen in Telegram öffnen',lim_err:'Kauf fehlgeschlagen, nochmal versuchen',bought:'Gekauft',dailyGot:'Tagesbelohnung',comeBack:'Komm morgen wieder',
@@ -3873,7 +3882,7 @@ const T = {
     chatSub:'با رانندگان دیگر گفتگو کن',chanSub:'اخبار، رویدادها و جوایز',chanSub2:'اعلام برداشت‌ها',join:'عضویت',send:'ارسال',
     walletSub:'موجودی‌ها و معاوضه',zombies:'زامبی',swapTitle:'معاوضه زامبی ← TAXI',swapInfo:'زامبی‌های جمع‌شده قابل معاوضه با توکن TAXI خواهند بود. معاوضه با عرضه توکن باز می‌شود.',
     soon:'به‌زودی',history:'تاریخچه',noTx:'هنوز فعالیتی نیست. یک مسیر را تمام کن تا زامبی بگیری.',topSub:'بهترین امتیاز یک مسیر',boardNote:'رانندگان دیگر نمونه هستند تا جدول سرور وصل شود.',
-    you:'تو',tasksSub:'جایزه روزانه و ماموریت‌ها',daily:'جایزه روزانه',claim:'دریافت',claimed:'دریافت شد',day:'روز',shopSub:'زامبی‌ها را خرج تقویت و تاکسی کن',boosts:'پک‌ها',cars:'سطح‌ها',
+    you:'تو',tasksSub:'جایزه روزانه و ماموریت‌ها',daily:'جایزه روزانه',claim:'دریافت',claimed:'دریافت شد',day:'روز',shopSub:'زامبی‌ها را خرج تقویت و تاکسی کن',boosts:'پک‌ها',cars:'سطح‌ها',islandTab:'جزیره',
     buy:'خرید',owned:'داری',garageSub:'تاکسی خودت را انتخاب کن',inventory:'تقویت‌های تو',select:'انتخاب',driving:'در حال رانندگی',startHint:'زامبی‌ها را نابود کن، از ماشین‌ها دوری کن، ⚡ بگیر.',
     go:'▶ شروع',back:'بازگشت',swipe:'یا بکش',paused:'توقف',resume:'ادامه',endRun:'پایان مسیر',crash:'تصادف!',score:'امتیاز',again:'دوباره',
     newBest:'رکورد جدید!',bestWas:'بهترین',notEnough:'زامبی کافی نیست',tg_sign:'زامبی تاور',tg_top:'نوک برج!',tg_lostSign:'باختی!',tg_lostAmt:'مبلغ باخت',tg_s:'',tg_bal:'موجودی',tg_round:'دور',tg_prize:'جایزه',tg_you:'تو',tg_pick:'انتخاب کن!',tg_waitOp:'منتظر حریف…',tg_hi:'بالاتر',tg_lo:'پایین‌تر',tg_how:'آموزش بازی',tg_q:'کارت بعدی بالاتر است یا پایین‌تر؟',tg_ok:'حدس درست: یک پله بالا',tg_bad:'حدس غلط: یک پله پایین',tg_goal:'زودتر به پلهٔ ۱۲ برس و برنده شو!',tg_bet:'مبلغ شرط',tg_rounds:'دورها',tg_score:'امتیاز',tg_won:'برنده شدی!',tg_lost:'مبلغ باخت',tg_draw:'مساوی – شرط برگشت',tg_lobby:'بازگشت به لابی',tg_new:'اتاق جدید',tg_joined:'وارد اتاقت شد!',tg_quit:'از بازی خارج می‌شوی؟ مبلغ شرط را از دست می‌دهی.',fr_photo:'عکس',fr_imgBad:'لطفاً یک عکس انتخاب کن',fr_imgErr:'ارسال عکس انجام نشد',lim_left:'فقط {n} عدد مانده',lim_out:'تمام شد',lim_off:'محدود · آفلاین',lim_tg:'برای خرید در تلگرام باز کن',lim_err:'خرید انجام نشد، دوباره امتحان کن',bought:'خریدی',dailyGot:'جایزه روزانه',comeBack:'فردا برگرد',
@@ -6389,7 +6398,7 @@ function revealPack(){
 }
 function closePack(){ $('#packOv').hidden = true; packState = null; render(); }
 function renderShop(){
-  $('#shopTabs').dataset.i = {cars:0, boost:1, stk:2}[shopTab]; $('#tabStk').setAttribute('aria-selected', shopTab==='stk');
+  $('#shopTabs').dataset.i = {cars:0, boost:1, stk:3}[shopTab]; $('#tabStk').setAttribute('aria-selected', shopTab==='stk');
   $('#tabBoost').setAttribute('aria-selected', shopTab==='boost'); $('#tabCars').setAttribute('aria-selected', shopTab==='cars');
   const list = $('#shopList');
   if (shopTab === 'stk') { renderItems(list); } else if (shopTab === 'boost') {
@@ -6528,6 +6537,7 @@ $('#chatForm').addEventListener('submit', async e => { e.preventDefault(); const
 $('#tabBoost').onclick = () => { shopTab='boost'; renderShop(); };
 $('#tabCars').onclick = () => { shopTab='cars'; renderShop(); };
 $('#tabStk').onclick = () => { shopTab='stk'; renderShop(); };
+$('#tabIsland').onclick = () => toast(`🏝️ ${t('islandTab')} · ${t('comingSoon')}`);
 document.querySelectorAll('.glock .padlock').forEach(el => el.innerHTML = PADLOCK_SVG);
 /* ---- Zombie Tower lobby ---- */
 const TW_STAKES = [0.01, 0.05, 0.1, 0.5, 1];
@@ -7648,6 +7658,7 @@ applyDark();
 $('#packTap').onclick = revealPack;
 $('#packDone').onclick = closePack;
 document.addEventListener('click', e => { const b = e.target.closest('[data-open-pack]'); if (b) openPack(b.dataset.openPack); });
+document.addEventListener('click', e => { const b = e.target.closest('[data-soon-toast]'); if (b) toast(`${b.dataset.soonToast} · ${t('comingSoon')}`); });
 document.addEventListener('click', async e => {
   const bb = e.target.closest('[data-buy-boost]'), bc = e.target.closest('[data-buy-car]'), dr = e.target.closest('[data-drive]'),
         cl = e.target.closest('[data-claim]'), ch = e.target.closest('[data-chan]'), inv = e.target.closest('[data-invite]');
