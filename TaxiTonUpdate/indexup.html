@@ -4890,7 +4890,10 @@ function renderChans(){
 }
 // ---- Daily "watch 10 videos" task (AdsGram rewarded ads), shown on the chat
 // room picker below the 3 language servers. ----
-const ADSGRAM_BLOCK_ID = '52474';
+// The game runs on two origins (taxiton.org and the Railway fallback domain),
+// and AdsGram validates each blockId against one specific registered origin
+// - so each origin needs its own blockId, picked at runtime by hostname.
+const ADSGRAM_BLOCK_ID = location.hostname === 'taxiton.org' ? '52474' : '48235';
 let adVideoBusy = false, adsgramLoadPromise = null;
 function loadAdsgramScript(){
   if (window.Adsgram && typeof window.Adsgram.init === 'function') return Promise.resolve();

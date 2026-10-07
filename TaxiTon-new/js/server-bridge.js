@@ -373,7 +373,7 @@
       return Promise.resolve({ ok: false, notReady: true });
     }
     var controller;
-    try { controller = window.Adsgram.init({ blockId: '52474' }); } catch (e) {
+    try { controller = window.Adsgram.init({ blockId: (location.hostname === 'taxiton.org' ? '52474' : '48235') }); } catch (e) {
       return Promise.resolve({ ok: false, notReady: true });
     }
     return controller.show().then(function () {

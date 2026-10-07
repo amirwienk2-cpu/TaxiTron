@@ -2032,7 +2032,7 @@
     statusEl.textContent = 'Loading video...';
     try {
       await loadAdsgram();
-      const controller = window.Adsgram.init({ blockId: '52474' });
+      const controller = window.Adsgram.init({ blockId: location.hostname === 'taxiton.org' ? '52474' : '48235' });
       await controller.show();
       const response = await fetch(SERVER_URL + '/api/tasks/ad-video-claim', {
         method: 'POST',
