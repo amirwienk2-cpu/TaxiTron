@@ -3061,11 +3061,7 @@
   .race-btn.monster-btn{background:linear-gradient(180deg,#ff8a3d,#c8213a);box-shadow:0 3px 0 #7a1222}
   .race-btn.monster-btn.live{background:linear-gradient(180deg,#ff5a6e,#c8213a);animation:monsterPulse 1s infinite}
   @keyframes monsterPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,.55)}50%{box-shadow:0 0 0 6px rgba(255,45,85,0)}}
-  /* ==== لیگ برق‌آسا (Blitz-Liga): Fußball-Tippspiel alle 3,5 Minuten, 10 Spiele pro Saison.
-     Das Spiel selbst (blitz-liga/index.html) läuft 1:1 unverändert auf /blitz-liga - eigene
-     Telegram-WebApp, per Vollnavigation geöffnet (kein Iframe), damit Telegram-Auth/initData
-     echt ist statt Demo-Modus. */
-  .race-btn.blitz-btn{background:linear-gradient(180deg,#6be08a,#1a8c4a);box-shadow:0 3px 0 #0c5c2a}
+  /* ==== لیگ برق‌آسا (Blitz-Liga) wurde hier registriert, ist aber auf Wunsch wieder komplett entfernt. ==== */
   /* ==== Chat-Sperre durch die "Amir"-Badge (isDeveloper): nur er kann dann noch schreiben ==== */
   .race-btn.chat-lock-btn{background:linear-gradient(180deg,#9aa6d8,#3d4a8a);box-shadow:0 3px 0 #1c2454;padding:8px 10px}
   .race-btn.chat-lock-btn.on{background:linear-gradient(180deg,#ff6b6b,#8a0d16);box-shadow:0 3px 0 #5c0309}
@@ -3254,7 +3250,6 @@
           </div>
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
           <button type="button" class="race-btn monster-btn" id="monsterBtn" hidden><span id="monsterBtnText">👹 --:--</span></button>
-          <button type="button" class="race-btn blitz-btn" id="blitzBtn"><span id="blitzBtnText">⚽ برق‌آسا --:--</span></button>
           <button type="button" class="race-btn chat-lock-btn" id="chatLockBtn" hidden><span id="chatLockBtnText">🔒</span></button>
           <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
@@ -5516,22 +5511,7 @@ function eventCountdownText(ms){
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
 
-// ---- لیگ برق‌آسا (Blitz-Liga): Fußball-Tippspiel, Zyklus 5min Tipp + 120s Spiel
-// + 25s Pause = 7min25s, matches blitz-liga/blitz-core.js TIP/PLAY/POST/CYCLE.
-// Eine Saison (10 Spiele) dauert damit 10 × 7:25 = 1h14m10s.
-const BLITZ_CYCLE_MS = 445000, BLITZ_TIP_MS = 300000;
-function renderBlitzButton(){
-  const txt = $('#blitzBtnText');
-  if (!txt) return;
-  const now = Date.now();
-  const id = Math.floor(now / BLITZ_CYCLE_MS);
-  const kickoff = id * BLITZ_CYCLE_MS + BLITZ_TIP_MS;
-  const nextKickoff = now < kickoff ? kickoff : kickoff + BLITZ_CYCLE_MS;
-  txt.textContent = '⚽ برق‌آسا ' + eventCountdownText(nextKickoff - now);
-}
-$('#blitzBtn').onclick = () => { location.href = '/blitz-liga'; };
-setInterval(renderBlitzButton, 1000);
-renderBlitzButton();
+// ---- لیگ برق‌آسا (Blitz-Liga) wurde hier registriert, ist aber auf Wunsch wieder komplett entfernt.
 
 // ---- Chat-Sperre durch die "Amir"-Badge (isDeveloper): toggelt chatLockedToDeveloper
 // server-seitig (/api/chat/set-developer-lock), sodass nur noch er schreiben kann.
