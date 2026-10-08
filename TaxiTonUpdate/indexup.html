@@ -3029,6 +3029,11 @@
      anderen (linken) Rand der Zeile, statt neben den Avatar gequetscht zu werden. */
   #app[dir="rtl"] .onrow .grow{padding-right:0;padding-left:46px}
   #app[dir="rtl"] .on-side{right:auto;left:6px}
+  /* Die interne Ausrichtung der beiden Reihen (Abzeichen/Insel-Icons) zueinander
+     muss an derselben Kante hängen, an der die Box selbst verankert ist - rechts
+     in EN/DE, links in FA (siehe .on-side weiter oben: direction:ltr + flex-end
+     meint sonst immer "rechts", egal wo die Box selbst sitzt). */
+  #app[dir="rtl"] .on-side{align-items:flex-start}
   /* Item-Tabs: Symbole aus den eigenen Grafiken */
   .itseg button img{width:40px!important;height:40px!important;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));transition:transform .2s}
   .itseg button[aria-selected="true"] img{transform:scale(1.12)}
