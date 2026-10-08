@@ -3102,14 +3102,14 @@
   .race-btn.island-btn.closed{background:linear-gradient(180deg,#4a5163,#353a49);box-shadow:0 3px 0 #23262f}
   .race-btn.island-btn.ready{animation:islandReady 1.8s ease-in-out infinite}
   @keyframes islandReady{0%,100%{box-shadow:0 3px 0 #0f3e50,0 0 0 0 rgba(246,198,43,0)}50%{box-shadow:0 3px 0 #0f3e50,0 0 0 6px rgba(246,198,43,.35)}}
-  /* ==== Bücherinsel-Spielfenster: 1:1 aus bucherinsel/prototype/index.html übernommen
+  /* ==== Bücherinsel-Spielfenster: 1:1 aus bucherinsel-design/prototype/index.html übernommen
      (Design/Positionen nicht verändern), nur mit "isl-" Präfix versehen, damit nichts
-     mit dem Rest der App kollidiert. Bilder liegen unter /bucherinsel/prototype/. ==== */
+     mit dem Rest der App kollidiert. Bilder liegen unter /bucherinsel-design/assets/. ==== */
   .isl-scrim{position:fixed;inset:0;background:rgba(5,6,10,.6);display:flex;align-items:flex-end;justify-content:center;z-index:9000}
   .isl-sheet{width:100%;max-width:480px;max-height:94%;overflow-y:auto;background:#0b1430;padding:0;display:block;border:0;border-radius:24px 24px 0 0;animation:islUp .28s ease-out;scrollbar-width:none;direction:rtl}
   .isl-sheet::-webkit-scrollbar{display:none}
   @keyframes islUp{from{transform:translateY(40px);opacity:.4}}
-  .isl-art{position:relative;width:100%;aspect-ratio:954/1462;background:url(/bucherinsel/prototype/island/base2.jpg) center/100% 100% no-repeat;container-type:inline-size;user-select:none;-webkit-user-select:none;font-family:"Vazirmatn",sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .isl-art{position:relative;width:100%;aspect-ratio:1024/1536;background:url(/bucherinsel-design/assets/island/base4.jpg) center/100% 100% no-repeat;container-type:inline-size;user-select:none;-webkit-user-select:none;font-family:"Vazirmatn",sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
   .isl-ov{position:absolute;margin:0}
   .isl-hit{all:unset;position:absolute;cursor:pointer}
   .isl-hit:focus-visible{outline:2px solid #ffd84d;outline-offset:2px}
@@ -3119,19 +3119,21 @@
   .isl-timer .isl-tl{font-weight:800;color:#fff;font-size:2.55cqw;text-shadow:0 1px 2px rgba(0,0,0,.6)}
   .isl-timer .isl-tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:6.1cqw;margin-top:.5cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.2cqw}
   .isl-pilltx{display:flex;align-items:center;justify-content:flex-start;padding-right:1.2cqw;box-sizing:border-box;color:#fff;font-weight:800;font-size:2.9cqw;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-  .isl-dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box}
-  .isl-dig span{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:5.9cqw;color:#fff;text-shadow:0 .35cqw 0 #0b2e78,0 0 1.6cqw rgba(80,170,255,.6);white-space:nowrap;font-variant-numeric:tabular-nums;transform:translateY(.4cqw)}
-  .isl-dig:active span{transform:translateY(.8cqw)}
+  .isl-dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box;position:relative}
+  .isl-dig span{position:absolute;left:33.8%;width:57.3%;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:6.6cqw;color:#ffd84d;text-shadow:0 .45cqw 0 #6b1a05,0 0 1.2cqw rgba(0,0,0,.4);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .isl-dig:active span{transform:translateY(.5cqw)}
   .isl-dig[disabled]{cursor:default}
-  .isl-dig.off span{opacity:.75}
-  .isl-hint{display:block;text-align:center;line-height:4.6cqw;color:#c9cee3;font-size:2.55cqw;white-space:nowrap}
-  .isl-hint b{color:#ffd23f}
-  .isl-segs{display:flex;gap:.9cqw}
-  .isl-segs i{flex:1;border-radius:9px;background:#37326a}
-  .isl-segs i.on{background:linear-gradient(#6cc0ff,#2e86ea)}
-  .isl-chip{display:grid;place-items:center;direction:ltr;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:3.6cqw;color:#2a1f00;background:linear-gradient(#ffe680,#f3b917);border:.35cqw solid #7a5a12;border-radius:2cqw;box-shadow:0 .4cqw 0 #6b4a05;z-index:2}
-  .isl-gray{object-fit:fill;transition:opacity .5s;pointer-events:none}
-  .isl-gray.has{opacity:0}
+  .isl-dig.busy span,.isl-dig.off span{font-size:4.6cqw}
+  .isl-dig.off{filter:grayscale(.6) brightness(.8)}
+  .isl-hint2{display:flex;align-items:center;justify-content:center;text-align:center;background:rgba(10,8,20,.72);border:.3cqw solid #b07a2b;border-radius:3cqw;color:#f3e6c8;font-size:2.1cqw;white-space:nowrap;overflow:hidden;padding:0 1.5cqw;box-sizing:border-box;backdrop-filter:blur(2px)}
+  .isl-hint2 b{color:#ffd23f}
+  .isl-hint2:empty{display:none}
+  .isl-slot{display:block;position:absolute}
+  .isl-slot .isl-gr{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;border-radius:1.4cqw}
+  .isl-slot .isl-q{position:absolute;inset:0;display:grid;place-items:center;font-family:"Lalezar","Vazirmatn";font-size:3.2cqw;color:#cdb98e;text-align:center;line-height:1.3;text-shadow:0 .3cqw .6cqw #000}
+  .isl-slot .isl-n{position:absolute;top:4%;left:6%;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:3.4cqw;color:#2a1f00;background:linear-gradient(#ffe680,#f3b917);border:.35cqw solid #7a5a12;border-radius:2cqw;padding:0 1.4cqw;box-shadow:0 .4cqw 0 #6b4a05;direction:ltr}
+  .isl-slot.pop{animation:islPop .6s}
+  @keyframes islPop{40%{transform:scale(1.08)}}
   .isl-sp{cursor:default}
   .isl-sp .isl-ring{opacity:0}
   .isl-art.can .isl-sp{cursor:pointer}
@@ -3141,12 +3143,10 @@
   @keyframes islPulse{0%{r:12;opacity:.8}100%{r:30;opacity:0}}
   .isl-night{opacity:0;transition:opacity 1.2s}
   .isl-art.closed .isl-night{opacity:1}
-  .isl-closedcard{display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .8s}
-  .isl-art.closed .isl-closedcard{opacity:1}
-  .isl-closedcard>div{background:rgba(30,18,8,.82);border:.5cqw solid #b98a3c;border-radius:2.4cqw;padding:2cqw 5cqw;text-align:center}
-  .isl-closedcard b{display:block;font-family:"Lalezar","Vazirmatn";font-weight:400;font-size:5cqw;color:#ffd84d}
-  .isl-closedcard span{font-size:2.6cqw;color:#e9dcc0}
-  .isl-closedcard .isl-v{font-family:"Lalezar","Vazirmatn";font-size:7cqw;color:#fff;font-variant-numeric:tabular-nums;line-height:1.1}
+  .isl-closedban{pointer-events:none;opacity:0;transform:scale(.9);transition:opacity .6s,transform .6s}
+  .isl-art.closed .isl-closedban{opacity:1;transform:none}
+  .isl-closedban img{display:block;width:100%;height:auto;filter:drop-shadow(0 1.5cqw 2cqw rgba(0,0,0,.6))}
+  .isl-closedban .isl-cv{position:absolute;left:53.1%;width:22.6%;top:61.1%;height:14.2%;display:grid;place-items:center;font-family:"Lalezar","Vazirmatn";font-size:7cqw;color:#fff;text-shadow:0 .4cqw 0 #3a2410;font-variant-numeric:tabular-nums}
   .isl-shovel{animation:islDg .45s ease-in-out infinite alternate}
   @keyframes islDg{from{transform:rotate(-14deg)}to{transform:rotate(10deg) translateY(4px)}}
   .isl-dirt{animation:islDirt 1s ease-out infinite}
@@ -3164,15 +3164,6 @@
   .isl-reveal .isl-nm{position:relative;font-family:"Lalezar","Vazirmatn";font-size:6cqw;color:#ffd84d;text-shadow:0 .4cqw 0 #6b4a05}
   .isl-reveal .isl-sub{position:relative;font-size:2.8cqw;color:#e8eefc;background:rgba(0,0,0,.4);padding:.6cqw 2cqw;border-radius:2cqw}
   .isl-reveal .isl-empty{font-size:14cqw;position:relative}
-  /* ==== Deckt die in island/base2.jpg eingebrannte "TON 0.5"-Grafik ab, damit der
-     tatsächliche Gewinnbetrag (0.25 TON) live/änderbar angezeigt wird. ==== */
-  .isl-prizebar{display:flex;align-items:center;justify-content:space-between;padding:0 2.4cqw;border-radius:2cqw;
-    background:linear-gradient(180deg,#1c2744,#0c1324);border:.35cqw solid #caa34a;box-shadow:inset 0 0 0 .15cqw rgba(255,214,120,.25)}
-  .isl-prizebar-l{display:flex;align-items:center;gap:1.2cqw}
-  .isl-prizebar-l img{width:7cqw;height:7cqw;border-radius:50%;flex:none}
-  .isl-prizebar-l b{font-family:"Lalezar","Vazirmatn";font-weight:400;font-size:5cqw;color:#ffd84d;text-shadow:0 .3cqw 0 #6b4a05;direction:ltr}
-  .isl-prizebar-r{display:flex;align-items:center;gap:1.3cqw;font-family:"Vazirmatn";font-size:2.6cqw;font-weight:800;color:#e8eefc;white-space:nowrap}
-  .isl-prizebar-r i{font-style:normal;font-size:4.6cqw}
   /* ==== Online-Tab: 3 Buch-Badges neben jedem Usernamen (nur im Farsi-Chat) ==== */
   .isl-mb{display:inline-flex;gap:3px;align-items:center;background:#262a3a;border-radius:10px;padding:2px 6px;margin-inline-start:4px}
   .isl-mb img{width:22px;height:20px;object-fit:contain;transition:.3s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
@@ -3809,41 +3800,36 @@
     </div>
   </div>
 
-  <!-- جزیره کتاب‌ها (Bücherinsel): Bottom-Sheet 1:1 nach bucherinsel/prototype/index.html -->
+  <!-- جزیره کتاب‌ها (Bücherinsel): Bottom-Sheet 1:1 nach bucherinsel-design/prototype/index.html -->
   <div class="isl-scrim" id="islandScrim" hidden>
     <div class="isl-sheet" dir="rtl" role="dialog" aria-label="جزیره کتاب‌ها">
       <div class="isl-art" id="islandScene">
-        <button class="isl-hit" id="islandClose" aria-label="بستن" style="left:3.7%;top:1.58%;width:9.4%;height:6.09%;border-radius:50%"></button>
-        <div class="isl-ov isl-timer" style="left:11.7%;top:14.21%;width:14.7%;height:6.32%">
-          <div class="isl-tl" id="islandClockL">تا بسته شدن</div><div class="isl-tv" id="islandClockV">۰۰:۰۰</div>
+        <button class="isl-hit" id="islandClose" aria-label="بستن" style="left:3.4%;top:1.6%;width:9.8%;height:6.5%;border-radius:50%"></button>
+        <div class="isl-ov isl-pilltx" style="left:84.6%;top:3.78%;width:13.2%;height:2.21%"><span id="islandHudSearchers"></span></div>
+        <div class="isl-ov isl-timer" style="left:84.8%;top:9.11%;width:12.9%;height:5.73%">
+          <div class="isl-tl" id="islandClockL">تا بسته شدن:</div><div class="isl-tv" id="islandClockV">۰۰:۰۰</div>
         </div>
-        <div class="isl-ov isl-pilltx" style="left:67.3%;top:13.53%;width:22.9%;height:3.38%"><span id="islandHudSearchers"></span></div>
-        <svg class="isl-live" viewBox="0 0 954 1462" aria-hidden="false">
+        <svg class="isl-live" viewBox="0 0 1024 1536" aria-hidden="false">
           <defs>
-            <linearGradient id="islNightg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#081430" stop-opacity=".82"/><stop offset="1" stop-color="#06122a" stop-opacity=".7"/></linearGradient>
+            <linearGradient id="islNightg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#030714" stop-opacity=".72"/><stop offset="1" stop-color="#030714" stop-opacity=".55"/></linearGradient>
             <linearGradient id="islGoldr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset=".5" stop-color="#f3b917"/><stop offset="1" stop-color="#b9800b"/></linearGradient>
           </defs>
           <g id="islDiggers"></g>
           <g id="islSpots"></g>
           <g id="islFx"></g>
-          <rect class="isl-night" x="30" y="178" width="896" height="486" rx="24" fill="url(#islNightg)" pointer-events="none"/>
+          <rect class="isl-night" x="0" y="240" width="1024" height="650" fill="url(#islNightg)" pointer-events="none"/>
         </svg>
-        <div class="isl-ov isl-closedcard" style="left:3.1%;top:12.18%;width:93.9%;height:33.27%"><div><b>🔒 جزیره بسته است</b><span>تا باز شدن: <span class="isl-v" id="islandClosedV">۰۰:۰۰</span></span></div></div>
-        <div class="isl-ov isl-reveal" id="islandReveal" hidden style="left:3.1%;top:12.18%;width:93.9%;height:33.27%"></div>
-        <button class="isl-hit isl-dig" id="islandDig" style="left:11.5%;top:47.94%;width:77.6%;height:9.47%"><span id="islandDigTx">بگرد!</span></button>
-        <div class="isl-ov isl-hint" id="islandDigMsg" style="left:19.7%;top:57.52%;width:60.8%;height:3.05%"></div>
-        <div class="isl-ov isl-segs" id="islandSegs" style="left:4.7%;top:62.71%;width:18.9%;height:0.90%"><i></i><i></i><i></i></div>
-        <img class="isl-ov isl-gray" id="islandG1" src="/bucherinsel/prototype/island/g1.jpg" alt="" style="left:65.72%;top:64.98%;width:30.82%;height:18.06%">
-        <img class="isl-ov isl-gray" id="islandG2" src="/bucherinsel/prototype/island/g2.jpg" alt="" style="left:36.58%;top:64.98%;width:26.94%;height:18.06%">
-        <img class="isl-ov isl-gray" id="islandG3" src="/bucherinsel/prototype/island/g3.jpg" alt="" style="left:3.56%;top:64.98%;width:30.61%;height:18.06%">
-        <div class="isl-ov isl-chip" id="islandC1" hidden style="left:67.5%;top:65.87%;width:8%;height:2.93%"></div>
-        <div class="isl-ov isl-chip" id="islandC2" hidden style="left:38%;top:65.87%;width:8%;height:2.93%"></div>
-        <div class="isl-ov isl-chip" id="islandC3" hidden style="left:5%;top:65.87%;width:8%;height:2.93%"></div>
-        <!-- Deckt die in island/base2.jpg fest eingebrannte "TON 0.5"-Grafik ab (Gewinn ist jetzt 0.25 TON) -->
-        <div class="isl-ov isl-prizebar" style="left:3%;top:91.3%;width:94%;height:7.3%">
-          <span class="isl-prizebar-l"><img src="assets/ton-logo.webp" alt="TON"><b>TON 0.25</b></span>
-          <span class="isl-prizebar-r"><b>۳ کتاب متفاوت = جایزه</b><i>🎁</i></span>
+        <div class="isl-ov isl-closedban" style="left:3%;top:21%;width:94%">
+          <img src="/bucherinsel-design/assets/island/closed.png" alt="جزیره بسته است">
+          <div class="isl-cv" id="islandClosedV">۰۰:۰۰</div>
         </div>
+        <div class="isl-ov isl-reveal" id="islandReveal" hidden style="left:1%;top:16%;width:98%;height:41%"></div>
+        <div class="isl-ov isl-hint2" id="islandDigMsg" style="left:56%;top:55.7%;width:42%;height:2.5%"></div>
+        <button class="isl-hit isl-dig" id="islandDig" style="left:4.9%;top:58.6%;width:50.8%;height:7.5%"><span id="islandDigTx">بگرد</span></button>
+        <!-- Rahmen: rechts=Buch1, Mitte=Buch2, links=Buch3 -->
+        <div class="isl-ov isl-slot" id="islandSlot1" style="left:68.36%;top:68.49%;width:28.32%;height:17.32%"></div>
+        <div class="isl-ov isl-slot" id="islandSlot2" style="left:37.11%;top:68.49%;width:27.54%;height:17.32%"></div>
+        <div class="isl-ov isl-slot" id="islandSlot3" style="left:4.1%;top:68.49%;width:29.59%;height:17.32%"></div>
       </div>
     </div>
   </div>
@@ -5792,12 +5778,12 @@ function eventCountdownText(ms){
 // chat. The server (see server.js's ISLAND_* block) is the sole source of truth for
 // the round schedule, book odds and the TON payout - everything here only ever
 // displays what /api/island/state and the 'island' SSE broadcast say. Visual
-// design/positions are a 1:1 port of bucherinsel/prototype/index.html (see
-// bucherinsel/SPEC.md); only its result/schedule logic moved to the server.
+// design/positions are a 1:1 port of bucherinsel-design/prototype/index.html (see
+// bucherinsel-design/DESIGN_SPEC.md); only its result/schedule logic lives on the server.
 const ISLAND_SEARCH_MS = 5 * 60 * 1000; // matches server.js ISLAND_SEARCH_MS, only used for the digging-ring animation
 const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
-const ISLAND_SPOTS = [[226,555],[336,573],[410,548],[474,582],[518,548],[607,596],[694,540]];
-const ISLAND_SANDPTS = [[262,598],[300,540],[372,604],[440,610],[560,592],[652,578],[250,530],[730,585],[380,528],[585,560],[200,590],[470,622]];
+const ISLAND_SPOTS = [[595,315],[405,447],[622,447],[858,465],[115,510],[735,718]];
+const ISLAND_SANDPTS = [[330,420],[470,470],[700,380],[760,430],[890,520],[560,520],[640,700],[800,640],[470,560],[905,440],[690,760],[380,500]];
 const ISLAND = {
   round: {open:false, opensAt:0, closesAt:0, searchers:0},
   me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
@@ -5836,7 +5822,7 @@ function islandShovelHintLine(me){
 }
 function islandBookBadgesHtml(u){
   const counts = [u.islandBook1 || 0, u.islandBook2 || 0, u.islandBook3 || 0];
-  const imgs = [0, 1, 2].map(k => `<span class="isl-bw"><img src="/bucherinsel/prototype/b${k + 1}.png" class="${counts[k] > 0 ? '' : 'off'}" alt="">${counts[k] > 1 ? `<sup>${faDigits(counts[k])}</sup>` : ''}</span>`).join('');
+  const imgs = [0, 1, 2].map(k => `<span class="isl-bw"><img src="/bucherinsel-design/assets/b${k + 1}.png" class="${counts[k] > 0 ? '' : 'off'}" alt="">${counts[k] > 1 ? `<sup>${faDigits(counts[k])}</sup>` : ''}</span>`).join('');
   const shovels = Array.isArray(u.islandShovels) ? u.islandShovels.filter((id) => ISLAND_SHOVEL_DEFS[id]) : [];
   const shovelChip = shovels.length ? `<span class="ish-shv-chip">${shovels.map((id) => `<img src="/bucherinsel-shop/assets/${ISLAND_SHOVEL_DEFS[id].img}" alt="${ISLAND_SHOVEL_DEFS[id].name}" title="${ISLAND_SHOVEL_DEFS[id].name}">`).join('')}</span>` : '';
   return `<span class="isl-mb">${imgs}${u.islandWins > 0 ? `<em>×${faDigits(u.islandWins)}</em>` : ''}${shovelChip}</span>`;
@@ -5967,7 +5953,8 @@ function islandStartMyDigVisual(spotIndex, endsAt){
     const ring = document.getElementById('islRingP'), ringT = document.getElementById('islRingT'), digTx = $('#islandDigTx');
     if (ring) ring.setAttribute('stroke-dashoffset', String(C * (1 - p)));
     if (ringT) ringT.textContent = islandCountdownText(left);
-    if (digTx) digTx.textContent = 'در حال جستجو ' + islandCountdownText(left);
+    if (digTx) digTx.textContent = '⛏️ ' + islandCountdownText(left);
+    const digMsgLeft = $('#islandDigLeft'); if (digMsgLeft) digMsgLeft.textContent = islandCountdownText(left);
     if (left > 0) ISLAND.myDigRaf = requestAnimationFrame(loop);
   };
   loop();
@@ -6004,7 +5991,7 @@ function islandShowReveal(me){
     r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div>${dailyLines}</div>`;
   } else {
     const sub = won ? 'هر ۳ کتاب کامل شد!' : isNew ? 'کتاب ' + faDigits(k + 1) + ' به کلکسیون اضافه شد' : 'حالا ' + faDigits(me['book' + (k + 1)]) + ' تا از این کتاب داری';
-    r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel/prototype/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.25 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div>${dailyLines}</div>`;
+    r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel-design/assets/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.25 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div>${dailyLines}</div>`;
   }
   r.hidden = false;
   if (ISLAND.revealTimer) clearTimeout(ISLAND.revealTimer);
@@ -6017,6 +6004,11 @@ function islandHandleResolved(me){
   islandSpark(x, y, Number(me.lastK));
   ISLAND.mySpot = -1;
   islandShowReveal(me);
+  const popK = Number(me.lastK);
+  if (popK >= 0) {
+    const slot = $('#islandSlot' + (popK + 1));
+    if (slot) { slot.classList.remove('pop'); void slot.offsetWidth; slot.classList.add('pop'); }
+  }
   if (me.lastWon === true || (me.lastDailyBonuses || []).length) void refreshShopAccount();
 }
 function renderIslandScene(){
@@ -6024,32 +6016,30 @@ function renderIslandScene(){
   const scene = $('#islandScene'); if (!scene) return;
   const r = ISLAND.round, me = ISLAND.me, now = Date.now();
   scene.classList.toggle('closed', !r.open);
-  $('#islandClockL').textContent = r.open ? 'تا بسته شدن' : 'تا باز شدن';
+  $('#islandClockL').textContent = r.open ? 'تا بسته شدن:' : 'تا باز شدن:';
   $('#islandClockV').textContent = islandCountdownText(r.open ? r.closesAt - now : r.opensAt - now);
-  $('#islandClosedV').textContent = islandCountdownText(Math.max(0, r.opensAt - now));
+  $('#islandClosedV').textContent = islandCountdownText(r.open ? 0 : r.opensAt - now);
   const searching = me.searchEndsAt > now;
   const digBtn = $('#islandDig'), digTx = $('#islandDigTx'), digMsg = $('#islandDigMsg');
-  digBtn.classList.remove('off'); digBtn.disabled = false;
+  digBtn.classList.remove('off', 'busy'); digBtn.disabled = false;
   if (searching) {
-    digBtn.disabled = true;
-    digMsg.innerHTML = 'داری می‌گردی... بعد از <b>۵ دقیقه</b> معلوم می‌شود چه پیدا کردی';
+    digBtn.disabled = true; digBtn.classList.add('busy');
+    digMsg.innerHTML = '⛏️ در حال جستجو… <b id="islandDigLeft">' + islandCountdownText(me.searchEndsAt - now) + '</b>';
     if (!ISLAND.myDigGroup) islandStartMyDigVisual(Number.isInteger(me.spot) ? me.spot : 0, me.searchEndsAt);
   } else if (!r.open) {
     digBtn.disabled = true; digBtn.classList.add('off');
     digTx.textContent = 'جزیره بسته است';
     digMsg.innerHTML = 'جزیره ۱۰ دقیقه بسته است';
   } else {
-    digTx.textContent = 'بگرد!';
-    digMsg.innerHTML = islandShovelHintLine(me) || 'هر جستجو <b>۵ دقیقه</b>';
+    digTx.textContent = 'بگرد';
+    digMsg.innerHTML = islandShovelHintLine(me) || '👆 روی یک <b>✕</b> بزن یا «بگرد»';
   }
-  const distinct = islandDistinctCount(me);
-  $('#islandSegs').querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < distinct));
   [0, 1, 2].forEach(k => {
-    const count = me['book' + (k + 1)] || 0;
-    $('#islandG' + (k + 1)).classList.toggle('has', count > 0);
-    const chip = $('#islandC' + (k + 1));
-    chip.textContent = '×' + faDigits(count);
-    chip.hidden = count < 2;
+    const slot = $('#islandSlot' + (k + 1)); if (!slot) return;
+    const n = me['book' + (k + 1)] || 0;
+    slot.innerHTML = n > 0
+      ? (n > 1 ? `<span class="isl-n">×${faDigits(n)}</span>` : '')
+      : `<img class="isl-gr" src="/bucherinsel-design/assets/island/h${k + 1}.jpg" alt=""><div class="isl-q">${esc(ISLAND_BOOK_NAMES[k])}<br>؟</div>`;
   });
   islandDrawSpots();
   islandRenderDiggers();
@@ -6145,7 +6135,7 @@ function renderIslandShopTab(list){
   const activeIds = ['s1','s2','s3'].filter((id) => d.shovels[id] && d.shovels[id].active);
   const strongest = activeIds.length ? activeIds[activeIds.length - 1] : null;
   const eqDef = strongest ? ISLAND_SHOVEL_DEFS[strongest] : null;
-  const bal = `<div class="ish-bal">${[0,1,2].map((k) => `<span><img src="/bucherinsel/prototype/b${k+1}.png" alt="">${faDigits(d.books[k])}</span>`).join('')}<span class="ish-ton"><img src="assets/ton-logo.webp" alt="TON" style="width:20px;height:20px;border-radius:50%">${d.ton.toFixed(2)} TON</span></div>`;
+  const bal = `<div class="ish-bal">${[0,1,2].map((k) => `<span><img src="/bucherinsel-design/assets/b${k+1}.png" alt="">${faDigits(d.books[k])}</span>`).join('')}<span class="ish-ton"><img src="assets/ton-logo.webp" alt="TON" style="width:20px;height:20px;border-radius:50%">${d.ton.toFixed(2)} TON</span></div>`;
   const eq = `<div class="ish-eq" style="--ishr:${eqDef ? eqDef.color : '#4a4f66'}">
       <div class="ish-pic"><img src="/bucherinsel-shop/assets/${eqDef ? eqDef.img : 'sh1.png'}" alt="" style="${eqDef ? '' : 'opacity:.25;filter:grayscale(1)'}"></div>
       <div class="ish-info"><div class="ish-cap">بیل شما</div><div class="ish-nm">${eqDef ? esc(eqDef.name) : 'هنوز بیل نداری'}</div>
@@ -6182,7 +6172,7 @@ function renderIslandShopTab(list){
     ISLAND_SHOP.qty[id] = q;
     const ok = max >= 1;
     return `<div class="ish-xc ${X_CLASS[id] || ''}" style="--ishr:${X_COLORS[id] || '#f2b81c'}">
-      <div class="ish-sw"><div class="ish-bk"><img src="/bucherinsel/prototype/b${ex.from + 1}.png" alt=""><b>×${faDigits(ex.rate * q)}</b></div><span class="ish-ar">⬅</span><div class="ish-bk"><img src="/bucherinsel/prototype/b${ex.to + 1}.png" alt=""><b>×${faDigits(q)}</b></div></div>
+      <div class="ish-sw"><div class="ish-bk"><img src="/bucherinsel-design/assets/b${ex.from + 1}.png" alt=""><b>×${faDigits(ex.rate * q)}</b></div><span class="ish-ar">⬅</span><div class="ish-bk"><img src="/bucherinsel-design/assets/b${ex.to + 1}.png" alt=""><b>×${faDigits(q)}</b></div></div>
       <div class="ish-mid"><div class="ish-t">${faDigits(ex.rate)} ${ISLAND_BOOK_NAMES[ex.from]} ← ۱ ${ISLAND_BOOK_NAMES[ex.to]}</div><div class="ish-h ${ok ? 'ok' : ''}">داری: ${faDigits(have)} · ${ok ? 'تا ' + faDigits(max) + ' بار' : 'کافی نیست'}</div><div class="ish-pb"><i style="width:${Math.min(100, have / ex.rate * 100)}%"></i></div></div>
       <div class="ish-ctl"><div class="ish-qty"><button data-xq="${id}" data-xd="-1" ${q <= 1 ? 'disabled' : ''}>−</button><span>${faDigits(q)}</span><button data-xq="${id}" data-xd="1" ${q >= max ? 'disabled' : ''}>+</button></div>
       <button class="ish-buy" data-xch="${id}" ${ok ? '' : 'disabled'}>${ok ? 'تبادل' : 'کافی نیست'}</button></div></div>`;
