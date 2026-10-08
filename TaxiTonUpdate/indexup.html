@@ -3122,6 +3122,8 @@
   .isl-headbtn.closed .isl-headbtn-icon{filter:grayscale(.85) brightness(.6)}
   .isl-headbtn.closed .isl-headbtn-lock{display:grid}
   .isl-headbtn.closed .isl-headbtn-tag{background:linear-gradient(180deg,#5a6077,#3d4257);box-shadow:0 2px 0 #23262f;color:#e3e6f0}
+  .race-btn.island-x2-btn{flex:none;padding:7px 9px;font-size:11px;background:linear-gradient(180deg,#ffe066,#e9a900);box-shadow:0 3px 0 #8a5a00}
+  .race-btn.island-x2-btn[disabled]{opacity:.8;filter:none}
   /* ==== Bücherinsel-Spielfenster: 1:1 aus bucherinsel-final/prototype/index.html übernommen
      (Design/Positionen nicht verändern), nur mit "isl-" Präfix versehen, damit nichts
      mit dem Rest der App kollidiert. Bilder liegen unter /bucherinsel-final/assets/. ==== */
@@ -3500,6 +3502,7 @@
             <div class="chstat"><span class="dot"></span><span class="num" id="onCount">0</span> <span data-t="ch_online">online</span></div>
           </div>
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
+          <span id="islandX2Countdown" class="card-event-countdown" hidden><i></i><span>جزیره ×۲</span><b id="islandX2CountdownValue">02:00:00</b></span>
           <button type="button" class="race-btn monster-btn" id="monsterBtn" hidden><span id="monsterBtnText">👹 --:--</span></button>
           <button type="button" class="isl-headbtn" id="islandBtn" aria-label="جزیره کتاب‌ها" hidden>
             <span class="isl-headbtn-bg"></span>
@@ -3507,6 +3510,7 @@
             <span class="isl-headbtn-lock" aria-hidden="true">🔒</span>
             <span class="isl-headbtn-tag" id="islandBtnText">—</span>
           </button>
+          <button type="button" class="race-btn island-x2-btn" id="islandX2Btn" hidden>×۲</button>
           <button type="button" class="race-btn chat-lock-btn" id="chatLockBtn" hidden><span id="chatLockBtnText">🔒</span></button>
           <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
@@ -5885,13 +5889,13 @@ function eventCountdownText(ms){
 // displays what /api/island/state and the 'island' SSE broadcast say. Visual
 // design/positions are a 1:1 port of bucherinsel-final/prototype/index.html (see
 // bucherinsel-final/MASTER_SPEC.md); only its result/schedule logic lives on the server.
-const ISLAND_SEARCH_MS = 5 * 60 * 1000; // matches server.js ISLAND_SEARCH_MS, only used for the digging-ring animation
+const ISLAND_SEARCH_MS = 5 * 60 * 1000; // fallback search duration; each active search also carries its authoritative server duration
 const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
 const ISLAND_SPOTS = [[577,345],[405,515],[608,500],[855,508],[130,545],[865,785]];
 const ISLAND_SANDPTS = [[330,420],[470,470],[700,380],[760,430],[890,520],[560,520],[640,700],[800,640],[470,560],[905,440],[690,760],[380,500]];
 const ISLAND = {
-  round: {open:false, opensAt:0, closesAt:0, searchers:0},
-  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
+  round: {open:false, opensAt:0, closesAt:0, searchers:0, x2Active:false, x2EndsAt:0},
+  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, searchDurationMs:ISLAND_SEARCH_MS, spot:null, lastText:'', lastAt:0, lastK:-1, lastMultiplier:1, lastIsNew:false, lastWon:false, lastTT:0, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
   sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false, wasOpen:null,
 };
 // جزیره کتاب‌ها Shop (bucherinsel-final/MASTER_SPEC.md §6): shovels + book exchange.
@@ -5935,6 +5939,17 @@ function islandDistinctCount(me){ return [me.book1, me.book2, me.book3].filter(n
 function renderIslandButton(){
   const btn = $('#islandBtn'), txt = $('#islandBtnText');
   if (!btn || !txt) return;
+  const x2Status = $('#islandX2Countdown'), x2Value = $('#islandX2CountdownValue');
+  const x2Active = ISLAND.round.x2Active === true && Number(ISLAND.round.x2EndsAt) > Date.now();
+  if (x2Status) x2Status.hidden = !x2Active;
+  if (x2Value && x2Active) x2Value.textContent = faDigits(islandHmsFromMs(Number(ISLAND.round.x2EndsAt) - Date.now()));
+  const x2Button = $('#islandX2Btn');
+  if (x2Button) {
+    x2Button.hidden = SHOP_ACCOUNT.isDeveloper !== true || chatRoom !== 'fa';
+    x2Button.disabled = x2Active;
+    x2Button.textContent = x2Active ? '×۲ فعال' : '×۲ شروع';
+    x2Button.title = x2Active ? 'رویداد ×۲ فعال است' : 'شروع رویداد ×۲ جزیره برای ۲ ساعت';
+  }
   if (chatRoom !== 'fa' || !SHOP_ACCOUNT.token) { btn.hidden = true; return; }
   btn.hidden = false;
   const r = ISLAND.round, now = Date.now(), searching = ISLAND.me.searchEndsAt > now;
@@ -6020,6 +6035,8 @@ async function startIslandSearch(spotIndex){
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.error || 'island-search-failed');
     ISLAND.me.searchEndsAt = data.searchEndsAt;
+    ISLAND.me.searchDurationMs = Number(data.searchDurationMs) || ISLAND_SEARCH_MS;
+    ISLAND.me.searchMultiplier = Number(data.multiplier) === 2 ? 2 : 1;
     ISLAND.mySpot = data.spot;
     islandStartMyDigVisual(data.spot, data.searchEndsAt);
     renderIslandButton();
@@ -6053,7 +6070,8 @@ function islandStartMyDigVisual(spotIndex, endsAt){
   ISLAND.myDigGroup = g;
   const loop = () => {
     if (!ISLAND.myDigGroup) return;
-    const left = endsAt - Date.now(), p = Math.max(0, Math.min(1, 1 - left / ISLAND_SEARCH_MS));
+    const duration = Number(ISLAND.me.searchDurationMs) || ISLAND_SEARCH_MS;
+    const left = endsAt - Date.now(), p = Math.max(0, Math.min(1, 1 - left / duration));
     const ring = document.getElementById('islRingP'), digTx = $('#islandDigTx');
     if (ring) ring.setAttribute('stroke-dashoffset', String(C * (1 - p)));
     if (digTx) digTx.innerHTML = '<small>در حال جستجو</small>' + islandCountdownText(left);
@@ -6077,12 +6095,13 @@ function islandRenderDiggers(){
 function islandShowReveal(me){
   const r = $('#islandReveal'); if (!r) return;
   const k = Number(me.lastK), won = me.lastWon === true, isNew = me.lastIsNew === true;
+  const dropMultiplier = Number(me.lastMultiplier) === 2 ? 2 : 1;
   const extraLines = (me.lastDailyBonuses || []).map((b) => `<div class="isl-sub" style="background:rgba(242,184,28,.35)">${ISLAND_SHOVEL_DEFS[b.id] ? ISLAND_SHOVEL_DEFS[b.id].icon : '⭐'} جایزه‌ی روزانه: +${b.ton} TON</div>`).join('');
   if (k < 0) {
     const ttWon = Math.max(0, Math.floor(Number(me.lastTT) || 0));
-    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🪙</div><div class="isl-nm" style="color:#ffd84d">+${faDigits(ttWon)} TT</div><div class="isl-sub">به موجودی TT اضافه شد</div>${extraLines}</div>`;
+    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🪙</div><div class="isl-nm" style="color:#ffd84d">+${faDigits(ttWon)} TT${dropMultiplier === 2 ? ' ×۲' : ''}</div><div class="isl-sub">به موجودی TT اضافه شد</div>${extraLines}</div>`;
   } else {
-    const sub = won ? 'هر ۳ کتاب کامل شد!' : isNew ? 'کتاب ' + faDigits(k + 1) + ' به کلکسیون اضافه شد' : 'حالا ' + faDigits(me['book' + (k + 1)]) + ' تا از این کتاب داری';
+    const sub = won ? 'هر ۳ کتاب کامل شد!' : isNew ? 'کتاب ' + faDigits(k + 1) + (dropMultiplier === 2 ? ' ×۲' : '') + ' به کلکسیون اضافه شد' : 'حالا ' + faDigits(me['book' + (k + 1)]) + ' تا از این کتاب داری';
     r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel-final/assets/books/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.25 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div>${extraLines}</div>`;
   }
   r.hidden = false;
@@ -6304,6 +6323,29 @@ $('#chatLockBtn').onclick = async () => {
     chatLockedToDeveloper = data.chatLockedToDeveloper === true;
     renderChat();
   } catch (e) { toast(t('lim_err')); }
+};
+$('#islandX2Btn').onclick = async () => {
+  if (!SHOP_ACCOUNT.token || SHOP_ACCOUNT.isDeveloper !== true || chatRoom !== 'fa' || ISLAND.round.x2Active) return;
+  if (!confirm('رویداد جزیره ×۲ برای ۲ ساعت شروع شود؟ زمان هر جستجو ۲:۳۰ دقیقه می‌شود.')) return;
+  const button = $('#islandX2Btn');
+  button.disabled = true;
+  try {
+    const response = await fetch('/api/island/x2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: SHOP_ACCOUNT.token }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.event) throw new Error(data.error || 'island-x2-start-failed');
+    applyIslandRoundEvent(data.event);
+    toast('رویداد ×۲ جزیره شروع شد · ۲ ساعت');
+  } catch (error) {
+    void fetchIslandState();
+    toast(error.message === 'island-x2-already-active' ? 'رویداد ×۲ جزیره از قبل فعال است' : t('lim_err'));
+  } finally {
+    button.disabled = false;
+    renderIslandButton();
+  }
 };
 
 function campLeft(){

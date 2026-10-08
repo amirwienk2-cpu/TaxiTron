@@ -1400,7 +1400,8 @@ function startTaxiRaceScheduler() {
 // ever displays what these endpoints/broadcasts say. Unlike the island's own
 // prototype (which rolls results client-side, purely for the demo), the
 // result of a search is rolled here with crypto.randomInt AFTER its 5-minute
-// timer has actually elapsed, so nobody can ever read it off in advance.
+// timer (or 2.5-minute ×2 timer) has actually elapsed, so nobody can ever
+// read it off in advance.
 // ---------------------------------------------------------------------------
 const ISLAND_EVENT_ENABLED = true;
 const ISLAND_ROOM = 'fa'; // same room convention as the taxi race / monster boss
@@ -1408,6 +1409,8 @@ const ISLAND_OPEN_MS = 30 * 60 * 1000;
 const ISLAND_CLOSED_MS = 10 * 60 * 1000;
 const ISLAND_CYCLE_MS = ISLAND_OPEN_MS + ISLAND_CLOSED_MS; // 40 minutes total
 const ISLAND_SEARCH_MS = 5 * 60 * 1000;
+const ISLAND_X2_SEARCH_MS = 2.5 * 60 * 1000;
+const ISLAND_X2_DURATION_MS = 2 * 60 * 60 * 1000;
 // Buch 1 = 25%, Buch 2 = 3%, Buch 3 = 0.5% - the remaining 71.5% is now a
 // random 50-150 TT coin reward (see ISLAND_TT_MIN/MAX below), credited
 // straight to the player's TT balance, instead of "nothing".
@@ -1525,7 +1528,7 @@ function islandClock(now) {
   };
 }
 
-let islandState = { lastCycleId: -1, lastOpen: null, payoutLog: [], shopPaused: false };
+let islandState = { lastCycleId: -1, lastOpen: null, payoutLog: [], shopPaused: false, x2EndsAt: 0, x2WasActive: false };
 try {
   if (fs.existsSync(ISLAND_FILE)) {
     const loaded = readJsonFile(ISLAND_FILE);
@@ -1534,6 +1537,8 @@ try {
       islandState.lastOpen = typeof loaded.lastOpen === 'boolean' ? loaded.lastOpen : null;
       islandState.payoutLog = Array.isArray(loaded.payoutLog) ? loaded.payoutLog : [];
       islandState.shopPaused = loaded.shopPaused === true;
+      islandState.x2EndsAt = Math.max(0, Number(loaded.x2EndsAt) || 0);
+      islandState.x2WasActive = loaded.x2WasActive === true;
     }
   }
 } catch (error) {
@@ -1547,14 +1552,20 @@ if (islandState.lastCycleId < 0) {
   islandState.lastCycleId = bootClock.cycleId;
   islandState.lastOpen = bootClock.open;
 }
+if (islandState.x2EndsAt <= Date.now()) islandState.x2WasActive = false;
+function islandX2Active(now = Date.now()) {
+  return islandState.x2EndsAt > now;
+}
 let islandSearchersThisCycle = new Set(); // in-memory only, just for the "N people searched" close message
 function persistIslandState() {
   try {
     const tmp = ISLAND_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ lastCycleId: islandState.lastCycleId, lastOpen: islandState.lastOpen, payoutLog: islandState.payoutLog.slice(-500), shopPaused: islandState.shopPaused === true }));
+    fs.writeFileSync(tmp, JSON.stringify({ lastCycleId: islandState.lastCycleId, lastOpen: islandState.lastOpen, payoutLog: islandState.payoutLog.slice(-500), shopPaused: islandState.shopPaused === true, x2EndsAt: islandState.x2EndsAt, x2WasActive: islandState.x2WasActive }));
     fs.renameSync(tmp, ISLAND_FILE);
+    return true;
   } catch (error) {
     console.error('[island] state write failed: ' + error.message);
+    return false;
   }
 }
 function islandBookCount(user, k) { return Math.max(0, Number(user['islandBook' + (k + 1)]) || 0); }
@@ -1565,8 +1576,12 @@ function islandSearchersCount() {
   return Object.values(users).filter((u) => Number(u.islandSearchEndsAt || 0) > now).length;
 }
 function publicIslandRound() {
-  const c = islandClock(Date.now());
-  return { open: c.open, opensAt: c.opensAt, closesAt: c.closesAt, searchers: islandSearchersCount() };
+  const now = Date.now(), c = islandClock(now), x2Active = islandX2Active(now);
+  return {
+    open: c.open, opensAt: c.opensAt, closesAt: c.closesAt,
+    searchers: islandSearchersCount(), x2Active,
+    x2EndsAt: x2Active ? islandState.x2EndsAt : 0,
+  };
 }
 function postIslandBotMessage(text, kind) {
   chatMessages.push({
@@ -1597,8 +1612,11 @@ function postIslandBubbleMessage(finderName, img, text, sub) {
 // from the match/search id the way some other games' demo PRNGs are.
 function resolveIslandSearch(user) {
   if (!user || !(Number(user.islandSearchEndsAt || 0) > 0) || Date.now() < Number(user.islandSearchEndsAt)) return null;
+  const dropMultiplier = Number(user.islandSearchMultiplier) === 2 ? 2 : 1;
   user.islandSearchEndsAt = 0;
   user.islandSearchSpot = null;
+  user.islandSearchMultiplier = 1;
+  user.islandSearchDurationMs = ISLAND_SEARCH_MS;
   const today = islandEnsureDayReset(user);
   const roll = crypto.randomInt(0, 1000000) / 1000000; // 0..1, crypto-backed
   let k = -1;
@@ -1608,25 +1626,26 @@ function resolveIslandSearch(user) {
   let isNew = false;
   if (k >= 0) {
     isNew = islandBookCount(user, k) === 0;
-    islandSetBookCount(user, k, islandBookCount(user, k) + 1);
+    islandSetBookCount(user, k, islandBookCount(user, k) + dropMultiplier);
   }
   // Nothing (no book) now hands out a random 50-150 TT coin reward instead,
   // credited straight to the balance via creditTT() so ttCreditedLifetime
   // (and therefore the withdrawal integrity check) stays correct.
   let ttWon = 0;
   if (k < 0) {
-    ttWon = crypto.randomInt(ISLAND_TT_MIN, ISLAND_TT_MAX + 1);
+    ttWon = crypto.randomInt(ISLAND_TT_MIN, ISLAND_TT_MAX + 1) * dropMultiplier;
     creditTT(user, ttWon, 'island_find');
   }
   const won = islandCheckWinAndPay(user);
   let lastText;
   if (k < 0) lastText = '🪙 ' + islandFaDigits(ttWon) + ' TT پیدا کرد!';
   else if (won) lastText = '🏆 ۰٫۲۵ TON برد!';
-  else if (isNew) lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' پیدا کرد! (' + islandDistinctBooks(user) + '/۳)';
+  else if (isNew) lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + (dropMultiplier === 2 ? ' ×۲' : '') + ' پیدا کرد! (' + islandDistinctBooks(user) + '/۳)';
   else lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' ×' + islandBookCount(user, k);
   user.islandLastText = lastText;
   user.islandLastAt = Date.now();
   user.islandLastK = k;
+  user.islandLastMultiplier = dropMultiplier;
   user.islandLastIsNew = isNew;
   user.islandLastWon = won;
   user.islandLastTT = ttWon;
@@ -1651,10 +1670,10 @@ function resolveIslandSearch(user) {
   if (dailyBonuses.length) persistIslandState();
   persist();
   if (k === 1) {
-    postIslandBubbleMessage(user.name, 'books/b2.png', ISLAND_BOOK_NAMES[1] + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
+    postIslandBubbleMessage(user.name, 'books/b2.png', ISLAND_BOOK_NAMES[1] + (dropMultiplier === 2 ? ' ×۲' : '') + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
     broadcastChatEvent('message');
   } else if (k === 2) {
-    postIslandBubbleMessage(user.name, 'books/b3.png', '✨ ' + ISLAND_BOOK_NAMES[2] + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
+    postIslandBubbleMessage(user.name, 'books/b3.png', '✨ ' + ISLAND_BOOK_NAMES[2] + (dropMultiplier === 2 ? ' ×۲' : '') + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
     broadcastChatEvent('message');
   }
   dailyBonuses.forEach((b) => {
@@ -1663,7 +1682,7 @@ function resolveIslandSearch(user) {
   });
   return { k, won, isNew, lastText, dailyBonuses };
 }
-// Periodic sweep: resolves any searches whose 5-minute timer already elapsed
+// Periodic sweep: resolves any searches whose server-assigned timer elapsed
 // (so results reach everyone even if that user never polls again), and
 // announces the open/close transition exactly once per cycle.
 function islandTick() {
@@ -1675,13 +1694,31 @@ function islandTick() {
       anyResolved = true;
     }
   }
+  const x2Active = islandX2Active(now);
+  if (x2Active !== islandState.x2WasActive) {
+    islandState.x2WasActive = x2Active;
+    persistIslandState();
+    postIslandBotMessage(
+      x2Active
+        ? 'رویداد جزیره ×۲ شروع شد! به‌مدت ۲ ساعت، کتاب و TT دوبرابر و زمان جستجو ۲:۳۰ دقیقه است.'
+        : 'رویداد ×۲ جزیره به پایان رسید.',
+      x2Active ? 'x2-start' : 'x2-end'
+    );
+    broadcastChatEvent('message');
+    broadcastChatEvent('island', { event: publicIslandRound() });
+  }
   const c = islandClock(now);
   if (c.cycleId !== islandState.lastCycleId) {
     islandSearchersThisCycle = new Set();
     islandState.lastCycleId = c.cycleId;
     islandState.lastOpen = true;
     persistIslandState();
-    postIslandBotMessage('جزیره باز شد! ۳۰ دقیقه وقت دارید، هر ۵ دقیقه یک جستجو. ۳ کتاب متفاوت = 0.25 TON', 'open');
+    postIslandBotMessage(
+      x2Active
+        ? 'جزیره باز شد! ۳۰ دقیقه وقت دارید، هر ۲:۳۰ دقیقه یک جستجو. رویداد ×۲ فعال است.'
+        : 'جزیره باز شد! ۳۰ دقیقه وقت دارید، هر ۵ دقیقه یک جستجو. ۳ کتاب متفاوت = 0.25 TON',
+      'open'
+    );
     broadcastChatEvent('message');
     broadcastChatEvent('island', { event: publicIslandRound() });
   } else if (!c.open && islandState.lastOpen !== false) {
@@ -1995,9 +2032,12 @@ function newUser(id, name) {
     islandWins: 0,
     islandSearchEndsAt: 0,
     islandSearchSpot: null,
+    islandSearchDurationMs: ISLAND_SEARCH_MS,
+    islandSearchMultiplier: 1,
     islandLastText: '',
     islandLastAt: 0,
     islandLastK: -1,
+    islandLastMultiplier: 1,
     islandLastIsNew: false,
     islandLastWon: false,
     islandLastTT: 0,
@@ -4077,7 +4117,7 @@ app.get('/api/online-count', (req, res) => {
 });
 
 // جزیره کتاب‌ها (Bücherinsel): personal state poll. Also opportunistically
-// resolves this user's own search if its 5-minute timer already elapsed, so
+// resolves this user's own search if its recorded timer already elapsed, so
 // a direct poll right after the countdown hits zero never has to wait for
 // the next periodic sweep.
 app.get('/api/island/state', requireUserFromQuery, (req, res) => {
@@ -4093,9 +4133,11 @@ app.get('/api/island/state', requireUserFromQuery, (req, res) => {
       lastText: user.islandLastText || '',
       lastAt: Number(user.islandLastAt || 0),
       lastK: Number.isInteger(user.islandLastK) ? user.islandLastK : -1,
+      lastMultiplier: Number(user.islandLastMultiplier) === 2 ? 2 : 1,
       lastIsNew: user.islandLastIsNew === true,
       lastWon: user.islandLastWon === true,
       lastTT: Number(user.islandLastTT || 0),
+      searchDurationMs: Number(user.islandSearchDurationMs) || ISLAND_SEARCH_MS,
       lastDailyBonuses: Array.isArray(user.islandLastDailyBonuses) ? user.islandLastDailyBonuses : [],
       shovels: ISLAND_SHOVEL_ORDER.filter((id) => islandShovelActive(user, id)),
       searchesToday: Number(user.islandSearchesToday || 0),
@@ -4143,6 +4185,32 @@ function publicIslandShop(user) {
 }
 app.get('/api/island/shop', requireUserFromQuery, (req, res) => {
   res.json(publicIslandShop(req.user));
+});
+
+const islandX2LastWrite = new Map();
+app.post('/api/island/x2', requireUserFromBody, rejectBannedUser, (req, res) => {
+  if (req.user.isDeveloper !== true) return res.status(403).json({ error: 'not-developer' });
+  const now = Date.now(), last = islandX2LastWrite.get(req.uid) || 0;
+  if (now - last < 2000) return res.status(429).json({ error: 'rate-limited' });
+  islandX2LastWrite.set(req.uid, now);
+  if (islandX2Active(now)) {
+    return res.status(409).json({ error: 'island-x2-already-active', event: publicIslandRound() });
+  }
+
+  const previousEndsAt = islandState.x2EndsAt;
+  const previousX2Active = islandState.x2WasActive;
+  islandState.x2EndsAt = now + ISLAND_X2_DURATION_MS;
+  islandState.x2WasActive = true;
+  if (!persistIslandState()) {
+    islandState.x2EndsAt = previousEndsAt;
+    islandState.x2WasActive = previousX2Active;
+    return res.status(500).json({ error: 'island-x2-save-failed' });
+  }
+  postIslandBotMessage('رویداد جزیره ×۲ شروع شد! به‌مدت ۲ ساعت، کتاب و TT دوبرابر و زمان جستجو ۲:۳۰ دقیقه است.', 'x2-start');
+  broadcastChatEvent('message');
+  const event = publicIslandRound();
+  broadcastChatEvent('island', { event });
+  res.json({ ok: true, event });
 });
 
 const islandBuyLastWrite = new Map();
@@ -4203,7 +4271,7 @@ app.post('/admin/island/shop-pause', requireAdmin, (req, res) => {
 const islandLastWrite = new Map();
 // Rules enforced here (SPEC.md point 2): only while the island is open, only
 // one active search per user, and the result is only ever rolled later, once
-// ISLAND_SEARCH_MS has actually elapsed (see resolveIslandSearch) - never here.
+// per-search duration has actually elapsed (see resolveIslandSearch) - never here.
 app.post('/api/island/search', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user, now = Date.now();
   const last = islandLastWrite.get(req.uid) || 0;
@@ -4215,12 +4283,16 @@ app.post('/api/island/search', requireUserFromBody, rejectBannedUser, (req, res)
   if (Number(user.islandSearchEndsAt || 0) > now) return res.status(409).json({ error: 'already-searching' });
   const requestedSpot = req.body ? Number(req.body.spot) : NaN;
   const spot = Number.isInteger(requestedSpot) && requestedSpot >= 0 && requestedSpot <= 6 ? requestedSpot : crypto.randomInt(0, 7);
-  user.islandSearchEndsAt = now + ISLAND_SEARCH_MS;
+  const x2Active = islandX2Active(now);
+  const searchDurationMs = x2Active ? ISLAND_X2_SEARCH_MS : ISLAND_SEARCH_MS;
+  user.islandSearchEndsAt = now + searchDurationMs;
+  user.islandSearchDurationMs = searchDurationMs;
+  user.islandSearchMultiplier = x2Active ? 2 : 1;
   user.islandSearchSpot = spot;
   islandSearchersThisCycle.add(req.uid);
   persist();
   broadcastChatEvent('island', { event: publicIslandRound() });
-  res.json({ ok: true, searchEndsAt: user.islandSearchEndsAt, spot });
+  res.json({ ok: true, searchEndsAt: user.islandSearchEndsAt, searchDurationMs, multiplier: user.islandSearchMultiplier, spot });
 });
 
 // Lightweight list of currently online users (name + TON balance) for the Home chat sidebar.
