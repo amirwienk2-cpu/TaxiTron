@@ -5834,16 +5834,15 @@ const ISLAND_SPOTS = [[577,345],[405,515],[608,500],[855,508],[130,545],[865,785
 const ISLAND_SANDPTS = [[330,420],[470,470],[700,380],[760,430],[890,520],[560,520],[640,700],[800,640],[470,560],[905,440],[690,760],[380,500]];
 const ISLAND = {
   round: {open:false, opensAt:0, closesAt:0, searchers:0},
-  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false, lastDailyBonuses:[], lastFireTon:0, shovels:[], searchesToday:0, shovelProgress:{}},
+  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
   sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false, wasOpen:null,
 };
 // جزیره کتاب‌ها Shop (bucherinsel-final/MASTER_SPEC.md §6): shovels + book exchange.
-// s3's 1% Feuer-Chance pro Suche (+0.2 TON, nie als Prozent angezeigt) kommt
-// zusätzlich zum täglichen Bonus - beides läuft serverseitig.
+// s3 only ever pays its daily bonus (same shape as s1/s2) - no per-search chance.
 const ISLAND_SHOVEL_DEFS = {
   s1: { tier: 1, img: 'sh1.png', name: 'بیل طلایی', rar: 'کمیاب', color: '#f2b81c', icon: '⭐', perk: 'روزانه 0.067', fx: 'روزانه <b dir="ltr">0.067 TON</b> با ۱۵ جستجو<br><b>۳۰ روز</b>' },
   s2: { tier: 2, img: 'sh2.png', name: 'بیل آمتیست', rar: 'حماسی', color: '#b45cff', icon: '💜', perk: 'روزانه 0.2', fx: 'روزانه <b dir="ltr">0.2 TON</b> با ۲۰ جستجو<br><b>۳۰ روز</b>' },
-  s3: { tier: 3, img: 'sh3.png', name: 'بیل آتشین', rar: 'افسانه‌ای', color: '#ff5a1f', icon: '🔥', perk: 'شانس 0.2 · روزانه 0.33', fx: 'هر جستجو شانس <b dir="ltr">0.2 TON</b><br>+ روزانه <b dir="ltr">0.33 TON</b> با ۳۰ جستجو · <b>۳۰ روز</b>' },
+  s3: { tier: 3, img: 'sh3.png', name: 'بیل آتشین', rar: 'افسانه‌ای', color: '#ff5a1f', icon: '🔥', perk: 'روزانه 0.33', fx: 'روزانه <b dir="ltr">0.33 TON</b> با ۱۰ جستجو<br><b>۳۰ روز</b>' },
   s4: { tier: 4, img: 'sh4.png', name: 'بیل یخی', rar: 'اسطوره‌ای', color: '#38bdf8', icon: '❄️', perk: '', fx: 'قدرت مخفی…' },
 };
 const ISLAND_SHOP = { data: null, fetchedAt: 0, qty: {x1:1, x2:1, x3:1} };
@@ -6021,9 +6020,7 @@ function islandRenderDiggers(){
 function islandShowReveal(me){
   const r = $('#islandReveal'); if (!r) return;
   const k = Number(me.lastK), won = me.lastWon === true, isNew = me.lastIsNew === true;
-  const fireTon = Number(me.lastFireTon || 0);
-  const extraLines = (fireTon ? `<div class="isl-sub" style="background:rgba(255,90,31,.35)">🔥 بیل آتشین: +${fireTon} TON</div>` : '')
-    + (me.lastDailyBonuses || []).map((b) => `<div class="isl-sub" style="background:rgba(242,184,28,.35)">${ISLAND_SHOVEL_DEFS[b.id] ? ISLAND_SHOVEL_DEFS[b.id].icon : '⭐'} جایزه‌ی روزانه: +${b.ton} TON</div>`).join('');
+  const extraLines = (me.lastDailyBonuses || []).map((b) => `<div class="isl-sub" style="background:rgba(242,184,28,.35)">${ISLAND_SHOVEL_DEFS[b.id] ? ISLAND_SHOVEL_DEFS[b.id].icon : '⭐'} جایزه‌ی روزانه: +${b.ton} TON</div>`).join('');
   if (k < 0) {
     r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div>${extraLines}</div>`;
   } else {
@@ -6046,7 +6043,7 @@ function islandHandleResolved(me){
     const slot = $('#islandSlot' + (popK + 1));
     if (slot) { slot.classList.remove('pop'); void slot.offsetWidth; slot.classList.add('pop'); }
   }
-  if (me.lastWon === true || me.lastFireTon || (me.lastDailyBonuses || []).length) void refreshShopAccount();
+  if (me.lastWon === true || (me.lastDailyBonuses || []).length) void refreshShopAccount();
 }
 function renderIslandScene(){
   if (!ISLAND.sheetOpen) return;

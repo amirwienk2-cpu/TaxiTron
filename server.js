@@ -1387,17 +1387,13 @@ const ISLAND_SEARCH_RATE_LIMIT_MS = 1000;
 // ---------------------------------------------------------------------------
 const ISLAND_TZ = 'Europe/Berlin';
 const ISLAND_SHOVEL_DAYS = 30;
-// bucherinsel-final/MASTER_SPEC.md §6 (final): s3 pays its daily bonus at 30
-// searches/day AND gives every active owner a 1% chance per completed search
-// at +0.2 TON (never shown as a percentage client-side) - both independent of
-// each other and of the main book roll.
+// s3 only ever pays its daily bonus (same shape as s1/s2) - the per-search
+// "fire chance" from an earlier draft was removed on request.
 const ISLAND_SHOVELS = {
   s1: { name: 'بیل طلایی', priceTon: 1, threshold: 15, dailyTon: 0.067, limit: 30 },
   s2: { name: 'بیل آمتیست', priceTon: 3, threshold: 20, dailyTon: 0.2, limit: 20 },
-  s3: { name: 'بیل آتشین', priceTon: 5, threshold: 30, dailyTon: 0.33, limit: 10 },
+  s3: { name: 'بیل آتشین', priceTon: 5, threshold: 10, dailyTon: 0.33, limit: 10 },
 };
-const ISLAND_FIRE_CHANCE = 0.01; // s3 only, per completed search
-const ISLAND_FIRE_TON = 0.2;
 const ISLAND_SHOVEL_ORDER = ['s1', 's2', 's3']; // s3 last = strongest/highest-tier (shown in the dig ring)
 const ISLAND_EXCHANGES = {
   x1: { from: 0, to: 1, rate: 50 },  // 50x book1 -> 1x book2
@@ -1602,14 +1598,7 @@ function resolveIslandSearch(user) {
     }
   }
   user.islandLastDailyBonuses = dailyBonuses;
-  let fireWon = false;
-  if (islandShovelActive(user, 's3') && crypto.randomInt(0, 1000000) / 1000000 < ISLAND_FIRE_CHANCE) {
-    fireWon = true;
-    user.ton = Number((Number(user.ton || 0) + ISLAND_FIRE_TON).toFixed(9));
-    islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: ISLAND_FIRE_TON, ts: Date.now(), reason: 'fire_drop' });
-  }
-  user.islandLastFireTon = fireWon ? ISLAND_FIRE_TON : 0;
-  if (dailyBonuses.length || fireWon) persistIslandState();
+  if (dailyBonuses.length) persistIslandState();
   persist();
   if (k === 1) {
     postIslandBubbleMessage(user.name, 'books/b2.png', ISLAND_BOOK_NAMES[1] + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
@@ -1618,15 +1607,11 @@ function resolveIslandSearch(user) {
     postIslandBubbleMessage(user.name, 'books/b3.png', '✨ ' + ISLAND_BOOK_NAMES[2] + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
     broadcastChatEvent('message');
   }
-  if (fireWon) {
-    postIslandBubbleMessage(user.name, 'shovels/sh3.png', '🔥 با بیل آتشین ' + ISLAND_FIRE_TON + ' TON پیدا کرد!', '');
-    broadcastChatEvent('message');
-  }
   dailyBonuses.forEach((b) => {
     postIslandBotMessage((user.name || 'Player') + ' ' + islandFaDigits(ISLAND_SHOVELS[b.id].threshold) + ' جستجوی امروز را کامل کرد و ' + b.ton + ' TON جایزه‌ی روزانه گرفت!', 'daily');
     broadcastChatEvent('message');
   });
-  return { k, won, isNew, lastText, dailyBonuses, fireWon };
+  return { k, won, isNew, lastText, dailyBonuses };
 }
 // Periodic sweep: resolves any searches whose 5-minute timer already elapsed
 // (so results reach everyone even if that user never polls again), and
@@ -1970,7 +1955,6 @@ function newUser(id, name) {
     islandSearchesDay: 0,
     islandDailyBonusDay: {},
     islandLastDailyBonuses: [],
-    islandLastFireTon: 0,
     isChatAdmin: false,
     adminBadge: 'boy',
     isDesigner: false,
@@ -4023,7 +4007,6 @@ app.get('/api/island/state', requireUserFromQuery, (req, res) => {
       lastIsNew: user.islandLastIsNew === true,
       lastWon: user.islandLastWon === true,
       lastDailyBonuses: Array.isArray(user.islandLastDailyBonuses) ? user.islandLastDailyBonuses : [],
-      lastFireTon: Number(user.islandLastFireTon || 0),
       shovels: ISLAND_SHOVEL_ORDER.filter((id) => islandShovelActive(user, id)),
       searchesToday: Number(user.islandSearchesToday || 0),
       shovelProgress: publicIslandShop(user).shovels,
