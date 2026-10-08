@@ -3116,8 +3116,8 @@
   .isl-live{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .isl-live #islSpots{pointer-events:auto}
   .isl-timer{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;overflow:hidden}
-  .isl-timer .isl-tl{font-weight:800;color:#fff;font-size:2cqw;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
-  .isl-timer .isl-tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:5.4cqw;margin-top:.5cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.2cqw;white-space:nowrap;direction:ltr}
+  .isl-timer .isl-tl{font-weight:800;color:#fff;font-size:1.7cqw;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
+  .isl-timer .isl-tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:4.4cqw;margin-top:.4cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.1cqw;white-space:nowrap;direction:ltr}
   .isl-pilltx{display:flex;align-items:center;justify-content:flex-start;padding-right:1.2cqw;box-sizing:border-box;color:#fff;font-weight:800;font-size:2.9cqw;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
   .isl-dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box}
   .isl-dig span{position:absolute;left:33.8%;width:57.3%;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:7.4cqw;color:#ffd84d;text-shadow:0 .45cqw 0 #6b1a05,0 0 1.2cqw rgba(0,0,0,.4);white-space:nowrap;font-variant-numeric:tabular-nums;direction:ltr}
@@ -5953,7 +5953,7 @@ function islandStartMyDigVisual(spotIndex, endsAt){
     const ring = document.getElementById('islRingP'), ringT = document.getElementById('islRingT'), digTx = $('#islandDigTx');
     if (ring) ring.setAttribute('stroke-dashoffset', String(C * (1 - p)));
     if (ringT) ringT.textContent = islandCountdownText(left);
-    if (digTx) digTx.textContent = '⛏️ ' + islandCountdownText(left);
+    if (digTx) digTx.textContent = islandCountdownText(left);
     if (left > 0) ISLAND.myDigRaf = requestAnimationFrame(loop);
   };
   loop();
@@ -5969,7 +5969,7 @@ function islandRenderDiggers(){
   const g = $('#islDiggers'); if (!g) return;
   g.innerHTML = ''; // andere Sucher werden per Vorgabe nicht mehr als Avatare gezeigt - nur die eigene Grabstelle zählt
   const hud = $('#islandHudSearchers');
-  if (hud) hud.textContent = ISLAND.round.searchers > 0 ? faDigits(ISLAND.round.searchers) + ' نفر در حال جستجو' : '';
+  if (hud) hud.textContent = ISLAND.round.searchers > 0 ? faDigits(ISLAND.round.searchers) + ' نفر' : '';
 }
 function islandShowReveal(me){
   const r = $('#islandReveal'); if (!r) return;
