@@ -6022,7 +6022,8 @@ function islandShowReveal(me){
   const k = Number(me.lastK), won = me.lastWon === true, isNew = me.lastIsNew === true;
   const extraLines = (me.lastDailyBonuses || []).map((b) => `<div class="isl-sub" style="background:rgba(242,184,28,.35)">${ISLAND_SHOVEL_DEFS[b.id] ? ISLAND_SHOVEL_DEFS[b.id].icon : '⭐'} جایزه‌ی روزانه: +${b.ton} TON</div>`).join('');
   if (k < 0) {
-    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div>${extraLines}</div>`;
+    const ttWon = Math.max(0, Math.floor(Number(me.lastTT) || 0));
+    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🪙</div><div class="isl-nm" style="color:#ffd84d">+${faDigits(ttWon)} TT</div><div class="isl-sub">به موجودی TT اضافه شد</div>${extraLines}</div>`;
   } else {
     const sub = won ? 'هر ۳ کتاب کامل شد!' : isNew ? 'کتاب ' + faDigits(k + 1) + ' به کلکسیون اضافه شد' : 'حالا ' + faDigits(me['book' + (k + 1)]) + ' تا از این کتاب داری';
     r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel-final/assets/books/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.25 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div>${extraLines}</div>`;
@@ -6043,7 +6044,7 @@ function islandHandleResolved(me){
     const slot = $('#islandSlot' + (popK + 1));
     if (slot) { slot.classList.remove('pop'); void slot.offsetWidth; slot.classList.add('pop'); }
   }
-  if (me.lastWon === true || (me.lastDailyBonuses || []).length) void refreshShopAccount();
+  if (me.lastWon === true || Number(me.lastTT) > 0 || (me.lastDailyBonuses || []).length) void refreshShopAccount();
 }
 function renderIslandScene(){
   if (!ISLAND.sheetOpen) return;

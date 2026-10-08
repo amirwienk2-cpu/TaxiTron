@@ -47,7 +47,7 @@ Referenz für Aussehen und Verhalten:
 | Suchdauer | **5 Minuten** |
 | Suchen pro Öffnung | unbegrenzt hintereinander, max. **1 aktive Suche pro User** |
 | Suche starten | nur wenn offen; eine laufende Suche darf über das Schließen hinaus fertig laufen |
-| Fund-Chancen | Buch 1 **70 %**, Buch 2 **10 %**, Buch 3 **2 %**, nichts 18 %. **Prozente nirgends anzeigen.** |
+| Fund-Chancen | Buch 1 **25 %**, Buch 2 **3 %**, Buch 3 **0.5 %**; andernfalls **50–150 TT** als Zufallsbonus direkt dem TT-Guthaben gutschreiben. **Prozente nirgends anzeigen.** |
 | Würfeln | erst bei Ablauf der 5 Min., serverseitig mit sicherem Zufall |
 | Doppelte | zählen (Inventar mit Zählern) |
 | Gewinn | sobald von jedem Buch ≥ 1: **0.25 TON** auszahlen, von jedem Buch **1 abziehen** |
@@ -135,7 +135,7 @@ Die roten ✕ sind gemalt, live kommen nur Klickflächen dazu (Radius 30) plus e
   - Buchbild groß mit drehendem goldenem Strahlenkranz
   - Name (Lalezar, gold)
   - darunter `کتاب N به کلکشن اضافه شد` bzw. `حالا N تا از این کتاب داری`
-- **Nichts:** 🐚 + `چیزی پیدا نشد` / `فقط یک صدف… دور بعد دوباره امتحان کن`
+- **Kein Buch:** 🪙 + `+N TT` und `به موجودی TT اضافه شد`; die serverseitig zufällig bestimmten 50–150 TT werden direkt dem TT-Guthaben gutgeschrieben.
 - **Gewinn:** `🏆 0.25 TON` + `هر ۳ کتاب کامل شد!`
 - **Zusatzzeilen bei Schaufel-Boni:** `🔥 بیل آتشین: +0.2 TON`, `⭐ جایزه‌ی روزانه: +X TON`
 

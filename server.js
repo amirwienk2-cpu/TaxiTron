@@ -1370,9 +1370,12 @@ const ISLAND_OPEN_MS = 30 * 60 * 1000;
 const ISLAND_CLOSED_MS = 10 * 60 * 1000;
 const ISLAND_CYCLE_MS = ISLAND_OPEN_MS + ISLAND_CLOSED_MS; // 40 minutes total
 const ISLAND_SEARCH_MS = 5 * 60 * 1000;
-// bucherinsel-final/MASTER_SPEC.md §1 (final, replaces every earlier draft):
-// Buch 1 = 70%, Buch 2 = 10%, Buch 3 = 2% - the remaining 18% is "nothing".
-const ISLAND_ODDS = [0.70, 0.10, 0.02];
+// Buch 1 = 25%, Buch 2 = 3%, Buch 3 = 0.5% - the remaining 71.5% is now a
+// random 50-150 TT coin reward (see ISLAND_TT_MIN/MAX below), credited
+// straight to the player's TT balance, instead of "nothing".
+const ISLAND_ODDS = [0.25, 0.03, 0.005];
+const ISLAND_TT_MIN = 50;
+const ISLAND_TT_MAX = 150;
 const ISLAND_PRIZE_TON = 0.25;
 const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
 const ISLAND_BOT_UID = 'island-bot';
@@ -1569,9 +1572,17 @@ function resolveIslandSearch(user) {
     isNew = islandBookCount(user, k) === 0;
     islandSetBookCount(user, k, islandBookCount(user, k) + 1);
   }
+  // Nothing (no book) now hands out a random 50-150 TT coin reward instead,
+  // credited straight to the balance via creditTT() so ttCreditedLifetime
+  // (and therefore the withdrawal integrity check) stays correct.
+  let ttWon = 0;
+  if (k < 0) {
+    ttWon = crypto.randomInt(ISLAND_TT_MIN, ISLAND_TT_MAX + 1);
+    creditTT(user, ttWon, 'island_find');
+  }
   const won = islandCheckWinAndPay(user);
   let lastText;
-  if (k < 0) lastText = '🌊 چیزی پیدا نشد';
+  if (k < 0) lastText = '🪙 ' + islandFaDigits(ttWon) + ' TT پیدا کرد!';
   else if (won) lastText = '🏆 ۰٫۲۵ TON برد!';
   else if (isNew) lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' پیدا کرد! (' + islandDistinctBooks(user) + '/۳)';
   else lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' ×' + islandBookCount(user, k);
@@ -1580,6 +1591,7 @@ function resolveIslandSearch(user) {
   user.islandLastK = k;
   user.islandLastIsNew = isNew;
   user.islandLastWon = won;
+  user.islandLastTT = ttWon;
   // Shovels: this search counts for the day it finished on (SHOP_SPEC.md §4),
   // and every active shovel's daily bonus is paid the instant its threshold
   // is first reached that same day (never more than once/day, see the
@@ -1950,6 +1962,7 @@ function newUser(id, name) {
     islandLastK: -1,
     islandLastIsNew: false,
     islandLastWon: false,
+    islandLastTT: 0,
     islandShovels: {},
     islandSearchesToday: 0,
     islandSearchesDay: 0,
@@ -4006,6 +4019,7 @@ app.get('/api/island/state', requireUserFromQuery, (req, res) => {
       lastK: Number.isInteger(user.islandLastK) ? user.islandLastK : -1,
       lastIsNew: user.islandLastIsNew === true,
       lastWon: user.islandLastWon === true,
+      lastTT: Number(user.islandLastTT || 0),
       lastDailyBonuses: Array.isArray(user.islandLastDailyBonuses) ? user.islandLastDailyBonuses : [],
       shovels: ISLAND_SHOVEL_ORDER.filter((id) => islandShovelActive(user, id)),
       searchesToday: Number(user.islandSearchesToday || 0),
