@@ -1917,15 +1917,17 @@
   .ubadge.big.staff{height:52px}
   .oncar{width:46px;height:46px;border-radius:10px;object-fit:cover;flex:none}
   /* Admin/Amir/Designer-Abzeichen + Bücher/Schaufeln rechts in der Online-Liste:
-     untereinander gestapelt (Abzeichen oben, Insel-Icons darunter), kleiner und
-     ohne den klobigen Hintergrund-Pill, damit es aufgeräumter aussieht. */
-  .on-side{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none}
-  .on-side .isl-mb{background:none;padding:0;gap:2px;margin:0}
-  .on-side .isl-mb img{width:14px;height:13px}
-  .on-side .isl-bw sup{font-size:7px;padding:0 2px;line-height:9px;bottom:-2px;left:-2px}
-  .on-side .isl-mb em{font-size:8px;margin-inline-start:1px}
+     oben eine saubere Abzeichen-Reihe, darunter eine saubere Insel-Icon-Reihe,
+     beide zentriert und ohne den klobigen Hintergrund-Pill. */
+  .on-side{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
+  .on-badges{display:flex;align-items:center;gap:2px}
+  .on-island{display:flex;align-items:center}
+  .on-side .isl-mb{background:none;padding:0;gap:3px;margin:0}
+  .on-side .isl-mb img{width:17px;height:16px}
+  .on-side .isl-bw sup{font-size:8px;padding:0 2px;line-height:10px;bottom:-2px;left:-2px}
+  .on-side .isl-mb em{font-size:9px;margin-inline-start:1px}
   .on-side .ish-shv-chip{margin-inline-start:3px;padding-inline-start:3px}
-  .on-side .ish-shv-chip img{width:14px;height:14px}
+  .on-side .ish-shv-chip img{width:17px;height:17px}
   .chwrap[hidden],.onpane[hidden]{display:none!important}
   .chwrap{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:2px solid var(--gh1);background:linear-gradient(180deg,var(--db15),var(--db30));
     box-shadow:0 0 18px rgba(var(--gl1),.35)}
@@ -4798,7 +4800,7 @@ function renderChat(){
   $('#onList').innerHTML = visibleUsers.map((u,i) => `<div class="onrow" data-user="${esc(u.n)}">${avatar(u,true,undefined,u.n)}
       <div class="grow"><div class="row" style="gap:6px"><b style="color:${u.c}">${esc(u.n)}</b>${u.isMe ? `<span class="lv">${S.lang === 'de' ? 'Du' : S.lang === 'fa' ? 'شما' : 'You'}</span>` : ''}${u.chatMuted ? '<span class="lv" style="color:#ff6b6b">🔇</span>' : ''}${raceBadgesOn && u.racing ? `<span class="race-badge racing">${u.racePhase === 'grid' ? '🔮 شروع می‌شود' : '🏁 در حال مسابقه'}</span>` : raceBadgesOn && u.lastRaceWinner ? `<span class="race-badge winner">🏆 +${u.lastRaceRewardTT || TAXI_RACE_REWARD_TT} TT</span>` : raceBadgesOn && u.racePredictedCorrect ? `<span class="race-badge winner">🔮 +${u.lastRaceTipRewardTT || TAXI_RACE_TIP_TT} TT</span>` : raceBadgesOn && u.racePredictionPending ? `<span class="race-badge racing">🔮 پیش‌بینی</span>` : ''}</div>
       <div class="muted">${raceBadgesOn && u.racing ? (u.racePhase === 'grid' ? '🔮 به‌زودی می‌راند' : '🏁 در حال مسابقه') : islandBadgesOn && u.islandSearching ? `🔍 در حال جستجو… <b data-island-left="${esc(u.uid)}">${islandCountdownText(u.islandSearchEndsAt - Date.now())}</b>` : islandBadgesOn && u.islandLastText ? esc(u.islandLastText) : u.isMe ? (S.lang === 'de' ? 'Du bist online' : S.lang === 'fa' ? 'شما آنلاین هستید' : 'You are online') : u.role ? esc(t('ch_staff')) : i % 3 === 0 ? '🚕 ' + esc(t('ch_driving')) : '● ' + esc(t('ch_online'))}</div></div>
-      <div class="on-side">${badgeImg(u, true)}${islandBadgesOn ? islandBookBadgesHtml(u) : ''}</div></div>`).join('');
+      <div class="on-side"><div class="on-badges">${badgeImg(u, true)}</div>${islandBadgesOn ? `<div class="on-island">${islandBookBadgesHtml(u)}</div>` : ''}</div></div>`).join('');
   const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
     .concat(serverChat.filter(m => m.room === chatRoom))
