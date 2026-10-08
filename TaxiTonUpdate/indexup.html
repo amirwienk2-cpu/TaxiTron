@@ -3137,6 +3137,15 @@
   .isl-reveal .isl-nm{position:relative;font-family:"Lalezar","Vazirmatn";font-size:6cqw;color:#ffd84d;text-shadow:0 .4cqw 0 #6b4a05}
   .isl-reveal .isl-sub{position:relative;font-size:2.8cqw;color:#e8eefc;background:rgba(0,0,0,.4);padding:.6cqw 2cqw;border-radius:2cqw}
   .isl-reveal .isl-empty{font-size:14cqw;position:relative}
+  /* ==== Deckt die in island/base2.jpg eingebrannte "TON 0.5"-Grafik ab, damit der
+     tatsächliche Gewinnbetrag (0.25 TON) live/änderbar angezeigt wird. ==== */
+  .isl-prizebar{display:flex;align-items:center;justify-content:space-between;padding:0 2.4cqw;border-radius:2cqw;
+    background:linear-gradient(180deg,#1c2744,#0c1324);border:.35cqw solid #caa34a;box-shadow:inset 0 0 0 .15cqw rgba(255,214,120,.25)}
+  .isl-prizebar-l{display:flex;align-items:center;gap:1.2cqw}
+  .isl-prizebar-l img{width:7cqw;height:7cqw;border-radius:50%;flex:none}
+  .isl-prizebar-l b{font-family:"Lalezar","Vazirmatn";font-weight:400;font-size:5cqw;color:#ffd84d;text-shadow:0 .3cqw 0 #6b4a05;direction:ltr}
+  .isl-prizebar-r{display:flex;align-items:center;gap:1.3cqw;font-family:"Vazirmatn";font-size:2.6cqw;font-weight:800;color:#e8eefc;white-space:nowrap}
+  .isl-prizebar-r i{font-style:normal;font-size:4.6cqw}
   /* ==== Online-Tab: 3 Buch-Badges neben jedem Usernamen (nur im Farsi-Chat) ==== */
   .isl-mb{display:inline-flex;gap:3px;align-items:center;background:#262a3a;border-radius:10px;padding:2px 6px;margin-inline-start:4px}
   .isl-mb img{width:22px;height:20px;object-fit:contain;transition:.3s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
@@ -3803,6 +3812,11 @@
         <div class="isl-ov isl-chip" id="islandC1" hidden style="left:67.5%;top:65.87%;width:8%;height:2.93%"></div>
         <div class="isl-ov isl-chip" id="islandC2" hidden style="left:38%;top:65.87%;width:8%;height:2.93%"></div>
         <div class="isl-ov isl-chip" id="islandC3" hidden style="left:5%;top:65.87%;width:8%;height:2.93%"></div>
+        <!-- Deckt die in island/base2.jpg fest eingebrannte "TON 0.5"-Grafik ab (Gewinn ist jetzt 0.25 TON) -->
+        <div class="isl-ov isl-prizebar" style="left:3%;top:91.3%;width:94%;height:7.3%">
+          <span class="isl-prizebar-l"><img src="assets/ton-logo.webp" alt="TON"><b>TON 0.25</b></span>
+          <span class="isl-prizebar-r"><b>۳ کتاب متفاوت = جایزه</b><i>🎁</i></span>
+        </div>
       </div>
     </div>
   </div>
