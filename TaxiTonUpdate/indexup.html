@@ -3017,6 +3017,12 @@
   /* Profil: Admin/Support/Designer-Abzeichen kleiner */
   .pfname h3 .ubadge.staff{height:26px!important;margin:0!important}
   .onrow .ubadge.staff{height:20px!important;margin:0!important}
+  .onrow .ubadge.big:not(.staff){height:20px!important;margin:0!important}
+  /* Alle Online-Listen-Abzeichen (Admin/Amir/Designer + Buch/Schaufel-Icons) sitzen
+     physisch ganz rechts im Reihen-Rand (unabhängig von LTR/RTL-Textrichtung). */
+  .onrow{position:relative}
+  .onrow .grow{padding-right:46px}
+  .on-side{position:absolute;right:6px;top:50%;transform:translateY(-50%)}
   /* Item-Tabs: Symbole aus den eigenen Grafiken */
   .itseg button img{width:40px!important;height:40px!important;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));transition:transform .2s}
   .itseg button[aria-selected="true"] img{transform:scale(1.12)}
