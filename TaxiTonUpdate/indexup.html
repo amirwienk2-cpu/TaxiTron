@@ -22,6 +22,14 @@
     --nav-h:74px;
   }
   [hidden]{display:none!important}
+  #globalAnnouncement{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:18px;background:rgba(2,3,26,.78)}
+  #globalAnnouncement[hidden]{display:none}
+  .global-announcement-card{position:relative;width:min(100%,380px);padding:24px 20px 18px;border:1.5px solid rgba(255,198,26,.55);border-radius:18px;background:linear-gradient(180deg,#14207a,#0b1450);box-shadow:0 16px 48px rgba(0,0,0,.55),0 0 24px rgba(45,107,255,.22)}
+  .global-announcement-card h3{margin:0 42px 12px 0;color:#ffd21a;font-size:20px}
+  .global-announcement-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:#0a1140;color:#fff;font-size:15px}
+  .global-announcement-text{max-height:45vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;color:#eef2ff}
+  .global-announcement-actions{display:flex;justify-content:flex-end;margin-top:18px}
+  .global-announcement-actions .btn{min-width:82px}
   html{background:var(--night);height:100%;height:100dvh;overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
   *{touch-action:manipulation}
   #cv{touch-action:none}
@@ -3805,7 +3813,14 @@
   </nav>
 
   <div id="toast" hidden></div>
-
+  <div id="globalAnnouncement" hidden role="dialog" aria-modal="true" aria-labelledby="globalAnnouncementTitle">
+    <div class="global-announcement-card">
+      <button id="globalAnnouncementClose" class="global-announcement-close" aria-label="Close announcement">×</button>
+      <h3 id="globalAnnouncementTitle">TaxiTon</h3>
+      <div id="globalAnnouncementText" class="global-announcement-text"></div>
+      <div class="global-announcement-actions"><button id="globalAnnouncementOk" class="btn sm">OK</button></div>
+    </div>
+  </div>
   <div class="modal" id="infoOv" hidden>
     <div class="biobox">
       <button class="xbtn bioclose" id="infoClose" aria-label="Close">✕</button>
@@ -4081,6 +4096,46 @@ const CARS = [
 ];
 const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,isSupporter:false,isDeveloper:false,badge4:false,badge5:false,chatMuted:false,ttShopEnabled:false,adVideosWatched:0,adRewardClaimed:false,online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
+let globalAnnouncementSource = null;
+function showGlobalAnnouncement(announcement){
+  if(!announcement||typeof announcement.id!=='string'||!announcement.id||typeof announcement.text!=='string')return;
+  const dismissedKey='taxiton_announcement_dismissed_'+(SHOP_ACCOUNT.uid||'guest');
+  if(localStorage.getItem(dismissedKey)===announcement.id)return;
+  $('#globalAnnouncementText').textContent=announcement.text;
+  $('#globalAnnouncement').dataset.announcementId=announcement.id;
+  $('#globalAnnouncement').hidden=false;
+}
+function dismissGlobalAnnouncement(){
+  const dialog=$('#globalAnnouncement'), id=dialog.dataset.announcementId;
+  if(id)localStorage.setItem('taxiton_announcement_dismissed_'+(SHOP_ACCOUNT.uid||'guest'),id);
+  dialog.hidden=true;
+}
+$('#globalAnnouncementOk').onclick=dismissGlobalAnnouncement;
+$('#globalAnnouncementClose').onclick=dismissGlobalAnnouncement;
+async function refreshGlobalAnnouncement(){
+  if(!SHOP_ACCOUNT.token)return;
+  try{
+    const response=await fetch('/api/announcement',{cache:'no-store'});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'announcement-load-failed');
+    showGlobalAnnouncement(data.announcement);
+  }catch(error){console.warn('[announcement] could not load current message:',error.message)}
+}
+function ensureGlobalAnnouncementStream(){
+  if(!SHOP_ACCOUNT.token||typeof EventSource==='undefined'){
+    if(globalAnnouncementSource){globalAnnouncementSource.close();globalAnnouncementSource=null;}
+    return;
+  }
+  if(globalAnnouncementSource)return;
+  globalAnnouncementSource=new EventSource('/api/chat/events');
+  globalAnnouncementSource.addEventListener('chat-update',event=>{
+    let update;
+    try{update=JSON.parse(event.data)}catch(error){console.warn('[announcement] invalid server event:',error.message);return}
+    if(update.type==='announcement')showGlobalAnnouncement(update.announcement);
+  });
+}
+setInterval(()=>{if(SHOP_ACCOUNT.token&&!document.hidden)void refreshGlobalAnnouncement()},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshGlobalAnnouncement()});
 const PROFILE_BIO_SYNCING = new Set();
 const profileBioSyncKey = uid => 'taxiton.profileBioSynced_' + String(uid);
 async function migrateLegacyProfileBio(uid, bio){
@@ -4220,6 +4275,8 @@ async function loadShopAccount(){
     if (!response.ok || !data.token || !data.state) throw new Error(data.error || 'shop-auth-failed');
     SHOP_ACCOUNT.token = data.token;
     applyShopAccountState(data.state);
+    ensureGlobalAnnouncementStream();
+    void refreshGlobalAnnouncement();
     await loadDepositAddress();
     loadOnlinePlayers();
     void fetchIslandState();

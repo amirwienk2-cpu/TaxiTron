@@ -323,6 +323,7 @@ const CHAT_FILE = path.join(DATA_DIR, 'chat.json');
 const CHAT_SETTINGS_FILE = path.join(DATA_DIR, 'chat-settings.json');
 const TT_SHOP_SETTINGS_FILE = path.join(DATA_DIR, 'tt-shop-settings.json');
 const CARD_EVENT_FILE = path.join(DATA_DIR, 'card-event.json');
+const ANNOUNCEMENT_FILE = path.join(DATA_DIR, 'admin-announcement.json');
 const CARD_EVENT_DURATION_MS = 30 * 1000;
 const CARD_EVENT_MIN_INTERVAL_MS = 10 * 60 * 1000;
 const CARD_EVENT_MAX_INTERVAL_MS = 20 * 60 * 1000;
@@ -335,6 +336,7 @@ const RANDOM_GIFT_GUESS_COOLDOWN_MS = 5000;
 // Storage: load once, keep in memory, persist through a write queue
 // ---------------------------------------------------------------
 fs.mkdirSync(DATA_DIR, { recursive: true });
+let adminAnnouncement = { id: '', text: '', createdAt: 0 };
 
 function readJsonFile(file) {
   const raw = fs.readFileSync(file, 'utf8');
@@ -343,6 +345,42 @@ function readJsonFile(file) {
     throw new Error('unexpected data format');
   }
   return parsed;
+}
+
+if (fs.existsSync(ANNOUNCEMENT_FILE)) {
+  try {
+    const loadedAnnouncement = readJsonFile(ANNOUNCEMENT_FILE);
+    if (typeof loadedAnnouncement.id !== 'string' ||
+        typeof loadedAnnouncement.text !== 'string' ||
+        !Number.isFinite(Number(loadedAnnouncement.createdAt))) {
+      throw new Error('unexpected announcement data format');
+    }
+    adminAnnouncement = {
+      id: loadedAnnouncement.id,
+      text: loadedAnnouncement.text,
+      createdAt: Number(loadedAnnouncement.createdAt),
+    };
+  } catch (error) {
+    console.error('[admin-announcement] state file unreadable: ' + error.message);
+    throw error;
+  }
+}
+
+function persistAdminAnnouncement() {
+  const tempFile = ANNOUNCEMENT_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tempFile, JSON.stringify(adminAnnouncement));
+    fs.renameSync(tempFile, ANNOUNCEMENT_FILE);
+    return true;
+  } catch (error) {
+    console.error('[admin-announcement] state write failed: ' + error.message);
+    try {
+      if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+    } catch (cleanupError) {
+      console.error('[admin-announcement] temporary file cleanup failed: ' + cleanupError.message);
+    }
+    return false;
+  }
 }
 
 function loadUsers() {
@@ -3213,6 +3251,44 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
+const announcementComposer=document.createElement('section');
+announcementComposer.style.cssText='margin:16px 0;padding:14px;border:1px solid #3b3850;border-radius:10px;background:#181824';
+const announcementLabel=document.createElement('label');
+announcementLabel.htmlFor='announcementText';
+announcementLabel.textContent='Nachricht für alle Spieler';
+announcementLabel.style.cssText='display:block;margin-bottom:8px;font-weight:700;color:#ffd93d';
+const announcementInput=document.createElement('textarea');
+announcementInput.id='announcementText';
+announcementInput.maxLength=1000;
+announcementInput.rows=3;
+announcementInput.placeholder='Mitteilung eingeben (max. 1000 Zeichen)';
+announcementInput.style.cssText='display:block;width:100%;resize:vertical;padding:10px;border:1px solid #3b3850;border-radius:8px;background:#101018;color:#fff;font:inherit';
+const announcementControls=document.createElement('div');
+announcementControls.style.cssText='display:flex;align-items:center;gap:10px;margin-top:8px';
+const announcementSend=document.createElement('button');
+announcementSend.type='button';
+announcementSend.textContent='An alle senden';
+const announcementStatus=document.createElement('span');
+announcementStatus.className='muted';
+announcementControls.append(announcementSend,announcementStatus);
+announcementComposer.append(announcementLabel,announcementInput,announcementControls);
+document.querySelector('.toolbar').insertAdjacentElement('afterend',announcementComposer);
+announcementSend.onclick=async()=>{
+  const text=announcementInput.value.trim();
+  if(!text){announcementStatus.textContent='Bitte eine Nachricht eingeben.';return}
+  if(!secret()){announcementStatus.textContent='Admin secret eingeben.';return}
+  if(!confirm('Diese Nachricht an alle Spieler senden?'))return;
+  announcementSend.disabled=true;
+  announcementStatus.textContent='Wird gesendet...';
+  try{
+    const response=await fetch('/admin/announcement',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':secret()},body:JSON.stringify({text})});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error==='announcement-too-long'?'Nachricht ist zu lang (max. 1000 Zeichen).':data.error||'Senden fehlgeschlagen.');
+    announcementInput.value='';
+    announcementStatus.textContent='An alle Spieler gesendet.';
+  }catch(error){announcementStatus.textContent=error.message}
+  finally{announcementSend.disabled=false}
+};
 const ORIGINAL_TITLE=document.title;
 let soundEnabled=localStorage.getItem('taxitron_admin_sound')==='1';
 let audioCtx=null;
@@ -4434,6 +4510,13 @@ app.get('/api/chat/events', (req, res) => {
   req.on('close', () => {
     clearInterval(heartbeat);
     chatEventClients.delete(res);
+  });
+});
+
+app.get('/api/announcement', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    announcement: adminAnnouncement.id ? adminAnnouncement : null,
   });
 });
 
@@ -6382,6 +6465,26 @@ app.get('/admin/tournament-debug', requireAdmin, (req, res) => {
     .sort((a, b) => b.tournamentBest - a.tournamentBest)
     .slice(0, 30);
   res.json({ currentWeek: week, now: new Date().toISOString(), entries });
+});
+
+app.post('/admin/announcement', requireAdmin, (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+  if (!text) return res.status(400).json({ error: 'announcement-empty' });
+  if (text.length > 1000) return res.status(400).json({ error: 'announcement-too-long', maxLength: 1000 });
+
+  const previousAnnouncement = adminAnnouncement;
+  adminAnnouncement = {
+    id: crypto.randomUUID(),
+    text,
+    createdAt: Date.now(),
+  };
+  if (!persistAdminAnnouncement()) {
+    adminAnnouncement = previousAnnouncement;
+    return res.status(500).json({ error: 'announcement-save-failed' });
+  }
+
+  broadcastChatEvent('announcement', { announcement: adminAnnouncement });
+  res.json({ ok: true, announcement: adminAnnouncement });
 });
 
 // Manual "start this week's race over" button: zeroes out every player's
