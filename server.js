@@ -1359,12 +1359,101 @@ const ISLAND_CYCLE_MS = ISLAND_OPEN_MS + ISLAND_CLOSED_MS; // 40 minutes total
 const ISLAND_SEARCH_MS = 5 * 60 * 1000;
 // Buch 1 = 50%, Buch 2 = 10%, Buch 3 = 0.5% - the remaining 39.5% is "nothing".
 const ISLAND_ODDS = [0.50, 0.10, 0.005];
-const ISLAND_PRIZE_TON = 0.5;
+const ISLAND_PRIZE_TON = 0.25;
 const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
 const ISLAND_BOT_UID = 'island-bot';
 const ISLAND_BOT_NAME = 'جزیره کتاب‌ها';
 const ISLAND_FILE = path.join(DATA_DIR, 'island-game.json');
 const ISLAND_SEARCH_RATE_LIMIT_MS = 1000;
+
+// ---------------------------------------------------------------------------
+// Island shop: shovels (bucherinsel-shop/SHOP_SPEC.md) - calendar-based
+// boosts, 30 calendar days, Europe/Berlin daily reset. Replaces any earlier
+// shovel/shop version entirely (there was none in production before this).
+// ---------------------------------------------------------------------------
+const ISLAND_TZ = 'Europe/Berlin';
+const ISLAND_SHOVEL_DAYS = 30;
+// s3's per-search "fire chance" from the original spec draft was explicitly
+// removed on request - س3 only ever pays its daily bonus now, same shape as
+// s1/s2.
+const ISLAND_SHOVELS = {
+  s1: { name: 'بیل طلایی', priceTon: 1, threshold: 15, dailyTon: 0.067, limit: 30 },
+  s2: { name: 'بیل آمتیست', priceTon: 3, threshold: 20, dailyTon: 0.2, limit: 20 },
+  s3: { name: 'بیل آتشین', priceTon: 5, threshold: 10, dailyTon: 0.33, limit: 10 },
+};
+const ISLAND_SHOVEL_ORDER = ['s1', 's2', 's3']; // s3 last = strongest/highest-tier (shown in the dig ring)
+const ISLAND_EXCHANGES = {
+  x1: { from: 0, to: 1, rate: 50 },  // 50x book1 -> 1x book2
+  x2: { from: 0, to: 2, rate: 150 }, // 150x book1 -> 1x book3
+  x3: { from: 1, to: 2, rate: 3 },   // 3x book2 -> 1x book3
+};
+function islandFaDigits(n) { return String(n).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]); }
+// Calendar day index (and ms-until-midnight) always computed in Europe/Berlin,
+// never the server's own timezone/UTC, so the daily reset and the 30-day
+// shovel expiry match what SHOP_SPEC.md promises regardless of where this
+// process actually runs (Railway) or DST.
+const islandBerlinDayKeyFormat = new Intl.DateTimeFormat('en-CA', { timeZone: ISLAND_TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+const islandBerlinTimeFormat = new Intl.DateTimeFormat('en-GB', { timeZone: ISLAND_TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+function islandBerlinDayIndex(now) {
+  const [y, m, d] = islandBerlinDayKeyFormat.format(now).split('-').map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+function islandMsToBerlinMidnight(now) {
+  const [h, m, s] = islandBerlinTimeFormat.format(now).split(':').map(Number);
+  return ((24 * 3600) - (h * 3600 + m * 60 + s)) * 1000;
+}
+function islandShovelActive(user, id) {
+  const sh = user.islandShovels && user.islandShovels[id];
+  return !!sh && islandBerlinDayIndex(Date.now()) < Number(sh.expiresDay);
+}
+function islandActiveShovelIds(user) {
+  return ISLAND_SHOVEL_ORDER.filter((id) => islandShovelActive(user, id));
+}
+// Highest-tier currently-active shovel (ISLAND_SHOVEL_ORDER is weakest-first),
+// used client-side to pick which shovel image to show in the dig ring.
+function islandStrongestShovel(user) {
+  const active = islandActiveShovelIds(user);
+  return active.length ? active[active.length - 1] : null;
+}
+// Live count of users who currently have an active (non-expired) shovel of
+// this type - this IS the "sold" count the spec's limit is checked against
+// (an expired shovel frees its slot automatically, nothing to clean up).
+function islandShovelSoldCount(id) {
+  return Object.values(users).filter((u) => islandShovelActive(u, id)).length;
+}
+// Rolls the Berlin-calendar day forward for this user if needed (daily search
+// counter reset) and drops any shovel whose 30-day window has passed. Safe to
+// call as often as needed (idempotent/no-op once already on today's day).
+function islandEnsureDayReset(user) {
+  const today = islandBerlinDayIndex(Date.now());
+  if (Number(user.islandSearchesDay || 0) !== today) {
+    user.islandSearchesDay = today;
+    user.islandSearchesToday = 0;
+  }
+  if (user.islandShovels) {
+    for (const id of Object.keys(user.islandShovels)) {
+      const sh = user.islandShovels[id];
+      if (sh && today >= Number(sh.expiresDay)) delete user.islandShovels[id];
+    }
+  }
+  return today;
+}
+// Shared by both a completed search (book-only win) and the book exchange
+// (which can also complete the set) - win check + payout + chat message is
+// identical either way.
+function islandCheckWinAndPay(user) {
+  if (!(islandBookCount(user, 0) >= 1 && islandBookCount(user, 1) >= 1 && islandBookCount(user, 2) >= 1)) return false;
+  islandSetBookCount(user, 0, islandBookCount(user, 0) - 1);
+  islandSetBookCount(user, 1, islandBookCount(user, 1) - 1);
+  islandSetBookCount(user, 2, islandBookCount(user, 2) - 1);
+  user.islandWins = Number(user.islandWins || 0) + 1;
+  user.ton = Number((Number(user.ton || 0) + ISLAND_PRIZE_TON).toFixed(9));
+  islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: ISLAND_PRIZE_TON, ts: Date.now(), reason: 'win' });
+  persistIslandState();
+  postIslandBotMessage('🏆 ' + (user.name || 'Player') + ' هر ۳ کتاب را پیدا کرد و 0.25 TON گرفت!', 'win');
+  broadcastChatEvent('message');
+  return true;
+}
 
 // Fully stateless round schedule: every 40-minute slice of wall-clock time
 // (since the Unix epoch) is one cycle, the first 30 minutes open and the
@@ -1382,7 +1471,7 @@ function islandClock(now) {
   };
 }
 
-let islandState = { lastCycleId: -1, lastOpen: null, payoutLog: [] };
+let islandState = { lastCycleId: -1, lastOpen: null, payoutLog: [], shopPaused: false };
 try {
   if (fs.existsSync(ISLAND_FILE)) {
     const loaded = readJsonFile(ISLAND_FILE);
@@ -1390,6 +1479,7 @@ try {
       islandState.lastCycleId = Number.isFinite(Number(loaded.lastCycleId)) ? Number(loaded.lastCycleId) : -1;
       islandState.lastOpen = typeof loaded.lastOpen === 'boolean' ? loaded.lastOpen : null;
       islandState.payoutLog = Array.isArray(loaded.payoutLog) ? loaded.payoutLog : [];
+      islandState.shopPaused = loaded.shopPaused === true;
     }
   }
 } catch (error) {
@@ -1407,7 +1497,7 @@ let islandSearchersThisCycle = new Set(); // in-memory only, just for the "N peo
 function persistIslandState() {
   try {
     const tmp = ISLAND_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ lastCycleId: islandState.lastCycleId, lastOpen: islandState.lastOpen, payoutLog: islandState.payoutLog.slice(-500) }));
+    fs.writeFileSync(tmp, JSON.stringify({ lastCycleId: islandState.lastCycleId, lastOpen: islandState.lastOpen, payoutLog: islandState.payoutLog.slice(-500), shopPaused: islandState.shopPaused === true }));
     fs.renameSync(tmp, ISLAND_FILE);
   } catch (error) {
     console.error('[island] state write failed: ' + error.message);
@@ -1443,29 +1533,21 @@ function resolveIslandSearch(user) {
   if (!user || !(Number(user.islandSearchEndsAt || 0) > 0) || Date.now() < Number(user.islandSearchEndsAt)) return null;
   user.islandSearchEndsAt = 0;
   user.islandSearchSpot = null;
+  const today = islandEnsureDayReset(user);
   const roll = crypto.randomInt(0, 1000000) / 1000000; // 0..1, crypto-backed
   let k = -1;
   if (roll < ISLAND_ODDS[0]) k = 0;
   else if (roll < ISLAND_ODDS[0] + ISLAND_ODDS[1]) k = 1;
   else if (roll < ISLAND_ODDS[0] + ISLAND_ODDS[1] + ISLAND_ODDS[2]) k = 2;
-  let won = false, isNew = false;
+  let isNew = false;
   if (k >= 0) {
     isNew = islandBookCount(user, k) === 0;
     islandSetBookCount(user, k, islandBookCount(user, k) + 1);
   }
-  if (islandBookCount(user, 0) >= 1 && islandBookCount(user, 1) >= 1 && islandBookCount(user, 2) >= 1) {
-    won = true;
-    islandSetBookCount(user, 0, islandBookCount(user, 0) - 1);
-    islandSetBookCount(user, 1, islandBookCount(user, 1) - 1);
-    islandSetBookCount(user, 2, islandBookCount(user, 2) - 1);
-    user.islandWins = Number(user.islandWins || 0) + 1;
-    user.ton = Number((Number(user.ton || 0) + ISLAND_PRIZE_TON).toFixed(9));
-    islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: ISLAND_PRIZE_TON, ts: Date.now() });
-    persistIslandState();
-  }
+  const won = islandCheckWinAndPay(user);
   let lastText;
   if (k < 0) lastText = '🌊 چیزی پیدا نشد';
-  else if (won) lastText = '🏆 ۰٫۵ TON برد!';
+  else if (won) lastText = '🏆 ۰٫۲۵ TON برد!';
   else if (isNew) lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' پیدا کرد! (' + islandDistinctBooks(user) + '/۳)';
   else lastText = '📖 ' + ISLAND_BOOK_NAMES[k] + ' ×' + islandBookCount(user, k);
   user.islandLastText = lastText;
@@ -1473,17 +1555,36 @@ function resolveIslandSearch(user) {
   user.islandLastK = k;
   user.islandLastIsNew = isNew;
   user.islandLastWon = won;
+  // Shovels: this search counts for the day it finished on (SHOP_SPEC.md §4),
+  // and every active shovel's daily bonus is paid the instant its threshold
+  // is first reached that same day (never more than once/day, see the
+  // islandDailyBonusDay guard).
+  user.islandSearchesToday = Number(user.islandSearchesToday || 0) + 1;
+  if (!user.islandDailyBonusDay || typeof user.islandDailyBonusDay !== 'object') user.islandDailyBonusDay = {};
+  const dailyBonuses = [];
+  for (const id of ISLAND_SHOVEL_ORDER) {
+    if (!islandShovelActive(user, id)) continue;
+    const sh = ISLAND_SHOVELS[id];
+    if (user.islandSearchesToday >= sh.threshold && Number(user.islandDailyBonusDay[id]) !== today) {
+      user.islandDailyBonusDay[id] = today;
+      user.ton = Number((Number(user.ton || 0) + sh.dailyTon).toFixed(9));
+      islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: sh.dailyTon, ts: Date.now(), reason: 'daily_' + id });
+      dailyBonuses.push({ id, ton: sh.dailyTon, name: sh.name });
+    }
+  }
+  user.islandLastDailyBonuses = dailyBonuses;
+  if (dailyBonuses.length) persistIslandState();
   persist();
   // Buch 1 wird bewusst nicht im Chat angekündigt (zu häufig, nur Spam) - siehe SPEC.md Punkt 4.
   if (k === 1 || k === 2) {
     postIslandBotMessage((user.name || 'Player') + ' ' + ISLAND_BOOK_NAMES[k] + ' را پیدا کرد (' + islandDistinctBooks(user) + '/۳)', 'found');
     broadcastChatEvent('message');
   }
-  if (won) {
-    postIslandBotMessage('🏆 ' + (user.name || 'Player') + ' هر ۳ کتاب را پیدا کرد و 0.5 TON گرفت!', 'win');
+  dailyBonuses.forEach((b) => {
+    postIslandBotMessage((user.name || 'Player') + ' ' + islandFaDigits(ISLAND_SHOVELS[b.id].threshold) + ' جستجوی امروز را کامل کرد و ' + b.ton + ' TON جایزه‌ی روزانه گرفت!', 'daily');
     broadcastChatEvent('message');
-  }
-  return { k, won, isNew, lastText };
+  });
+  return { k, won, isNew, lastText, dailyBonuses };
 }
 // Periodic sweep: resolves any searches whose 5-minute timer already elapsed
 // (so results reach everyone even if that user never polls again), and
@@ -1503,7 +1604,7 @@ function islandTick() {
     islandState.lastCycleId = c.cycleId;
     islandState.lastOpen = true;
     persistIslandState();
-    postIslandBotMessage('جزیره باز شد! ۳۰ دقیقه وقت دارید، هر ۵ دقیقه یک جستجو. ۳ کتاب متفاوت = 0.5 TON', 'open');
+    postIslandBotMessage('جزیره باز شد! ۳۰ دقیقه وقت دارید، هر ۵ دقیقه یک جستجو. ۳ کتاب متفاوت = 0.25 TON', 'open');
     broadcastChatEvent('message');
     broadcastChatEvent('island', { event: publicIslandRound() });
   } else if (!c.open && islandState.lastOpen !== false) {
@@ -1821,6 +1922,11 @@ function newUser(id, name) {
     islandLastK: -1,
     islandLastIsNew: false,
     islandLastWon: false,
+    islandShovels: {},
+    islandSearchesToday: 0,
+    islandSearchesDay: 0,
+    islandDailyBonusDay: {},
+    islandLastDailyBonuses: [],
     isChatAdmin: false,
     adminBadge: 'boy',
     isDesigner: false,
@@ -3278,14 +3384,17 @@ document.getElementById('secret').addEventListener('change',loadTtShopToggleStat
 loadTtShopToggleStatus();
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
 const list=document.getElementById('list');
-list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button><button id="cardEventEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
+list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button><button id="cardEventEnableToggle" class="small-btn">...</button><button id="islandShopEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
 function updateChatToggleBtn(enabled){const btn=document.getElementById('chatEnableToggle');btn.textContent=enabled?'💬 Chat ist AN — jetzt ausschalten':'🚫 Chat ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
 function updateCardEventToggleBtn(enabled){const btn=document.getElementById('cardEventEnableToggle');btn.textContent=enabled?'🃏 Karten-Event ist AN — jetzt ausschalten':'🚫 Karten-Event ist AUS — jetzt einschalten';btn.className='small-btn'+(enabled?'':' danger')}
+function updateIslandShopToggleBtn(paused){const btn=document.getElementById('islandShopEnableToggle');btn.textContent=paused?'🏝️ Insel-Shop ist PAUSIERT — jetzt fortsetzen':'🏝️ Insel-Shop ist AN — jetzt pausieren';btn.className='small-btn'+(paused?' danger':'')}
 document.getElementById('chatEnableToggle').onclick=async()=>{const enabled=document.getElementById('chatEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/chat/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateChatToggleBtn(dd.chatEnabled);status(dd.chatEnabled?'Chat wurde aktiviert.':'Chat wurde fuer normale Nutzer deaktiviert.')}else status((await rr.json()).error||'Request failed')};
 document.getElementById('cardEventEnableToggle').onclick=async()=>{const enabled=document.getElementById('cardEventEnableToggle').textContent.includes('AN');const rr=await fetch('/admin/card-event/set-enabled',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({enabled:!enabled})});if(rr.ok){const dd=await rr.json();updateCardEventToggleBtn(dd.cardEventEnabled);status(dd.cardEventEnabled?'Karten-Event wurde aktiviert.':'Karten-Event wurde deaktiviert.')}else status((await rr.json()).error||'Request failed')};
+document.getElementById('islandShopEnableToggle').onclick=async()=>{const paused=document.getElementById('islandShopEnableToggle').textContent.includes('PAUSIERT');const rr=await fetch('/admin/island/shop-pause',{method:'POST',headers:{'Content-Type':'application/json','x-admin-secret':s},body:JSON.stringify({paused:!paused})});if(rr.ok){const dd=await rr.json();updateIslandShopToggleBtn(dd.paused);status(dd.paused?'Insel-Shop wurde pausiert.':'Insel-Shop wurde fortgesetzt.')}else status((await rr.json()).error||'Request failed')};
 async function runSearch(){const q=document.getElementById('chatUserSearch').value;status('Nutzer werden geladen...');const r=await fetch('/admin/chat-users?query='+encodeURIComponent(q),{headers:{'x-admin-secret':s}});const d=await r.json();if(!r.ok){status(d.error||'Request failed');return}
 updateChatToggleBtn(d.chatEnabled);
 updateCardEventToggleBtn(d.cardEventEnabled);
+updateIslandShopToggleBtn(d.islandShopPaused);
 const box=document.getElementById('chatUserList');box.innerHTML=d.users.length?'':'Keine Nutzer gefunden.';
 d.users.forEach(u=>{const row=document.createElement('div');row.className='chat-admin-row'+(u.isChatAdmin?' is-admin':'')+(u.isDesigner?' is-designer':'')+(u.isSupporter?' is-supporter':'')+(u.isDeveloper?' is-supporter':'')+(u.chatMuted?' is-muted':'');
 const tags=(u.isChatAdmin?'<span class="tag admin">Chat-Admin</span>':'')+(u.isSupporter?'<span class="tag admin">Supporter</span>':'')+(u.isDeveloper?'<span class="tag admin">Developer (Amir)</span>':'')+(u.isDesigner?'<span class="tag designer">Designer</span>':'')+(u.badge4?'<span class="tag designer">Badge 4</span>':'')+(u.badge5?'<span class="tag designer">Badge 5</span>':'')+(u.chatMuted?'<span class="tag muted">Gemutet</span>':'');
@@ -3832,8 +3941,108 @@ app.get('/api/island/state', requireUserFromQuery, (req, res) => {
       lastK: Number.isInteger(user.islandLastK) ? user.islandLastK : -1,
       lastIsNew: user.islandLastIsNew === true,
       lastWon: user.islandLastWon === true,
+      lastDailyBonuses: Array.isArray(user.islandLastDailyBonuses) ? user.islandLastDailyBonuses : [],
+      shovels: ISLAND_SHOVEL_ORDER.filter((id) => islandShovelActive(user, id)),
+      searchesToday: Number(user.islandSearchesToday || 0),
+      shovelProgress: publicIslandShop(user).shovels,
     },
   });
+});
+
+// Island shop: shovels + book exchange (bucherinsel-shop/SHOP_SPEC.md). All
+// reads/writes below run synchronously within a single request handler (no
+// await between the check and the mutation) - on Node's single-threaded
+// event loop that is already atomic, the same pattern used everywhere else
+// in this file for buy/trade endpoints (e.g. figure packs), so no extra
+// locking primitive is needed to satisfy the spec's "transaction with lock"
+// requirement.
+function publicIslandShop(user) {
+  const today = islandEnsureDayReset(user);
+  const msToReset = islandMsToBerlinMidnight(Date.now());
+  const shovels = {};
+  for (const id of ISLAND_SHOVEL_ORDER) {
+    const def = ISLAND_SHOVELS[id];
+    const owned = user.islandShovels && user.islandShovels[id];
+    shovels[id] = {
+      active: islandShovelActive(user, id),
+      expiresDay: owned ? Number(owned.expiresDay) : null,
+      daysLeft: owned ? Math.max(0, Number(owned.expiresDay) - today) : 0,
+      sold: islandShovelSoldCount(id),
+      limit: def.limit,
+      priceTon: def.priceTon,
+      threshold: def.threshold,
+      dailyTon: def.dailyTon,
+      dailyPaidToday: Number((user.islandDailyBonusDay || {})[id]) === today,
+    };
+  }
+  return {
+    ton: Number(user.ton || 0),
+    books: [islandBookCount(user, 0), islandBookCount(user, 1), islandBookCount(user, 2)],
+    wins: Number(user.islandWins || 0),
+    searchesToday: Number(user.islandSearchesToday || 0),
+    shovels,
+    exchanges: ISLAND_EXCHANGES,
+    msToReset,
+    paused: islandState.shopPaused === true,
+  };
+}
+app.get('/api/island/shop', requireUserFromQuery, (req, res) => {
+  res.json(publicIslandShop(req.user));
+});
+
+const islandBuyLastWrite = new Map();
+app.post('/api/island/shop/buy', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user, now = Date.now();
+  const last = islandBuyLastWrite.get(req.uid) || 0;
+  if (now - last < 1000) return res.status(429).json({ error: 'rate-limited' });
+  islandBuyLastWrite.set(req.uid, now);
+  if (islandState.shopPaused === true) return res.status(503).json({ error: 'shop-paused' });
+  const type = req.body && req.body.type;
+  const def = ISLAND_SHOVELS[type];
+  if (!def) return res.status(400).json({ error: 'invalid-type' });
+  const today = islandEnsureDayReset(user);
+  if (islandShovelActive(user, type)) return res.status(409).json({ error: 'already-active' });
+  if (islandShovelSoldCount(type) >= def.limit) return res.status(409).json({ error: 'sold-out' });
+  if (Number(user.ton || 0) + 1e-9 < def.priceTon) return res.status(402).json({ error: 'insufficient-ton' });
+  user.ton = Number((Number(user.ton || 0) - def.priceTon).toFixed(9));
+  if (!user.islandShovels || typeof user.islandShovels !== 'object') user.islandShovels = {};
+  user.islandShovels[type] = { boughtDay: today, expiresDay: today + ISLAND_SHOVEL_DAYS, priceTon: def.priceTon, createdAt: now };
+  islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: -def.priceTon, ts: now, reason: 'buy_' + type });
+  persistIslandState();
+  persist();
+  broadcastChatEvent('island', { event: publicIslandRound() });
+  res.json({ ok: true, shop: publicIslandShop(user) });
+});
+
+app.post('/api/island/exchange', requireUserFromBody, rejectBannedUser, (req, res) => {
+  const user = req.user;
+  const type = req.body && req.body.type;
+  const def = ISLAND_EXCHANGES[type];
+  if (!def) return res.status(400).json({ error: 'invalid-type' });
+  const qty = Math.floor(Number(req.body && req.body.qty));
+  if (!Number.isFinite(qty) || qty < 1) return res.status(400).json({ error: 'invalid-qty' });
+  const need = def.rate * qty;
+  if (islandBookCount(user, def.from) < need) return res.status(409).json({ error: 'not-enough-books' });
+  islandSetBookCount(user, def.from, islandBookCount(user, def.from) - need);
+  islandSetBookCount(user, def.to, islandBookCount(user, def.to) + qty);
+  const won = islandCheckWinAndPay(user);
+  persist();
+  res.json({
+    ok: true,
+    qty,
+    toBook: def.to,
+    won,
+    books: [islandBookCount(user, 0), islandBookCount(user, 1), islandBookCount(user, 2)],
+    ton: Number(user.ton || 0),
+  });
+});
+
+// Admin switch to pause the island shop (buy endpoint only - search/exchange
+// stay available) without a redeploy, per SHOP_SPEC.md §7.
+app.post('/admin/island/shop-pause', requireAdmin, (req, res) => {
+  islandState.shopPaused = req.body && req.body.paused === true;
+  persistIslandState();
+  res.json({ ok: true, paused: islandState.shopPaused });
 });
 
 const islandLastWrite = new Map();
@@ -3911,6 +4120,7 @@ app.get('/api/online-users', (req, res) => {
       islandSearchEndsAt: Number(user.islandSearchEndsAt || 0),
       islandLastText: user.islandLastText || '',
       islandLastAt: Number(user.islandLastAt || 0),
+      islandShovels: islandActiveShovelIds(user),
     }));
   res.json({ users: list });
 });
@@ -5946,7 +6156,7 @@ app.get('/admin/chat-users', requireAdmin, (req, res) => {
     chatMuted: u.chatMuted === true,
     lastSeenAt: Number(u.lastSeenAt || 0),
   }));
-  res.json({ users: list, chatEnabled, cardEventEnabled });
+  res.json({ users: list, chatEnabled, cardEventEnabled, islandShopPaused: islandState.shopPaused === true });
 });
 
 app.post('/admin/chat/set-enabled', requireAdmin, (req, res) => {

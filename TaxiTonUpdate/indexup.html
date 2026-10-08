@@ -3154,6 +3154,99 @@
   .mrow.island-message.win .bub{background:linear-gradient(135deg,#3a2f0d,#2a2416);border-color:#f2c14e}
   .isl-msg-head{font-weight:800;font-size:13px;margin-bottom:3px;color:#e9cf9a}
   .isl-chat-btn{all:unset;cursor:pointer;margin-top:8px;display:inline-block;background:var(--yellow,#f6c62b);color:#2a1f00;font-weight:800;font-size:13px;padding:6px 14px;border-radius:10px;box-shadow:0 3px 0 #c99512}
+  /* ==== جزیره کتاب‌ها Shop-Tab (bucherinsel-shop/SHOP_SPEC.md): Schaufeln + Bücher-Tausch.
+     1:1 nach den Screenshots, Persisch/RTL, "ish-" Präfix gegen Kollisionen. ==== */
+  .ish-wrap{display:grid;gap:14px;font-family:"Vazirmatn",system-ui,sans-serif;direction:rtl;padding:2px 2px 10px}
+  .ish-bal{display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:#171821;border:1px solid #2a2c39;border-radius:16px;padding:8px 10px}
+  .ish-bal span{display:flex;align-items:center;gap:4px;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;color:#eef0f7}
+  .ish-bal img{width:26px;height:24px;object-fit:contain}
+  .ish-bal .ish-ton{color:#7cc7ff;margin-inline-start:auto;padding:4px 8px;border-radius:99px;background:#070c35;border:1px solid rgba(0,152,234,.5)}
+  .ish-eq{position:relative;display:flex;gap:14px;align-items:center;border-radius:22px;padding:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--ishr,#4a4f66) 22%,#15161d),#15161d 70%);border:2px solid var(--ishr,#4a4f66);box-shadow:0 0 26px color-mix(in srgb,var(--ishr,#4a4f66) 35%,transparent);overflow:hidden}
+  .ish-eq .ish-pic{width:92px;height:92px;flex-shrink:0;border-radius:18px;background:radial-gradient(circle at 50% 55%,color-mix(in srgb,var(--ishr,#4a4f66) 55%,#000),#0b0c12 75%);border:2px solid color-mix(in srgb,var(--ishr,#4a4f66) 70%,#000);display:grid;place-items:center}
+  .ish-eq .ish-pic img{width:92%;height:92%;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));animation:ishFloat 3.5s ease-in-out infinite}
+  @keyframes ishFloat{50%{transform:translateY(-4px) rotate(-2deg)}}
+  .ish-eq .ish-info{flex:1;min-width:0;display:grid;gap:5px}
+  .ish-eq .ish-cap{color:var(--ishr,#9aa6d8);font-weight:800;font-size:12px}
+  .ish-eq .ish-nm{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:22px;line-height:1.15;color:#fff}
+  .ish-perks{display:flex;flex-wrap:wrap;gap:5px}
+  .ish-perk{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);white-space:nowrap}
+  .ish-perk.off{opacity:.4}
+  .ish-exp{font-size:11px;color:#aeb3c7}
+  .ish-reset{display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(90deg,#1b1f33,#171821);border:1px solid #2f3555;border-radius:16px;padding:10px 12px}
+  .ish-reset b{display:block;font-size:13px;color:#fff}
+  .ish-reset small{color:#8c90a8;font-size:11.5px}
+  .ish-reset .ish-cd{font-family:"Lilita One",system-ui;font-size:21px;color:#7cc7ff;font-variant-numeric:tabular-nums;direction:ltr;letter-spacing:.5px}
+  .ish-sec{display:flex;justify-content:space-between;align-items:baseline}
+  .ish-sec h3{margin:0;font-family:"Lalezar","Vazirmatn",sans-serif;font-weight:400;font-size:20px;color:#f6c62b}
+  .ish-sec small{color:#8c90a8;font-size:11.5px}
+  .ish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .ish-card{--ishr:#f2b81c;position:relative;display:flex;flex-direction:column;border-radius:20px;background:#14151c;border:2.5px solid var(--ishr);box-shadow:0 0 18px color-mix(in srgb,var(--ishr) 30%,transparent),inset 0 0 0 1px rgba(255,255,255,.04);overflow:hidden}
+  .ish-card.r2{--ishr:#b45cff}.ish-card.r3{--ishr:#ff5a1f}.ish-card.r4{--ishr:#38bdf8}
+  .ish-card .ish-art{position:relative;aspect-ratio:1/1;background:radial-gradient(circle at 50% 58%,color-mix(in srgb,var(--ishr) 60%,#000) 0,#0d0e14 72%);display:grid;place-items:center;overflow:hidden}
+  .ish-card .ish-art::before{content:"";position:absolute;inset:-30%;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--ishr) 22%,transparent) 0 8deg,transparent 8deg 22deg);animation:ishSpin 26s linear infinite;opacity:.55}
+  @keyframes ishSpin{to{transform:rotate(360deg)}}
+  .ish-card .ish-art img{position:relative;width:78%;height:78%;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,.65))}
+  .ish-rar{position:absolute;top:8px;right:8px;z-index:1;font-size:10.5px;font-weight:800;color:#fff;background:color-mix(in srgb,var(--ishr) 75%,#000);border:1px solid color-mix(in srgb,var(--ishr) 70%,#fff);border-radius:999px;padding:2px 9px}
+  #app[dir="rtl"] .ish-rar{right:auto;left:8px}
+  .ish-tier{position:absolute;top:8px;left:8px;z-index:1;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-family:"Lalezar","Vazirmatn";font-size:14px;background:#0d0e14cc;border:1.5px solid var(--ishr);color:var(--ishr)}
+  #app[dir="rtl"] .ish-tier{left:auto;right:8px}
+  .ish-ownb{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:1;font-size:11px;font-weight:800;color:#06300c;background:linear-gradient(#5be35a,#2fb84a);border-radius:999px;padding:3px 11px;white-space:nowrap;box-shadow:0 3px 0 #1e7a2e}
+  .ish-ownb.stock{background:rgba(10,12,18,.85);color:#fff;border:1px solid color-mix(in srgb,var(--ishr) 70%,#fff);box-shadow:none}
+  .ish-ownb.stock.hot{background:#7a1414;border-color:#ff5a5a;animation:ishPulseb 1.4s ease-in-out infinite}
+  @keyframes ishPulseb{50%{transform:translateX(-50%) scale(1.06)}}
+  .ish-ownb.soldout{background:#3a1d1d;color:#ff8a8a;border:1px solid #ff5a5a;box-shadow:none}
+  .ish-card .ish-bd{display:grid;gap:7px;padding:10px 10px 12px;flex:1;align-content:start}
+  .ish-card .ish-nm{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:19px;line-height:1.1;color:color-mix(in srgb,var(--ishr) 70%,#fff)}
+  .ish-fx{display:flex;align-items:flex-start;gap:7px;background:color-mix(in srgb,var(--ishr) 12%,#0f1016);border:1px solid color-mix(in srgb,var(--ishr) 35%,transparent);border-radius:12px;padding:7px 8px;font-size:11.5px;line-height:1.5;color:#e7e9f3;min-height:52px}
+  .ish-fx .ish-i{font-size:16px;line-height:1.2}
+  .ish-fx b{color:#fff}
+  .ish-cost{display:grid;gap:5px}
+  .ish-cr{display:flex;align-items:center;gap:5px;font-weight:800;font-size:12px;font-variant-numeric:tabular-nums}
+  .ish-cr img{width:20px;height:18px;object-fit:contain}
+  .ish-cr .ish-h{margin-inline-start:auto;font-size:10.5px;color:#ff7a7a}
+  .ish-cr .ish-h.ok{color:#3fe05a}
+  .ish-pb{height:5px;border-radius:3px;background:#262836;overflow:hidden}
+  .ish-pb i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#2fb84a,#5be35a)}
+  .ish-pb.ish-stockb i{background:linear-gradient(90deg,color-mix(in srgb,var(--ishr) 70%,#000),var(--ishr))}
+  .ish-pb.ish-days i{background:linear-gradient(90deg,#3b82f6,#7cc7ff)}
+  .ish-buy{all:unset;cursor:pointer;text-align:center;font-family:"Lalezar","Vazirmatn",system-ui;font-size:18px;padding:8px 0 6px;border-radius:13px;background:linear-gradient(#5be35a,#2fb84a);color:#06300c;box-shadow:0 4px 0 #1e7a2e}
+  .ish-buy:active{transform:translateY(2px);box-shadow:none}
+  .ish-buy[disabled]{background:#2c2f3d;color:#9aa0b8;box-shadow:0 4px 0 #1d1f29;cursor:default;font-size:14px}
+  .ish-buy.owned[disabled]{background:#173a20;color:#6be38a;box-shadow:0 4px 0 #0e2414}
+  .ish-card.soon .ish-art img{filter:grayscale(.35) brightness(.55)}
+  .ish-card .ish-lockov{position:absolute;inset:0;z-index:2;display:grid;place-items:center;align-content:center;gap:8px;background:linear-gradient(transparent 0,rgba(8,10,16,.35) 60%)}
+  .ish-card .ish-lockov .ish-pad{font-size:36px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7))}
+  .ish-card .ish-lockov .ish-cs{font-family:"Lalezar","Vazirmatn";font-size:15px;color:#bfe9ff;border:2px solid #38bdf8;border-radius:14px;padding:2px 14px;background:rgba(6,20,32,.85)}
+  .ish-note{color:#8c90a8;font-size:11.5px;text-align:center;line-height:1.7}
+  .ish-cfm{position:fixed;inset:0;z-index:9500;background:rgba(5,6,10,.65);display:grid;place-items:center;padding:16px}
+  .ish-cfm .ish-box{--ishr:#f2b81c;width:100%;max-width:340px;background:#15161d;border:2px solid var(--ishr);border-radius:22px;padding:16px;display:grid;gap:10px;justify-items:center;text-align:center;direction:rtl;box-shadow:0 0 30px color-mix(in srgb,var(--ishr) 35%,transparent)}
+  .ish-cfm img{width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,.6))}
+  .ish-cfm h4{margin:0;font-family:"Lalezar","Vazirmatn";font-weight:400;font-size:22px;color:color-mix(in srgb,var(--ishr) 70%,#fff)}
+  .ish-cfm p{margin:0;color:#c8cbe0;font-size:13px}
+  .ish-cfm .ish-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+  .ish-cfm .ish-no{all:unset;cursor:pointer;text-align:center;font-family:"Lalezar","Vazirmatn";font-size:17px;padding:8px 0 6px;border-radius:13px;background:#2c2f3d;color:#c3c6d6;box-shadow:0 4px 0 #1d1f29}
+  .ish-xlist{display:grid;gap:10px}
+  .ish-xc{--ishr:#f2b81c;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;background:linear-gradient(90deg,color-mix(in srgb,var(--ishr) 14%,#15161d),#15161d 75%);border:1.5px solid color-mix(in srgb,var(--ishr) 60%,#2a2c39);border-radius:18px;padding:10px 12px}
+  .ish-xc.x2{--ishr:#4d8fe0}.ish-xc.x3{--ishr:#b45cff}
+  .ish-xc .ish-sw{display:flex;align-items:center;gap:6px}
+  .ish-xc .ish-bk{position:relative;width:46px;height:42px}
+  .ish-xc .ish-bk img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}
+  .ish-xc .ish-bk b{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);background:#0d0e14;border:1.5px solid var(--ishr);color:#fff;font-size:10.5px;font-weight:800;border-radius:9px;padding:0 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ish-xc .ish-ar{font-size:18px;color:var(--ishr);animation:ishNudge 1.6s ease-in-out infinite}
+  @keyframes ishNudge{50%{transform:translateX(-4px)}}
+  .ish-xc .ish-mid{display:grid;gap:4px;min-width:0}
+  .ish-xc .ish-mid .ish-t{font-size:11.5px;font-weight:800;line-height:1.5}
+  .ish-xc .ish-mid .ish-h{font-size:10.5px;color:#aeb3c7}
+  .ish-xc .ish-mid .ish-h.ok{color:#3fe05a}
+  .ish-xc .ish-ctl{display:grid;gap:5px;justify-items:center}
+  .ish-xc .ish-qty{display:flex;align-items:center;gap:4px}
+  .ish-xc .ish-qty button{all:unset;cursor:pointer;width:22px;height:22px;border-radius:8px;background:#2a2d3a;display:grid;place-items:center;font-weight:900;color:#fff}
+  .ish-xc .ish-qty button[disabled]{opacity:.35;cursor:default}
+  .ish-xc .ish-qty span{min-width:20px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;color:#fff}
+  .ish-xc .ish-buy{font-size:15px;padding:6px 14px 4px}
+  .ish-xc .ish-buy[disabled]{font-size:12.5px}
+  .ish-shv-chip{display:inline-flex;gap:2px;margin-inline-start:4px;padding-inline-start:5px;border-inline-start:1px solid #3a3e55}
+  .ish-shv-chip img{width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
   /* ==== Chat-Sperre durch die "Amir"-Badge (isDeveloper): nur er kann dann noch schreiben ==== */
   .race-btn.chat-lock-btn{background:linear-gradient(180deg,#9aa6d8,#3d4a8a);box-shadow:0 3px 0 #1c2454;padding:8px 10px}
   .race-btn.chat-lock-btn.on{background:linear-gradient(180deg,#ff6b6b,#8a0d16);box-shadow:0 3px 0 #5c0309}
@@ -4668,7 +4761,7 @@ function renderChat(){
   $('#tabChat').setAttribute('aria-selected', chatTab==='chat'); $('#tabOnline').setAttribute('aria-selected', chatTab==='on'); $('#tabFr').setAttribute('aria-selected', chatTab==='fr'); $('#tabMe').innerHTML = avatar(meUser(), true) + '<span class="medot"></span>';
   $('#chatPane').hidden = chatTab !== 'chat'; $('#onPane').hidden = chatTab !== 'on'; $('#frPane').hidden = chatTab !== 'fr'; renderFriends();
   const visibleUsers = liveChat && SHOP_ACCOUNT.onlineUsers.length
-    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,isDeveloper:u.isDeveloper===true,badge4:u.badge4===true,badge5:u.badge5===true,hasLevel4:u.hasLevel4===true,hasLevel5:u.hasLevel5===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true,islandBook1:Number(u.islandBook1)||0,islandBook2:Number(u.islandBook2)||0,islandBook3:Number(u.islandBook3)||0,islandWins:Number(u.islandWins)||0,islandSearching:u.islandSearching===true,islandSearchEndsAt:Number(u.islandSearchEndsAt)||0,islandLastText:u.islandLastText||''}))
+    ? SHOP_ACCOUNT.onlineUsers.map(u => ({n:u.name,uid:u.uid,img:u.photoUrl,lvl:1,c:'#9aa6d8',car:'sara',isMe:String(u.uid)===SHOP_ACCOUNT.uid,isChatAdmin:u.isChatAdmin===true,adminBadge:u.adminBadge,isDesigner:u.isDesigner===true,isSupporter:u.isSupporter===true,isDeveloper:u.isDeveloper===true,badge4:u.badge4===true,badge5:u.badge5===true,hasLevel4:u.hasLevel4===true,hasLevel5:u.hasLevel5===true,chatMuted:u.chatMuted===true,racing:u.racing===true,racePhase:u.racePhase,lastRaceWinner:u.lastRaceWinner===true,lastRaceRewardTT:u.lastRaceRewardTT,racePredictedCorrect:u.racePredictedCorrect===true,lastRaceTipRewardTT:u.lastRaceTipRewardTT,racePredictionPending:u.racePredictionPending===true,islandBook1:Number(u.islandBook1)||0,islandBook2:Number(u.islandBook2)||0,islandBook3:Number(u.islandBook3)||0,islandWins:Number(u.islandWins)||0,islandSearching:u.islandSearching===true,islandSearchEndsAt:Number(u.islandSearchEndsAt)||0,islandLastText:u.islandLastText||'',islandShovels:Array.isArray(u.islandShovels)?u.islandShovels:[]}))
     : [];
   const raceBadgesOn = chatRoom === 'fa';
   const islandBadgesOn = chatRoom === 'fa';
@@ -4729,7 +4822,7 @@ function renderChat(){
       : `<div class="bt" dir="auto">${esc(m.text)}${tmMarkup}</div>`;
     const isPlainText = !cardEventMarkup && !m.islandKind && !m.cardEventTest && !m.stk;
     const contentMarkup = isPlainText ? bodyMarkup : bodyMarkup + tmMarkup;
-    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${m.islandKind?'island-message '+(m.islandKind==='win'?'win':''):''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''} ${m.isZombieBot?'isZombieBot':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
+    return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${m.islandKind?'island-message '+(m.islandKind==='win'||m.islandKind==='daily'?'win':''):''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''} ${m.isZombieBot?'isZombieBot':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
       <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${contentMarkup}</div>${reactionMarkup}</div>`;
   }).join('');
@@ -5665,17 +5758,46 @@ const ISLAND_SPOTS = [[226,555],[336,573],[410,548],[474,582],[518,548],[607,596
 const ISLAND_SANDPTS = [[262,598],[300,540],[372,604],[440,610],[560,592],[652,578],[250,530],[730,585],[380,528],[585,560],[200,590],[470,622]];
 const ISLAND = {
   round: {open:false, opensAt:0, closesAt:0, searchers:0},
-  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false},
+  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
   sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false,
 };
+// جزیره کتاب‌ها Shop (bucherinsel-shop/SHOP_SPEC.md): shovels + book exchange.
+// Fire-chance line from the original spec draft was removed on request - s3
+// only ever pays its daily bonus (same shape as s1/s2), nothing per-search.
+const ISLAND_SHOVEL_DEFS = {
+  s1: { tier: 1, img: 'sh1.png', name: 'بیل طلایی', rar: 'کمیاب', color: '#f2b81c', icon: '⭐', perk: 'روزانه 0.067', fx: 'روزانه <b dir="ltr">0.067 TON</b> با ۱۵ جستجو<br><b>۳۰ روز</b>' },
+  s2: { tier: 2, img: 'sh2.png', name: 'بیل آمتیست', rar: 'حماسی', color: '#b45cff', icon: '💜', perk: 'روزانه 0.2', fx: 'روزانه <b dir="ltr">0.2 TON</b> با ۲۰ جستجو<br><b>۳۰ روز</b>' },
+  s3: { tier: 3, img: 'sh3.png', name: 'بیل آتشین', rar: 'افسانه‌ای', color: '#ff5a1f', icon: '🔥', perk: 'روزانه 0.33', fx: 'روزانه <b dir="ltr">0.33 TON</b> با ۱۰ جستجو<br><b>۳۰ روز</b>' },
+  s4: { tier: 4, img: 'sh4.png', name: 'بیل یخی', rar: 'اسطوره‌ای', color: '#38bdf8', icon: '❄️', perk: '', fx: 'قدرت مخفی…' },
+};
+const ISLAND_SHOP = { data: null, fetchedAt: 0, qty: {x1:1, x2:1, x3:1} };
+function islandHmsFromMs(ms){
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map(n => String(n).padStart(2, '0')).join(':');
+}
 function islandCountdownText(ms){
   const s = Math.max(0, Math.ceil(ms / 1000));
   return faDigits(String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'));
 }
+// Hinweiszeile unter dem großen Grab-Button: Tagesfortschritt je aktiver
+// Schaufel (bucherinsel-shop/SHOP_SPEC.md §6) - leer, wenn keine Schaufel aktiv.
+function islandShovelHintLine(me){
+  const ids = (me.shovels || []).filter((id) => ISLAND_SHOVEL_DEFS[id]);
+  if (!ids.length) return '';
+  const progress = me.shovelProgress || {};
+  return ids.map((id) => {
+    const def = ISLAND_SHOVEL_DEFS[id], p = progress[id];
+    if (!p) return '';
+    if (p.dailyPaidToday) return def.icon + ' جایزه‌ی امروز ✓';
+    return def.icon + ' امروز <b>' + faDigits(Math.min(me.searchesToday || 0, p.threshold)) + '/' + faDigits(p.threshold) + '</b> → <b dir="ltr">' + p.dailyTon + ' TON</b>';
+  }).filter(Boolean).join(' · ');
+}
 function islandBookBadgesHtml(u){
   const counts = [u.islandBook1 || 0, u.islandBook2 || 0, u.islandBook3 || 0];
   const imgs = [0, 1, 2].map(k => `<span class="isl-bw"><img src="/bucherinsel/prototype/b${k + 1}.png" class="${counts[k] > 0 ? '' : 'off'}" alt="">${counts[k] > 1 ? `<sup>${faDigits(counts[k])}</sup>` : ''}</span>`).join('');
-  return `<span class="isl-mb">${imgs}${u.islandWins > 0 ? `<em>×${faDigits(u.islandWins)}</em>` : ''}</span>`;
+  const shovels = Array.isArray(u.islandShovels) ? u.islandShovels.filter((id) => ISLAND_SHOVEL_DEFS[id]) : [];
+  const shovelChip = shovels.length ? `<span class="ish-shv-chip">${shovels.map((id) => `<img src="/bucherinsel-shop/assets/${ISLAND_SHOVEL_DEFS[id].img}" alt="${ISLAND_SHOVEL_DEFS[id].name}" title="${ISLAND_SHOVEL_DEFS[id].name}">`).join('')}</span>` : '';
+  return `<span class="isl-mb">${imgs}${u.islandWins > 0 ? `<em>×${faDigits(u.islandWins)}</em>` : ''}${shovelChip}</span>`;
 }
 function islandDistinctCount(me){ return [me.book1, me.book2, me.book3].filter(n => n > 0).length; }
 function renderIslandButton(){
@@ -5779,13 +5901,19 @@ function islandStartMyDigVisual(spotIndex, endsAt){
   const fx = $('#islFx'); if (!fx) return;
   islandStopMyDigVisual();
   const [x, y0] = ISLAND_SPOTS[spotIndex] || ISLAND_SPOTS[0], y = y0 - 12, R = 40, C = 2 * Math.PI * R;
+  // Zeigt im Ring das Bild der stärksten aktiven Schaufel (bucherinsel-shop/SHOP_SPEC.md §6),
+  // sonst die normale Holzschaufel wie im Insel-Prototyp.
+  const strongestId = ISLAND.me.shovels && ISLAND.me.shovels.length ? ISLAND.me.shovels[ISLAND.me.shovels.length - 1] : null;
+  const shovelMarkup = strongestId
+    ? `<g class="isl-shovel" style="transform-origin:${x}px ${y + 20}px"><image href="/bucherinsel-shop/assets/${ISLAND_SHOVEL_DEFS[strongestId].img}" x="${x - 62}" y="${y - 118}" width="124" height="124" transform="rotate(18 ${x} ${y - 40})"/></g>`
+    : `<g class="isl-shovel" style="transform-origin:${x}px ${y + 20}px"><rect x="${x - 3}" y="${y - 70}" width="6" height="56" rx="3" fill="#a86b2c"/><path d="M${x - 15} ${y - 16} h30 l-4 22 q-11 10 -22 0z" fill="#f2f2ee" stroke="#b9b9b0" stroke-width="1.5"/><circle cx="${x + 5}" cy="${y - 6}" r="3" fill="#e0a33a"/></g>`;
   const g = islandSvgEl('g', {}, `
     <ellipse cx="${x}" cy="${y + 38}" rx="34" ry="8" fill="#000" opacity=".2"/>
     <circle cx="${x}" cy="${y}" r="${R}" fill="#4a2e18" opacity=".85"/>
     <ellipse cx="${x}" cy="${y + 18}" rx="26" ry="9" fill="#2e1a0b" opacity=".7"/>
     <circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="#7a5a12" stroke-width="9"/>
     <circle id="islRingP" cx="${x}" cy="${y}" r="${R}" fill="none" stroke="url(#islGoldr)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 ${x} ${y})"/>
-    <g class="isl-shovel" style="transform-origin:${x}px ${y + 20}px"><rect x="${x - 3}" y="${y - 70}" width="6" height="56" rx="3" fill="#a86b2c"/><path d="M${x - 15} ${y - 16} h30 l-4 22 q-11 10 -22 0z" fill="#f2f2ee" stroke="#b9b9b0" stroke-width="1.5"/><circle cx="${x + 5}" cy="${y - 6}" r="3" fill="#e0a33a"/></g>
+    ${shovelMarkup}
     ${[-20, -8, 10, 22].map((dx, i) => `<circle class="isl-dirt" style="--dx:${dx}px;animation-delay:${i * .22}s" cx="${x}" cy="${y + 18}" r="3.6" fill="#b08445"/>`).join('')}
     <rect x="${x - 44}" y="${y - R - 46}" width="88" height="34" rx="17" fill="#1b0f08" stroke="#5a3a1a" stroke-width="2"/>
     <text id="islRingT" x="${x}" y="${y - R - 21}" text-anchor="middle" font-family="Lalezar,Vazirmatn" font-size="26" fill="#fff">۰۵:۰۰</text>`);
@@ -5829,11 +5957,12 @@ function islandRenderDiggers(){
 function islandShowReveal(me){
   const r = $('#islandReveal'); if (!r) return;
   const k = Number(me.lastK), won = me.lastWon === true, isNew = me.lastIsNew === true;
+  const dailyLines = (me.lastDailyBonuses || []).map((b) => `<div class="isl-sub">${ISLAND_SHOVEL_DEFS[b.id] ? ISLAND_SHOVEL_DEFS[b.id].icon : '⭐'} جایزه‌ی روزانه: +${b.ton} TON</div>`).join('');
   if (k < 0) {
-    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div></div>`;
+    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div>${dailyLines}</div>`;
   } else {
     const sub = won ? 'هر ۳ کتاب کامل شد!' : isNew ? 'کتاب ' + faDigits(k + 1) + ' به کلکسیون اضافه شد' : 'حالا ' + faDigits(me['book' + (k + 1)]) + ' تا از این کتاب داری';
-    r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel/prototype/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.5 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div></div>`;
+    r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel/prototype/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.25 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div>${dailyLines}</div>`;
   }
   r.hidden = false;
   if (ISLAND.revealTimer) clearTimeout(ISLAND.revealTimer);
@@ -5846,7 +5975,7 @@ function islandHandleResolved(me){
   islandSpark(x, y, Number(me.lastK));
   ISLAND.mySpot = -1;
   islandShowReveal(me);
-  if (me.lastWon === true) void refreshShopAccount();
+  if (me.lastWon === true || (me.lastDailyBonuses || []).length) void refreshShopAccount();
 }
 function renderIslandScene(){
   if (!ISLAND.sheetOpen) return;
@@ -5869,7 +5998,7 @@ function renderIslandScene(){
     digMsg.innerHTML = 'جزیره ۱۰ دقیقه بسته است';
   } else {
     digTx.textContent = 'بگرد!';
-    digMsg.innerHTML = 'هر جستجو <b>۵ دقیقه</b>';
+    digMsg.innerHTML = islandShovelHintLine(me) || 'هر جستجو <b>۵ دقیقه</b>';
   }
   const distinct = islandDistinctCount(me);
   $('#islandSegs').querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < distinct));
@@ -5893,6 +6022,145 @@ setInterval(() => {
     if (u && u.islandSearchEndsAt) el.textContent = islandCountdownText(u.islandSearchEndsAt - Date.now());
   });
 }, 1000);
+
+// ---- جزیره کتاب‌ها Shop-Tab (bucherinsel-shop/SHOP_SPEC.md): Schaufeln + Bücher-Tausch.
+// Alles Zufall/Zeit/Limit/Auszahlung läuft serverseitig (/api/island/shop*) - hier wird nur
+// angezeigt, was der Server zurückgibt, und Kauf-/Tausch-Klicks werden 1:1 weitergereicht.
+async function fetchIslandShop(){
+  if (!SHOP_ACCOUNT.token) return;
+  try {
+    const response = await fetch('/api/island/shop?token=' + encodeURIComponent(SHOP_ACCOUNT.token), {cache:'no-store'});
+    const data = await response.json();
+    if (response.ok) {
+      ISLAND_SHOP.data = data;
+      ISLAND_SHOP.fetchedAt = Date.now();
+      if (current === 'shop' && shopTab === 'island') renderShop();
+    }
+  } catch (e) {}
+}
+setInterval(() => { if (SHOP_ACCOUNT.token && current === 'shop' && shopTab === 'island') void fetchIslandShop(); }, 5000);
+setInterval(() => {
+  if (!(current === 'shop' && shopTab === 'island' && ISLAND_SHOP.data)) return;
+  const el = $('#ishResetCd'); if (!el) return;
+  const remaining = Math.max(0, ISLAND_SHOP.data.msToReset - (Date.now() - ISLAND_SHOP.fetchedAt));
+  el.textContent = islandHmsFromMs(remaining);
+  if (remaining <= 0) void fetchIslandShop(); // day just rolled over - refresh search counters/daily flags
+}, 1000);
+function islandShopConfirmBuy(id){
+  const def = ISLAND_SHOVEL_DEFS[id], d = ISLAND_SHOP.data;
+  if (!def || !d) return;
+  const sh = d.shovels[id];
+  const overlay = document.createElement('div'); overlay.className = 'ish-cfm';
+  overlay.innerHTML = `<div class="ish-box" style="--ishr:${def.color}"><img src="/bucherinsel-shop/assets/${def.img}" alt=""><h4>${esc(def.name)}</h4><p>${def.fx}</p><p>قیمت: <b dir="ltr">${sh.priceTon} TON</b></p>
+    <div class="ish-row"><button class="ish-no" data-ish-cancel>انصراف</button><button class="ish-buy" data-ish-confirm="${id}">خرید</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.closest('[data-ish-cancel]')) { overlay.remove(); return; }
+    const c = e.target.closest('[data-ish-confirm]');
+    if (c) { overlay.remove(); void islandShopBuy(c.dataset.ishConfirm); }
+  });
+}
+async function islandShopBuy(id){
+  if (!SHOP_ACCOUNT.token) return;
+  try {
+    const response = await fetch('/api/island/shop/buy', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token: SHOP_ACCOUNT.token, type: id})});
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || 'buy-failed');
+    ISLAND_SHOP.data = data.shop; ISLAND_SHOP.fetchedAt = Date.now();
+    SHOP_ACCOUNT.ton = data.shop.ton;
+    toast(`${ISLAND_SHOVEL_DEFS[id].name} خریداری شد! 🎉`);
+    renderShop();
+    void refreshShopAccount();
+  } catch (e) { toast(t('lim_err')); }
+}
+async function islandShopExchange(id){
+  if (!SHOP_ACCOUNT.token || !ISLAND_SHOP.data) return;
+  const qty = ISLAND_SHOP.qty[id] || 1;
+  try {
+    const response = await fetch('/api/island/exchange', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token: SHOP_ACCOUNT.token, type: id, qty})});
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || 'exchange-failed');
+    ISLAND_SHOP.data.books = data.books; ISLAND_SHOP.data.ton = data.ton;
+    SHOP_ACCOUNT.ton = data.ton;
+    toast(`${faDigits(data.qty)} ${ISLAND_BOOK_NAMES[data.toBook]} گرفتی! 📖`);
+    if (data.won) setTimeout(() => toast('🏆 هر ۳ کتاب کامل شد! +0.25 TON'), 900);
+    renderShop();
+    void refreshShopAccount();
+    if (ISLAND.sheetOpen) { ISLAND.me.book1 = data.books[0]; ISLAND.me.book2 = data.books[1]; ISLAND.me.book3 = data.books[2]; renderIslandScene(); }
+  } catch (e) { toast(t('lim_err')); }
+}
+function renderIslandShopTab(list){
+  if (!SHOP_ACCOUNT.token) {
+    list.innerHTML = `<div class="ish-note" style="padding:30px 10px">${esc(S.lang==='de'?'Melde dich über Telegram an, um den Insel-Shop zu nutzen.':S.lang==='fa'?'برای استفاده از فروشگاه جزیره، از تلگرام وارد شو.':'Open through Telegram to use the island shop.')}</div>`;
+    return;
+  }
+  if (!ISLAND_SHOP.data) {
+    list.innerHTML = `<div class="ish-note" style="padding:30px 10px">${esc(S.lang==='fa'?'در حال بارگذاری...':S.lang==='de'?'Lädt...':'Loading...')}</div>`;
+    void fetchIslandShop();
+    return;
+  }
+  const d = ISLAND_SHOP.data;
+  const activeIds = ['s1','s2','s3'].filter((id) => d.shovels[id] && d.shovels[id].active);
+  const strongest = activeIds.length ? activeIds[activeIds.length - 1] : null;
+  const eqDef = strongest ? ISLAND_SHOVEL_DEFS[strongest] : null;
+  const bal = `<div class="ish-bal">${[0,1,2].map((k) => `<span><img src="/bucherinsel/prototype/b${k+1}.png" alt="">${faDigits(d.books[k])}</span>`).join('')}<span class="ish-ton"><img src="assets/ton-logo.webp" alt="TON" style="width:20px;height:20px;border-radius:50%">${d.ton.toFixed(2)} TON</span></div>`;
+  const eq = `<div class="ish-eq" style="--ishr:${eqDef ? eqDef.color : '#4a4f66'}">
+      <div class="ish-pic"><img src="/bucherinsel-shop/assets/${eqDef ? eqDef.img : 'sh1.png'}" alt="" style="${eqDef ? '' : 'opacity:.25;filter:grayscale(1)'}"></div>
+      <div class="ish-info"><div class="ish-cap">بیل شما</div><div class="ish-nm">${eqDef ? esc(eqDef.name) : 'هنوز بیل نداری'}</div>
+      <div class="ish-perks">${['s1','s2','s3'].map((id) => `<span class="ish-perk ${d.shovels[id].active ? '' : 'off'}">${ISLAND_SHOVEL_DEFS[id].icon} ${ISLAND_SHOVEL_DEFS[id].perk}</span>`).join('')}</div>
+      ${activeIds.length ? `<div class="ish-exp">⏳ ${activeIds.map((id) => ISLAND_SHOVEL_DEFS[id].name.replace('بیل ', '') + ': ' + faDigits(d.shovels[id].daysLeft) + ' روز').join(' · ')}</div>` : ''}
+      </div></div>`;
+  const resetRow = `<div class="ish-reset"><div><b>⏰ ریست روزانه</b><small>هر شب ساعت ۰۰:۰۰ به وقت برلین</small></div><div class="ish-cd" id="ishResetCd">${islandHmsFromMs(d.msToReset)}</div></div>`;
+  const shovelCards = ['s1','s2','s3','s4'].map((id) => {
+    const def = ISLAND_SHOVEL_DEFS[id];
+    if (id === 's4') {
+      return `<div class="ish-card r4 soon"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">۴</span><img src="/bucherinsel-shop/assets/${def.img}" alt=""><div class="ish-lockov"><div class="ish-pad">🔒</div><div class="ish-cs">به‌زودی</div></div></div>
+        <div class="ish-bd"><div class="ish-nm">${def.name}</div><div class="ish-fx"><span class="ish-i">${def.icon}</span><span>${def.fx}</span></div><button class="ish-buy" disabled>به‌زودی</button></div></div>`;
+    }
+    const sh = d.shovels[id];
+    const own = sh.active, out = !own && sh.sold >= sh.limit, afford = d.ton + 1e-9 >= sh.priceTon, ok = afford && !out && !d.paused;
+    const stockBadge = own ? `<span class="ish-ownb">✓ فعال · ${faDigits(sh.daysLeft)} روز</span>` : out ? `<span class="ish-ownb soldout">تمام شد</span>` : `<span class="ish-ownb stock ${sh.limit - sh.sold <= 3 ? 'hot' : ''}">فقط ${faDigits(sh.limit - sh.sold)} عدد باقی</span>`;
+    const costBlock = (!own && !out) ? `<div class="ish-cost"><div class="ish-cr"><img src="assets/ton-logo.webp" alt=""><span dir="ltr">${sh.priceTon} TON</span><span class="ish-h ${afford ? 'ok' : ''}">${d.ton.toFixed(2)}/${sh.priceTon}</span></div><div class="ish-pb"><i style="width:${Math.min(100, d.ton / sh.priceTon * 100)}%"></i></div></div>` : '';
+    const dailyBlock = own ? `<div class="ish-cost">
+        <div class="ish-cr"><span class="ish-i">${def.icon}</span><span>امروز</span><span class="ish-h ${sh.dailyPaidToday ? 'ok' : ''}">${sh.dailyPaidToday ? '✓ ' + sh.dailyTon + ' TON' : faDigits(Math.min(d.searchesToday, sh.threshold)) + '/' + faDigits(sh.threshold) + ' جستجو'}</span></div><div class="ish-pb"><i style="width:${sh.dailyPaidToday ? 100 : Math.min(100, d.searchesToday / sh.threshold * 100)}%"></i></div>
+        <div class="ish-cr">⏳<span>${faDigits(sh.daysLeft)} روز باقی</span></div><div class="ish-pb ish-days"><i style="width:${sh.daysLeft / 30 * 100}%"></i></div>
+      </div>` : '';
+    const btn = own ? `<button class="ish-buy owned" disabled>✓ فعال</button>` : out ? `<button class="ish-buy" disabled>تمام شد</button>` : `<button class="ish-buy" data-shop-buy="${id}" ${ok ? '' : 'disabled'}>${!afford ? 'کافی نیست' : 'خرید'}</button>`;
+    return `<div class="ish-card r${def.tier}"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">${faDigits(def.tier)}</span><img src="/bucherinsel-shop/assets/${def.img}" alt="">${stockBadge}</div>
+      <div class="ish-bd"><div class="ish-nm">${def.name}</div><div class="ish-fx"><span class="ish-i">${def.icon}</span><span>${def.fx}</span></div>
+      <div class="ish-cr">👥<span>فروخته شد</span><span class="ish-h" style="color:${out ? '#ff7a7a' : '#cfd3e6'}">${faDigits(sh.sold)}/${faDigits(sh.limit)}</span></div><div class="ish-pb ish-stockb"><i style="width:${sh.sold / sh.limit * 100}%"></i></div>
+      ${costBlock}${dailyBlock}${btn}</div></div>`;
+  }).join('');
+  const X_COLORS = { x1: '#f2b81c', x2: '#4d8fe0', x3: '#b45cff' };
+  const X_CLASS = { x1: '', x2: 'x2', x3: 'x3' };
+  const xlist = Object.entries(d.exchanges).map(([id, ex]) => {
+    const have = d.books[ex.from];
+    const max = Math.floor(have / ex.rate);
+    const q = Math.max(1, Math.min(ISLAND_SHOP.qty[id] || 1, Math.max(1, max)));
+    ISLAND_SHOP.qty[id] = q;
+    const ok = max >= 1;
+    return `<div class="ish-xc ${X_CLASS[id] || ''}" style="--ishr:${X_COLORS[id] || '#f2b81c'}">
+      <div class="ish-sw"><div class="ish-bk"><img src="/bucherinsel/prototype/b${ex.from + 1}.png" alt=""><b>×${faDigits(ex.rate * q)}</b></div><span class="ish-ar">⬅</span><div class="ish-bk"><img src="/bucherinsel/prototype/b${ex.to + 1}.png" alt=""><b>×${faDigits(q)}</b></div></div>
+      <div class="ish-mid"><div class="ish-t">${faDigits(ex.rate)} ${ISLAND_BOOK_NAMES[ex.from]} ← ۱ ${ISLAND_BOOK_NAMES[ex.to]}</div><div class="ish-h ${ok ? 'ok' : ''}">داری: ${faDigits(have)} · ${ok ? 'تا ' + faDigits(max) + ' بار' : 'کافی نیست'}</div><div class="ish-pb"><i style="width:${Math.min(100, have / ex.rate * 100)}%"></i></div></div>
+      <div class="ish-ctl"><div class="ish-qty"><button data-xq="${id}" data-xd="-1" ${q <= 1 ? 'disabled' : ''}>−</button><span>${faDigits(q)}</span><button data-xq="${id}" data-xd="1" ${q >= max ? 'disabled' : ''}>+</button></div>
+      <button class="ish-buy" data-xch="${id}" ${ok ? '' : 'disabled'}>${ok ? 'تبادل' : 'کافی نیست'}</button></div></div>`;
+  }).join('');
+  list.innerHTML = `<div class="ish-wrap">${bal}${eq}${resetRow}
+    <div class="ish-sec"><h3>بیل‌ها</h3><small>۳۰ روز تقویمی · قدرت‌ها با هم جمع می‌شوند</small></div>
+    <div class="ish-grid">${shovelCards}</div>
+    <div class="ish-sec"><h3>تبادل کتاب</h3><small>کتاب‌های اضافه را عوض کن</small></div>
+    <div class="ish-xlist">${xlist}</div>
+    <div class="ish-note">کتاب‌ها را در جزیره‌ی چت پیدا می‌کنی 🏝️<br>بیلی که داری روی جزیره و کنار اسمت در بخش Online دیده می‌شود.</div>
+  </div>`;
+}
+document.addEventListener('click', (e) => {
+  const buyBtn = e.target.closest('[data-shop-buy]');
+  if (buyBtn && !buyBtn.disabled) { islandShopConfirmBuy(buyBtn.dataset.shopBuy); return; }
+  const xqBtn = e.target.closest('[data-xq]');
+  if (xqBtn && !xqBtn.disabled) { ISLAND_SHOP.qty[xqBtn.dataset.xq] = (ISLAND_SHOP.qty[xqBtn.dataset.xq] || 1) + Number(xqBtn.dataset.xd); renderShop(); return; }
+  const xchBtn = e.target.closest('[data-xch]');
+  if (xchBtn && !xchBtn.disabled) { void islandShopExchange(xchBtn.dataset.xch); return; }
+});
 
 // ---- Chat-Sperre durch die "Amir"-Badge (isDeveloper): toggelt chatLockedToDeveloper
 // server-seitig (/api/chat/set-developer-lock), sodass nur noch er schreiben kann.
@@ -6398,10 +6666,11 @@ function revealPack(){
 }
 function closePack(){ $('#packOv').hidden = true; packState = null; render(); }
 function renderShop(){
-  $('#shopTabs').dataset.i = {cars:0, boost:1, stk:3}[shopTab]; $('#tabStk').setAttribute('aria-selected', shopTab==='stk');
+  $('#shopTabs').dataset.i = {cars:0, boost:1, island:2, stk:3}[shopTab]; $('#tabStk').setAttribute('aria-selected', shopTab==='stk');
   $('#tabBoost').setAttribute('aria-selected', shopTab==='boost'); $('#tabCars').setAttribute('aria-selected', shopTab==='cars');
+  $('#tabIsland').setAttribute('aria-selected', shopTab==='island');
   const list = $('#shopList');
-  if (shopTab === 'stk') { renderItems(list); } else if (shopTab === 'boost') {
+  if (shopTab === 'island') { renderIslandShopTab(list); } else if (shopTab === 'stk') { renderItems(list); } else if (shopTab === 'boost') {
     const RC = {common:'#9fb3d9', rare:'#3d8bff', epic:'#c86bff', legend:'#ffc61a'};
     const odds = pk => { const tot = Object.values(pk.w).reduce((a,b)=>a+b,0), o = {common:0,rare:0,epic:0,legend:0};
       for (const [id,v] of Object.entries(pk.w)) o[RARITY[id]] += v / tot * 100; return o; };
@@ -6537,7 +6806,7 @@ $('#chatForm').addEventListener('submit', async e => { e.preventDefault(); const
 $('#tabBoost').onclick = () => { shopTab='boost'; renderShop(); };
 $('#tabCars').onclick = () => { shopTab='cars'; renderShop(); };
 $('#tabStk').onclick = () => { shopTab='stk'; renderShop(); };
-$('#tabIsland').onclick = () => toast(`🏝️ ${t('islandTab')} · ${t('comingSoon')}`);
+$('#tabIsland').onclick = () => { shopTab='island'; renderShop(); };
 document.querySelectorAll('.glock .padlock').forEach(el => el.innerHTML = PADLOCK_SVG);
 /* ---- Zombie Tower lobby ---- */
 const TW_STAKES = [0.01, 0.05, 0.1, 0.5, 1];
