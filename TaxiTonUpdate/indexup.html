@@ -3115,15 +3115,15 @@
   .isl-hit:focus-visible{outline:2px solid #ffd84d;outline-offset:2px}
   .isl-live{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .isl-live #islSpots{pointer-events:auto}
-  .isl-timer{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
-  .isl-timer .isl-tl{font-weight:800;color:#fff;font-size:2.55cqw;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-  .isl-timer .isl-tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:6.1cqw;margin-top:.5cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.2cqw}
+  .isl-timer{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;overflow:hidden}
+  .isl-timer .isl-tl{font-weight:800;color:#fff;font-size:2cqw;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
+  .isl-timer .isl-tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:5.4cqw;margin-top:.5cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.2cqw;white-space:nowrap;direction:ltr}
   .isl-pilltx{display:flex;align-items:center;justify-content:flex-start;padding-right:1.2cqw;box-sizing:border-box;color:#fff;font-weight:800;font-size:2.9cqw;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-  .isl-dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box;position:relative}
-  .isl-dig span{position:absolute;left:33.8%;width:57.3%;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:6.6cqw;color:#ffd84d;text-shadow:0 .45cqw 0 #6b1a05,0 0 1.2cqw rgba(0,0,0,.4);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .isl-dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box}
+  .isl-dig span{position:absolute;left:33.8%;width:57.3%;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:7.4cqw;color:#ffd84d;text-shadow:0 .45cqw 0 #6b1a05,0 0 1.2cqw rgba(0,0,0,.4);white-space:nowrap;font-variant-numeric:tabular-nums;direction:ltr}
   .isl-dig:active span{transform:translateY(.5cqw)}
   .isl-dig[disabled]{cursor:default}
-  .isl-dig.busy span,.isl-dig.off span{font-size:4.6cqw}
+  .isl-dig.off span{font-size:5.2cqw;direction:rtl}
   .isl-dig.off{filter:grayscale(.6) brightness(.8)}
   .isl-hint2{display:flex;align-items:center;justify-content:center;text-align:center;background:rgba(10,8,20,.72);border:.3cqw solid #b07a2b;border-radius:3cqw;color:#f3e6c8;font-size:2.1cqw;white-space:nowrap;overflow:hidden;padding:0 1.5cqw;box-sizing:border-box;backdrop-filter:blur(2px)}
   .isl-hint2 b{color:#ffd23f}
@@ -5954,7 +5954,6 @@ function islandStartMyDigVisual(spotIndex, endsAt){
     if (ring) ring.setAttribute('stroke-dashoffset', String(C * (1 - p)));
     if (ringT) ringT.textContent = islandCountdownText(left);
     if (digTx) digTx.textContent = '⛏️ ' + islandCountdownText(left);
-    const digMsgLeft = $('#islandDigLeft'); if (digMsgLeft) digMsgLeft.textContent = islandCountdownText(left);
     if (left > 0) ISLAND.myDigRaf = requestAnimationFrame(loop);
   };
   loop();
@@ -5968,18 +5967,7 @@ function islandSpark(x, y, k){
 }
 function islandRenderDiggers(){
   const g = $('#islDiggers'); if (!g) return;
-  g.innerHTML = '';
-  const others = (SHOP_ACCOUNT.onlineUsers || []).filter(u => u.islandSearching && String(u.uid) !== SHOP_ACCOUNT.uid).slice(0, 12);
-  others.forEach(u => {
-    const hash = String(u.uid).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    const [x, y] = ISLAND_SANDPTS[hash % ISLAND_SANDPTS.length];
-    const initial = (u.name || '?').charAt(0).toUpperCase();
-    g.appendChild(islandSvgEl('g', {class: 'isl-digger', style: `animation-delay:-${(hash % 7) / 7}s`},
-      `<ellipse cx="${x}" cy="${y + 17}" rx="13" ry="4" fill="#000" opacity=".2"/>
-       <path d="M${x + 10} ${y + 16} l9 -20" stroke="#8d6640" stroke-width="3" stroke-linecap="round"/>
-       <circle cx="${x}" cy="${y}" r="13" fill="#5a4f8c" stroke="#fff" stroke-width="3"/>
-       <text x="${x}" y="${y + 5}" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="system-ui">${esc(initial)}</text>`));
-  });
+  g.innerHTML = ''; // andere Sucher werden per Vorgabe nicht mehr als Avatare gezeigt - nur die eigene Grabstelle zählt
   const hud = $('#islandHudSearchers');
   if (hud) hud.textContent = ISLAND.round.searchers > 0 ? faDigits(ISLAND.round.searchers) + ' نفر در حال جستجو' : '';
 }
@@ -6024,7 +6012,7 @@ function renderIslandScene(){
   digBtn.classList.remove('off', 'busy'); digBtn.disabled = false;
   if (searching) {
     digBtn.disabled = true; digBtn.classList.add('busy');
-    digMsg.innerHTML = '⛏️ در حال جستجو… <b id="islandDigLeft">' + islandCountdownText(me.searchEndsAt - now) + '</b>';
+    digMsg.innerHTML = '⛏️ در حال جستجو…';
     if (!ISLAND.myDigGroup) islandStartMyDigVisual(Number.isInteger(me.spot) ? me.spot : 0, me.searchEndsAt);
   } else if (!r.open) {
     digBtn.disabled = true; digBtn.classList.add('off');
