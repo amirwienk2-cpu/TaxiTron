@@ -1357,8 +1357,9 @@ const ISLAND_OPEN_MS = 30 * 60 * 1000;
 const ISLAND_CLOSED_MS = 10 * 60 * 1000;
 const ISLAND_CYCLE_MS = ISLAND_OPEN_MS + ISLAND_CLOSED_MS; // 40 minutes total
 const ISLAND_SEARCH_MS = 5 * 60 * 1000;
-// Buch 1 = 50%, Buch 2 = 10%, Buch 3 = 0.5% - the remaining 39.5% is "nothing".
-const ISLAND_ODDS = [0.50, 0.10, 0.005];
+// bucherinsel-final/MASTER_SPEC.md §1 (final, replaces every earlier draft):
+// Buch 1 = 70%, Buch 2 = 10%, Buch 3 = 2% - the remaining 18% is "nothing".
+const ISLAND_ODDS = [0.70, 0.10, 0.02];
 const ISLAND_PRIZE_TON = 0.25;
 const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
 const ISLAND_BOT_UID = 'island-bot';
@@ -1373,14 +1374,17 @@ const ISLAND_SEARCH_RATE_LIMIT_MS = 1000;
 // ---------------------------------------------------------------------------
 const ISLAND_TZ = 'Europe/Berlin';
 const ISLAND_SHOVEL_DAYS = 30;
-// s3's per-search "fire chance" from the original spec draft was explicitly
-// removed on request - س3 only ever pays its daily bonus now, same shape as
-// s1/s2.
+// bucherinsel-final/MASTER_SPEC.md §6 (final): s3 pays its daily bonus at 30
+// searches/day AND gives every active owner a 1% chance per completed search
+// at +0.2 TON (never shown as a percentage client-side) - both independent of
+// each other and of the main book roll.
 const ISLAND_SHOVELS = {
   s1: { name: 'بیل طلایی', priceTon: 1, threshold: 15, dailyTon: 0.067, limit: 30 },
   s2: { name: 'بیل آمتیست', priceTon: 3, threshold: 20, dailyTon: 0.2, limit: 20 },
-  s3: { name: 'بیل آتشین', priceTon: 5, threshold: 10, dailyTon: 0.33, limit: 10 },
+  s3: { name: 'بیل آتشین', priceTon: 5, threshold: 30, dailyTon: 0.33, limit: 10 },
 };
+const ISLAND_FIRE_CHANCE = 0.01; // s3 only, per completed search
+const ISLAND_FIRE_TON = 0.2;
 const ISLAND_SHOVEL_ORDER = ['s1', 's2', 's3']; // s3 last = strongest/highest-tier (shown in the dig ring)
 const ISLAND_EXCHANGES = {
   x1: { from: 0, to: 1, rate: 50 },  // 50x book1 -> 1x book2
@@ -1450,7 +1454,7 @@ function islandCheckWinAndPay(user) {
   user.ton = Number((Number(user.ton || 0) + ISLAND_PRIZE_TON).toFixed(9));
   islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: ISLAND_PRIZE_TON, ts: Date.now(), reason: 'win' });
   persistIslandState();
-  postIslandBotMessage('🏆 ' + (user.name || 'Player') + ' هر ۳ کتاب را پیدا کرد و 0.25 TON گرفت!', 'win');
+  postIslandBubbleMessage(user.name, 'books/b3.png', '🏆 هر ۳ کتاب را پیدا کرد و 0.25 TON گرفت!', '');
   broadcastChatEvent('message');
   return true;
 }
@@ -1523,6 +1527,18 @@ function postIslandBotMessage(text, kind) {
   if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
   persistChat();
 }
+// Fund-/Feuer-/Gewinn-Nachrichten verwenden die eigene Bubble-Grafik
+// (bucherinsel-final/assets/island/bubble.png, MASTER_SPEC.md §5.1) statt der
+// normalen System-Karte - der Finder-Name kommt mit, der Bot-Name nicht.
+function postIslandBubbleMessage(finderName, img, text, sub) {
+  chatMessages.push({
+    id: chatNextId++, uid: ISLAND_BOT_UID, name: finderName || 'Player', room: ISLAND_ROOM, text: '',
+    ts: Date.now(), isAdmin: false, isDesigner: false, chatMuted: false, replyTo: null,
+    islandKind: 'bubble', islandBubbleImg: img, islandBubbleText: text, islandBubbleSub: sub || '',
+  });
+  if (chatMessages.length > CHAT_MAX_STORED) chatMessages = chatMessages.slice(-CHAT_MAX_STORED);
+  persistChat();
+}
 // Resolves one finished search (idempotent: islandSearchEndsAt is cleared
 // first, so this can never pay out or re-roll the same search twice even if
 // it is reached both from the periodic sweep below and a direct state poll
@@ -1573,18 +1589,31 @@ function resolveIslandSearch(user) {
     }
   }
   user.islandLastDailyBonuses = dailyBonuses;
-  if (dailyBonuses.length) persistIslandState();
+  let fireWon = false;
+  if (islandShovelActive(user, 's3') && crypto.randomInt(0, 1000000) / 1000000 < ISLAND_FIRE_CHANCE) {
+    fireWon = true;
+    user.ton = Number((Number(user.ton || 0) + ISLAND_FIRE_TON).toFixed(9));
+    islandState.payoutLog.push({ uid: String(user.id), name: user.name, ton: ISLAND_FIRE_TON, ts: Date.now(), reason: 'fire_drop' });
+  }
+  user.islandLastFireTon = fireWon ? ISLAND_FIRE_TON : 0;
+  if (dailyBonuses.length || fireWon) persistIslandState();
   persist();
-  // Buch 1 wird bewusst nicht im Chat angekündigt (zu häufig, nur Spam) - siehe SPEC.md Punkt 4.
-  if (k === 1 || k === 2) {
-    postIslandBotMessage((user.name || 'Player') + ' ' + ISLAND_BOOK_NAMES[k] + ' را پیدا کرد (' + islandDistinctBooks(user) + '/۳)', 'found');
+  if (k === 1) {
+    postIslandBubbleMessage(user.name, 'books/b2.png', ISLAND_BOOK_NAMES[1] + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
+    broadcastChatEvent('message');
+  } else if (k === 2) {
+    postIslandBubbleMessage(user.name, 'books/b3.png', '✨ ' + ISLAND_BOOK_NAMES[2] + ' را پیدا کرد!', 'کلکسیون: ' + islandFaDigits(islandDistinctBooks(user)) + '/۳');
+    broadcastChatEvent('message');
+  }
+  if (fireWon) {
+    postIslandBubbleMessage(user.name, 'shovels/sh3.png', '🔥 با بیل آتشین ' + ISLAND_FIRE_TON + ' TON پیدا کرد!', '');
     broadcastChatEvent('message');
   }
   dailyBonuses.forEach((b) => {
     postIslandBotMessage((user.name || 'Player') + ' ' + islandFaDigits(ISLAND_SHOVELS[b.id].threshold) + ' جستجوی امروز را کامل کرد و ' + b.ton + ' TON جایزه‌ی روزانه گرفت!', 'daily');
     broadcastChatEvent('message');
   });
-  return { k, won, isNew, lastText, dailyBonuses };
+  return { k, won, isNew, lastText, dailyBonuses, fireWon };
 }
 // Periodic sweep: resolves any searches whose 5-minute timer already elapsed
 // (so results reach everyone even if that user never polls again), and
@@ -1927,6 +1956,7 @@ function newUser(id, name) {
     islandSearchesDay: 0,
     islandDailyBonusDay: {},
     islandLastDailyBonuses: [],
+    islandLastFireTon: 0,
     isChatAdmin: false,
     adminBadge: 'boy',
     isDesigner: false,
@@ -3942,6 +3972,7 @@ app.get('/api/island/state', requireUserFromQuery, (req, res) => {
       lastIsNew: user.islandLastIsNew === true,
       lastWon: user.islandLastWon === true,
       lastDailyBonuses: Array.isArray(user.islandLastDailyBonuses) ? user.islandLastDailyBonuses : [],
+      lastFireTon: Number(user.islandLastFireTon || 0),
       shovels: ISLAND_SHOVEL_ORDER.filter((id) => islandShovelActive(user, id)),
       searchesToday: Number(user.islandSearchesToday || 0),
       shovelProgress: publicIslandShop(user).shovels,

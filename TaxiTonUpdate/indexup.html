@@ -3097,19 +3097,31 @@
   .race-btn.monster-btn.live{background:linear-gradient(180deg,#ff5a6e,#c8213a);animation:monsterPulse 1s infinite}
   @keyframes monsterPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,.55)}50%{box-shadow:0 0 0 6px rgba(255,45,85,0)}}
   /* ==== جزیره کتاب‌ها (Bücherinsel): Chat-Header-Button neben dem Schloss, für
-     alle sichtbar (Schloss bleibt admin-only). Zeigt Restminuten bzw. بسته. ==== */
-  .race-btn.island-btn{background:linear-gradient(180deg,#2c8aa6,#1b5f78);box-shadow:0 3px 0 #0f3e50}
-  .race-btn.island-btn.closed{background:linear-gradient(180deg,#4a5163,#353a49);box-shadow:0 3px 0 #23262f}
-  .race-btn.island-btn.ready{animation:islandReady 1.8s ease-in-out infinite}
-  @keyframes islandReady{0%,100%{box-shadow:0 3px 0 #0f3e50,0 0 0 0 rgba(246,198,43,0)}50%{box-shadow:0 3px 0 #0f3e50,0 0 0 6px rgba(246,198,43,.35)}}
-  /* ==== Bücherinsel-Spielfenster: 1:1 aus bucherinsel-design/prototype/index.html übernommen
+     alle sichtbar (Schloss bleibt admin-only). Icon-Button mit Countdown-Schild,
+     1:1 nach bucherinsel-final/MASTER_SPEC.md §2 / prototype .abtn.island. ==== */
+  .isl-headbtn{all:unset;position:relative;cursor:pointer;width:62px;height:48px;border-radius:15px;background:linear-gradient(180deg,#123a8c,#0a2263 60%,#071a4d);box-shadow:inset 0 0 0 2px #f6c62b,inset 0 3px 0 rgba(255,255,255,.18),0 4px 0 #b8860b,0 6px 12px rgba(0,0,0,.45);flex-shrink:0;display:inline-block}
+  .isl-headbtn-bg{position:absolute;inset:3px;border-radius:12px;background:radial-gradient(circle at 50% 65%,rgba(80,190,255,.45),transparent 65%);pointer-events:none}
+  .isl-headbtn-icon{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+  .isl-headbtn.ready .isl-headbtn-icon{animation:islHeadBob 2.4s ease-in-out infinite}
+  @keyframes islHeadBob{50%{transform:translate(-50%,-50%) translateY(-3px) rotate(-3deg)}}
+  .isl-headbtn.ready::after{content:"";position:absolute;inset:-2px;border-radius:17px;border:2px solid #ffd84d;pointer-events:none;animation:islHeadGlow 1.8s ease-out infinite}
+  @keyframes islHeadGlow{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.28)}}
+  .isl-headbtn-lock{position:absolute;top:-7px;right:-7px;font-size:13px;width:20px;height:20px;border-radius:50%;background:#0a2263;border:1.5px solid #f6c62b;display:none;place-items:center}
+  .isl-headbtn-tag{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);min-width:40px;text-align:center;font-family:"Lilita One","Vazirmatn",system-ui;font-size:11px;font-weight:400;line-height:15px;padding:0 6px;border-radius:8px;background:linear-gradient(180deg,#3fdc6a,#20a64a);color:#fff;border:1.5px solid #0a2263;box-shadow:0 2px 0 #116b2e;white-space:nowrap;direction:ltr;font-variant-numeric:tabular-nums}
+  .isl-headbtn.searching .isl-headbtn-tag{background:linear-gradient(180deg,#ffe066,#f2b81c);color:#3a2700;box-shadow:0 2px 0 #9a6c06}
+  .isl-headbtn.closed{background:linear-gradient(180deg,#1c2340,#121731);box-shadow:inset 0 0 0 2px #6b5a2a,0 4px 0 #3e3416,0 6px 12px rgba(0,0,0,.45)}
+  .isl-headbtn.closed .isl-headbtn-bg{display:none}
+  .isl-headbtn.closed .isl-headbtn-icon{filter:grayscale(.85) brightness(.6)}
+  .isl-headbtn.closed .isl-headbtn-lock{display:grid}
+  .isl-headbtn.closed .isl-headbtn-tag{background:linear-gradient(180deg,#5a6077,#3d4257);box-shadow:0 2px 0 #23262f;color:#e3e6f0}
+  /* ==== Bücherinsel-Spielfenster: 1:1 aus bucherinsel-final/prototype/index.html übernommen
      (Design/Positionen nicht verändern), nur mit "isl-" Präfix versehen, damit nichts
-     mit dem Rest der App kollidiert. Bilder liegen unter /bucherinsel-design/assets/. ==== */
+     mit dem Rest der App kollidiert. Bilder liegen unter /bucherinsel-final/assets/. ==== */
   .isl-scrim{position:fixed;inset:0;background:rgba(5,6,10,.6);display:flex;align-items:flex-end;justify-content:center;z-index:9000}
   .isl-sheet{width:100%;max-width:480px;max-height:94%;overflow-y:auto;background:#0b1430;padding:0;display:block;border:0;border-radius:24px 24px 0 0;animation:islUp .28s ease-out;scrollbar-width:none;direction:rtl}
   .isl-sheet::-webkit-scrollbar{display:none}
   @keyframes islUp{from{transform:translateY(40px);opacity:.4}}
-  .isl-art{position:relative;width:100%;aspect-ratio:1024/1536;background:url(/bucherinsel-design/assets/island/base4.jpg) center/100% 100% no-repeat;container-type:inline-size;user-select:none;-webkit-user-select:none;font-family:"Vazirmatn",sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .isl-art{position:relative;width:100%;aspect-ratio:1024/1536;background:url(/bucherinsel-final/assets/island/base5.jpg) center/100% 100% no-repeat;container-type:inline-size;user-select:none;-webkit-user-select:none;font-family:"Vazirmatn",sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
   .isl-ov{position:absolute;margin:0}
   .isl-hit{all:unset;position:absolute;cursor:pointer}
   .isl-hit:focus-visible{outline:2px solid #ffd84d;outline-offset:2px}
@@ -3118,41 +3130,49 @@
   .isl-timer{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;overflow:hidden}
   .isl-timer .isl-tl{font-weight:800;color:#fff;font-size:1.7cqw;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
   .isl-timer .isl-tv{font-family:"Lalezar","Vazirmatn",sans-serif;font-size:4.4cqw;margin-top:.4cqw;background:linear-gradient(#ffe98a,#f5be1e 55%,#d79a0c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .25cqw 0 #4a2c05);font-variant-numeric:tabular-nums;letter-spacing:.1cqw;white-space:nowrap;direction:ltr}
-  .isl-pilltx{display:flex;align-items:center;justify-content:flex-start;padding-right:1.2cqw;box-sizing:border-box;color:#fff;font-weight:800;font-size:2.9cqw;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-  .isl-dig{display:flex;align-items:center;justify-content:center;padding-left:12.4%;box-sizing:border-box}
-  .isl-dig span{position:absolute;left:33.8%;width:57.3%;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:7.4cqw;color:#ffd84d;text-shadow:0 .45cqw 0 #6b1a05,0 0 1.2cqw rgba(0,0,0,.4);white-space:nowrap;font-variant-numeric:tabular-nums;direction:ltr}
+  .isl-pilltx{display:flex;align-items:center;justify-content:center;padding:0;box-sizing:border-box;color:#fff;font-weight:800;font-size:2.6cqw;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .isl-dig{display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+  .isl-dig span{position:absolute;left:30.8%;width:47.9%;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:6.6cqw;color:#ffd84d;text-shadow:0 .45cqw 0 #6b1a05,0 0 1.2cqw rgba(0,0,0,.4);white-space:nowrap;font-variant-numeric:tabular-nums;direction:ltr}
   .isl-dig:active span{transform:translateY(.5cqw)}
   .isl-dig[disabled]{cursor:default}
-  .isl-dig.off span{font-size:5.2cqw;direction:rtl}
+  .isl-dig.off span{font-size:4.6cqw;direction:rtl}
   .isl-dig.off{filter:grayscale(.6) brightness(.8)}
+  .isl-dig.busy span{flex-direction:column;line-height:1;font-size:6.4cqw;letter-spacing:.3cqw}
+  .isl-dig.busy span small{font-family:"Vazirmatn",sans-serif;font-weight:800;font-size:2.4cqw;letter-spacing:0;color:#fff3c4;text-shadow:0 .25cqw 0 #6b1a05;margin-bottom:.4cqw;direction:rtl}
   .isl-hint2{display:flex;align-items:center;justify-content:center;text-align:center;background:rgba(10,8,20,.72);border:.3cqw solid #b07a2b;border-radius:3cqw;color:#f3e6c8;font-size:2.1cqw;white-space:nowrap;overflow:hidden;padding:0 1.5cqw;box-sizing:border-box;backdrop-filter:blur(2px)}
   .isl-hint2 b{color:#ffd23f}
-  .isl-hint2:empty{display:none}
+  .isl-hint2:empty{display:none;border:0;background:none}
   .isl-slot{display:block;position:absolute}
   .isl-slot .isl-gr{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;border-radius:1.4cqw}
-  .isl-slot .isl-q{position:absolute;inset:0;display:grid;place-items:center;font-family:"Lalezar","Vazirmatn";font-size:3.2cqw;color:#cdb98e;text-align:center;line-height:1.3;text-shadow:0 .3cqw .6cqw #000}
+  .isl-slot .isl-q{position:absolute;inset:0;display:grid;place-items:center;font-family:"Lalezar","Vazirmatn";font-size:3.2cqw;color:#bcd0ff;text-align:center;line-height:1.3;text-shadow:0 .3cqw .6cqw #000}
   .isl-slot .isl-n{position:absolute;top:4%;left:6%;font-family:"Lalezar","Vazirmatn",sans-serif;font-size:3.4cqw;color:#2a1f00;background:linear-gradient(#ffe680,#f3b917);border:.35cqw solid #7a5a12;border-radius:2cqw;padding:0 1.4cqw;box-shadow:0 .4cqw 0 #6b4a05;direction:ltr}
   .isl-slot.pop{animation:islPop .6s}
-  @keyframes islPop{40%{transform:scale(1.08)}}
+  @keyframes islPop{40%{transform:scale(1.12)}}
   .isl-sp{cursor:default}
   .isl-sp .isl-ring{opacity:0}
   .isl-art.can .isl-sp{cursor:pointer}
-  .isl-art.can .isl-sp .isl-ring{opacity:1;animation:islPulse 1.8s ease-out infinite}
+  .isl-art.can .isl-sp .isl-ring{opacity:1;stroke:#ffde59;animation:islPulse 1.8s ease-out infinite}
   .isl-sp:focus{outline:none}
   .isl-sp.dug{display:none}
   @keyframes islPulse{0%{r:12;opacity:.8}100%{r:30;opacity:0}}
   .isl-night{opacity:0;transition:opacity 1.2s}
   .isl-art.closed .isl-night{opacity:1}
-  .isl-closedban{pointer-events:none;opacity:0;transform:scale(.9);transition:opacity .6s,transform .6s}
-  .isl-art.closed .isl-closedban{opacity:1;transform:none}
+  /* Insel zu: das gesamte Fenster wird schwarz, nur das Banner bleibt sichtbar (SPEC 3.6) */
+  .isl-blackout{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .6s;z-index:4}
+  .isl-art.closed .isl-blackout{opacity:1;pointer-events:auto}
+  .isl-closedban{pointer-events:none;opacity:0;z-index:5;transform:translateY(-50%) scale(.9);transition:opacity .6s,transform .6s}
+  .isl-art.closed .isl-closedban{opacity:1;transform:translateY(-50%) scale(1)}
   .isl-closedban img{display:block;width:100%;height:auto;filter:drop-shadow(0 1.5cqw 2cqw rgba(0,0,0,.6))}
-  .isl-closedban .isl-cv{position:absolute;left:53.1%;width:22.6%;top:61.1%;height:14.2%;display:grid;place-items:center;font-family:"Lalezar","Vazirmatn";font-size:7cqw;color:#fff;text-shadow:0 .4cqw 0 #3a2410;font-variant-numeric:tabular-nums}
+  .isl-closedban .isl-cv{position:absolute;left:48.6%;width:26.3%;top:59%;height:19.6%;display:grid;place-items:center;font-family:"Lalezar","Vazirmatn";font-size:7cqw;color:#fff;text-shadow:0 .4cqw 0 #061230;font-variant-numeric:tabular-nums}
+  /* Insel öffnet: Banner 3.5s eingeblendet (SPEC 3.7) */
+  .isl-openban{pointer-events:none;opacity:0;transform:scale(.6) translateY(4cqw);transition:opacity .5s,transform .6s cubic-bezier(.2,1.5,.4,1);z-index:5}
+  .isl-openban.show{opacity:1;transform:none}
+  .isl-openban img{display:block;width:100%;height:auto;filter:drop-shadow(0 1.5cqw 2cqw rgba(0,0,0,.6))}
+  #islandClose{z-index:6}
   .isl-shovel{animation:islDg .45s ease-in-out infinite alternate}
   @keyframes islDg{from{transform:rotate(-14deg)}to{transform:rotate(10deg) translateY(4px)}}
   .isl-dirt{animation:islDirt 1s ease-out infinite}
   @keyframes islDirt{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-28px)}}
-  .isl-digger{animation:islDig2 .9s ease-in-out infinite alternate}
-  @keyframes islDig2{to{transform:translateY(-3px)}}
   .isl-spark{animation:islSpark 1.3s ease-out forwards;transform-box:fill-box;transform-origin:center}
   @keyframes islSpark{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1) translateY(-24px)}}
   .isl-reveal{display:grid;place-items:center;background:rgba(6,14,28,.6);border-radius:2.6cqw;z-index:3;cursor:pointer;overflow:hidden}
@@ -3181,7 +3201,18 @@
   .mrow.island-message.win .bub{background:linear-gradient(135deg,#3a2f0d,#2a2416);border-color:#f2c14e}
   .isl-msg-head{font-weight:800;font-size:13px;margin-bottom:3px;color:#e9cf9a}
   .isl-chat-btn{all:unset;cursor:pointer;margin-top:8px;display:inline-block;background:var(--yellow,#f6c62b);color:#2a1f00;font-weight:800;font-size:13px;padding:6px 14px;border-radius:10px;box-shadow:0 3px 0 #c99512}
-  /* ==== جزیره کتاب‌ها Shop-Tab (bucherinsel-shop/SHOP_SPEC.md): Schaufeln + Bücher-Tausch.
+  /* ==== جزیره کتاب‌ها Fund-Bubble im Chat (MASTER_SPEC.md §5.1): eigene bubble.png-
+     Grafik, rechts ausgerichtet, Titel ist schon im Bild - 1:1 aus .fbub im Prototyp. ==== */
+  .mrow.isl-brow{display:flex;justify-content:flex-start;padding:0 12px;margin:2px 0}
+  .isl-fbub{position:relative;width:min(78%,260px);aspect-ratio:1862/845;background:url(/bucherinsel-final/assets/island/bubble.png) center/100% 100% no-repeat;container-type:inline-size;font-family:"Vazirmatn",sans-serif;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))}
+  .isl-fin{position:absolute;left:6%;right:6%;top:31%;bottom:14%;display:flex;align-items:center;gap:4cqw}
+  .isl-fin img{height:100%;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 1cqw 1.5cqw rgba(0,0,0,.6));flex-shrink:0}
+  .isl-ft{display:grid;gap:.6cqw;min-width:0}
+  .isl-ft b{font-family:"Lalezar","Vazirmatn",sans-serif;font-weight:400;font-size:6.2cqw;line-height:1.1;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .isl-ft span{font-size:4.4cqw;font-weight:800;color:#ffd84d;line-height:1.35}
+  .isl-ft em{font-style:normal;font-size:3.6cqw;color:#bcd0ff}
+  .isl-fbt{position:absolute;left:6%;bottom:5.5%;font-size:3cqw;color:#8fa6dd;direction:ltr}
+  /* ==== جزیره کتاب‌ها Shop-Tab (bucherinsel-final/MASTER_SPEC.md §6): Schaufeln + Bücher-Tausch.
      1:1 nach den Screenshots, Persisch/RTL, "ish-" Präfix gegen Kollisionen. ==== */
   .ish-wrap{display:grid;gap:14px;font-family:"Vazirmatn",system-ui,sans-serif;direction:rtl;padding:2px 2px 10px}
   .ish-bal{display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;align-items:center;background:#171821;border:1px solid #2a2c39;border-radius:16px;padding:8px 10px}
@@ -3462,7 +3493,12 @@
           </div>
           <span id="cardEventCountdown" class="card-event-countdown" hidden><i></i><span id="cardEventCountdownLabel">پایان رویداد</span><b id="cardEventCountdownValue">12:00:00</b></span>
           <button type="button" class="race-btn monster-btn" id="monsterBtn" hidden><span id="monsterBtnText">👹 --:--</span></button>
-          <button type="button" class="race-btn island-btn" id="islandBtn" hidden><span id="islandBtnText">🏝️ --</span></button>
+          <button type="button" class="isl-headbtn" id="islandBtn" aria-label="جزیره کتاب‌ها" hidden>
+            <span class="isl-headbtn-bg"></span>
+            <img class="isl-headbtn-icon" src="/bucherinsel-final/assets/island/isl_icon.png" alt="">
+            <span class="isl-headbtn-lock" aria-hidden="true">🔒</span>
+            <span class="isl-headbtn-tag" id="islandBtnText">—</span>
+          </button>
           <button type="button" class="race-btn chat-lock-btn" id="chatLockBtn" hidden><span id="chatLockBtnText">🔒</span></button>
           <button type="button" class="race-btn" id="raceBtn" hidden><span id="raceBtnText">🏁 --:--</span></button>
         </div>
@@ -3800,36 +3836,40 @@
     </div>
   </div>
 
-  <!-- جزیره کتاب‌ها (Bücherinsel): Bottom-Sheet 1:1 nach bucherinsel-design/prototype/index.html -->
+  <!-- جزیره کتاب‌ها (Bücherinsel): Bottom-Sheet 1:1 nach bucherinsel-final/prototype/index.html -->
   <div class="isl-scrim" id="islandScrim" hidden>
     <div class="isl-sheet" dir="rtl" role="dialog" aria-label="جزیره کتاب‌ها">
       <div class="isl-art" id="islandScene">
-        <button class="isl-hit" id="islandClose" aria-label="بستن" style="left:3.4%;top:1.6%;width:9.8%;height:6.5%;border-radius:50%"></button>
-        <div class="isl-ov isl-pilltx" style="left:84.6%;top:3.78%;width:13.2%;height:2.21%"><span id="islandHudSearchers"></span></div>
-        <div class="isl-ov isl-timer" style="left:84.8%;top:9.11%;width:12.9%;height:5.73%">
+        <button class="isl-hit" id="islandClose" aria-label="بستن" style="left:3.9%;top:2.3%;width:9.8%;height:6.5%;border-radius:50%"></button>
+        <div class="isl-ov isl-pilltx" style="left:79.7%;top:3.26%;width:17.4%;height:3.1%"><span id="islandHudSearchers"></span></div>
+        <div class="isl-ov isl-timer" style="left:83.8%;top:8.46%;width:13.5%;height:6.12%">
           <div class="isl-tl" id="islandClockL">تا بسته شدن:</div><div class="isl-tv" id="islandClockV">۰۰:۰۰</div>
         </div>
         <svg class="isl-live" viewBox="0 0 1024 1536" aria-hidden="false">
           <defs>
-            <linearGradient id="islNightg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#030714" stop-opacity=".72"/><stop offset="1" stop-color="#030714" stop-opacity=".55"/></linearGradient>
+            <linearGradient id="islNightg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".04" stop-color="#000" stop-opacity="1"/><stop offset=".96" stop-color="#000" stop-opacity="1"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
             <linearGradient id="islGoldr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset=".5" stop-color="#f3b917"/><stop offset="1" stop-color="#b9800b"/></linearGradient>
           </defs>
           <g id="islDiggers"></g>
           <g id="islSpots"></g>
           <g id="islFx"></g>
-          <rect class="isl-night" x="0" y="240" width="1024" height="650" fill="url(#islNightg)" pointer-events="none"/>
+          <rect class="isl-night" x="0" y="225" width="1024" height="700" fill="url(#islNightg)" pointer-events="none"/>
         </svg>
-        <div class="isl-ov isl-closedban" style="left:3%;top:21%;width:94%">
-          <img src="/bucherinsel-design/assets/island/closed.png" alt="جزیره بسته است">
+        <div class="isl-blackout"></div>
+        <div class="isl-ov isl-closedban" style="left:3%;top:50%;width:94%">
+          <img src="/bucherinsel-final/assets/island/closed2.png" alt="جزیره بسته است">
           <div class="isl-cv" id="islandClosedV">۰۰:۰۰</div>
         </div>
-        <div class="isl-ov isl-reveal" id="islandReveal" hidden style="left:1%;top:16%;width:98%;height:41%"></div>
-        <div class="isl-ov isl-hint2" id="islandDigMsg" style="left:56%;top:55.7%;width:42%;height:2.5%"></div>
-        <button class="isl-hit isl-dig" id="islandDig" style="left:4.9%;top:58.6%;width:50.8%;height:7.5%"><span id="islandDigTx">بگرد</span></button>
+        <div class="isl-ov isl-openban" id="islandOpenBan" style="left:3%;top:22%;width:94%">
+          <img src="/bucherinsel-final/assets/island/opened.png" alt="جزیره باز شد">
+        </div>
+        <div class="isl-ov isl-reveal" id="islandReveal" hidden style="left:1%;top:16%;width:98%;height:42%"></div>
+        <div class="isl-ov isl-hint2" id="islandDigMsg" style="left:62%;top:57.6%;width:35%;height:2.5%"></div>
+        <button class="isl-hit isl-dig" id="islandDig" style="left:3.7%;top:60.2%;width:56.05%;height:9.1%"><span id="islandDigTx">بگرد</span></button>
         <!-- Rahmen: rechts=Buch1, Mitte=Buch2, links=Buch3 -->
-        <div class="isl-ov isl-slot" id="islandSlot1" style="left:68.36%;top:68.49%;width:28.32%;height:17.32%"></div>
-        <div class="isl-ov isl-slot" id="islandSlot2" style="left:37.11%;top:68.49%;width:27.54%;height:17.32%"></div>
-        <div class="isl-ov isl-slot" id="islandSlot3" style="left:4.1%;top:68.49%;width:29.59%;height:17.32%"></div>
+        <div class="isl-ov isl-slot" id="islandSlot1" style="left:67.58%;top:71.48%;width:27.54%;height:13.15%"></div>
+        <div class="isl-ov isl-slot" id="islandSlot2" style="left:36.52%;top:71.48%;width:27.34%;height:13.15%"></div>
+        <div class="isl-ov isl-slot" id="islandSlot3" style="left:5.47%;top:71.48%;width:27.54%;height:13.15%"></div>
       </div>
     </div>
   </div>
@@ -4462,7 +4502,7 @@ const meUser = () => ({n: myTelegramName(), c:'#2d6bff', lvl: pLv().l, img: type
 function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls(fr)} ${u.img ? 'img' : ''}" ${who ? `data-user="${esc(who)}"` : ''} style="--uc:${u.c}${u.img ? `;background-image:url('${u.img}')` : ''}">${esc(initials(u.n))}${fr === undefined ? '<i></i>' : ''}</span>`; }
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
-  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,isZombieBot:message.isZombieBot===true,islandKind:message.islandKind||'',reply:message.replyTo?{id:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+  return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,isZombieBot:message.isZombieBot===true,islandKind:message.islandKind||'',islandBubbleImg:message.islandBubbleImg||'',islandBubbleText:message.islandBubbleText||'',islandBubbleSub:message.islandBubbleSub||'',reply:message.replyTo?{id:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -4822,13 +4862,21 @@ function renderChat(){
   const prevScrollHeight = chatLogEl.scrollHeight, prevScrollTop = chatLogEl.scrollTop, prevClientHeight = chatLogEl.clientHeight;
   const wasNearBottom = prevScrollHeight === 0 || (prevScrollHeight - prevScrollTop - prevClientHeight < 100);
   $('#chatlog').innerHTML = msgs.map((m, i) => {
+    const dk = new Date(m.ts).toDateString(), sep = dk !== lastDay ? `<div class="dsep"><span>${esc(dayLabel(m.ts))}</span></div>` : ''; lastDay = dk;
+    if (m.islandKind === 'bubble') {
+      // جزیره کتاب‌ها Fund-Bubble (MASTER_SPEC.md §5.1): eigene bubble.png-Grafik statt
+      // der normalen Bubble/Avatar-Reihe, rechts ausgerichtet wie im Prototyp (.fbub/.brow).
+      const img = m.islandBubbleImg ? `<img src="/bucherinsel-final/assets/${m.islandBubbleImg}" alt="">` : '';
+      return sep + `<div class="mrow isl-brow" dir="rtl" id="msg-${m.id != null ? String(m.id) : 't' + m.ts}" data-ts="${m.ts}">
+        <div class="isl-fbub"><div class="isl-fin">${img}<div class="isl-ft"><b>${esc(m.who)}</b><span>${esc(m.islandBubbleText)}</span>${m.islandBubbleSub ? `<em>${esc(m.islandBubbleSub)}</em>` : ''}</div></div><div class="isl-fbt">${hhmm(m.ts)}</div></div>
+      </div>`;
+    }
     const mine = !!m.mine, peer = mine ? null : userOf(m.who), u = mine ? meUser() : {...peer, ...(m.photoUrl ? {img:m.photoUrl} : {}), isChatAdmin:m.isChatAdmin===true||peer.isChatAdmin===true, adminBadge:m.adminBadge||peer.adminBadge, isDesigner:m.isDesigner===true||peer.isDesigner===true, isSupporter:m.isSupporter===true||peer.isSupporter===true, isDeveloper:m.isDeveloper===true||peer.isDeveloper===true, badge4:m.badge4===true||peer.badge4===true, badge5:m.badge5===true||peer.badge5===true, hasLevel4:m.hasLevel4===true||peer.hasLevel4===true, hasLevel5:m.hasLevel5===true||peer.hasLevel5===true};
     const chatStyle = m.chatItems && typeof m.chatItems === 'object' ? m.chatItems : {};
     const messageFrame = mine ? eqItem('frm') : chatStyle.frm;
     const messageBubble = mine ? eqItem('bub') : chatStyle.bub;
     const prev = msgs[i-1], grouped = prev && !!prev.mine === mine && (prev.who === m.who) && (m.ts - prev.ts < 5*60000);
     const nx = msgs[i+1], lastG = !(nx && !!nx.mine === mine && nx.who === m.who && (nx.ts - m.ts < 5*60000));
-    const dk = new Date(m.ts).toDateString(), sep = dk !== lastDay ? `<div class="dsep"><span>${esc(dayLabel(m.ts))}</span></div>` : ''; lastDay = dk;
     const domId = m.id != null ? String(m.id) : 't' + m.ts;
     chatIdx.set(String(m.ts), {id:m.id,ts:m.ts, who: mine ? '@me' : m.who, name:u.n, c:u.c, text:m.text, stk:m.stk});
     const showFrame = messageFrame && messageFrame !== 'none';
@@ -5778,24 +5826,24 @@ function eventCountdownText(ms){
 // chat. The server (see server.js's ISLAND_* block) is the sole source of truth for
 // the round schedule, book odds and the TON payout - everything here only ever
 // displays what /api/island/state and the 'island' SSE broadcast say. Visual
-// design/positions are a 1:1 port of bucherinsel-design/prototype/index.html (see
-// bucherinsel-design/DESIGN_SPEC.md); only its result/schedule logic lives on the server.
+// design/positions are a 1:1 port of bucherinsel-final/prototype/index.html (see
+// bucherinsel-final/MASTER_SPEC.md); only its result/schedule logic lives on the server.
 const ISLAND_SEARCH_MS = 5 * 60 * 1000; // matches server.js ISLAND_SEARCH_MS, only used for the digging-ring animation
 const ISLAND_BOOK_NAMES = ['نقشه قدیمی', 'دفتر ناخدا', 'کتاب طلایی'];
-const ISLAND_SPOTS = [[595,315],[405,447],[622,447],[858,465],[115,510],[735,718]];
+const ISLAND_SPOTS = [[577,345],[405,515],[608,500],[855,508],[130,545],[865,785]];
 const ISLAND_SANDPTS = [[330,420],[470,470],[700,380],[760,430],[890,520],[560,520],[640,700],[800,640],[470,560],[905,440],[690,760],[380,500]];
 const ISLAND = {
   round: {open:false, opensAt:0, closesAt:0, searchers:0},
-  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
-  sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false,
+  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, spot:null, lastText:'', lastAt:0, lastK:-1, lastIsNew:false, lastWon:false, lastDailyBonuses:[], lastFireTon:0, shovels:[], searchesToday:0, shovelProgress:{}},
+  sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false, wasOpen:null,
 };
-// جزیره کتاب‌ها Shop (bucherinsel-shop/SHOP_SPEC.md): shovels + book exchange.
-// Fire-chance line from the original spec draft was removed on request - s3
-// only ever pays its daily bonus (same shape as s1/s2), nothing per-search.
+// جزیره کتاب‌ها Shop (bucherinsel-final/MASTER_SPEC.md §6): shovels + book exchange.
+// s3's 1% Feuer-Chance pro Suche (+0.2 TON, nie als Prozent angezeigt) kommt
+// zusätzlich zum täglichen Bonus - beides läuft serverseitig.
 const ISLAND_SHOVEL_DEFS = {
   s1: { tier: 1, img: 'sh1.png', name: 'بیل طلایی', rar: 'کمیاب', color: '#f2b81c', icon: '⭐', perk: 'روزانه 0.067', fx: 'روزانه <b dir="ltr">0.067 TON</b> با ۱۵ جستجو<br><b>۳۰ روز</b>' },
   s2: { tier: 2, img: 'sh2.png', name: 'بیل آمتیست', rar: 'حماسی', color: '#b45cff', icon: '💜', perk: 'روزانه 0.2', fx: 'روزانه <b dir="ltr">0.2 TON</b> با ۲۰ جستجو<br><b>۳۰ روز</b>' },
-  s3: { tier: 3, img: 'sh3.png', name: 'بیل آتشین', rar: 'افسانه‌ای', color: '#ff5a1f', icon: '🔥', perk: 'روزانه 0.33', fx: 'روزانه <b dir="ltr">0.33 TON</b> با ۱۰ جستجو<br><b>۳۰ روز</b>' },
+  s3: { tier: 3, img: 'sh3.png', name: 'بیل آتشین', rar: 'افسانه‌ای', color: '#ff5a1f', icon: '🔥', perk: 'شانس 0.2 · روزانه 0.33', fx: 'هر جستجو شانس <b dir="ltr">0.2 TON</b><br>+ روزانه <b dir="ltr">0.33 TON</b> با ۳۰ جستجو · <b>۳۰ روز</b>' },
   s4: { tier: 4, img: 'sh4.png', name: 'بیل یخی', rar: 'اسطوره‌ای', color: '#38bdf8', icon: '❄️', perk: '', fx: 'قدرت مخفی…' },
 };
 const ISLAND_SHOP = { data: null, fetchedAt: 0, qty: {x1:1, x2:1, x3:1} };
@@ -5822,9 +5870,9 @@ function islandShovelHintLine(me){
 }
 function islandBookBadgesHtml(u){
   const counts = [u.islandBook1 || 0, u.islandBook2 || 0, u.islandBook3 || 0];
-  const imgs = [0, 1, 2].map(k => `<span class="isl-bw"><img src="/bucherinsel-design/assets/b${k + 1}.png" class="${counts[k] > 0 ? '' : 'off'}" alt="">${counts[k] > 1 ? `<sup>${faDigits(counts[k])}</sup>` : ''}</span>`).join('');
+  const imgs = [0, 1, 2].map(k => `<span class="isl-bw"><img src="/bucherinsel-final/assets/books/b${k + 1}.png" class="${counts[k] > 0 ? '' : 'off'}" alt="">${counts[k] > 1 ? `<sup>${faDigits(counts[k])}</sup>` : ''}</span>`).join('');
   const shovels = Array.isArray(u.islandShovels) ? u.islandShovels.filter((id) => ISLAND_SHOVEL_DEFS[id]) : [];
-  const shovelChip = shovels.length ? `<span class="ish-shv-chip">${shovels.map((id) => `<img src="/bucherinsel-shop/assets/${ISLAND_SHOVEL_DEFS[id].img}" alt="${ISLAND_SHOVEL_DEFS[id].name}" title="${ISLAND_SHOVEL_DEFS[id].name}">`).join('')}</span>` : '';
+  const shovelChip = shovels.length ? `<span class="ish-shv-chip">${shovels.map((id) => `<img src="/bucherinsel-final/assets/shovels/${ISLAND_SHOVEL_DEFS[id].img}" alt="${ISLAND_SHOVEL_DEFS[id].name}" title="${ISLAND_SHOVEL_DEFS[id].name}">`).join('')}</span>` : '';
   return `<span class="isl-mb">${imgs}${u.islandWins > 0 ? `<em>×${faDigits(u.islandWins)}</em>` : ''}${shovelChip}</span>`;
 }
 function islandDistinctCount(me){ return [me.book1, me.book2, me.book3].filter(n => n > 0).length; }
@@ -5833,10 +5881,12 @@ function renderIslandButton(){
   if (!btn || !txt) return;
   if (chatRoom !== 'fa' || !SHOP_ACCOUNT.token) { btn.hidden = true; return; }
   btn.hidden = false;
-  const r = ISLAND.round;
+  const r = ISLAND.round, now = Date.now(), searching = ISLAND.me.searchEndsAt > now;
   btn.classList.toggle('closed', !r.open);
-  btn.classList.toggle('ready', r.open && !(ISLAND.me.searchEndsAt > Date.now()));
-  txt.textContent = r.open ? '🏝️ ' + faDigits(Math.max(0, Math.ceil((r.closesAt - Date.now()) / 60000))) + '′' : '🏝️ بسته';
+  btn.classList.toggle('searching', searching);
+  btn.classList.toggle('ready', r.open && !searching);
+  const ms = searching ? (ISLAND.me.searchEndsAt - now) : (r.open ? r.closesAt - now : r.opensAt - now);
+  txt.textContent = islandCountdownText(ms);
 }
 async function fetchIslandState(){
   if (!SHOP_ACCOUNT.token || ISLAND.fetchBusy) return;
@@ -5933,7 +5983,7 @@ function islandStartMyDigVisual(spotIndex, endsAt){
   // sonst die normale Holzschaufel wie im Insel-Prototyp.
   const strongestId = ISLAND.me.shovels && ISLAND.me.shovels.length ? ISLAND.me.shovels[ISLAND.me.shovels.length - 1] : null;
   const shovelMarkup = strongestId
-    ? `<g class="isl-shovel" style="transform-origin:${x}px ${y + 20}px"><image href="/bucherinsel-shop/assets/${ISLAND_SHOVEL_DEFS[strongestId].img}" x="${x - 62}" y="${y - 118}" width="124" height="124" transform="rotate(18 ${x} ${y - 40})"/></g>`
+    ? `<g class="isl-shovel" style="transform-origin:${x}px ${y + 20}px"><image href="/bucherinsel-final/assets/shovels/${ISLAND_SHOVEL_DEFS[strongestId].img}" x="${x - 62}" y="${y - 118}" width="124" height="124" transform="rotate(18 ${x} ${y - 40})"/></g>`
     : `<g class="isl-shovel" style="transform-origin:${x}px ${y + 20}px"><rect x="${x - 3}" y="${y - 70}" width="6" height="56" rx="3" fill="#a86b2c"/><path d="M${x - 15} ${y - 16} h30 l-4 22 q-11 10 -22 0z" fill="#f2f2ee" stroke="#b9b9b0" stroke-width="1.5"/><circle cx="${x + 5}" cy="${y - 6}" r="3" fill="#e0a33a"/></g>`;
   const g = islandSvgEl('g', {}, `
     <ellipse cx="${x}" cy="${y + 38}" rx="34" ry="8" fill="#000" opacity=".2"/>
@@ -5942,18 +5992,15 @@ function islandStartMyDigVisual(spotIndex, endsAt){
     <circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="#7a5a12" stroke-width="9"/>
     <circle id="islRingP" cx="${x}" cy="${y}" r="${R}" fill="none" stroke="url(#islGoldr)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 ${x} ${y})"/>
     ${shovelMarkup}
-    ${[-20, -8, 10, 22].map((dx, i) => `<circle class="isl-dirt" style="--dx:${dx}px;animation-delay:${i * .22}s" cx="${x}" cy="${y + 18}" r="3.6" fill="#b08445"/>`).join('')}
-    <rect x="${x - 44}" y="${y - R - 46}" width="88" height="34" rx="17" fill="#1b0f08" stroke="#5a3a1a" stroke-width="2"/>
-    <text id="islRingT" x="${x}" y="${y - R - 21}" text-anchor="middle" font-family="Lalezar,Vazirmatn" font-size="26" fill="#fff">۰۵:۰۰</text>`);
+    ${[-20, -8, 10, 22].map((dx, i) => `<circle class="isl-dirt" style="--dx:${dx}px;animation-delay:${i * .22}s" cx="${x}" cy="${y + 18}" r="3.6" fill="#b08445"/>`).join('')}`);
   fx.appendChild(g);
   ISLAND.myDigGroup = g;
   const loop = () => {
     if (!ISLAND.myDigGroup) return;
     const left = endsAt - Date.now(), p = Math.max(0, Math.min(1, 1 - left / ISLAND_SEARCH_MS));
-    const ring = document.getElementById('islRingP'), ringT = document.getElementById('islRingT'), digTx = $('#islandDigTx');
+    const ring = document.getElementById('islRingP'), digTx = $('#islandDigTx');
     if (ring) ring.setAttribute('stroke-dashoffset', String(C * (1 - p)));
-    if (ringT) ringT.textContent = islandCountdownText(left);
-    if (digTx) digTx.textContent = islandCountdownText(left);
+    if (digTx) digTx.innerHTML = '<small>در حال جستجو</small>' + islandCountdownText(left);
     if (left > 0) ISLAND.myDigRaf = requestAnimationFrame(loop);
   };
   loop();
@@ -5974,12 +6021,14 @@ function islandRenderDiggers(){
 function islandShowReveal(me){
   const r = $('#islandReveal'); if (!r) return;
   const k = Number(me.lastK), won = me.lastWon === true, isNew = me.lastIsNew === true;
-  const dailyLines = (me.lastDailyBonuses || []).map((b) => `<div class="isl-sub">${ISLAND_SHOVEL_DEFS[b.id] ? ISLAND_SHOVEL_DEFS[b.id].icon : '⭐'} جایزه‌ی روزانه: +${b.ton} TON</div>`).join('');
+  const fireTon = Number(me.lastFireTon || 0);
+  const extraLines = (fireTon ? `<div class="isl-sub" style="background:rgba(255,90,31,.35)">🔥 بیل آتشین: +${fireTon} TON</div>` : '')
+    + (me.lastDailyBonuses || []).map((b) => `<div class="isl-sub" style="background:rgba(242,184,28,.35)">${ISLAND_SHOVEL_DEFS[b.id] ? ISLAND_SHOVEL_DEFS[b.id].icon : '⭐'} جایزه‌ی روزانه: +${b.ton} TON</div>`).join('');
   if (k < 0) {
-    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div>${dailyLines}</div>`;
+    r.innerHTML = `<div class="isl-card"><div class="isl-empty">🐚</div><div class="isl-nm" style="color:#cfe3ff">چیزی پیدا نشد</div><div class="isl-sub">فقط یک صدف… دور بعد دوباره امتحان کن</div>${extraLines}</div>`;
   } else {
     const sub = won ? 'هر ۳ کتاب کامل شد!' : isNew ? 'کتاب ' + faDigits(k + 1) + ' به کلکسیون اضافه شد' : 'حالا ' + faDigits(me['book' + (k + 1)]) + ' تا از این کتاب داری';
-    r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel-design/assets/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.25 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div>${dailyLines}</div>`;
+    r.innerHTML = `<div class="isl-card"><div class="isl-burst"></div><img src="/bucherinsel-final/assets/books/b${k + 1}.png" alt="${esc(ISLAND_BOOK_NAMES[k])}"><div class="isl-nm">${won ? '🏆 0.25 TON' : esc(ISLAND_BOOK_NAMES[k])}</div><div class="isl-sub">${esc(sub)}</div>${extraLines}</div>`;
   }
   r.hidden = false;
   if (ISLAND.revealTimer) clearTimeout(ISLAND.revealTimer);
@@ -5997,13 +6046,19 @@ function islandHandleResolved(me){
     const slot = $('#islandSlot' + (popK + 1));
     if (slot) { slot.classList.remove('pop'); void slot.offsetWidth; slot.classList.add('pop'); }
   }
-  if (me.lastWon === true || (me.lastDailyBonuses || []).length) void refreshShopAccount();
+  if (me.lastWon === true || me.lastFireTon || (me.lastDailyBonuses || []).length) void refreshShopAccount();
 }
 function renderIslandScene(){
   if (!ISLAND.sheetOpen) return;
   const scene = $('#islandScene'); if (!scene) return;
   const r = ISLAND.round, me = ISLAND.me, now = Date.now();
   scene.classList.toggle('closed', !r.open);
+  // Insel öffnet: 3.5s Banner-Pop beim Übergang zu-->offen (MASTER_SPEC 3.7)
+  if (ISLAND.wasOpen === false && r.open === true) {
+    const ob = $('#islandOpenBan');
+    if (ob) { ob.classList.add('show'); setTimeout(() => ob.classList.remove('show'), 3500); }
+  }
+  ISLAND.wasOpen = r.open;
   $('#islandClockL').textContent = r.open ? 'تا بسته شدن:' : 'تا باز شدن:';
   $('#islandClockV').textContent = islandCountdownText(r.open ? r.closesAt - now : r.opensAt - now);
   $('#islandClosedV').textContent = islandCountdownText(r.open ? 0 : r.opensAt - now);
@@ -6012,22 +6067,22 @@ function renderIslandScene(){
   digBtn.classList.remove('off', 'busy'); digBtn.disabled = false;
   if (searching) {
     digBtn.disabled = true; digBtn.classList.add('busy');
-    digMsg.innerHTML = '⛏️ در حال جستجو…';
+    digMsg.innerHTML = ''; // Statuszeile bleibt während der Suche leer (MASTER_SPEC 3.1)
     if (!ISLAND.myDigGroup) islandStartMyDigVisual(Number.isInteger(me.spot) ? me.spot : 0, me.searchEndsAt);
   } else if (!r.open) {
     digBtn.disabled = true; digBtn.classList.add('off');
-    digTx.textContent = 'جزیره بسته است';
+    digTx.textContent = 'بسته است';
     digMsg.innerHTML = 'جزیره ۱۰ دقیقه بسته است';
   } else {
     digTx.textContent = 'بگرد';
-    digMsg.innerHTML = islandShovelHintLine(me) || '👆 روی یک <b>✕</b> بزن یا «بگرد»';
+    digMsg.innerHTML = '👆 روی یک <b>✕</b> بزن یا «بگرد»';
   }
   [0, 1, 2].forEach(k => {
     const slot = $('#islandSlot' + (k + 1)); if (!slot) return;
     const n = me['book' + (k + 1)] || 0;
     slot.innerHTML = n > 0
       ? (n > 1 ? `<span class="isl-n">×${faDigits(n)}</span>` : '')
-      : `<img class="isl-gr" src="/bucherinsel-design/assets/island/h${k + 1}.jpg" alt=""><div class="isl-q">${esc(ISLAND_BOOK_NAMES[k])}<br>؟</div>`;
+      : `<img class="isl-gr" src="/bucherinsel-final/assets/island/k${k + 1}.jpg" alt=""><div class="isl-q">${esc(ISLAND_BOOK_NAMES[k])}<br>؟</div>`;
   });
   islandDrawSpots();
   islandRenderDiggers();
@@ -6071,7 +6126,7 @@ function islandShopConfirmBuy(id){
   if (!def || !d) return;
   const sh = d.shovels[id];
   const overlay = document.createElement('div'); overlay.className = 'ish-cfm';
-  overlay.innerHTML = `<div class="ish-box" style="--ishr:${def.color}"><img src="/bucherinsel-shop/assets/${def.img}" alt=""><h4>${esc(def.name)}</h4><p>${def.fx}</p><p>قیمت: <b dir="ltr">${sh.priceTon} TON</b></p>
+  overlay.innerHTML = `<div class="ish-box" style="--ishr:${def.color}"><img src="/bucherinsel-final/assets/shovels/${def.img}" alt=""><h4>${esc(def.name)}</h4><p>${def.fx}</p><p>قیمت: <b dir="ltr">${sh.priceTon} TON</b></p>
     <div class="ish-row"><button class="ish-no" data-ish-cancel>انصراف</button><button class="ish-buy" data-ish-confirm="${id}">خرید</button></div></div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', (e) => {
@@ -6123,9 +6178,9 @@ function renderIslandShopTab(list){
   const activeIds = ['s1','s2','s3'].filter((id) => d.shovels[id] && d.shovels[id].active);
   const strongest = activeIds.length ? activeIds[activeIds.length - 1] : null;
   const eqDef = strongest ? ISLAND_SHOVEL_DEFS[strongest] : null;
-  const bal = `<div class="ish-bal">${[0,1,2].map((k) => `<span><img src="/bucherinsel-design/assets/b${k+1}.png" alt="">${faDigits(d.books[k])}</span>`).join('')}<span class="ish-ton"><img src="assets/ton-logo.webp" alt="TON" style="width:20px;height:20px;border-radius:50%">${d.ton.toFixed(2)} TON</span></div>`;
+  const bal = `<div class="ish-bal">${[0,1,2].map((k) => `<span><img src="/bucherinsel-final/assets/books/b${k+1}.png" alt="">${faDigits(d.books[k])}</span>`).join('')}<span class="ish-ton"><img src="assets/ton-logo.webp" alt="TON" style="width:20px;height:20px;border-radius:50%">${d.ton.toFixed(2)} TON</span></div>`;
   const eq = `<div class="ish-eq" style="--ishr:${eqDef ? eqDef.color : '#4a4f66'}">
-      <div class="ish-pic"><img src="/bucherinsel-shop/assets/${eqDef ? eqDef.img : 'sh1.png'}" alt="" style="${eqDef ? '' : 'opacity:.25;filter:grayscale(1)'}"></div>
+      <div class="ish-pic"><img src="/bucherinsel-final/assets/shovels/${eqDef ? eqDef.img : 'sh1.png'}" alt="" style="${eqDef ? '' : 'opacity:.25;filter:grayscale(1)'}"></div>
       <div class="ish-info"><div class="ish-cap">بیل شما</div><div class="ish-nm">${eqDef ? esc(eqDef.name) : 'هنوز بیل نداری'}</div>
       <div class="ish-perks">${['s1','s2','s3'].map((id) => `<span class="ish-perk ${d.shovels[id].active ? '' : 'off'}">${ISLAND_SHOVEL_DEFS[id].icon} ${ISLAND_SHOVEL_DEFS[id].perk}</span>`).join('')}</div>
       ${activeIds.length ? `<div class="ish-exp">⏳ ${activeIds.map((id) => ISLAND_SHOVEL_DEFS[id].name.replace('بیل ', '') + ': ' + faDigits(d.shovels[id].daysLeft) + ' روز').join(' · ')}</div>` : ''}
@@ -6134,7 +6189,7 @@ function renderIslandShopTab(list){
   const shovelCards = ['s1','s2','s3','s4'].map((id) => {
     const def = ISLAND_SHOVEL_DEFS[id];
     if (id === 's4') {
-      return `<div class="ish-card r4 soon"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">۴</span><img src="/bucherinsel-shop/assets/${def.img}" alt=""><div class="ish-lockov"><div class="ish-pad">🔒</div><div class="ish-cs">به‌زودی</div></div></div>
+      return `<div class="ish-card r4 soon"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">۴</span><img src="/bucherinsel-final/assets/shovels/${def.img}" alt=""><div class="ish-lockov"><div class="ish-pad">🔒</div><div class="ish-cs">به‌زودی</div></div></div>
         <div class="ish-bd"><div class="ish-nm">${def.name}</div><div class="ish-fx"><span class="ish-i">${def.icon}</span><span>${def.fx}</span></div><button class="ish-buy" disabled>به‌زودی</button></div></div>`;
     }
     const sh = d.shovels[id];
@@ -6146,7 +6201,7 @@ function renderIslandShopTab(list){
         <div class="ish-cr">⏳<span>${faDigits(sh.daysLeft)} روز باقی</span></div><div class="ish-pb ish-days"><i style="width:${sh.daysLeft / 30 * 100}%"></i></div>
       </div>` : '';
     const btn = own ? `<button class="ish-buy owned" disabled>✓ فعال</button>` : out ? `<button class="ish-buy" disabled>تمام شد</button>` : `<button class="ish-buy" data-shop-buy="${id}" ${ok ? '' : 'disabled'}>${!afford ? 'کافی نیست' : 'خرید'}</button>`;
-    return `<div class="ish-card r${def.tier}"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">${faDigits(def.tier)}</span><img src="/bucherinsel-shop/assets/${def.img}" alt="">${stockBadge}</div>
+    return `<div class="ish-card r${def.tier}"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">${faDigits(def.tier)}</span><img src="/bucherinsel-final/assets/shovels/${def.img}" alt="">${stockBadge}</div>
       <div class="ish-bd"><div class="ish-nm">${def.name}</div><div class="ish-fx"><span class="ish-i">${def.icon}</span><span>${def.fx}</span></div>
       <div class="ish-cr">👥<span>فروخته شد</span><span class="ish-h" style="color:${out ? '#ff7a7a' : '#cfd3e6'}">${faDigits(sh.sold)}/${faDigits(sh.limit)}</span></div><div class="ish-pb ish-stockb"><i style="width:${sh.sold / sh.limit * 100}%"></i></div>
       ${costBlock}${dailyBlock}${btn}</div></div>`;
@@ -6160,7 +6215,7 @@ function renderIslandShopTab(list){
     ISLAND_SHOP.qty[id] = q;
     const ok = max >= 1;
     return `<div class="ish-xc ${X_CLASS[id] || ''}" style="--ishr:${X_COLORS[id] || '#f2b81c'}">
-      <div class="ish-sw"><div class="ish-bk"><img src="/bucherinsel-design/assets/b${ex.from + 1}.png" alt=""><b>×${faDigits(ex.rate * q)}</b></div><span class="ish-ar">⬅</span><div class="ish-bk"><img src="/bucherinsel-design/assets/b${ex.to + 1}.png" alt=""><b>×${faDigits(q)}</b></div></div>
+      <div class="ish-sw"><div class="ish-bk"><img src="/bucherinsel-final/assets/books/b${ex.from + 1}.png" alt=""><b>×${faDigits(ex.rate * q)}</b></div><span class="ish-ar">⬅</span><div class="ish-bk"><img src="/bucherinsel-final/assets/books/b${ex.to + 1}.png" alt=""><b>×${faDigits(q)}</b></div></div>
       <div class="ish-mid"><div class="ish-t">${faDigits(ex.rate)} ${ISLAND_BOOK_NAMES[ex.from]} ← ۱ ${ISLAND_BOOK_NAMES[ex.to]}</div><div class="ish-h ${ok ? 'ok' : ''}">داری: ${faDigits(have)} · ${ok ? 'تا ' + faDigits(max) + ' بار' : 'کافی نیست'}</div><div class="ish-pb"><i style="width:${Math.min(100, have / ex.rate * 100)}%"></i></div></div>
       <div class="ish-ctl"><div class="ish-qty"><button data-xq="${id}" data-xd="-1" ${q <= 1 ? 'disabled' : ''}>−</button><span>${faDigits(q)}</span><button data-xq="${id}" data-xd="1" ${q >= max ? 'disabled' : ''}>+</button></div>
       <button class="ish-buy" data-xch="${id}" ${ok ? '' : 'disabled'}>${ok ? 'تبادل' : 'کافی نیست'}</button></div></div>`;
