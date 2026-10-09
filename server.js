@@ -5104,6 +5104,9 @@ app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   const completed = user.adRewardClaimed === true || watched >= 10;
   if (completed && unlockPirateStickerPack(user)) persist();
   else if (previousDay !== user.adVideoDay) persist();
+  if (!ADSGRAM_REWARD_SECRET && !completed) {
+    return res.status(503).json({ error: 'video-reward-verification-not-configured', state: publicState(user) });
+  }
   res.json({ watched, reward: 0, rewardTT: 0, completed, state: publicState(user) });
 });
 

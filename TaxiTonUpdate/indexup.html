@@ -551,7 +551,6 @@
   .advc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
   .advc-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
   .advc-top b{font-size:12.5px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .advc-reward{flex:none;font-family:var(--display);font-size:11.5px;color:var(--taxi)}
   .advc-track{height:5px;border-radius:99px;background:#050a2e;overflow:hidden}
   .advc-track i{display:block;height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#62c6ff,#8a4dff);transition:width .3s}
   .advc.done .advc-track i{background:var(--zombie)}
@@ -1598,7 +1597,6 @@
   .advc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
   .advc-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
   .advc-top b{font-size:12.5px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .advc-reward{flex:none;font-family:var(--display);font-size:11.5px;color:var(--taxi)}
   .advc-track{height:5px;border-radius:99px;background:#050a2e;overflow:hidden}
   .advc-track i{display:block;height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#62c6ff,#8a4dff);transition:width .3s}
   .advc.done .advc-track i{background:var(--zombie)}
@@ -2585,6 +2583,8 @@
   .stkpgrid button{position:relative;overflow:hidden}
   .pirate-pack-note{margin:7px 2px 2px;color:var(--ink-dim);font-size:11px;line-height:1.35}
   .pirate-pack-note.unlocked{color:#9be887}
+  .pirate-pack-preview{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:2px 0 0}
+  .pirate-pack-preview img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .bub.stkb{background:none!important;border:0!important;padding:0 0 14px;min-width:0}
   .bub.stkb img{display:block;width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
   .bub.pirate-stkb img{width:132px;height:132px}
@@ -3479,10 +3479,11 @@
         <div class="advc" id="adVideoCard">
           <div class="advc-ic">🎬</div>
           <div class="advc-body">
-            <div class="advc-top"><b id="adVideoText"></b><span class="advc-reward">+250 TT</span></div>
+            <div class="advc-top"><b id="adVideoText"></b></div>
             <div class="advc-track"><i id="adVideoBar"></i></div>
             <small id="adVideoNote"></small>
             <small class="pirate-pack-note" id="piratePackNote"></small>
+            <div class="pirate-pack-preview" id="piratePackPreview" aria-label="Pirate sticker pack preview"></div>
           </div>
           <button class="advc-btn" id="adVideoBtn" aria-label="Watch">▶</button>
         </div>
@@ -5289,7 +5290,7 @@ function renderChans(){
 // The game runs on two origins (taxiton.org and the Railway fallback domain),
 // and AdsGram validates each blockId against one specific registered origin
 // - so each origin needs its own blockId, picked at runtime by hostname.
-const ADSGRAM_BLOCK_ID = location.hostname === 'taxiton.org' ? '52474' : '48235';
+const ADSGRAM_BLOCK_ID = location.hostname.toLowerCase().replace(/^www\./, '') === 'taxiton.org' ? '52474' : '48235';
 let adVideoBusy = false, adsgramLoadPromise = null;
 function loadAdsgramScript(){
   if (window.Adsgram && typeof window.Adsgram.init === 'function') return Promise.resolve();
@@ -5329,8 +5330,8 @@ function showPiratePackUnlockedPopup(){
   overlay.hidden = false;
 }
 function renderAdVideoTask(){
-  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar'), packNote = $('#piratePackNote');
-  if (!card || !btn || !label || !note || !bar || !packNote) return;
+  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar'), packNote = $('#piratePackNote'), packPreview = $('#piratePackPreview');
+  if (!card || !btn || !label || !note || !bar || !packNote || !packPreview) return;
   const watched = SHOP_ACCOUNT.adVideosWatched || 0, completed = SHOP_ACCOUNT.adRewardClaimed === true || watched >= 10;
   card.classList.toggle('done', completed);
   label.textContent = S.lang==='de' ? 'Tägliche Videos ansehen' : S.lang==='fa' ? 'تماشای ویدیوهای روزانه' : 'Watch daily videos';
@@ -5341,6 +5342,7 @@ function renderAdVideoTask(){
     ? (S.lang==='de' ? 'Sticker-Pack freigeschaltet ✓' : S.lang==='fa' ? 'بسته استیکر آزاد شد ✓' : 'Sticker pack unlocked ✓')
     : (S.lang==='de' ? '10 Videos = Piraten-Sticker-Pack 🏴‍☠️' : S.lang==='fa' ? '۱۰ ویدیو = بسته استیکر دزدان دریایی 🏴‍☠️' : '10 videos = Pirate sticker pack 🏴‍☠️');
   packNote.classList.toggle('unlocked', SHOP_ACCOUNT.stickerPackPirateUnlocked);
+  packPreview.innerHTML = [1,2,3,4,5,6].map(i => `<img src="${pirateStickerSrc(i)}" alt="${PIRATE_STICKER_NAMES[i-1]}" loading="lazy">`).join('');
   bar.style.width = Math.min(100, (watched / 10) * 100) + '%';
   btn.disabled = completed || adVideoBusy || !SHOP_ACCOUNT.token;
   btn.textContent = completed ? '✓' : '▶';
@@ -5361,6 +5363,10 @@ async function watchRewardedAdVideo(){
     for (let attempt = 0; attempt < 12; attempt++) {
       const response = await fetch('/api/tasks/ad-video-claim', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:SHOP_ACCOUNT.token})});
       const data = await response.json();
+      if (response.status === 503 && data.error === 'video-reward-verification-not-configured') {
+        if (data.state) applyShopAccountState(data.state, S.car);
+        throw new Error('video-reward-verification-not-configured');
+      }
       if (!response.ok || !data.state) throw new Error('ad-reward-failed');
       const stateDay = typeof data.state.adVideoDay === 'string' ? data.state.adVideoDay : '';
       const stateWatched = Math.min(10, Math.max(0, Number(data.state.adVideosWatched) || 0));
@@ -5378,9 +5384,10 @@ async function watchRewardedAdVideo(){
     }
     applyShopAccountState(confirmedState, S.car);
     if (!piratePackBefore && SHOP_ACCOUNT.stickerPackPirateUnlocked) showPiratePackUnlockedPopup();
-    if (!rewardClaimedBefore && confirmedState.adRewardClaimed === true) toast('+250 TT');
   } catch (e) {
-    toast(t('lim_err'));
+    toast(e.message === 'video-reward-verification-not-configured'
+      ? (S.lang==='de' ? 'Video-Zählung ist noch nicht eingerichtet. Bitte später erneut versuchen.' : S.lang==='fa' ? 'ثبت ویدیو هنوز راه‌اندازی نشده است؛ بعداً دوباره تلاش کنید.' : 'Video tracking is not configured yet. Please try again later.')
+      : t('lim_err'));
   } finally {
     adVideoBusy = false; renderAdVideoTask();
   }

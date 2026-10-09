@@ -40,6 +40,12 @@ npm start
   The like counter updates live; regular chat messages and reactions are
   disabled while any challenge is unresolved and reopen after its winners are
   selected. Each winner's 0.2 TON reward is credited to their account balance.
+  For rewarded-video progress and the permanent Pirate Sticker Pack unlock,
+  also set `ADSGRAM_REWARD_SECRET` to a random value of at least 32 bytes and
+  configure the AdsGram Reward URL for each production Reward ad block as
+  `https://taxiton.org/api/adsgram-reward?secret=<same-value>&userid=[userId]`.
+  Without both the Railway secret and the AdsGram callback URL, completed ads
+  cannot be counted server-side.
 4. Deploy. Railway provides `PORT` automatically.
 5. In `app.js`, make sure `SERVER_URL` points at the Railway domain.
   The current production fallback is `https://taxiton.org`.

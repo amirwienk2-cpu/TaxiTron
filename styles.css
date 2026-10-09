@@ -439,6 +439,8 @@
   .task-card h2{ margin:0 0 5px; font-size:1rem; }
   .task-card p{ margin:0 0 8px; color:#a8a3b8; font-size:.78rem; }
   .task-reward{ color:#ffd93d; font-weight:800; font-size:.82rem; margin-bottom:12px; }
+  .ads-task-sticker-preview{ display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin:4px 0 10px; }
+  .ads-task-sticker-preview img{ width:42px; height:42px; object-fit:contain; filter:drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
   .task-card .menu-btn{ display:block; width:100%; margin-top:8px; text-align:center; text-decoration:none; box-sizing:border-box; }
   .task-status{ min-height:20px; margin-top:8px; color:#a8a3b8; font-size:.75rem; }
   .task-status.success{ color:#7cff6b; }

@@ -130,7 +130,7 @@
       inviteEndsIn: 'Campaign ends in', inviteEnded: 'Campaign ended', inviteClaimClosed: 'This campaign has ended.',
       inviteYourRank: 'Your rank', inviteInvitesLabel: 'invites', inviteNoInvitesYet: 'No invites yet. Be the first!',
       inviteCampaignSettled: 'Campaign ended · winners have been paid out.',
-      watchVideos: 'Watch 10 videos', watchVideosDesc: 'Complete 10 rewarded videos and receive 0.03 TON in total.', watchVideo: 'Watch video',
+      watchVideos: 'Watch 10 videos', watchVideosDesc: 'Watch 10 rewarded videos to unlock the Pirate Sticker Pack.', watchVideo: 'Watch video',
       gameLobby: 'Game Lobby', lobbyPlayers: 'All players in the room can see and join together.', openLobby: 'Open lobby', waitingPlayers: 'Waiting for players...',
       online: 'online', lobbyRefresh: 'The player list updates automatically.', game: 'Game', fourPlayer: 'Four-player knockout tournament. Losers are eliminated each round.',
       createChallenge: 'Create a challenge', fourEnter: 'Four players enter. Winner gets 60%, second place 20%, and 20% is the fee.', yourStake: 'Your stake', createGame: 'Create game', winnerPayout: 'Winner payout',
@@ -247,7 +247,7 @@
       inviteEndsIn: 'پایان کمپین تا', inviteEnded: 'کمپین پایان یافت', inviteClaimClosed: 'این کمپین به پایان رسیده است.',
       inviteYourRank: 'رتبه شما', inviteInvitesLabel: 'دعوت', inviteNoInvitesYet: 'هنوز کسی دعوت نشده. اولین نفر باشید!',
       inviteCampaignSettled: 'کمپین پایان یافت · جوایز برندگان پرداخت شد.',
-      watchVideos: 'تماشای ۱۰ ویدیو', watchVideosDesc: '۱۰ ویدیوی پاداشی را کامل کنید و در مجموع ۰٫۰۳ تون بگیرید.', watchVideo: 'تماشای ویدیو',
+      watchVideos: 'تماشای ۱۰ ویدیو', watchVideosDesc: 'برای آزاد کردن بسته استیکر دزدان دریایی، ۱۰ ویدیوی پاداشی تماشا کنید.', watchVideo: 'تماشای ویدیو',
       gameLobby: 'لابی بازی', lobbyPlayers: 'همه بازیکنان اتاق می‌توانند یکدیگر را ببینند و وارد شوند.', openLobby: 'لابی باز', waitingPlayers: 'در انتظار بازیکنان...',
       online: 'آنلاین', lobbyRefresh: 'فهرست بازیکنان خودکار به‌روزرسانی می‌شود.', game: 'بازی', fourPlayer: 'مسابقه حذفی چهار نفره. بازنده‌ها در هر دور حذف می‌شوند.',
       createChallenge: 'ایجاد چالش', fourEnter: 'چهار بازیکن وارد می‌شوند. برنده ۶۰٪، نفر دوم ۲۰٪ و ۲۰٪ کارمزد است.', yourStake: 'مبلغ ورود شما', createGame: 'ایجاد بازی', winnerPayout: 'پرداخت برنده',
@@ -305,6 +305,7 @@
     adVideosWatched: parseInt(localStorage.getItem('cr3d_adVideosWatched') || '0', 10),
     adVideoDay: '',
     adRewardClaimed: localStorage.getItem('cr3d_adRewardClaimed') === '1',
+    stickerPackPirateUnlocked: false,
     attemptsLeft: localStorage.getItem('cr3d_attemptsLeft') !== null ? parseInt(localStorage.getItem('cr3d_attemptsLeft'), 10) : 10,
     attemptsResetAt: localStorage.getItem('cr3d_attemptsResetAt') ? parseInt(localStorage.getItem('cr3d_attemptsResetAt'), 10) : null,
     attemptsResetDay: localStorage.getItem('cr3d_attemptsResetDay') || '',
@@ -1827,6 +1828,7 @@
     if (typeof state.adVideosWatched === 'number') store.adVideosWatched = state.adVideosWatched;
     if (typeof state.adVideoDay === 'string') store.adVideoDay = state.adVideoDay;
     if (typeof state.adRewardClaimed === 'boolean') store.adRewardClaimed = state.adRewardClaimed;
+    if (typeof state.stickerPackPirateUnlocked === 'boolean') store.stickerPackPirateUnlocked = state.stickerPackPirateUnlocked;
     renderAdsTask();
     if (typeof state.level === 'number') store.level = state.level;
     if (Array.isArray(state.ownedSkins)){
@@ -1963,12 +1965,18 @@
       ? Math.min(10, Math.max(0, Number(localStorage.getItem('tt_test_ad_videos') || 0)))
       : Math.min(10, Math.max(0, Number(store.adVideosWatched) || 0));
     const completed = testMode ? watched >= 10 : (store.adRewardClaimed || watched >= 10);
-    progressEl.textContent = watched + ' / 10 videos · Reward: 0.03 TON';
+    progressEl.textContent = watched + ' / 10 videos';
+    const preview = document.getElementById('adsTaskStickerPreview');
+    if (preview) {
+      preview.innerHTML = [1,2,3,4,5,6].map((number, index) =>
+        '<img src="/sprites/piraten-stickers/' + number + '_' + ['buch','papagei','erschoepft','muschel','jubel','schatztruhe'][index] + '.png" alt="' + ['Buch','Papagei','Erschöpft','Muschel','Jubel','Schatztruhe'][index] + '" loading="lazy">'
+      ).join('');
+    }
     button.disabled = completed || (!testMode && (!serverSession.online || !serverSession.token));
     button.textContent = completed ? 'Completed' : 'Watch video';
     if (completed){
       card.classList.add('completed');
-      statusEl.textContent = 'Completed. 0.03 TON was added to your balance.';
+      statusEl.textContent = 'Pirate Sticker Pack unlocked.';
       statusEl.className = 'task-status success';
     } else {
       card.classList.remove('completed');
@@ -2037,7 +2045,8 @@
       const watchedBefore = Number(store.adVideosWatched) || 0;
       const dayBefore = store.adVideoDay;
       const completedBefore = store.adRewardClaimed;
-      const controller = window.Adsgram.init({ blockId: location.hostname === 'taxiton.org' ? '52474' : '48235' });
+      const liveHost = window.location.hostname.toLowerCase().replace(/^www\./, '') === 'taxiton.org';
+      const controller = window.Adsgram.init({ blockId: liveHost ? '52474' : '48235' });
       const showResult = await controller.show();
       if (!showResult || showResult.done !== true || showResult.error === true) throw new Error('ad-not-completed');
       let confirmed = false, latestState = null;
@@ -2048,6 +2057,15 @@
           body: JSON.stringify({ token: serverSession.token })
         });
         const data = await response.json();
+        if (response.status === 503 && data.error === 'video-reward-verification-not-configured') {
+          if (data.state) {
+            applyServerState(data.state);
+            saveStore();
+          }
+          statusEl.textContent = 'Video tracking is not configured yet. Please try again later.';
+          button.disabled = false;
+          return;
+        }
         if (!response.ok || !data.state) throw new Error('ad-reward-failed');
         const stateDay = typeof data.state.adVideoDay === 'string' ? data.state.adVideoDay : '';
         const stateWatched = Math.min(10, Math.max(0, Number(data.state.adVideosWatched) || 0));
@@ -2064,7 +2082,7 @@
       }
       renderAdsTask();
       statusEl.textContent = confirmed
-        ? (store.adRewardClaimed ? 'Video task completed. The 250 TT reward was added.' : 'Video counted.')
+        ? (store.stickerPackPirateUnlocked ? 'Pirate Sticker Pack unlocked.' : 'Video counted.')
         : 'The video reward is still being confirmed. Please check again shortly.';
     } catch (error){
       button.disabled = false;

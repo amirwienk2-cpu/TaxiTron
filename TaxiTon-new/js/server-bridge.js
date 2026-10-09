@@ -132,8 +132,7 @@
       });
     }
     if (typeof TT.setAdsTask === 'function') {
-      // Matches the "Watch 10 videos -> 50 TT" task (server.js: adVideosWatched
-      // / adRewardClaimed via /api/tasks/ad-video-claim).
+      // Mirrors server-verified video progress and the permanent pirate-pack unlock.
       TT.setAdsTask({ watched: Number(state.adVideosWatched) || 0, completed: state.adRewardClaimed === true });
     }
 
