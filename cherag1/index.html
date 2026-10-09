@@ -359,7 +359,8 @@ const GIMG2={
   t_ertugrul:"../familie2/bilder/geist-tr-ertugrul.webp",t_piri:"../familie2/bilder/geist-tr-piri.webp",
   t_malkoc:"../familie2/bilder/geist-tr-malkoc.webp",t_hasan:"../familie2/bilder/geist-tr-hasan.webp"
 };
-function familyOneComplete(){ return GHOST_ORDER.every(g=>state.family&&state.family[g]); }
+const hasFamilyGhost=(family,g)=>family[g]===true||Number(state.ghosts&&state.ghosts[g])>0;
+function familyOneComplete(){ return GHOST_ORDER.every(g=>hasFamilyGhost(state.family||{},g)); }
 function weightsNow(){ return familyOneComplete()?GHOSTS2:GHOSTS; }
 
 const I18N = {
@@ -443,8 +444,8 @@ for(let i=0;i<9;i++){
   $("cells").appendChild(c); cells.push(c);
 }
 const ghostFor=r=>r.g!==undefined?r.g:(GHOSTS2.find(g=>g.type===r.type&&g.amount===r.amount)?.g||GHOSTS.find(g=>g.type===r.type&&g.amount===r.amount)?.g||null);
-const famCount=()=>GHOST_ORDER.filter(g=>state.family&&state.family[g]).length;
-const famCount2=()=>GHOST_ORDER2.filter(g=>state.family2&&state.family2[g]).length;
+const famCount=()=>GHOST_ORDER.filter(g=>hasFamilyGhost(state.family||{},g)).length;
+const famCount2=()=>GHOST_ORDER2.filter(g=>hasFamilyGhost(state.family2||{},g)).length;
 const isOttoman=g=>GHOST_ORDER2.includes(g);
 const ghostImage=g=>GIMG2[g]||GIMG[g];
 const prog=g=>isOttoman(g)?`${famCount2()}/${GHOST_ORDER2.length}`:`${famCount()}/${GHOST_ORDER.length}`;
@@ -644,9 +645,9 @@ function renderFamily(){
   $("famHint").textContent=T.famT;
   $("famLeft").textContent=state.iWon?T.won:state.winnersLeft>0?T.left.replace("{n}",fmt(state.winnersLeft)):T.soldOut;
   $("fam").classList.toggle("full",full);
-  $("fam").querySelectorAll(".mem").forEach(d=>{ const on=!!state.family[d.dataset.g]; d.classList.toggle("on",on);
+  $("fam").querySelectorAll(".mem").forEach(d=>{ const on=hasFamilyGhost(state.family||{},d.dataset.g); d.classList.toggle("on",on);
     if(on&&famJust===d.dataset.g){ d.classList.remove("just"); void d.offsetWidth; d.classList.add("just"); } });
-  $("famchips").innerHTML=GHOST_ORDER.map(g=>{ const on=!!state.family[g], w=W.find(x=>x.g===g).w;
+  $("famchips").innerHTML=GHOST_ORDER.map(g=>{ const on=hasFamilyGhost(state.family||{},g), w=W.find(x=>x.g===g).w;
     return `<div class="chip${on?" on":""}"><span>${T.names[g]}<small>${+(w/tot*100).toFixed(2)}%</small></span><span class="ck">${on?"✅":"🔒"}</span></div>`; }).join("");
   const b=$("b_claim"), c=$("b_close");
   const can=full&&!state.iWon&&state.winnersLeft>0;
@@ -661,11 +662,11 @@ function renderFamily2(){
   $("famLeft2").textContent=state.iWon2?(L==="fa"?"✅ تو برنده شدی! ۲ TON":L==="de"?"✅ Du hast 2 TON gewonnen!":"✅ You won 2 TON!"):left>0?T.left.replace("{n}",fmt(left)):T.soldOut;
   $("tsec").classList.toggle("locked",!familyOneComplete());
   $("fam2").querySelectorAll(".mem").forEach(d=>{
-    const on=!!family2[d.dataset.g]; d.classList.toggle("on",on);
+    const on=hasFamilyGhost(family2,d.dataset.g); d.classList.toggle("on",on);
     if(on&&famJust===d.dataset.g){d.classList.remove("just");void d.offsetWidth;d.classList.add("just");}
   });
   $("famchips2").querySelectorAll(".chip2").forEach(chip=>{
-    const g=chip.dataset.g, on=!!family2[g], w=W.find(x=>x.g===g).w;
+    const g=chip.dataset.g, on=hasFamilyGhost(family2,g), w=W.find(x=>x.g===g).w;
     chip.classList.toggle("on",on);
     chip.innerHTML=`<span class="chip2-name">${T.names[g]}</span><small>${+(w/tot*100).toFixed(2)}%　${on?"✅":"🔒"}</small>`;
   });

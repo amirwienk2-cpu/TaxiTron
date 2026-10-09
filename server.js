@@ -2128,11 +2128,11 @@ function halloweenPlayerState(user) {
   state.family2 = state.family2 && typeof state.family2 === 'object' ? state.family2 : {};
   HALLOWEEN_FAMILY.forEach((ghost) => {
     state.ghosts[ghost] = Math.max(0, Math.floor(Number(state.ghosts[ghost]) || 0));
-    state.family[ghost] = state.family[ghost] === true;
+    state.family[ghost] = state.family[ghost] === true || state.ghosts[ghost] > 0;
   });
   HALLOWEEN_FAMILY2.forEach((ghost) => {
     state.ghosts[ghost] = Math.max(0, Math.floor(Number(state.ghosts[ghost]) || 0));
-    state.family2[ghost] = state.family2[ghost] === true;
+    state.family2[ghost] = state.family2[ghost] === true || state.ghosts[ghost] > 0;
   });
   if (state.adsDay !== berlinDayKey()) {
     state.adsDay = berlinDayKey();
