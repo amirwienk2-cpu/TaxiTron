@@ -276,7 +276,8 @@ const CONFIG = {
   botLink: "https://t.me/TaxiTronBot",
   eventEnd: "2026-10-31T23:59:00+01:00",
   adsPerDay: 5,
-  regenMinutes: 5,                      // alle 5 Min. 1 Lampe (Server entscheidet)
+  regenMinutes: 5,                      // alle 5 Min. 2 Lampen (Server entscheidet)
+  regenAmount: 2,
   regenCap: 5,                          // nachfüllen bis max. 5
   familyTon: 1,                         // volle Familie = 1 TON (Server entscheidet, FAMILY_TON)
   maxWinners: 20                        // nur die ersten 20 Spieler gewinnen, dann ist das Event vorbei
@@ -304,26 +305,26 @@ const I18N = {
       appeared:"{n} ظاهر شد!",empty:"فقط دود…",emptyT:"این بار روحی نیامد. دوباره امتحان کن!",
       candy:"شیرینی",zombies:"زامبی",ticket:"بخت طلایی",
       t_candy:"برای جدول رده‌بندی",t_zombies:"به حساب تو اضافه شد",t_ticket:"شانس قرعه‌کشی TON!",
-      ok:"عالی!",nokeys:"چراغ نداری! تبلیغ ببین یا منتظر چراغ بعدی باش 🪔",adfail:"الان تبلیغی موجود نیست",adlimit:"سقف تبلیغ امروز پر شد",
+      ok:"عالی!",nokeys:"هر ۵ دقیقه ۲ چراغ جدید می‌گیری 🪔",adfail:"الان تبلیغی موجود نیست",adlimit:"سقف تبلیغ امروز پر شد",
       allopen:"همه ارواح ظاهر شدند! تالار تازه…",board:"🏆 رده‌بندی",prizes:"💰 جوایز",ghosts:"👻 ارواح من",invite:"👥 دعوت +۱ چراغ",close:"بستن",
       you:"شما",draw:"قرعه‌کشی بخت طلایی",drawT:"۱ TON اضافه بین ۵ بلیط",demo:"حالت آزمایشی — سرور وصل نیست",
-      units:["روز","ساعت","دقیقه","ثانیه"],nextCandle:"🪔 چراغ بعدی",full:"پر ✓",fullL:"🪔 چراغ‌ها پر است",evEnd:"⏳ پایان رویداد:",gotCandle:"+۱ چراغ 🪔",lampWord:"چراغ",przBtn:"جوایز",swap:"تبدیل به TON",swapped:"{v} به حسابت اضافه شد!",more:"{n} تا دیگر",collT:"از هر روح ۵ تا جمع کن و به TON تبدیل کن 💎",ended:"پایان",inviteText:"🪔 در «ایران من» چراغ جادو را بمال، ارواح را احضار کن و TON ببر!"},
+      units:["روز","ساعت","دقیقه","ثانیه"],nextCandle:"🪔 چراغ بعدی",full:"پر ✓",fullL:"🪔 چراغ‌ها پر است",evEnd:"⏳ پایان رویداد:",gotCandle:"+۲ چراغ 🪔",lampWord:"چراغ",przBtn:"جوایز",swap:"تبدیل به TON",swapped:"{v} به حسابت اضافه شد!",more:"{n} تا دیگر",collT:"از هر روح ۵ تا جمع کن و به TON تبدیل کن 💎",ended:"پایان",inviteText:"🪔 در «ایران من» چراغ جادو را بمال، ارواح را احضار کن و TON ببر!"},
   en:{names:{king:"Kourosh",queen:"Atossa",archer:"Arash",princess:"Mandana",scholar:"Bozorgmehr",warrior:"Rostam"},famT:"Complete the family – the first 20 get 1 TON! 👑",claim:"💎 Claim 1 TON",left:"🏆 {n} of 20 prizes left",won:"✅ You won! 1 TON",soldOut:"All 20 prizes are gone – event over",over:"The event is over 🏁",famLeft:"{n} more to go",famNew:"A new family starts!",
       appeared:"{n} appeared!",empty:"Only smoke…",emptyT:"No spirit this time. Try again!",
       candy:"Candy",zombies:"Zombies",ticket:"Golden ticket",
       t_candy:"for the leaderboard",t_zombies:"added to your balance",t_ticket:"entry for the TON draw!",
-      ok:"Nice!",nokeys:"No lamps left! Watch an ad or wait for the next lamp 🪔",adfail:"Ad not available right now",adlimit:"Ad limit reached for today",
+      ok:"Nice!",nokeys:"You get 2 new lamps every 5 minutes 🪔",adfail:"Ad not available right now",adlimit:"Ad limit reached for today",
       allopen:"All spirits summoned! New hall…",board:"🏆 Ranking",prizes:"💰 Prizes",ghosts:"👻 My spirits",invite:"👥 Invite +1 lamp",close:"Close",
       you:"You",draw:"Golden ticket draw",drawT:"Extra 1 TON for 5 tickets",demo:"Demo mode — server not connected",
-      units:["d","h","m","s"],nextCandle:"🪔 Next lamp",full:"Full ✓",fullL:"🪔 Lamps full",evEnd:"⏳ Event ends in:",gotCandle:"+1 lamp 🪔",lampWord:"Lamps",przBtn:"Prizes",swap:"Swap for TON",swapped:"{v} added to your balance!",more:"{n} more",collT:"Collect 5 of each spirit and swap them for TON 💎",ended:"Ended",inviteText:"🪔 Rub the magic lamp, summon spirits and win TON in TaxiTron!"},
+      units:["d","h","m","s"],nextCandle:"🪔 Next lamp",full:"Full ✓",fullL:"🪔 Lamps full",evEnd:"⏳ Event ends in:",gotCandle:"+2 lamps 🪔",lampWord:"Lamps",przBtn:"Prizes",swap:"Swap for TON",swapped:"{v} added to your balance!",more:"{n} more",collT:"Collect 5 of each spirit and swap them for TON 💎",ended:"Ended",inviteText:"🪔 Rub the magic lamp, summon spirits and win TON in TaxiTron!"},
   de:{names:{king:"Kourosh",queen:"Atossa",archer:"Arash",princess:"Mandana",scholar:"Bozorgmehr",warrior:"Rostam"},famT:"Mach die Familie voll – die ersten 20 bekommen 1 TON! 👑",claim:"💎 1 TON abholen",left:"🏆 noch {n} von 20 Preisen",won:"✅ Du hast gewonnen! 1 TON",soldOut:"Alle 20 Preise vergeben – Event beendet",over:"Das Event ist vorbei 🏁",famLeft:"noch {n}",famNew:"Eine neue Familie beginnt!",
       appeared:"{n} ist erschienen!",empty:"Nur Rauch…",emptyT:"Diesmal kein Geist. Versuch es nochmal!",
       candy:"Süßes",zombies:"Zombies",ticket:"Goldenes Los",
       t_candy:"für die Rangliste",t_zombies:"auf dein Konto",t_ticket:"Teilnahme an der TON-Verlosung!",
-      ok:"Super!",nokeys:"Keine Lampen mehr! Werbung ansehen oder auf die nächste Lampe warten 🪔",adfail:"Gerade keine Werbung verfügbar",adlimit:"Werbe-Limit für heute erreicht",
+      ok:"Super!",nokeys:"Alle 5 Minuten bekommst du 2 neue Lampen 🪔",adfail:"Gerade keine Werbung verfügbar",adlimit:"Werbe-Limit für heute erreicht",
       allopen:"Alle Geister gerufen! Neue Halle…",board:"🏆 Rangliste",prizes:"💰 Preise",ghosts:"👻 Meine Geister",invite:"👥 Einladen +1 Lampe",close:"Schließen",
       you:"Du",draw:"Verlosung Goldene Lose",drawT:"Extra 1 TON für 5 Lose",demo:"Demo-Modus — Server nicht verbunden",
-      units:["T","Std","Min","Sek"],nextCandle:"🪔 Nächste Lampe",full:"Voll ✓",fullL:"🪔 Lampen voll",evEnd:"⏳ Event endet in:",gotCandle:"+1 Lampe 🪔",lampWord:"Lampen",przBtn:"Preise",swap:"In TON tauschen",swapped:"{v} gutgeschrieben!",more:"noch {n}",collT:"Sammle 5 von jedem Geist und tausche sie in TON 💎",ended:"Vorbei",inviteText:"🪔 Reibe die Wunderlampe, rufe Geister und gewinne TON in TaxiTron!"}
+      units:["T","Std","Min","Sek"],nextCandle:"🪔 Nächste Lampe",full:"Voll ✓",fullL:"🪔 Lampen voll",evEnd:"⏳ Event endet in:",gotCandle:"+2 Lampen 🪔",lampWord:"Lampen",przBtn:"Preise",swap:"In TON tauschen",swapped:"{v} gutgeschrieben!",more:"noch {n}",collT:"Sammle 5 von jedem Geist und tausche sie in TON 💎",ended:"Vorbei",inviteText:"🪔 Reibe die Wunderlampe, rufe Geister und gewinne TON in TaxiTron!"}
 };
 
 /* Bilder der Geister (eingebettet) */
@@ -427,7 +428,7 @@ function demoRegen(){
   if(!state.regenAt) state.regenAt=now;
   if(state.keys>=cap){ state.regenAt=now; state.nextKeyAt=null; return; }
   const n=Math.floor((now-state.regenAt)/ms);
-  if(n>0){ state.keys=Math.min(cap,state.keys+n); state.regenAt=state.keys>=cap?now:state.regenAt+n*ms; }
+  if(n>0){ state.keys=Math.min(cap,state.keys+n*CONFIG.regenAmount); state.regenAt=state.keys>=cap?now:state.regenAt+n*ms; }
   state.nextKeyAt=state.keys<cap?state.regenAt+ms:null; demoSave();
 }
 function demoSave(){ try{localStorage.setItem(DK,JSON.stringify(state));}catch(e){} }

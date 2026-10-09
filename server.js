@@ -224,6 +224,7 @@ const HALLOWEEN_EVENT_FILE = path.join(DATA_DIR, 'halloween-event.json');
 const HALLOWEEN_EVENT_END_MS = Date.parse('2026-10-31T23:59:00+01:00');
 const HALLOWEEN_FAMILY = ['king', 'queen', 'archer', 'scholar', 'princess', 'warrior'];
 const HALLOWEEN_MAX_WINNERS = 20;
+const HALLOWEEN_LAMP_REGEN_AMOUNT = 2;
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
 const STORAGE_PERSISTENT = !ON_RAILWAY || (
@@ -2137,7 +2138,7 @@ function refreshHalloweenLamps(state, now) {
   const lampInterval = 5 * 60 * 1000;
   const recovered = Math.floor((now - state.regenAt) / lampInterval);
   if (recovered > 0) {
-    state.keys = Math.min(5, state.keys + recovered);
+    state.keys = Math.min(5, state.keys + recovered * HALLOWEEN_LAMP_REGEN_AMOUNT);
     state.regenAt = state.keys >= 5 ? now : state.regenAt + recovered * lampInterval;
   }
   return state.keys < 5 ? state.regenAt + lampInterval : null;
