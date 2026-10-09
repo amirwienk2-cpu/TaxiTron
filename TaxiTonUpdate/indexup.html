@@ -3119,8 +3119,8 @@
   .race-btn.monster-btn{background:linear-gradient(180deg,#ff8a3d,#c8213a);box-shadow:0 3px 0 #7a1222}
   .race-btn.monster-btn.live{background:linear-gradient(180deg,#ff5a6e,#c8213a);animation:monsterPulse 1s infinite}
   @keyframes monsterPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,.55)}50%{box-shadow:0 0 0 6px rgba(255,45,85,0)}}
-  /* ==== جزیره کتاب‌ها (Bücherinsel): Chat-Header-Button neben dem Schloss, für
-     alle sichtbar (Schloss bleibt admin-only). Icon-Button mit Countdown-Schild,
+  /* ==== جزیره کتاب‌ها (Bücherinsel): Chat-Header-Button neben dem Schloss, nur
+     mit aktiver Schaufel sichtbar (Schloss bleibt admin-only). Icon-Button mit Countdown-Schild,
      1:1 nach bucherinsel-final/MASTER_SPEC.md §2 / prototype .abtn.island. ==== */
   .isl-headbtn{all:unset;position:relative;cursor:pointer;width:62px;height:48px;border-radius:15px;background:linear-gradient(180deg,#123a8c,#0a2263 60%,#071a4d);box-shadow:inset 0 0 0 2px #f6c62b,inset 0 3px 0 rgba(255,255,255,.18),0 4px 0 #b8860b,0 6px 12px rgba(0,0,0,.45);flex-shrink:0;display:inline-block}
   .isl-headbtn-bg{position:absolute;inset:3px;border-radius:12px;background:radial-gradient(circle at 50% 65%,rgba(80,190,255,.45),transparent 65%);pointer-events:none}
@@ -4926,7 +4926,7 @@ function renderChat(){
       <div class="on-side"><div class="on-badges">${badgeImg(u, true)}</div>${islandBadgesOn ? `<div class="on-island">${islandBookBadgesHtml(u)}</div>` : ''}</div></div>`).join('');
   const localTestMessages=CARD_EVENT_TEST&&cardEventTestMessage&&cardEventTestMessage.room===chatRoom?[cardEventTestMessage]:[];
   const msgs = (liveChat ? [] : [])
-    .concat(serverChat.filter(m => m.room === chatRoom))
+    .concat(serverChat.filter(m => m.room === chatRoom && (ISLAND.me.canUse === true || !m.islandKind)))
     .concat(localTestMessages)
     .sort((a,b) => a.ts - b.ts);
   if (!liveChat) {
@@ -5963,8 +5963,8 @@ const ISLAND_SPOTS = [[577,345],[405,515],[608,500],[855,508],[130,545],[865,785
 const ISLAND_SANDPTS = [[330,420],[470,470],[700,380],[760,430],[890,520],[560,520],[640,700],[800,640],[470,560],[905,440],[690,760],[380,500]];
 const ISLAND = {
   round: {open:false, opensAt:0, closesAt:0, searchers:0, x2Active:false, x2EndsAt:0},
-  me: {book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, searchDurationMs:ISLAND_SEARCH_MS, spot:null, lastText:'', lastAt:0, lastK:-1, lastMultiplier:1, lastIsNew:false, lastWon:false, lastTT:0, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
-  sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false, wasOpen:null,
+  me: {canUse:false, book1:0, book2:0, book3:0, wins:0, searchEndsAt:0, searchDurationMs:ISLAND_SEARCH_MS, spot:null, lastText:'', lastAt:0, lastK:-1, lastMultiplier:1, lastIsNew:false, lastWon:false, lastTT:0, lastDailyBonuses:[], shovels:[], searchesToday:0, shovelProgress:{}},
+  sheetOpen:false, mySpot:-1, myDigGroup:null, myDigRaf:null, pollTimer:null, revealTimer:null, fetchBusy:false, lastAccessCheckAt:0, wasOpen:null,
 };
 // جزیره کتاب‌ها Shop (bucherinsel-final/MASTER_SPEC.md §6): shovels + book exchange.
 // s3 only ever pays its daily bonus (same shape as s1/s2) - no per-search chance.
@@ -6008,17 +6008,18 @@ function renderIslandButton(){
   const btn = $('#islandBtn'), txt = $('#islandBtnText');
   if (!btn || !txt) return;
   const x2Status = $('#islandX2Countdown'), x2Value = $('#islandX2CountdownValue');
-  const x2Active = ISLAND.round.x2Active === true && Number(ISLAND.round.x2EndsAt) > Date.now();
+  const canUse = ISLAND.me.canUse === true;
+  const x2Active = canUse && ISLAND.round.x2Active === true && Number(ISLAND.round.x2EndsAt) > Date.now();
   if (x2Status) x2Status.hidden = !x2Active;
   if (x2Value && x2Active) x2Value.textContent = faDigits(islandHmsFromMs(Number(ISLAND.round.x2EndsAt) - Date.now()));
   const x2Button = $('#islandX2Btn');
   if (x2Button) {
-    x2Button.hidden = SHOP_ACCOUNT.isDeveloper !== true || chatRoom !== 'fa';
+    x2Button.hidden = SHOP_ACCOUNT.isDeveloper !== true || chatRoom !== 'fa' || !canUse;
     x2Button.disabled = x2Active;
     x2Button.textContent = x2Active ? '×۲ فعال' : '×۲ شروع';
     x2Button.title = x2Active ? 'رویداد ×۲ فعال است' : 'شروع رویداد ×۲ جزیره برای ۲ ساعت';
   }
-  if (chatRoom !== 'fa' || !SHOP_ACCOUNT.token) { btn.hidden = true; return; }
+  if (chatRoom !== 'fa' || !SHOP_ACCOUNT.token || !canUse) { btn.hidden = true; return; }
   btn.hidden = false;
   const r = ISLAND.round, now = Date.now(), searching = ISLAND.me.searchEndsAt > now;
   btn.classList.toggle('closed', !r.open);
@@ -6031,8 +6032,17 @@ async function fetchIslandState(){
   if (!SHOP_ACCOUNT.token || ISLAND.fetchBusy) return;
   ISLAND.fetchBusy = true;
   try {
+    ISLAND.lastAccessCheckAt = Date.now();
     const response = await fetch('/api/island/state?token=' + encodeURIComponent(SHOP_ACCOUNT.token), {cache:'no-store'});
     const data = await response.json();
+    ISLAND.lastAccessCheckAt = Date.now();
+    if (response.status === 403 && data.error === 'island-shovel-required') {
+      ISLAND.me.canUse = false;
+      if (ISLAND.sheetOpen) closeIslandSheet();
+      renderIslandButton();
+      if (current === 'chat') renderChat();
+      return;
+    }
     if (response.ok && data.round) {
       ISLAND.round = data.round;
       const prevMe = ISLAND.me, nextMe = data.me || ISLAND.me;
@@ -6040,7 +6050,7 @@ async function fetchIslandState(){
       ISLAND.me = nextMe;
       if (ISLAND.mySpot < 0 && Number.isInteger(nextMe.spot) && Number(nextMe.searchEndsAt) > Date.now()) ISLAND.mySpot = nextMe.spot;
       renderIslandButton();
-      if (current === 'chat' && chatTab === 'on') renderChat();
+      if (current === 'chat') renderChat();
       if (ISLAND.sheetOpen) {
         if (justResolved) islandHandleResolved(nextMe);
         renderIslandScene();
@@ -6059,7 +6069,7 @@ function applyIslandRoundEvent(event){
   void fetchIslandState();
 }
 function openIslandSheet(){
-  if (!SHOP_ACCOUNT.token) return;
+  if (!SHOP_ACCOUNT.token || ISLAND.me.canUse !== true) return;
   ISLAND.sheetOpen = true;
   $('#islandScrim').hidden = false;
   renderIslandScene();
@@ -6085,7 +6095,7 @@ function islandSvgEl(tag, attrs, html){
 function islandDrawSpots(){
   const g = $('#islSpots'); if (!g) return;
   g.innerHTML = '';
-  const canDig = ISLAND.round.open && !(ISLAND.me.searchEndsAt > Date.now());
+  const canDig = ISLAND.me.canUse === true && ISLAND.round.open && !(ISLAND.me.searchEndsAt > Date.now());
   $('#islandScene').classList.toggle('can', canDig);
   ISLAND_SPOTS.forEach(([x, y], i) => {
     g.appendChild(islandSvgEl('g', {class: 'isl-sp' + (ISLAND.mySpot === i ? ' dug' : ''), 'data-i': i, tabindex: 0, role: 'button', 'aria-label': 'اینجا بگرد'},
@@ -6096,7 +6106,7 @@ $('#islSpots').addEventListener('click', e => { const s = e.target.closest('.isl
 $('#islSpots').addEventListener('keydown', e => { const s = e.target.closest('.isl-sp'); if (s && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); void startIslandSearch(+s.dataset.i); } });
 $('#islandDig').onclick = () => void startIslandSearch();
 async function startIslandSearch(spotIndex){
-  if (!SHOP_ACCOUNT.token || ISLAND.me.searchEndsAt > Date.now() || !ISLAND.round.open) return;
+  if (!SHOP_ACCOUNT.token || ISLAND.me.canUse !== true || ISLAND.me.searchEndsAt > Date.now() || !ISLAND.round.open) return;
   const spot = Number.isInteger(spotIndex) ? spotIndex : Math.floor(Math.random() * ISLAND_SPOTS.length);
   try {
     const response = await fetch('/api/island/search', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token: SHOP_ACCOUNT.token, spot})});
@@ -6110,7 +6120,13 @@ async function startIslandSearch(spotIndex){
     renderIslandButton();
     renderIslandScene();
     if (!ISLAND.pollTimer) ISLAND.pollTimer = setInterval(fetchIslandState, 3000);
-  } catch (e) { toast(t('lim_err')); }
+  } catch (e) {
+    if (e.message === 'island-shovel-required') {
+      ISLAND.me.canUse = false;
+      closeIslandSheet();
+      renderIslandButton();
+    } else toast(t('lim_err'));
+  }
 }
 function islandStopMyDigVisual(){
   if (ISLAND.myDigRaf) { cancelAnimationFrame(ISLAND.myDigRaf); ISLAND.myDigRaf = null; }
@@ -6231,7 +6247,7 @@ function renderIslandScene(){
 }
 // SSE 'island' events only carry shared round info; poll personal fields whenever
 // an active search needs its countdown kept fresh even while the sheet is closed.
-setInterval(() => { if (SHOP_ACCOUNT.token && chatRoom === 'fa' && (ISLAND.sheetOpen || ISLAND.me.searchEndsAt > Date.now())) void fetchIslandState(); }, 5000);
+setInterval(() => { if (SHOP_ACCOUNT.token && chatRoom === 'fa' && (ISLAND.sheetOpen || ISLAND.me.searchEndsAt > Date.now() || Date.now() - ISLAND.lastAccessCheckAt >= 60000)) void fetchIslandState(); }, 5000);
 setInterval(renderIslandButton, 1000);
 setInterval(() => {
   document.querySelectorAll('[data-island-left]').forEach(el => {
@@ -6251,6 +6267,13 @@ async function fetchIslandShop(){
     if (response.ok) {
       ISLAND_SHOP.data = data;
       ISLAND_SHOP.fetchedAt = Date.now();
+      if (typeof data.canUse === 'boolean' && data.canUse !== ISLAND.me.canUse) {
+        ISLAND.me.canUse = data.canUse;
+        if (!data.canUse && ISLAND.sheetOpen) closeIslandSheet();
+        if (data.canUse) ISLAND.lastAccessCheckAt = 0;
+        renderIslandButton();
+        if (current === 'chat' && chatTab === 'on') renderChat();
+      }
       if (current === 'shop' && shopTab === 'island') renderShop();
     }
   } catch (e) {}
@@ -6299,9 +6322,14 @@ async function islandShopBuy(id){
     }
     ISLAND_SHOP.data = data.shop; ISLAND_SHOP.fetchedAt = Date.now();
     SHOP_ACCOUNT.ton = data.shop.ton;
+    ISLAND.me.canUse = data.shop.canUse === true;
+    renderIslandButton();
     toast(`${ISLAND_SHOVEL_DEFS[id].name} خریداری شد! 🎉`);
     renderShop();
     void refreshShopAccount();
+    ISLAND.lastAccessCheckAt = 0;
+    void fetchIslandState();
+    void loadOnlinePlayers();
   } catch (e) { toast(t('lim_err')); }
 }
 async function islandShopExchange(id){
@@ -6318,7 +6346,15 @@ async function islandShopExchange(id){
     renderShop();
     void refreshShopAccount();
     if (ISLAND.sheetOpen) { ISLAND.me.book1 = data.books[0]; ISLAND.me.book2 = data.books[1]; ISLAND.me.book3 = data.books[2]; renderIslandScene(); }
-  } catch (e) { toast(t('lim_err')); }
+  } catch (e) {
+    if (e.message === 'island-shovel-required') {
+      ISLAND.me.canUse = false;
+      ISLAND.lastAccessCheckAt = 0;
+      renderIslandButton();
+      void fetchIslandState();
+      void fetchIslandShop();
+    } else toast(t('lim_err'));
+  }
 }
 function renderIslandShopTab(list){
   if (!SHOP_ACCOUNT.token) {
@@ -6386,11 +6422,14 @@ function renderIslandShopTab(list){
       <div class="ish-ctl"><div class="ish-qty"><button data-xq="${id}" data-xd="-1" ${q <= 1 ? 'disabled' : ''}>−</button><span>${faDigits(q)}</span><button data-xq="${id}" data-xd="1" ${q >= max ? 'disabled' : ''}>+</button></div>
       <button class="ish-buy" data-xch="${id}" ${ok ? '' : 'disabled'}>${ok ? 'تبادل' : 'کافی نیست'}</button></div></div>`;
   }).join('');
-  list.innerHTML = `<div class="ish-wrap">${bal}${eq}${resetRow}
+  const accessNote = d.canUse ? '' : `<div class="ish-note">برای استفاده از جزیره، هرکدام از بیل‌ها را بخرید. کتاب‌های قبلی شما محفوظ می‌مانند.</div>`;
+  const exchangeSection = d.canUse
+    ? `<div class="ish-sec"><h3>تبادل کتاب</h3><small>کتاب‌های اضافه را عوض کن</small></div><div class="ish-xlist">${xlist}</div>`
+    : '';
+  list.innerHTML = `<div class="ish-wrap">${bal}${eq}${resetRow}${accessNote}
     <div class="ish-sec"><h3>بیل‌ها</h3><small>۳۰ روز تقویمی · قدرت‌ها با هم جمع می‌شوند</small></div>
     <div class="ish-grid">${shovelCards}</div>
-    <div class="ish-sec"><h3>تبادل کتاب</h3><small>کتاب‌های اضافه را عوض کن</small></div>
-    <div class="ish-xlist">${xlist}</div>
+    ${exchangeSection}
     <div class="ish-note">کتاب‌ها را در جزیره‌ی چت پیدا می‌کنی 🏝️<br>بیلی که داری روی جزیره و کنار اسمت در بخش Online دیده می‌شود.</div>
   </div>`;
 }

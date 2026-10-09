@@ -1469,6 +1469,9 @@ function islandShovelActive(user, id) {
 function islandActiveShovelIds(user) {
   return ISLAND_SHOVEL_ORDER.filter((id) => islandShovelActive(user, id));
 }
+function islandHasAccess(user) {
+  return islandActiveShovelIds(user).length > 0;
+}
 // Highest-tier currently-active shovel (ISLAND_SHOVEL_ORDER is weakest-first),
 // used client-side to pick which shovel image to show in the dig ring.
 function islandStrongestShovel(user) {
@@ -4142,9 +4145,13 @@ app.get('/api/online-count', (req, res) => {
 app.get('/api/island/state', requireUserFromQuery, (req, res) => {
   const user = req.user;
   resolveIslandSearch(user);
+  if (!islandHasAccess(user)) {
+    return res.status(403).json({ error: 'island-shovel-required', canUse: false });
+  }
   res.json({
     round: publicIslandRound(),
     me: {
+      canUse: true,
       book1: islandBookCount(user, 0), book2: islandBookCount(user, 1), book3: islandBookCount(user, 2),
       wins: Number(user.islandWins || 0),
       searchEndsAt: Number(user.islandSearchEndsAt || 0),
@@ -4197,6 +4204,7 @@ function publicIslandShop(user) {
   return {
     ton: Number(user.ton || 0),
     books: [islandBookCount(user, 0), islandBookCount(user, 1), islandBookCount(user, 2)],
+    canUse: islandHasAccess(user),
     wins: Number(user.islandWins || 0),
     searchesToday: Number(user.islandSearchesToday || 0),
     shovels,
@@ -4264,6 +4272,7 @@ app.post('/api/island/shop/buy', requireUserFromBody, rejectBannedUser, (req, re
 
 app.post('/api/island/exchange', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user;
+  if (!islandHasAccess(user)) return res.status(403).json({ error: 'island-shovel-required' });
   const type = req.body && req.body.type;
   const def = ISLAND_EXCHANGES[type];
   if (!def) return res.status(400).json({ error: 'invalid-type' });
@@ -4299,6 +4308,7 @@ const islandLastWrite = new Map();
 // per-search duration has actually elapsed (see resolveIslandSearch) - never here.
 app.post('/api/island/search', requireUserFromBody, rejectBannedUser, (req, res) => {
   const user = req.user, now = Date.now();
+  if (!islandHasAccess(user)) return res.status(403).json({ error: 'island-shovel-required' });
   const last = islandLastWrite.get(req.uid) || 0;
   if (now - last < ISLAND_SEARCH_RATE_LIMIT_MS) return res.status(429).json({ error: 'rate-limited' });
   islandLastWrite.set(req.uid, now);
@@ -4368,9 +4378,9 @@ app.get('/api/online-users', (req, res) => {
       islandBook2: islandBookCount(user, 1),
       islandBook3: islandBookCount(user, 2),
       islandWins: Number(user.islandWins || 0),
-      islandSearching: Number(user.islandSearchEndsAt || 0) > now,
-      islandSearchEndsAt: Number(user.islandSearchEndsAt || 0),
-      islandLastText: user.islandLastText || '',
+      islandSearching: islandHasAccess(user) && Number(user.islandSearchEndsAt || 0) > now,
+      islandSearchEndsAt: islandHasAccess(user) ? Number(user.islandSearchEndsAt || 0) : 0,
+      islandLastText: islandHasAccess(user) ? (user.islandLastText || '') : '',
       islandLastAt: Number(user.islandLastAt || 0),
       islandShovels: islandActiveShovelIds(user),
     }));
@@ -4466,10 +4476,11 @@ app.get('/api/chat/messages', (req, res) => {
       viewer.chatLastSeenAt = Date.now();
     }
   }
+  const canUseIsland = !!viewer && islandHasAccess(viewer);
   // Requests with no room keep the legacy global-chat behavior.
   const roomMessages = room
-    ? chatMessages.filter((message) => (message.room || 'en') === room)
-    : chatMessages;
+    ? chatMessages.filter((message) => (message.room || 'en') === room && (canUseIsland || !message.islandKind))
+    : chatMessages.filter((message) => canUseIsland || !message.islandKind);
   // "before" lets the client page further back in history (used for scroll-up
   // infinite loading and for jumping to an older reply that isn't loaded yet).
   const storedMessages = before > 0
