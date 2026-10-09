@@ -69,11 +69,18 @@ const TELEGRAM_MINI_APP_URL = new URL('/TaxiTonUpdate/indexup.html?v=taxiton-adm
 const TON_USD_RATE = Number(process.env.TON_USD_RATE || 0);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+const ADSGRAM_REWARD_SECRET = String(process.env.ADSGRAM_REWARD_SECRET || '').trim();
+if (ADSGRAM_REWARD_SECRET && Buffer.byteLength(ADSGRAM_REWARD_SECRET, 'utf8') < 32) {
+  throw new Error('ADSGRAM_REWARD_SECRET must be at least 32 bytes');
+}
 const ADMIN_CHAT_ID = String(process.env.ADMIN_CHAT_ID || '').trim();
 const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
+if (!ADSGRAM_REWARD_SECRET) {
+  console.warn('[adsgram] ADSGRAM_REWARD_SECRET is not configured; server-side video rewards are disabled.');
+}
 
 // ---- TT jetton withdrawals (on-chain payouts to a user's own TON wallet) ----
 // SECURITY: TREASURY_MNEMONIC must only ever come from this Railway env var -
@@ -330,7 +337,9 @@ const CARD_EVENT_MAX_INTERVAL_MS = 20 * 60 * 1000;
 const CHAT_MAX_STORED = 200; // how many messages are kept on disk/in memory
 const CHAT_MAX_LEN = 300; // characters per message
 const CHAT_MIN_INTERVAL_MS = 2000; // basic anti-spam: one message per user every 2s
+const PIRATE_STICKER_MIN_INTERVAL_MS = 5000;
 const RANDOM_GIFT_GUESS_COOLDOWN_MS = 5000;
+const chatLastPirateStickerAt = Object.create(null);
 
 // ---------------------------------------------------------------
 // Storage: load once, keep in memory, persist through a write queue
@@ -2002,6 +2011,8 @@ function newUser(id, name) {
     thirdChannelTaskRewardClaimed: false,
     adVideosWatched: 0,
     adRewardClaimed: false,
+    stickerPackPirateUnlocked: false,
+    stickerPackPirateUnlockedAt: '',
     createdAt: Date.now(),
     lastSeenAt: 0,
     tournamentBest: 0,
@@ -2333,6 +2344,12 @@ function ensureDailyReset(user) {
     user.adRewardClaimed = false;
   }
 }
+function unlockPirateStickerPack(user) {
+  if (user.stickerPackPirateUnlocked === true) return false;
+  user.stickerPackPirateUnlocked = true;
+  user.stickerPackPirateUnlockedAt = new Date().toISOString();
+  return true;
+}
 function ensureTournamentReset(user) {
   const week = berlinWeekKey();
   if (user.tournamentWeekKey !== week) {
@@ -2570,7 +2587,11 @@ function publicState(user) {
     withdrawChannelTaskRewardClaimed: user.withdrawChannelTaskRewardClaimed === true,
     thirdChannelTaskRewardClaimed: user.thirdChannelTaskRewardClaimed === true,
     adVideosWatched: Math.min(10, Math.max(0, Number(user.adVideosWatched) || 0)),
+    adVideoDay: typeof user.adVideoDay === 'string' ? user.adVideoDay : '',
     adRewardClaimed: user.adRewardClaimed === true,
+    stickerPackPirateUnlocked: user.stickerPackPirateUnlocked === true,
+    stickerPackPirateUnlockedAt: user.stickerPackPirateUnlocked === true && typeof user.stickerPackPirateUnlockedAt === 'string'
+      ? user.stickerPackPirateUnlockedAt : '',
     referralRewardZombies: (Number(user.referralRewardCount) || 0) * 300,
     ttShopEnabled,
     isChatAdmin: user.isChatAdmin === true,
@@ -4619,8 +4640,11 @@ app.post('/api/chat/send', requireUserFromBody, rejectBannedUser, (req, res) => 
   if (requestedRoom === 'fa' && isCardEventActive()) return res.status(423).json({ error: 'card-event-active' });
   const stickerMatch = sticker.match(/^([a-z]+)-([1-6])$/);
   const stickerPack = stickerMatch && stickerMatch[1];
-  if (sticker && (!stickerMatch || !Object.hasOwn(TT_CHAT_ITEMS.stk, stickerPack) || !Array.isArray(req.user.stickerPacks) || !req.user.stickerPacks.includes(stickerPack))) {
-    return res.status(403).json({ error: 'sticker-not-owned' });
+  const pirateSticker = stickerMatch && stickerPack === 'pirate';
+  if (sticker && (!stickerMatch || (pirateSticker
+    ? req.user.stickerPackPirateUnlocked !== true
+    : !Object.hasOwn(TT_CHAT_ITEMS.stk, stickerPack) || !Array.isArray(req.user.stickerPacks) || !req.user.stickerPacks.includes(stickerPack)))) {
+    return res.status(403).json({ error: pirateSticker ? 'pirate-sticker-pack-locked' : 'sticker-not-owned' });
   }
   if (!raw && !sticker) return res.status(400).json({ error: 'empty-message' });
   const now = Date.now();
@@ -4639,6 +4663,12 @@ app.post('/api/chat/send', requireUserFromBody, rejectBannedUser, (req, res) => 
   }
   const lastAt = chatLastSentAt[req.uid] || 0;
   if (Date.now() - lastAt < CHAT_MIN_INTERVAL_MS) return res.status(429).json({ error: 'too-fast' });
+  if (pirateSticker) {
+    const pirateLastAt = chatLastPirateStickerAt[req.uid] || 0;
+    const retryAfterMs = PIRATE_STICKER_MIN_INTERVAL_MS - (now - pirateLastAt);
+    if (retryAfterMs > 0) return res.status(429).json({ error: 'pirate-sticker-cooldown', retryAfterMs });
+    chatLastPirateStickerAt[req.uid] = now;
+  }
   chatLastSentAt[req.uid] = now;
   if (raw.toLowerCase() === '/random') {
     return res.status(403).json({ error: 'random-bot-only' });
@@ -5068,27 +5098,24 @@ app.post('/api/tasks/third-channel-claim', requireUserFromBody, async (req, res)
 
 app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   const user = req.user;
+  const previousDay = user.adVideoDay;
   ensureDailyReset(user);
   const watched = Math.max(0, Math.min(10, Number(user.adVideosWatched) || 0));
-  if (user.adRewardClaimed || watched >= 10) {
-    user.adVideosWatched = 10;
-    user.adRewardClaimed = true;
-    return res.json({ watched: 10, reward: 0, rewardTT: 0, completed: true, state: publicState(user) });
-  }
-  user.adVideosWatched = watched + 1;
-  let rewardTT = 0;
-  if (user.adVideosWatched === 10 && user.adRewardClaimed !== true) {
-    rewardTT = 250;
-    creditTT(user, rewardTT, 'ad-video-claim');
-    user.adRewardClaimed = true;
-  }
-  persist();
-  res.json({ watched: user.adVideosWatched, reward: 0, rewardTT, completed: user.adRewardClaimed === true, state: publicState(user) });
+  const completed = user.adRewardClaimed === true || watched >= 10;
+  if (completed && unlockPirateStickerPack(user)) persist();
+  else if (previousDay !== user.adVideoDay) persist();
+  res.json({ watched, reward: 0, rewardTT: 0, completed, state: publicState(user) });
 });
 
-// AdsGram calls this public callback after a rewarded video is completed.
-// The Telegram UID is the same UID used as the key in users.json.
+// AdsGram calls this authenticated Reward URL after a rewarded video is completed.
+// Configure its Reward URL as /api/adsgram-reward?secret=<secret>&userid=[userId].
 app.get('/api/adsgram-reward', (req, res) => {
+  const providedSecret = Buffer.from(String(req.query.secret || ''), 'utf8');
+  const expectedSecret = Buffer.from(ADSGRAM_REWARD_SECRET, 'utf8');
+  if (!expectedSecret.length || providedSecret.length !== expectedSecret.length ||
+      !crypto.timingSafeEqual(providedSecret, expectedSecret)) {
+    return res.status(403).json({ ok: false, rewarded: false });
+  }
   const userId = String(req.query.userid || '').trim();
   const user = userId ? users[userId] : null;
 
@@ -5097,7 +5124,8 @@ app.get('/api/adsgram-reward', (req, res) => {
   ensureDailyReset(user);
 
   if (user.adRewardClaimed === true) {
-    return res.status(200).json({ ok: true, rewarded: false, completed: true, watched: 0 });
+    if (unlockPirateStickerPack(user)) persist();
+    return res.status(200).json({ ok: true, rewarded: false, completed: true, watched: 0, state: publicState(user) });
   }
 
   const watched = Math.max(0, Math.min(9, Number(user.adVideosWatched) || 0)) + 1;
@@ -5107,6 +5135,7 @@ app.get('/api/adsgram-reward', (req, res) => {
     user.adVideosWatched = 10;
     user.adRewardClaimed = true;
     creditTT(user, 250, 'adsgram-reward');
+    unlockPirateStickerPack(user);
     reward = 0;
     completed = true;
   } else {

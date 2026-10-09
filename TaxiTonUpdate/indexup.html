@@ -2580,9 +2580,24 @@
   .stkempty{display:flex;align-items:center;gap:10px;font-size:12.5px}
   .stkempty img{width:52px;height:52px;opacity:.8}
   .stkempty .btn{padding:7px 12px;font-size:14px;margin-inline-start:auto}
+  .stkpgrid button:disabled{cursor:not-allowed;filter:grayscale(1);opacity:.42}
+  .stkpgrid button:disabled::after{content:"🔒";position:absolute;inset:0;display:grid;place-items:center;font-size:20px;background:rgba(5,8,24,.38);border-radius:10px}
+  .stkpgrid button{position:relative;overflow:hidden}
+  .pirate-pack-note{margin:7px 2px 2px;color:var(--ink-dim);font-size:11px;line-height:1.35}
+  .pirate-pack-note.unlocked{color:#9be887}
   .bub.stkb{background:none!important;border:0!important;padding:0 0 14px;min-width:0}
   .bub.stkb img{display:block;width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+  .bub.pirate-stkb img{width:132px;height:132px}
   .bub.stkb .tm{background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px;bottom:0}
+  .pirate-unlock-overlay{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:rgba(3,6,22,.78);backdrop-filter:blur(7px)}
+  .pirate-unlock-overlay[hidden]{display:none!important}
+  .pirate-unlock-card{position:relative;width:min(420px,100%);padding:22px 18px 18px;border:1px solid rgba(var(--gl3),.4);border-radius:22px;background:linear-gradient(160deg,#171b3d,#090d25);box-shadow:0 18px 70px rgba(0,0,0,.55);text-align:center}
+  .pirate-unlock-card h2{margin:0 28px 6px;color:#ffd54a;font-size:20px}
+  .pirate-unlock-card p{margin:0 0 13px;color:var(--ink-dim);font-size:13px}
+  .pirate-unlock-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:0 auto 14px;max-width:310px}
+  .pirate-unlock-preview img{width:100%;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 3px 5px rgba(0,0,0,.4))}
+  .pirate-unlock-close-x{position:absolute;top:9px;right:10px;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:var(--ink);font-size:18px}
+  .pirate-unlock-close{min-width:130px;padding:9px 18px;border:0;border-radius:12px;background:linear-gradient(180deg,#ffe477,#ffc928);color:#2d2200;font-weight:900}
   .chat-reactions{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:7px 0 2px}
   .chat-react-pill,.chat-react-add{min-height:25px;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:2px 7px;border:1px solid rgba(255,255,255,.12);border-radius:99px;background:rgba(0,0,0,.18);color:var(--ink);font:inherit;font-size:12px;line-height:1;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
   .chat-react-pill b{font-size:10px;color:var(--ink-dim)}
@@ -3467,6 +3482,7 @@
             <div class="advc-top"><b id="adVideoText"></b><span class="advc-reward">+250 TT</span></div>
             <div class="advc-track"><i id="adVideoBar"></i></div>
             <small id="adVideoNote"></small>
+            <small class="pirate-pack-note" id="piratePackNote"></small>
           </div>
           <button class="advc-btn" id="adVideoBtn" aria-label="Watch">▶</button>
         </div>
@@ -4100,7 +4116,7 @@ const CARS = [
   {id:'luna',   lvl:5, skin:'luna',   price:25, dailyReward:1.66, rewardDays:30, limit:20, body:'#eee8ff', trim:'#b83cff', bonus:45},
   {id:'nikto',  lvl:6, soon:true, price:0, body:'#1a1f4a', trim:'#ff3b4e', bonus:60},
 ];
-const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,isSupporter:false,isDeveloper:false,badge4:false,badge5:false,chatMuted:false,ttShopEnabled:false,adVideosWatched:0,adRewardClaimed:false,online:false};
+const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,isSupporter:false,isDeveloper:false,badge4:false,badge5:false,chatMuted:false,ttShopEnabled:false,adVideosWatched:0,adVideoDay:'',adRewardClaimed:false,stickerPackPirateUnlocked:false,online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
 let globalAnnouncementSource = null;
 function showGlobalAnnouncement(announcement){
@@ -4229,7 +4245,9 @@ function applyShopAccountState(state, preferredCar){
   if (!SHOP_ACCOUNT.ownedSkins.includes('yellow')) SHOP_ACCOUNT.ownedSkins.unshift('yellow');
   SHOP_ACCOUNT.skinRewards = state.skinRewards && typeof state.skinRewards === 'object' ? state.skinRewards : {};
   SHOP_ACCOUNT.adVideosWatched = Math.min(10, Math.max(0, Number(state.adVideosWatched) || 0));
+  SHOP_ACCOUNT.adVideoDay = typeof state.adVideoDay === 'string' ? state.adVideoDay : '';
   SHOP_ACCOUNT.adRewardClaimed = state.adRewardClaimed === true;
+  SHOP_ACCOUNT.stickerPackPirateUnlocked = state.stickerPackPirateUnlocked === true;
   SHOP_ACCOUNT.isChatAdmin = state.isChatAdmin === true;
   SHOP_ACCOUNT.adminBadge = state.adminBadge === 'girl' ? 'girl' : 'boy';
   SHOP_ACCOUNT.isDesigner = state.isDesigner === true;
@@ -4566,6 +4584,12 @@ function avatar(u, sm, fr, who){ return `<span class="uav ${sm?'sm':''} ${frmCls
 function flagSvg(l){ const b = document.querySelector(`#setLangs .flag[data-lang="${l}"] svg`); return b ? b.outerHTML : ''; }
 function fromServerChatMessage(message){
   return {id:message.id,uid:String(message.uid),mine:String(message.uid)===SHOP_ACCOUNT.uid,who:message.name||'Player',photoUrl:message.photoUrl||'',text:message.text||'',stk:message.stk||'',ts:Number(message.ts)||Date.now(),editedAt:Number(message.editedAt)||0,room:['en','fa','de'].includes(message.room)?message.room:'en',chatItems:message.chatItems||{},reactions:message.reactions||{counts:{},mine:null},cardEventId:message.cardEventId||'',cardEventResult:message.cardEventResult||null,isChatAdmin:message.isAdmin===true,adminBadge:message.adminBadge==='girl'?'girl':'boy',isDesigner:message.isDesigner===true,isSupporter:message.isSupporter===true,isDeveloper:message.isDeveloper===true,badge4:message.badge4===true,badge5:message.badge5===true,hasLevel4:message.hasLevel4===true,hasLevel5:message.hasLevel5===true,isZombieBot:message.isZombieBot===true,islandKind:message.islandKind||'',islandBubbleImg:message.islandBubbleImg||'',islandBubbleText:message.islandBubbleText||'',islandBubbleSub:message.islandBubbleSub||'',reply:message.replyTo?{id:message.replyTo.id,who:message.replyTo.name,name:message.replyTo.name,text:message.replyTo.text}:null};
+}
+const PIRATE_STICKER_NAMES = ['Buch','Papagei','Erschöpft','Muschel','Jubel','Schatztruhe'];
+function pirateStickerSrc(number){
+  const index = Number(number);
+  if (!Number.isInteger(index) || index < 1 || index > 6) return '';
+  return `/sprites/piraten-stickers/${index}_${['buch','papagei','erschoepft','muschel','jubel','schatztruhe'][index - 1]}.png`;
 }
 function receiveServerChatMessage(message){
   const item=fromServerChatMessage(message);
@@ -4952,17 +4976,18 @@ function renderChat(){
     const tmMarkup = `<span class="tm">${m.editedAt ? (S.lang==='de'?'bearbeitet · ':S.lang==='fa'?'ویرایش شده · ':'edited · ') : ''}${hhmm(m.ts)}${mine ? ' <span class="tick">✓✓</span>' : ''}</span>`;
     // Bei reinem Text läuft die Uhrzeit inline im selben Textfluss (Teil 1 Pkt.3);
     // bei Sticker/Karten-Event bleibt sie als Zeile darunter (kein Fließtext vorhanden).
+    const pirateStickerNo = String(m.stk || '').match(/^pirate-([1-6])$/)?.[1] || '';
     const islandMarkup = m.islandKind ? `<div class="isl-msg-head">🏝️ <b>جزیره کتاب‌ها</b></div><div class="bt" dir="auto">${esc(m.text)}</div>${m.islandKind==='open'?'<button type="button" class="isl-chat-btn" data-open-island>🔍 برو به جزیره</button>':''}${tmMarkup}` : '';
     const bodyMarkup = cardEventMarkup
       ? cardEventMarkup
       : m.islandKind ? islandMarkup
       : m.cardEventTest ? renderCardEventTest(m.cardEventTest)
-      : m.stk ? `<img src="assets/stk-${esc(m.stk)}.webp" alt="">`
+      : m.stk ? `<img src="${pirateStickerNo ? pirateStickerSrc(pirateStickerNo) : `assets/stk-${esc(m.stk)}.webp`}" alt="${pirateStickerNo ? PIRATE_STICKER_NAMES[Number(pirateStickerNo) - 1] : ''}">`
       : `<div class="bt" dir="auto">${esc(m.text)}${tmMarkup}</div>`;
     const isPlainText = !cardEventMarkup && !m.islandKind && !m.cardEventTest && !m.stk;
     const contentMarkup = isPlainText ? bodyMarkup : bodyMarkup + tmMarkup;
     return sep + `<div class="mrow ${m.cardEventId||m.cardEventTest?'card-event-message':''} ${m.islandKind?'island-message '+(m.islandKind==='win'||m.islandKind==='daily'?'win':''):''} ${mine?'mine':''} ${grouped?'grp':''} ${lastG?'lastg':''} ${m.isZombieBot?'isZombieBot':''}" id="msg-${domId}" data-ts="${m.ts}" data-msg-id="${domId}">${messageAvatar}
-      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
+      <div class="bub ${m.stk ? 'stkb' : bubCls(messageBubble)} ${pirateStickerNo ? 'pirate-stkb' : ''}"><div class="bh"><b data-user="${esc(u.n)}" style="color:${u.c}">${esc(u.n)}</b>${badgeImg(u)}<span class="lv">Lv ${u.lvl}</span></div>${m.reply ? replyQuote(m.reply) : ''}
       ${contentMarkup}</div>${reactionMarkup}</div>`;
   }).join('');
   renderStkPick();
@@ -5281,31 +5306,79 @@ function loadAdsgramScript(){
   }
   return adsgramLoadPromise;
 }
+function showPiratePackUnlockedPopup(){
+  let overlay = $('#pirateUnlockOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'pirateUnlockOverlay';
+    overlay.className = 'pirate-unlock-overlay';
+    overlay.hidden = true;
+    overlay.innerHTML = `<div class="pirate-unlock-card" role="dialog" aria-modal="true" aria-labelledby="pirateUnlockTitle">
+      <button type="button" class="pirate-unlock-close-x" aria-label="Close">×</button>
+      <h2 id="pirateUnlockTitle">🏴‍☠️ ${S.lang==='de'?'Piraten-Sticker-Pack freigeschaltet!':S.lang==='fa'?'بسته استیکر دزدان دریایی آزاد شد!':'Pirate sticker pack unlocked!'}</h2>
+      <p>${S.lang==='de'?'Deine sechs Sticker sind jetzt dauerhaft im Chat verfügbar.':S.lang==='fa'?'شش استیکر برای همیشه در چت در دسترس شماست.':'Your six stickers are now permanently available in chat.'}</p>
+      <div class="pirate-unlock-preview">${[1,2,3,4,5,6].map(i=>`<img src="${pirateStickerSrc(i)}" alt="${PIRATE_STICKER_NAMES[i-1]}">`).join('')}</div>
+      <button type="button" class="pirate-unlock-close">${S.lang==='de'?'Alles klar':S.lang==='fa'?'باشه':'Got it'}</button>
+    </div>`;
+    const close = () => { overlay.hidden = true; };
+    overlay.querySelector('.pirate-unlock-close-x').onclick = close;
+    overlay.querySelector('.pirate-unlock-close').onclick = close;
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    document.body.appendChild(overlay);
+  }
+  overlay.hidden = false;
+}
 function renderAdVideoTask(){
-  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar');
-  if (!card || !btn || !label || !note || !bar) return;
+  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar'), packNote = $('#piratePackNote');
+  if (!card || !btn || !label || !note || !bar || !packNote) return;
   const watched = SHOP_ACCOUNT.adVideosWatched || 0, completed = SHOP_ACCOUNT.adRewardClaimed === true || watched >= 10;
   card.classList.toggle('done', completed);
   label.textContent = S.lang==='de' ? 'Tägliche Videos ansehen' : S.lang==='fa' ? 'تماشای ویدیوهای روزانه' : 'Watch daily videos';
   note.textContent = completed
     ? (S.lang==='de' ? 'Heute erledigt — komm morgen wieder' : S.lang==='fa' ? 'امروز انجام شد — فردا دوباره بیا' : 'Done for today — come back tomorrow')
     : (S.lang==='de' ? `${watched} von 10 Videos` : S.lang==='fa' ? `${watched} از ۱۰ ویدیو` : `${watched} of 10 videos`);
+  packNote.textContent = SHOP_ACCOUNT.stickerPackPirateUnlocked
+    ? (S.lang==='de' ? 'Sticker-Pack freigeschaltet ✓' : S.lang==='fa' ? 'بسته استیکر آزاد شد ✓' : 'Sticker pack unlocked ✓')
+    : (S.lang==='de' ? '10 Videos = Piraten-Sticker-Pack 🏴‍☠️' : S.lang==='fa' ? '۱۰ ویدیو = بسته استیکر دزدان دریایی 🏴‍☠️' : '10 videos = Pirate sticker pack 🏴‍☠️');
+  packNote.classList.toggle('unlocked', SHOP_ACCOUNT.stickerPackPirateUnlocked);
   bar.style.width = Math.min(100, (watched / 10) * 100) + '%';
   btn.disabled = completed || adVideoBusy || !SHOP_ACCOUNT.token;
   btn.textContent = completed ? '✓' : '▶';
 }
 async function watchRewardedAdVideo(){
   if (adVideoBusy || !SHOP_ACCOUNT.token || SHOP_ACCOUNT.adRewardClaimed || (SHOP_ACCOUNT.adVideosWatched || 0) >= 10) return;
+  const watchedBefore = SHOP_ACCOUNT.adVideosWatched || 0;
+  const dayBefore = SHOP_ACCOUNT.adVideoDay;
+  const rewardClaimedBefore = SHOP_ACCOUNT.adRewardClaimed;
+  const piratePackBefore = SHOP_ACCOUNT.stickerPackPirateUnlocked;
   adVideoBusy = true; renderAdVideoTask();
   try {
     await loadAdsgramScript();
     const controller = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
-    await controller.show();
-    const response = await fetch('/api/tasks/ad-video-claim', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:SHOP_ACCOUNT.token})});
-    const data = await response.json();
-    if (!response.ok || !data.state) throw new Error('ad-reward-failed');
-    applyShopAccountState(data.state, S.car);
-    if (data.rewardTT > 0) toast('+' + data.rewardTT + ' TT');
+    const showResult = await controller.show();
+    if (!showResult || showResult.done !== true || showResult.error === true) throw new Error('ad-not-completed');
+    let confirmedState = null, latestState = null;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const response = await fetch('/api/tasks/ad-video-claim', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:SHOP_ACCOUNT.token})});
+      const data = await response.json();
+      if (!response.ok || !data.state) throw new Error('ad-reward-failed');
+      const stateDay = typeof data.state.adVideoDay === 'string' ? data.state.adVideoDay : '';
+      const stateWatched = Math.min(10, Math.max(0, Number(data.state.adVideosWatched) || 0));
+      latestState = data.state;
+      const confirmed = stateDay && stateDay !== dayBefore
+        ? stateWatched > 0
+        : stateWatched > watchedBefore || (!rewardClaimedBefore && data.state.adRewardClaimed === true);
+      if (confirmed) { confirmedState = data.state; break; }
+      if (attempt < 11) await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    if (!confirmedState) {
+      if (latestState) applyShopAccountState(latestState, S.car);
+      toast(S.lang==='de' ? 'Die Video-Belohnung wird noch bestätigt. Bitte gleich erneut prüfen.' : S.lang==='fa' ? 'تأیید پاداش ویدیو هنوز در حال انجام است؛ کمی بعد دوباره بررسی کن.' : 'Video reward is still being confirmed. Please check again shortly.');
+      return;
+    }
+    applyShopAccountState(confirmedState, S.car);
+    if (!piratePackBefore && SHOP_ACCOUNT.stickerPackPirateUnlocked) showPiratePackUnlockedPopup();
+    if (!rewardClaimedBefore && confirmedState.adRewardClaimed === true) toast('+250 TT');
   } catch (e) {
     toast(t('lim_err'));
   } finally {
@@ -8011,20 +8084,33 @@ function renderStkPick(){
   const pick = $('#stkPick'); pick.hidden = !stkOpen; $('#stkBtn').setAttribute('aria-expanded', stkOpen);
   if (!stkOpen) return;
   const mine = STK_PACKS.filter(p => ownStk(p.id));
-  if (!mine.length) {
-    pick.innerHTML = `<div class="stkempty"><img src="assets/stk-sara-4.webp" alt=""><span class="muted">${esc(t('stk_none'))}</span><button class="btn" id="stkToShop">${esc(t('shop'))}</button></div>`;
-    $('#stkToShop').onclick = () => { stkOpen = false; shopTab = 'stk'; go('shop'); };
-    return;
-  }
-  if (!mine.some(p => p.id === stkSel)) stkSel = mine[0].id;
-  pick.innerHTML = `<div class="stkptabs">${mine.map(p => `<button data-stktab="${p.id}" aria-selected="${p.id === stkSel}"><img src="assets/stk-${p.id}-1.webp" alt="${esc(stkName(p.id))}"></button>`).join('')}</div>
-    <div class="stkpgrid">${[1,2,3,4,5,6].map(i => `<button data-stksend="${stkSel}-${i}"><img src="assets/stk-${stkSel}-${i}.webp" alt=""></button>`).join('')}</div>`;
+  const tabs = [...mine, {id:'pirate'}];
+  if (!tabs.some(p => p.id === stkSel)) stkSel = tabs[0].id;
+  const tabsMarkup = tabs.map(p => {
+    const pirate = p.id === 'pirate';
+    const src = pirate ? pirateStickerSrc(1) : `assets/stk-${p.id}-1.webp`;
+    return `<button data-stktab="${p.id}" aria-label="${pirate ? 'Pirate sticker pack' : esc(stkName(p.id))}" aria-selected="${p.id === stkSel}"><img src="${src}" alt=""></button>`;
+  }).join('');
+  const isPirate = stkSel === 'pirate';
+  const pirateLocked = isPirate && !SHOP_ACCOUNT.stickerPackPirateUnlocked;
+  const stickersMarkup = isPirate
+    ? `<div class="stkpgrid">${[1,2,3,4,5,6].map(i => `<button data-stksend="pirate-${i}" ${pirateLocked ? 'disabled aria-label="Locked pirate sticker"' : `aria-label="${PIRATE_STICKER_NAMES[i-1]}"`}><img src="${pirateStickerSrc(i)}" alt="${PIRATE_STICKER_NAMES[i-1]}"></button>`).join('')}</div>
+      <p class="pirate-pack-note ${pirateLocked ? '' : 'unlocked'}">${pirateLocked
+        ? (S.lang==='de' ? 'Schau 10 Videos, um dieses Pack freizuschalten' : S.lang==='fa' ? 'برای باز کردن این بسته، ۱۰ ویدیو تماشا کن' : 'Watch 10 videos to unlock this pack')
+        : (S.lang==='de' ? 'Piraten-Sticker-Pack freigeschaltet ✓' : S.lang==='fa' ? 'بسته استیکر دزدان دریایی آزاد شد ✓' : 'Pirate sticker pack unlocked ✓')}</p>`
+    : `<div class="stkpgrid">${[1,2,3,4,5,6].map(i => `<button data-stksend="${stkSel}-${i}"><img src="assets/stk-${stkSel}-${i}.webp" alt=""></button>`).join('')}</div>`;
+  const shopButton = mine.length ? '' : `<div class="stkempty"><span class="muted">${esc(t('stk_none'))}</span><button class="btn" id="stkToShop">${esc(t('shop'))}</button></div>`;
+  pick.innerHTML = `<div class="stkptabs">${tabsMarkup}</div>${stickersMarkup}${shopButton}`;
+  const shopLink = $('#stkToShop');
+  if (shopLink) shopLink.onclick = () => { stkOpen = false; shopTab = 'stk'; go('shop'); };
 }
 $('#stkBtn').onclick = () => { stkOpen = !stkOpen; renderStkPick(); };
 $('#stkPick').addEventListener('click', e => {
   const tb = e.target.closest('[data-stktab]'); if (tb) { stkSel = tb.dataset.stktab; renderStkPick(); return; }
   const sb = e.target.closest('[data-stksend]'); if (!sb || !chatRoom) return;
+  if (sb.disabled) return;
   if (SHOP_ACCOUNT.token && chatRoom) { sendServerChat({sticker:sb.dataset.stksend,room:chatRoom}).then(sent => { if (sent) { clearReply(); addPxp(PX.chat, 'chat'); stkOpen=false; renderChat(); } }); return; }
+  if (sb.dataset.stksend.startsWith('pirate-')) return;
   S.chat.push({mine:true, stk:sb.dataset.stksend, ts:Date.now(), room:chatRoom, ...(replyTo ? {reply:replyTo} : {})}); clearReply(); addPxp(PX.chat, 'chat'); S.chat = S.chat.slice(-40);
   stkOpen = false; save(); renderChat();
 });

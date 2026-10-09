@@ -303,6 +303,7 @@
     taskChannelRewardClaimed: localStorage.getItem('cr3d_taskChannelRewardClaimed') === '1',
     withdrawChannelTaskRewardClaimed: localStorage.getItem('cr3d_withdrawChannelTaskRewardClaimed') === '1',
     adVideosWatched: parseInt(localStorage.getItem('cr3d_adVideosWatched') || '0', 10),
+    adVideoDay: '',
     adRewardClaimed: localStorage.getItem('cr3d_adRewardClaimed') === '1',
     attemptsLeft: localStorage.getItem('cr3d_attemptsLeft') !== null ? parseInt(localStorage.getItem('cr3d_attemptsLeft'), 10) : 10,
     attemptsResetAt: localStorage.getItem('cr3d_attemptsResetAt') ? parseInt(localStorage.getItem('cr3d_attemptsResetAt'), 10) : null,
@@ -1824,6 +1825,7 @@
       renderWithdrawChannelTask();
     }
     if (typeof state.adVideosWatched === 'number') store.adVideosWatched = state.adVideosWatched;
+    if (typeof state.adVideoDay === 'string') store.adVideoDay = state.adVideoDay;
     if (typeof state.adRewardClaimed === 'boolean') store.adRewardClaimed = state.adRewardClaimed;
     renderAdsTask();
     if (typeof state.level === 'number') store.level = state.level;
@@ -2032,21 +2034,38 @@
     statusEl.textContent = 'Loading video...';
     try {
       await loadAdsgram();
+      const watchedBefore = Number(store.adVideosWatched) || 0;
+      const dayBefore = store.adVideoDay;
+      const completedBefore = store.adRewardClaimed;
       const controller = window.Adsgram.init({ blockId: location.hostname === 'taxiton.org' ? '52474' : '48235' });
-      await controller.show();
-      const response = await fetch(SERVER_URL + '/api/tasks/ad-video-claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: serverSession.token })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.state) throw new Error('ad-reward-failed');
-      applyServerState(data.state);
-      saveStore();
+      const showResult = await controller.show();
+      if (!showResult || showResult.done !== true || showResult.error === true) throw new Error('ad-not-completed');
+      let confirmed = false, latestState = null;
+      for (let attempt = 0; attempt < 12; attempt++){
+        const response = await fetch(SERVER_URL + '/api/tasks/ad-video-claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: serverSession.token })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.state) throw new Error('ad-reward-failed');
+        const stateDay = typeof data.state.adVideoDay === 'string' ? data.state.adVideoDay : '';
+        const stateWatched = Math.min(10, Math.max(0, Number(data.state.adVideosWatched) || 0));
+        latestState = data.state;
+        confirmed = stateDay && stateDay !== dayBefore
+          ? stateWatched > 0
+          : stateWatched > watchedBefore || (!completedBefore && data.state.adRewardClaimed === true);
+        if (confirmed) break;
+        if (attempt < 11) await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      if (latestState) {
+        applyServerState(latestState);
+        saveStore();
+      }
       renderAdsTask();
-      statusEl.textContent = store.adRewardClaimed
-        ? 'Video task completed. The 0.03 TON reward was added.'
-        : 'Video counted.';
+      statusEl.textContent = confirmed
+        ? (store.adRewardClaimed ? 'Video task completed. The 250 TT reward was added.' : 'Video counted.')
+        : 'The video reward is still being confirmed. Please check again shortly.';
     } catch (error){
       button.disabled = false;
       statusEl.textContent = 'Video was not completed. No reward was added.';

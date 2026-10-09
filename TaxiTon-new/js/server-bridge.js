@@ -376,16 +376,35 @@
     try { controller = window.Adsgram.init({ blockId: (location.hostname === 'taxiton.org' ? '52474' : '48235') }); } catch (e) {
       return Promise.resolve({ ok: false, notReady: true });
     }
-    return controller.show().then(function () {
-      return postJSON('/api/tasks/ad-video-claim', { token: SESSION.token });
-    }).then(function (r) {
-      if (!r.ok || !r.data.state) return { ok: false };
-      applyState(r.data.state);
-      return {
-        ok: true,
-        watched: Number(r.data.state.adVideosWatched) || 0,
-        completed: r.data.state.adRewardClaimed === true
-      };
+    var initialState = window.__TT_STATE || {};
+    var watchedBefore = Number(initialState.adVideosWatched) || 0;
+    var dayBefore = typeof initialState.adVideoDay === 'string' ? initialState.adVideoDay : '';
+    var completedBefore = initialState.adRewardClaimed === true;
+    return controller.show().then(function (showResult) {
+      if (!showResult || showResult.done !== true || showResult.error === true) return { ok: false };
+      var attempt = 0;
+      function pollRewardState() {
+        return postJSON('/api/tasks/ad-video-claim', { token: SESSION.token }).then(function (r) {
+          if (!r.ok || !r.data.state) return { ok: false };
+          var state = r.data.state;
+          var stateDay = typeof state.adVideoDay === 'string' ? state.adVideoDay : '';
+          var watched = Math.min(10, Math.max(0, Number(state.adVideosWatched) || 0));
+          var confirmed = stateDay && stateDay !== dayBefore
+            ? watched > 0
+            : watched > watchedBefore || (!completedBefore && state.adRewardClaimed === true);
+          if (confirmed) {
+            applyState(state);
+            return { ok: true, watched: watched, completed: state.adRewardClaimed === true };
+          }
+          attempt += 1;
+          if (attempt >= 12) {
+            applyState(state);
+            return { ok: false, pending: true, watched: watched, completed: state.adRewardClaimed === true };
+          }
+          return new Promise(function (resolve) { setTimeout(resolve, 1000); }).then(pollRewardState);
+        });
+      }
+      return pollRewardState();
     }).catch(function () { return { ok: false }; });
   };
 
