@@ -3987,12 +3987,12 @@ app.post('/api/halloween/open', requireUserFromBody, rejectBannedUser, (req, res
   player.keys -= 1;
   const roll = Math.random() * 10000;
   const dropTable = [
-    { ghost: 'king', weight: 500 },
-    { ghost: 'queen', weight: 1000 },
-    { ghost: 'archer', weight: 1500 },
-    { ghost: 'scholar', weight: 2000 },
-    { ghost: 'princess', weight: 2500 },
-    { ghost: 'warrior', weight: 2500 },
+    { ghost: 'king', weight: 100 },
+    { ghost: 'queen', weight: 300 },
+    { ghost: 'archer', weight: 800 },
+    { ghost: 'scholar', weight: 1600 },
+    { ghost: 'princess', weight: 3000 },
+    { ghost: 'warrior', weight: 4200 },
   ];
   let cursor = 0;
   let ghost = dropTable[dropTable.length - 1].ghost;

@@ -288,14 +288,14 @@ const GHOST_ORDER=["king","queen","archer","scholar","princess","warrior"];
 const FAM_W=952, FAM_H=694;
 const FAM_RECT={king:[192,75,525,387],queen:[495,97,770,387],archer:[12,359,280,677],scholar:[245,399,460,677],princess:[462,389,707,677],warrior:[705,345,937,677]};
 
-/* Welcher Geist erscheint bei welcher Belohnung (gleiche Tabelle wie Server) */
+/* Which spirit appears for each reward (same odds as server.js) */
 const GHOSTS = [                                    // w in 1/100 % (10000 = 100 %)
-  {type:"ghost", amount:1, w:500,  g:"king"},      // Kourosh     5 %
-  {type:"ghost", amount:1, w:1000, g:"queen"},     // Atossa     10 %
-  {type:"ghost", amount:1, w:1500, g:"archer"},    // Arash      15 %
-  {type:"ghost", amount:1, w:2000, g:"scholar"},   // Bozorgmehr 20 %
-  {type:"ghost", amount:1, w:2500, g:"princess"},  // Mandana    25 %
-  {type:"ghost", amount:1, w:2500, g:"warrior"},   // Rostam     25 %
+  {type:"ghost", amount:1, w:100,  g:"king"},      // Kourosh      1 %
+  {type:"ghost", amount:1, w:300,  g:"queen"},     // Atossa       3 %
+  {type:"ghost", amount:1, w:800,  g:"archer"},    // Arash        8 %
+  {type:"ghost", amount:1, w:1600, g:"scholar"},   // Bozorgmehr  16 %
+  {type:"ghost", amount:1, w:3000, g:"princess"},  // Mandana     30 %
+  {type:"ghost", amount:1, w:4200, g:"warrior"},   // Rostam      42 %
   {type:"none",  amount:0, w:0,    g:null}         // kein Rauch mehr
 ];
 function weightsNow(){ return GHOSTS; }
