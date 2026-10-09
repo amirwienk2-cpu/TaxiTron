@@ -290,12 +290,12 @@ const FAM_RECT={king:[192,75,525,387],queen:[495,97,770,387],archer:[12,359,280,
 
 /* Which spirit appears for each reward (same odds as server.js) */
 const GHOSTS = [                                    // w in 1/100 % (10000 = 100 %)
-  {type:"ghost", amount:1, w:100,  g:"king"},      // Kourosh      1 %
-  {type:"ghost", amount:1, w:300,  g:"queen"},     // Atossa       3 %
-  {type:"ghost", amount:1, w:800,  g:"archer"},    // Arash        8 %
-  {type:"ghost", amount:1, w:1600, g:"scholar"},   // Bozorgmehr  16 %
+  {type:"ghost", amount:1, w:10,   g:"king"},      // Kourosh    0.1 %
+  {type:"ghost", amount:1, w:30,   g:"queen"},     // Atossa     0.3 %
+  {type:"ghost", amount:1, w:160,  g:"archer"},    // Arash      1.6 %
+  {type:"ghost", amount:1, w:800,  g:"scholar"},   // Bozorgmehr  8 %
   {type:"ghost", amount:1, w:3000, g:"princess"},  // Mandana     30 %
-  {type:"ghost", amount:1, w:4200, g:"warrior"},   // Rostam      42 %
+  {type:"ghost", amount:1, w:6000, g:"warrior"},   // Rostam      60 %
   {type:"none",  amount:0, w:0,    g:null}         // kein Rauch mehr
 ];
 function weightsNow(){ return GHOSTS; }
