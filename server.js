@@ -69,19 +69,11 @@ const TELEGRAM_MINI_APP_URL = new URL('/TaxiTonUpdate/indexup.html?v=taxiton-adm
 const TON_USD_RATE = Number(process.env.TON_USD_RATE || 0);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-insecure-secret-change-me';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
-const ADSGRAM_REWARD_SECRET = String(process.env.ADSGRAM_REWARD_SECRET || '').trim();
-if (ADSGRAM_REWARD_SECRET && Buffer.byteLength(ADSGRAM_REWARD_SECRET, 'utf8') < 32) {
-  throw new Error('ADSGRAM_REWARD_SECRET must be at least 32 bytes');
-}
 const ADMIN_CHAT_ID = String(process.env.ADMIN_CHAT_ID || '').trim();
 const PLATFORM_USER_ID = String(process.env.PLATFORM_USER_ID || '');
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || '';
 const TONAPI_URL = process.env.TONAPI_URL || 'https://tonapi.io/v2';
 const DEPOSIT_POLL_MS = Number(process.env.DEPOSIT_POLL_MS || 30000);
-if (!ADSGRAM_REWARD_SECRET) {
-  console.warn('[adsgram] ADSGRAM_REWARD_SECRET is not configured; server-side video rewards are disabled.');
-}
-
 // ---- TT jetton withdrawals (on-chain payouts to a user's own TON wallet) ----
 // SECURITY: TREASURY_MNEMONIC must only ever come from this Railway env var -
 // never hardcode it, never log it, never send it to the client. This repo is
@@ -2011,6 +2003,8 @@ function newUser(id, name) {
     thirdChannelTaskRewardClaimed: false,
     adVideosWatched: 0,
     adRewardClaimed: false,
+    adVideoLastClaimAt: 0,
+    adVideoClaimIds: [],
     stickerPackPirateUnlocked: false,
     stickerPackPirateUnlockedAt: '',
     createdAt: Date.now(),
@@ -2342,6 +2336,8 @@ function ensureDailyReset(user) {
     user.adVideoDay = today;
     user.adVideosWatched = 0;
     user.adRewardClaimed = false;
+    user.adVideoLastClaimAt = 0;
+    user.adVideoClaimIds = [];
   }
 }
 function unlockPirateStickerPack(user) {
@@ -5104,49 +5100,44 @@ app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   const completed = user.adRewardClaimed === true || watched >= 10;
   if (completed && unlockPirateStickerPack(user)) persist();
   else if (previousDay !== user.adVideoDay) persist();
-  if (!ADSGRAM_REWARD_SECRET && !completed) {
-    return res.status(503).json({ error: 'video-reward-verification-not-configured', state: publicState(user) });
-  }
   res.json({ watched, reward: 0, rewardTT: 0, completed, state: publicState(user) });
 });
 
-// AdsGram calls this authenticated Reward URL after a rewarded video is completed.
-// Configure its Reward URL as /api/adsgram-reward?secret=<secret>&userid=[userId].
-app.get('/api/adsgram-reward', (req, res) => {
-  const providedSecret = Buffer.from(String(req.query.secret || ''), 'utf8');
-  const expectedSecret = Buffer.from(ADSGRAM_REWARD_SECRET, 'utf8');
-  if (!expectedSecret.length || providedSecret.length !== expectedSecret.length ||
-      !crypto.timingSafeEqual(providedSecret, expectedSecret)) {
-    return res.status(403).json({ ok: false, rewarded: false });
+app.post('/api/tasks/ad-video-complete', requireUserFromBody, (req, res) => {
+  const user = req.user;
+  const result = req.body && req.body.adsgramResult;
+  const claimId = String(req.body && req.body.claimId || '');
+  if (!result || result.done !== true || result.error !== false ||
+      result.state !== 'destroy' || result.description !== 'The banner was viewed to the end' ||
+      !/^[a-z0-9-]{16,80}$/i.test(claimId)) {
+    return res.status(400).json({ error: 'invalid-video-completion' });
   }
-  const userId = String(req.query.userid || '').trim();
-  const user = userId ? users[userId] : null;
 
-  // Always acknowledge the callback so AdsGram does not keep retrying it.
-  if (!user) return res.status(200).json({ ok: false, rewarded: false });
+  const previousDay = user.adVideoDay;
   ensureDailyReset(user);
-
-  if (user.adRewardClaimed === true) {
-    if (unlockPirateStickerPack(user)) persist();
-    return res.status(200).json({ ok: true, rewarded: false, completed: true, watched: 0, state: publicState(user) });
+  const claimIds = Array.isArray(user.adVideoClaimIds) ? user.adVideoClaimIds : [];
+  if (claimIds.includes(claimId)) {
+    return res.json({ ok: true, duplicate: true, state: publicState(user) });
   }
 
-  const watched = Math.max(0, Math.min(9, Number(user.adVideosWatched) || 0)) + 1;
-  let reward = 0;
-  let completed = false;
-  if (watched >= 10) {
-    user.adVideosWatched = 10;
+  const now = Date.now();
+  if (user.adRewardClaimed === true || Number(user.adVideosWatched) >= 10) {
+    return res.json({ ok: true, duplicate: true, state: publicState(user) });
+  }
+  if (Number(user.adVideoLastClaimAt) && now - Number(user.adVideoLastClaimAt) < 5000) {
+    return res.status(429).json({ error: 'video-claim-too-soon', retryAfterMs: 5000 - (now - Number(user.adVideoLastClaimAt)), state: publicState(user) });
+  }
+
+  user.adVideoClaimIds = claimIds.slice(-19).concat(claimId);
+  user.adVideoLastClaimAt = now;
+  user.adVideosWatched = Math.min(10, Math.max(0, Number(user.adVideosWatched) || 0) + 1);
+  if (user.adVideosWatched === 10) {
     user.adRewardClaimed = true;
     creditTT(user, 250, 'adsgram-reward');
     unlockPirateStickerPack(user);
-    reward = 0;
-    completed = true;
-  } else {
-    user.adVideosWatched = watched;
   }
-
-  persist();
-  return res.status(200).json({ ok: true, rewarded: completed, reward, rewardTT: completed ? 250 : 0, completed, watched: user.adVideosWatched, state: publicState(user) });
+  if (previousDay !== user.adVideoDay || user.adVideosWatched > 0) persist();
+  return res.json({ ok: true, watched: user.adVideosWatched, completed: user.adRewardClaimed === true, state: publicState(user) });
 });
 
 async function tonApiJson(pathname) {

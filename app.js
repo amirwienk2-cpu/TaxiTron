@@ -2042,48 +2042,34 @@
     statusEl.textContent = 'Loading video...';
     try {
       await loadAdsgram();
-      const watchedBefore = Number(store.adVideosWatched) || 0;
-      const dayBefore = store.adVideoDay;
-      const completedBefore = store.adRewardClaimed;
       const liveHost = window.location.hostname.toLowerCase().replace(/^www\./, '') === 'taxiton.org';
       const controller = window.Adsgram.init({ blockId: liveHost ? '52474' : '48235' });
       const showResult = await controller.show();
-      if (!showResult || showResult.done !== true || showResult.error === true) throw new Error('ad-not-completed');
-      let confirmed = false, latestState = null;
-      for (let attempt = 0; attempt < 12; attempt++){
-        const response = await fetch(SERVER_URL + '/api/tasks/ad-video-claim', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: serverSession.token })
-        });
-        const data = await response.json();
-        if (response.status === 503 && data.error === 'video-reward-verification-not-configured') {
-          if (data.state) {
-            applyServerState(data.state);
-            saveStore();
-          }
-          statusEl.textContent = 'Video tracking is not configured yet. Please try again later.';
+      if (!showResult || showResult.done !== true || showResult.error !== false ||
+          showResult.state !== 'destroy' || showResult.description !== 'The banner was viewed to the end') throw new Error('ad-not-completed');
+      const claimId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+      const response = await fetch(SERVER_URL + '/api/tasks/ad-video-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: serverSession.token, claimId, adsgramResult: showResult })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.state) {
+        if (data.state) {
+          applyServerState(data.state);
+          saveStore();
+        }
+        if (data.error === 'video-claim-too-soon') {
+          statusEl.textContent = 'Please wait a moment before watching the next video.';
           button.disabled = false;
           return;
         }
-        if (!response.ok || !data.state) throw new Error('ad-reward-failed');
-        const stateDay = typeof data.state.adVideoDay === 'string' ? data.state.adVideoDay : '';
-        const stateWatched = Math.min(10, Math.max(0, Number(data.state.adVideosWatched) || 0));
-        latestState = data.state;
-        confirmed = stateDay && stateDay !== dayBefore
-          ? stateWatched > 0
-          : stateWatched > watchedBefore || (!completedBefore && data.state.adRewardClaimed === true);
-        if (confirmed) break;
-        if (attempt < 11) await new Promise(resolve => setTimeout(resolve, 1000));
+        throw new Error(data.error || 'ad-reward-failed');
       }
-      if (latestState) {
-        applyServerState(latestState);
-        saveStore();
-      }
+      applyServerState(data.state);
+      saveStore();
       renderAdsTask();
-      statusEl.textContent = confirmed
-        ? (store.stickerPackPirateUnlocked ? 'Pirate Sticker Pack unlocked.' : 'Video counted.')
-        : 'The video reward is still being confirmed. Please check again shortly.';
+      statusEl.textContent = store.stickerPackPirateUnlocked ? 'Pirate Sticker Pack unlocked.' : 'Video counted.';
     } catch (error){
       button.disabled = false;
       statusEl.textContent = 'Video was not completed. No reward was added.';

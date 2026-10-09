@@ -1318,8 +1318,7 @@ TT.setTasks=o=>{
   renderTask();
 };
 
-// ---- Task: watch rewarded videos (matches the old design's real "Watch 10 videos" task,
-// which pays 50 TT total via Adsgram + POST /api/tasks/ad-video-claim). ------------------
+// ---- Task: watch rewarded videos to unlock the Pirate Sticker Pack. -------------------
 // Real: server-bridge.js provides TT.watchRewardedAd() -> Promise<{ok, watched, completed}>
 // and feeds initial state via TT.setAdsTask({watched, completed}) from the server session.
 // Local/demo fallback only (no TT.watchRewardedAd defined): just increments a local counter
@@ -1328,10 +1327,14 @@ const ADS={watched:0, completed:false};
 function renderAdsTask(){
   const prog=document.getElementById('adsProgress'), btn=document.getElementById('adsWatchBtn'), st=document.getElementById('adsStatus');
   if(!prog||!btn||!st) return;
+  const desc=document.querySelector('.tk-ads-desc');
+  if(desc) desc.textContent=lang==='de'?'Sieh dir 10 Bonus-Videos an, um das Piraten-Sticker-Pack freizuschalten.':lang==='fa'?'برای آزاد کردن بسته استیکر دزدان دریایی، ۱۰ ویدیوی پاداشی تماشا کنید.':'Watch 10 rewarded videos to unlock the Pirate Sticker Pack.';
+  const preview=document.getElementById('adsStickerPreview');
+  if(preview) preview.innerHTML=[1,2,3,4,5,6].map((n,i)=>'<img src="/sprites/piraten-stickers/'+n+'_'+['buch','papagei','erschoepft','muschel','jubel','schatztruhe'][i]+'.png" alt="'+['Buch','Papagei','Erschöpft','Muschel','Jubel','Schatztruhe'][i]+'" loading="lazy">').join('');
   prog.textContent=nf(ADS.watched)+' / '+nf(10);
   btn.disabled=ADS.completed;
   btn.textContent=ADS.completed?T().adsCompleted:T().watchVideo;
-  st.textContent=ADS.completed?T().adsDone:'';
+  st.textContent=ADS.completed?(lang==='de'?'Piraten-Sticker-Pack freigeschaltet.':lang==='fa'?'بسته استیکر دزدان دریایی آزاد شد.':'Pirate Sticker Pack unlocked.'):'';
 }
 document.getElementById('adsWatchBtn').addEventListener('click',async()=>{
   const btn=document.getElementById('adsWatchBtn'), st=document.getElementById('adsStatus');

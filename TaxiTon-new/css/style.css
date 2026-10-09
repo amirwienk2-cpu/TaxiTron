@@ -481,6 +481,8 @@ body.en .iv-desc{font-size:2.9cqw;line-height:3.7cqw;text-align:center;justify-c
 .tk-lb-row.rank-3 .rank{color:#e0a56f}
 .tk-lb-empty{padding:8px 0;color:var(--muted,#aaa6c8);font-size:12.5px}
 .tk-ads-desc{color:var(--muted,#b9aee0);font-size:12.5px;line-height:1.6;margin:2px 0 10px}
+.tk-ads-sticker-preview{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:4px 0 10px}
+.tk-ads-sticker-preview img{width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 .tk-ads-btn{display:block;width:100%;margin-top:0;text-align:center;font-size:14.5px;padding:11px 10px}
 .tk-ads-btn:disabled{opacity:.55;cursor:default;filter:grayscale(.4)}
 .tk-ads-status{min-height:14px;font-size:12px;font-weight:700;line-height:1.5;margin-top:8px;color:#3ddc6a}

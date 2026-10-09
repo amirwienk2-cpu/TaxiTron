@@ -364,7 +364,7 @@
     }).catch(function () { return false; });
   };
 
-  // ---- ads task: "watch 10 videos -> 50 TT" (matches the current Adsgram flow) ----------
+  // ---- ads task: server-persisted progress after Adsgram reports completion ----------
   TT.watchRewardedAd = function () {
     if (!SESSION.token) return Promise.resolve({ ok: false, notReady: true });
     if (!window.Adsgram || typeof window.Adsgram.init !== 'function') {
@@ -372,38 +372,22 @@
       return Promise.resolve({ ok: false, notReady: true });
     }
     var controller;
-    try { controller = window.Adsgram.init({ blockId: (location.hostname === 'taxiton.org' ? '52474' : '48235') }); } catch (e) {
+    try { controller = window.Adsgram.init({ blockId: (location.hostname.toLowerCase().replace(/^www\./, '') === 'taxiton.org' ? '52474' : '48235') }); } catch (e) {
       return Promise.resolve({ ok: false, notReady: true });
     }
-    var initialState = window.__TT_STATE || {};
-    var watchedBefore = Number(initialState.adVideosWatched) || 0;
-    var dayBefore = typeof initialState.adVideoDay === 'string' ? initialState.adVideoDay : '';
-    var completedBefore = initialState.adRewardClaimed === true;
     return controller.show().then(function (showResult) {
-      if (!showResult || showResult.done !== true || showResult.error === true) return { ok: false };
-      var attempt = 0;
-      function pollRewardState() {
-        return postJSON('/api/tasks/ad-video-claim', { token: SESSION.token }).then(function (r) {
-          if (!r.ok || !r.data.state) return { ok: false };
-          var state = r.data.state;
-          var stateDay = typeof state.adVideoDay === 'string' ? state.adVideoDay : '';
-          var watched = Math.min(10, Math.max(0, Number(state.adVideosWatched) || 0));
-          var confirmed = stateDay && stateDay !== dayBefore
-            ? watched > 0
-            : watched > watchedBefore || (!completedBefore && state.adRewardClaimed === true);
-          if (confirmed) {
-            applyState(state);
-            return { ok: true, watched: watched, completed: state.adRewardClaimed === true };
-          }
-          attempt += 1;
-          if (attempt >= 12) {
-            applyState(state);
-            return { ok: false, pending: true, watched: watched, completed: state.adRewardClaimed === true };
-          }
-          return new Promise(function (resolve) { setTimeout(resolve, 1000); }).then(pollRewardState);
-        });
-      }
-      return pollRewardState();
+      if (!showResult || showResult.done !== true || showResult.error !== false ||
+          showResult.state !== 'destroy' || showResult.description !== 'The banner was viewed to the end') return { ok: false };
+      var claimId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+      return postJSON('/api/tasks/ad-video-complete', {
+        token: SESSION.token,
+        claimId: claimId,
+        adsgramResult: showResult
+      }).then(function (r) {
+        if (!r.ok || !r.data.state) return { ok: false };
+        applyState(r.data.state);
+        return { ok: true, watched: Number(r.data.state.adVideosWatched) || 0, completed: r.data.state.adRewardClaimed === true };
+      });
     }).catch(function () { return { ok: false }; });
   };
 
