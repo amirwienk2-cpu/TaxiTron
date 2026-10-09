@@ -13,7 +13,7 @@ Lies `SHOP_SPEC.md` komplett und schau dir alle Screenshots an. Dann baue:
    - بیل طلایی: 1 TON → 0.067 TON täglich bei 15 Suchen, max. 30 aktive User
    - بیل آمتیست: 3 TON → 0.2 TON täglich bei 20 Suchen, max. 20 aktive User
    - بیل آتشین: 5 TON → 0.33 TON täglich bei 30 Suchen + bei jeder Suche 1 % Chance auf 0.2 TON (die Prozentzahl nirgends anzeigen), max. 10 aktive User
-   - بیل یخی: gesperrt, „به‌زودی“
+   - بیل یخی: 15 TON → 1 TON täglich bei 5 Suchen, 30 Kalendertage, max. 8 aktive User; einmalig am 9. Oktober 2026 um 13:30 Uhr (Europe/Berlin) freischalten, bis dahin Countdown anzeigen
    - Alle Schaufeln können gleichzeitig aktiv sein und zählen dieselben Suchen. Boni werden sofort beim Erreichen der Zahl ins Wallet gutgeschrieben, jeder einmal pro Tag.
 3. **Kalender:** Zeitzone `Europe/Berlin`, täglicher Reset um 00:00 Uhr Berlin. Die 30 Tage zählen nach Kalender ab dem Kauftag. Im Tab werden ein Live-Countdown bis zum Reset, die Resttage und das Ablaufdatum angezeigt.
 4. **Limits:** Anzeige „فروخته شد X/Limit“, „فقط N عدد باقی“ und „تمام شد“. Der Kauf wird mit Lock in einer Transaktion geprüft, damit niemand über das Limit kaufen kann.

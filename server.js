@@ -1431,14 +1431,16 @@ const ISLAND_SEARCH_RATE_LIMIT_MS = 1000;
 // ---------------------------------------------------------------------------
 const ISLAND_TZ = 'Europe/Berlin';
 const ISLAND_SHOVEL_DAYS = 30;
+const ISLAND_S4_AVAILABLE_AT = Date.parse('2026-10-09T13:30:00+02:00');
 // s3 only ever pays its daily bonus (same shape as s1/s2) - the per-search
 // "fire chance" from an earlier draft was removed on request.
 const ISLAND_SHOVELS = {
   s1: { name: 'بیل طلایی', priceTon: 1, threshold: 15, dailyTon: 0.067, limit: 30 },
   s2: { name: 'بیل آمتیست', priceTon: 3, threshold: 20, dailyTon: 0.2, limit: 20 },
   s3: { name: 'بیل آتشین', priceTon: 5, threshold: 10, dailyTon: 0.33, limit: 10 },
+  s4: { name: 'بیل یخی', priceTon: 15, threshold: 5, dailyTon: 1, limit: 8 },
 };
-const ISLAND_SHOVEL_ORDER = ['s1', 's2', 's3']; // s3 last = strongest/highest-tier (shown in the dig ring)
+const ISLAND_SHOVEL_ORDER = ['s1', 's2', 's3', 's4']; // strongest active shovel is shown in the dig ring
 const ISLAND_EXCHANGES = {
   x1: { from: 0, to: 1, rate: 50 },  // 50x book1 -> 1x book2
   x2: { from: 0, to: 2, rate: 150 }, // 150x book1 -> 1x book3
@@ -4170,6 +4172,9 @@ function publicIslandShop(user) {
       threshold: def.threshold,
       dailyTon: def.dailyTon,
       dailyPaidToday: Number((user.islandDailyBonusDay || {})[id]) === today,
+      availableAt: id === 's4' ? ISLAND_S4_AVAILABLE_AT : 0,
+      msToUnlock: id === 's4' ? Math.max(0, ISLAND_S4_AVAILABLE_AT - Date.now()) : 0,
+      available: id !== 's4' || Date.now() >= ISLAND_S4_AVAILABLE_AT,
     };
   }
   return {
@@ -4223,6 +4228,9 @@ app.post('/api/island/shop/buy', requireUserFromBody, rejectBannedUser, (req, re
   const type = req.body && req.body.type;
   const def = ISLAND_SHOVELS[type];
   if (!def) return res.status(400).json({ error: 'invalid-type' });
+  if (type === 's4' && now < ISLAND_S4_AVAILABLE_AT) {
+    return res.status(423).json({ error: 'not-yet-available', availableAt: ISLAND_S4_AVAILABLE_AT });
+  }
   const today = islandEnsureDayReset(user);
   if (islandShovelActive(user, type)) return res.status(409).json({ error: 'already-active' });
   if (islandShovelSoldCount(type) >= def.limit) return res.status(409).json({ error: 'sold-out' });

@@ -43,7 +43,7 @@ Referenz: `prototype/index.html` öffnen → unten in der Leiste **Shop** → Ta
 | s1 | `بیل طلایی` | `sh1.png` | `کمیاب` / gelb `#f2b81c` | **1 TON** | **0.067 TON** pro Tag, sobald der User an dem Tag **15 Suchen** gemacht hat | 30 Kalendertage | **30 User** |
 | s2 | `بیل آمتیست` | `sh2.png` | `حماسی` / lila `#b45cff` | **3 TON** | **0.2 TON** pro Tag bei **20 Suchen** | 30 Kalendertage | **20 User** |
 | s3 | `بیل آتشین` | `sh3.png` | `افسانه‌ای` / orange `#ff5a1f` | **5 TON** | **0.33 TON** pro Tag bei **30 Suchen** + bei **jeder Suche 1 % Chance auf 0.2 TON** | 30 Kalendertage | **10 User** |
-| s4 | `بیل یخی` | `sh4.png` | `اسطوره‌ای` / blau `#38bdf8` | – | `قدرت مخفی…` | – | **nicht kaufbar**: Schloss + `به‌زودی` |
+| s4 | `بیل یخی` | `sh4.png` | `اسطوره‌ای` / blau `#38bdf8` | **15 TON** | **1 TON pro Tag ab 5 Suchen** | 30 Kalendertage | **8 aktive User**; einmalige Freischaltung am 9. Oktober 2026 um 13:30 Uhr (Europe/Berlin), bis dahin mit Countdown gesperrt |
 
 Texte auf den Karten:
 - s1: `روزانه 0.067 TON با ۱۵ جستجو · ۳۰ روز`
@@ -52,7 +52,7 @@ Texte auf den Karten:
 - **Die 1 % werden den Usern NIRGENDS angezeigt.**
 
 Regeln:
-- Ein User kann alle drei gleichzeitig besitzen; alle wirken parallel und zählen **dieselben** Suchen. Beispiel mit allen drei: 15. Suche → +0.067, 20. → +0.2, 30. → +0.33 TON.
+- Ein User kann alle vier gleichzeitig besitzen; alle wirken parallel und zählen **dieselben** Suchen.
 - Jeder Tagesbonus wird **einmal pro Tag** ausgezahlt, **sofort** beim Erreichen der Zahl, direkt ins Wallet.
 - Die Feuer-Chance (0.2 TON) wird ebenfalls sofort gutgeschrieben.
 - Pro Schaufel-Typ kann ein User nur **eine aktive** besitzen. Nach Ablauf kann er sie neu kaufen.
@@ -87,10 +87,10 @@ Regeln:
 ## 7. Server (Pflicht – nichts davon im Client entscheiden)
 Datenmodell (an die bestehende DB anpassen):
 ```
-island_shovels   (id, user_id, type s1|s2|s3, bought_on DATE, expires_on DATE, price_ton, created_at)
-island_inventory += searches_today INT, day DATE, bonus_paid_s1/s2/s3 BOOL
+island_shovels   (id, user_id, type s1|s2|s3|s4, bought_on DATE, expires_on DATE, price_ton, created_at)
+island_inventory += searches_today INT, day DATE, bonus_paid_s1/s2/s3/s4 BOOL
 island_exchanges (id, user_id, type, qty, books_in, books_out, created_at)
-island_payouts   (bestehend) + reason: win|fire_drop|daily_s1|daily_s2|daily_s3
+island_payouts   (bestehend) + reason: win|fire_drop|daily_s1|daily_s2|daily_s3|daily_s4
 ```
 Endpunkte:
 - `POST /island/shop/buy {type}`: in **einer Transaktion mit Lock**

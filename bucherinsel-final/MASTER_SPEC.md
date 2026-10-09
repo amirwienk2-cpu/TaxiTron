@@ -231,7 +231,7 @@ Aufbau von oben nach unten:
 | s1 | `بیل طلایی` | sh1.png | `کمیاب` `#f2b81c` | **1 TON** | 0.067 TON pro Tag bei **15** Suchen | 30 Kalendertage | **30** aktive |
 | s2 | `بیل آمتیست` | sh2.png | `حماسی` `#b45cff` | **3 TON** | 0.2 TON pro Tag bei **20** Suchen | 30 Kalendertage | **20** aktive |
 | s3 | `بیل آتشین` | sh3.png | `افسانه‌ای` `#ff5a1f` | **5 TON** | 0.33 TON pro Tag bei **30** Suchen **+ jede Suche 1 % Chance auf 0.2 TON** (Prozent NIE anzeigen) | 30 Kalendertage | **10** aktive |
-| s4 | `بیل یخی` | sh4.png | `اسطوره‌ای` `#38bdf8` | – | `قدرت مخفی…` | – | gesperrt, `به‌زودی` |
+| s4 | `بیل یخی` | sh4.png | `اسطوره‌ای` `#38bdf8` | **15 TON** | **1 TON täglich ab 5 Suchen** | 30 Kalendertage | **8 aktive User**; einmalig ab 9. Oktober 2026, 13:30 Uhr (Europe/Berlin) kaufbar |
 
 Regeln:
 - Alle Schaufeln können gleichzeitig aktiv sein und zählen **dieselben** Suchen.
@@ -257,10 +257,10 @@ Datenmodell (Vorschlag):
 ```
 island_rounds(id, opens_at, closes_at)
 island_searches(id, user_id, round_id, spot, started_at, ends_at, result, resolved_at)
-island_inventory(user_id, book1, book2, book3, wins, paid_ton, searches_today, day, bonus_paid_s1/s2/s3)
+island_inventory(user_id, book1, book2, book3, wins, paid_ton, searches_today, day, bonus_paid_s1/s2/s3/s4)
 island_shovels(id, user_id, type, bought_on, expires_on, price_ton)
 island_exchanges(id, user_id, type, qty, books_in, books_out)
-island_payouts(id, user_id, amount_ton, reason win|fire_drop|daily_s1|daily_s2|daily_s3, status, tx_hash)
+island_payouts(id, user_id, amount_ton, reason win|fire_drop|daily_s1|daily_s2|daily_s3|daily_s4, status, tx_hash)
 ```
 Echtzeit über den bestehenden Websocket: `island:round`, `island:search_started`, `island:search_result`, Chat-Nachrichten, Online-Status.
 

@@ -3285,6 +3285,8 @@
   .ish-card .ish-lockov{position:absolute;inset:0;z-index:2;display:grid;place-items:center;align-content:center;gap:8px;background:linear-gradient(transparent 0,rgba(8,10,16,.35) 60%)}
   .ish-card .ish-lockov .ish-pad{font-size:36px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7))}
   .ish-card .ish-lockov .ish-cs{font-family:"Lalezar","Vazirmatn";font-size:15px;color:#bfe9ff;border:2px solid #38bdf8;border-radius:14px;padding:2px 14px;background:rgba(6,20,32,.85)}
+  .ish-unlock{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px;border:1px solid rgba(56,189,248,.42);border-radius:10px;background:rgba(56,189,248,.08);font-size:10.5px;color:#bfe9ff}
+  .ish-unlock b{font-family:"Lilita One",system-ui;font-size:17px;direction:ltr;color:#7cc7ff;font-variant-numeric:tabular-nums}
   .ish-note{color:#8c90a8;font-size:11.5px;text-align:center;line-height:1.7}
   .ish-cfm{position:fixed;inset:0;z-index:9500;background:rgba(5,6,10,.65);display:grid;place-items:center;padding:16px}
   .ish-cfm .ish-box{--ishr:#f2b81c;width:100%;max-width:340px;background:#15161d;border:2px solid var(--ishr);border-radius:22px;padding:16px;display:grid;gap:10px;justify-items:center;text-align:center;direction:rtl;box-shadow:0 0 30px color-mix(in srgb,var(--ishr) 35%,transparent)}
@@ -5904,7 +5906,7 @@ const ISLAND_SHOVEL_DEFS = {
   s1: { tier: 1, img: 'sh1.png', name: 'بیل طلایی', rar: 'کمیاب', color: '#f2b81c', icon: '⭐', perk: 'روزانه 0.067', fx: 'روزانه <b dir="ltr">0.067 TON</b> با ۱۵ جستجو<br><b>۳۰ روز</b>' },
   s2: { tier: 2, img: 'sh2.png', name: 'بیل آمتیست', rar: 'حماسی', color: '#b45cff', icon: '💜', perk: 'روزانه 0.2', fx: 'روزانه <b dir="ltr">0.2 TON</b> با ۲۰ جستجو<br><b>۳۰ روز</b>' },
   s3: { tier: 3, img: 'sh3.png', name: 'بیل آتشین', rar: 'افسانه‌ای', color: '#ff5a1f', icon: '🔥', perk: 'روزانه 0.33', fx: 'روزانه <b dir="ltr">0.33 TON</b> با ۱۰ جستجو<br><b>۳۰ روز</b>' },
-  s4: { tier: 4, img: 'sh4.png', name: 'بیل یخی', rar: 'اسطوره‌ای', color: '#38bdf8', icon: '❄️', perk: '', fx: 'قدرت مخفی…' },
+  s4: { tier: 4, img: 'sh4.png', name: 'بیل یخی', rar: 'اسطوره‌ای', color: '#38bdf8', icon: '❄️', perk: 'روزانه 1 TON', fx: 'روزانه <b dir="ltr">1 TON</b> با ۵ جستجو<br><b>۳۰ روز</b>' },
 };
 const ISLAND_SHOP = { data: null, fetchedAt: 0, qty: {x1:1, x2:1, x3:1} };
 function islandHmsFromMs(ms){
@@ -6194,6 +6196,13 @@ setInterval(() => {
   const remaining = Math.max(0, ISLAND_SHOP.data.msToReset - (Date.now() - ISLAND_SHOP.fetchedAt));
   el.textContent = islandHmsFromMs(remaining);
   if (remaining <= 0) void fetchIslandShop(); // day just rolled over - refresh search counters/daily flags
+  const s4 = ISLAND_SHOP.data.shovels?.s4;
+  const s4Cd = $('#ishS4Cd');
+  if (s4Cd && s4 && !s4.available) {
+    const unlockRemaining = Math.max(0, Number(s4.msToUnlock || 0) - (Date.now() - ISLAND_SHOP.fetchedAt));
+    s4Cd.textContent = islandHmsFromMs(unlockRemaining);
+    if (unlockRemaining <= 0) void fetchIslandShop();
+  }
 }, 1000);
 function islandShopConfirmBuy(id){
   const def = ISLAND_SHOVEL_DEFS[id], d = ISLAND_SHOP.data;
@@ -6214,7 +6223,14 @@ async function islandShopBuy(id){
   try {
     const response = await fetch('/api/island/shop/buy', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({token: SHOP_ACCOUNT.token, type: id})});
     const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.error || 'buy-failed');
+    if (!response.ok || !data.ok) {
+      if (data.error === 'not-yet-available' || data.error === 'sold-out') {
+        await fetchIslandShop();
+        toast(data.error === 'sold-out' ? 'این بیل تمام شد' : 'بیل یخی ساعت ۱۳:۳۰ باز می‌شود');
+        return;
+      }
+      throw new Error(data.error || 'buy-failed');
+    }
     ISLAND_SHOP.data = data.shop; ISLAND_SHOP.fetchedAt = Date.now();
     SHOP_ACCOUNT.ton = data.shop.ton;
     toast(`${ISLAND_SHOVEL_DEFS[id].name} خریداری شد! 🎉`);
@@ -6249,22 +6265,32 @@ function renderIslandShopTab(list){
     return;
   }
   const d = ISLAND_SHOP.data;
-  const activeIds = ['s1','s2','s3'].filter((id) => d.shovels[id] && d.shovels[id].active);
+  const activeIds = ['s1','s2','s3','s4'].filter((id) => d.shovels[id] && d.shovels[id].active);
   const strongest = activeIds.length ? activeIds[activeIds.length - 1] : null;
   const eqDef = strongest ? ISLAND_SHOVEL_DEFS[strongest] : null;
   const bal = `<div class="ish-bal">${[0,1,2].map((k) => `<span><img src="/bucherinsel-final/assets/books/b${k+1}.png" alt="">${faDigits(d.books[k])}</span>`).join('')}<span class="ish-ton"><img src="assets/ton-logo.webp" alt="TON" style="width:20px;height:20px;border-radius:50%">${d.ton.toFixed(2)} TON</span></div>`;
   const eq = `<div class="ish-eq" style="--ishr:${eqDef ? eqDef.color : '#4a4f66'}">
       <div class="ish-pic"><img src="/bucherinsel-final/assets/shovels/${eqDef ? eqDef.img : 'sh1.png'}" alt="" style="${eqDef ? '' : 'opacity:.25;filter:grayscale(1)'}"></div>
       <div class="ish-info"><div class="ish-cap">بیل شما</div><div class="ish-nm">${eqDef ? esc(eqDef.name) : 'هنوز بیل نداری'}</div>
-      <div class="ish-perks">${['s1','s2','s3'].map((id) => `<span class="ish-perk ${d.shovels[id].active ? '' : 'off'}">${ISLAND_SHOVEL_DEFS[id].icon} ${ISLAND_SHOVEL_DEFS[id].perk}</span>`).join('')}</div>
+      <div class="ish-perks">${['s1','s2','s3','s4'].map((id) => `<span class="ish-perk ${d.shovels[id].active ? '' : 'off'}">${ISLAND_SHOVEL_DEFS[id].icon} ${ISLAND_SHOVEL_DEFS[id].perk}</span>`).join('')}</div>
       ${activeIds.length ? `<div class="ish-exp">⏳ ${activeIds.map((id) => ISLAND_SHOVEL_DEFS[id].name.replace('بیل ', '') + ': ' + faDigits(d.shovels[id].daysLeft) + ' روز').join(' · ')}</div>` : ''}
       </div></div>`;
   const resetRow = `<div class="ish-reset"><div><b>⏰ ریست روزانه</b><small>هر شب ساعت ۰۰:۰۰ به وقت برلین</small></div><div class="ish-cd" id="ishResetCd">${islandHmsFromMs(d.msToReset)}</div></div>`;
   const shovelCards = ['s1','s2','s3','s4'].map((id) => {
     const def = ISLAND_SHOVEL_DEFS[id];
     if (id === 's4') {
-      return `<div class="ish-card r4 soon"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">۴</span><img src="/bucherinsel-final/assets/shovels/${def.img}" alt=""><div class="ish-lockov"><div class="ish-pad">🔒</div><div class="ish-cs">به‌زودی</div></div></div>
-        <div class="ish-bd"><div class="ish-nm">${def.name}</div><div class="ish-fx"><span class="ish-i">${def.icon}</span><span>${def.fx}</span></div><button class="ish-buy" disabled>به‌زودی</button></div></div>`;
+      const sh = d.shovels.s4, own = sh.active, out = !own && sh.sold >= sh.limit;
+      const unlocked = sh.available === true, afford = d.ton + 1e-9 >= sh.priceTon;
+      const ok = unlocked && afford && !out && !d.paused;
+      const stockBadge = own ? `<span class="ish-ownb">✓ فعال · ${faDigits(sh.daysLeft)} روز</span>` : out ? `<span class="ish-ownb soldout">تمام شد</span>` : `<span class="ish-ownb stock ${sh.limit - sh.sold <= 2 ? 'hot' : ''}">فقط ${faDigits(sh.limit - sh.sold)} عدد باقی</span>`;
+      const costBlock = (!own && !out) ? `<div class="ish-cost"><div class="ish-cr"><img src="assets/ton-logo.webp" alt=""><span dir="ltr">${sh.priceTon} TON</span><span class="ish-h ${afford ? 'ok' : ''}">${d.ton.toFixed(2)}/${sh.priceTon}</span></div><div class="ish-pb"><i style="width:${Math.min(100, d.ton / sh.priceTon * 100)}%"></i></div></div>` : '';
+      const dailyBlock = own ? `<div class="ish-cost"><div class="ish-cr"><span class="ish-i">${def.icon}</span><span>امروز</span><span class="ish-h ${sh.dailyPaidToday ? 'ok' : ''}">${sh.dailyPaidToday ? '✓ 1 TON' : faDigits(Math.min(d.searchesToday, sh.threshold)) + '/' + faDigits(sh.threshold) + ' جستجو'}</span></div><div class="ish-pb"><i style="width:${sh.dailyPaidToday ? 100 : Math.min(100, d.searchesToday / sh.threshold * 100)}%"></i></div><div class="ish-cr">⏳<span>${faDigits(sh.daysLeft)} روز باقی</span></div><div class="ish-pb ish-days"><i style="width:${sh.daysLeft / 30 * 100}%"></i></div></div>` : '';
+      const unlockTimer = !unlocked ? `<div class="ish-unlock">شروع فروش تا <b id="ishS4Cd">${islandHmsFromMs(sh.msToUnlock)}</b></div>` : '';
+      const button = own ? `<button class="ish-buy owned" disabled>✓ فعال</button>` : out ? `<button class="ish-buy" disabled>تمام شد</button>` : !unlocked ? `<button class="ish-buy" disabled>به‌زودی</button>` : `<button class="ish-buy" data-shop-buy="s4" ${ok ? '' : 'disabled'}>${!afford ? 'کافی نیست' : 'خرید'}</button>`;
+      return `<div class="ish-card r4 ${!unlocked ? 'soon' : ''}"><div class="ish-art"><span class="ish-rar">${def.rar}</span><span class="ish-tier">۴</span><img src="/bucherinsel-final/assets/shovels/${def.img}" alt="">${!unlocked ? `<div class="ish-lockov"><div class="ish-pad">🔒</div><div class="ish-cs">بازگشایی ساعت ۱۳:۳۰</div></div>` : stockBadge}</div>
+        <div class="ish-bd"><div class="ish-nm">${def.name}</div><div class="ish-fx"><span class="ish-i">${def.icon}</span><span>${def.fx}</span></div>${unlockTimer}
+        <div class="ish-cr">👥<span>فروخته شد</span><span class="ish-h" style="color:${out ? '#ff7a7a' : '#cfd3e6'}">${faDigits(sh.sold)}/${faDigits(sh.limit)}</span></div><div class="ish-pb ish-stockb"><i style="width:${sh.sold / sh.limit * 100}%"></i></div>
+        ${costBlock}${dailyBlock}${button}</div></div>`;
     }
     const sh = d.shovels[id];
     const own = sh.active, out = !own && sh.sold >= sh.limit, afford = d.ton + 1e-9 >= sh.priceTon, ok = afford && !out && !d.paused;
