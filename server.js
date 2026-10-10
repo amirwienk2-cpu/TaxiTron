@@ -226,7 +226,8 @@ const HALLOWEEN_FAMILY = ['king', 'queen', 'archer', 'scholar', 'princess', 'war
 const HALLOWEEN_FAMILY2 = ['t_sultan', 't_hurrem', 't_ertugrul', 't_piri', 't_malkoc', 't_hasan'];
 const HALLOWEEN_DROP_WEIGHTS = [10, 30, 160, 800, 3000, 6000];
 const HALLOWEEN_FAMILY_REWARDS = { 1: 1, 2: 2 };
-const HALLOWEEN_MAX_WINNERS = 20;
+const HALLOWEEN_FAMILY1_MAX_WINNERS = 40;
+const HALLOWEEN_FAMILY2_MAX_WINNERS = 20;
 const HALLOWEEN_LAMP_REGEN_AMOUNT = 2;
 
 // On Railway, data only survives restarts if it is written inside the attached volume.
@@ -356,17 +357,20 @@ function readJsonFile(file) {
   return parsed;
 }
 
-let halloweenEventState = { winners: [], winners2: [] };
+let halloweenEventState = { winners: [], winners2: [], family1ReopenExcluded: null };
 if (fs.existsSync(HALLOWEEN_EVENT_FILE)) {
   try {
     const loadedEvent = readJsonFile(HALLOWEEN_EVENT_FILE);
     halloweenEventState = {
       winners: Array.isArray(loadedEvent.winners)
-        ? [...new Set(loadedEvent.winners.map(String))].slice(0, HALLOWEEN_MAX_WINNERS)
+        ? [...new Set(loadedEvent.winners.map(String))].slice(0, HALLOWEEN_FAMILY1_MAX_WINNERS)
         : [],
       winners2: Array.isArray(loadedEvent.winners2)
-        ? [...new Set(loadedEvent.winners2.map(String))].slice(0, HALLOWEEN_MAX_WINNERS)
+        ? [...new Set(loadedEvent.winners2.map(String))].slice(0, HALLOWEEN_FAMILY2_MAX_WINNERS)
         : [],
+      family1ReopenExcluded: Array.isArray(loadedEvent.family1ReopenExcluded)
+        ? [...new Set(loadedEvent.family1ReopenExcluded.map(String))]
+        : null,
     };
   } catch (error) {
     console.error('[halloween-event] state file unreadable: ' + error.message);
@@ -2144,6 +2148,30 @@ function halloweenPlayerState(user) {
   return state;
 }
 
+function halloweenFamilyOneComplete(event) {
+  if (!event || typeof event !== 'object') return false;
+  const family = event.family && typeof event.family === 'object' ? event.family : {};
+  const ghosts = event.ghosts && typeof event.ghosts === 'object' ? event.ghosts : {};
+  return HALLOWEEN_FAMILY.every((ghost) => family[ghost] === true || Number(ghosts[ghost]) > 0);
+}
+
+let halloweenFamilyOneReopenReady = Array.isArray(halloweenEventState.family1ReopenExcluded);
+if (!halloweenFamilyOneReopenReady) {
+  const excluded = new Set(halloweenEventState.winners);
+  Object.entries(users).forEach(([uid, user]) => {
+    if (halloweenFamilyOneComplete(user && user.halloweenFamilyEvent)) excluded.add(String(uid));
+  });
+  halloweenEventState.family1ReopenExcluded = [...excluded];
+  halloweenFamilyOneReopenReady = persistHalloweenEventState();
+  if (halloweenFamilyOneReopenReady) {
+    console.log('[halloween-event] reopened 20 family-one prizes; excluded ' +
+      excluded.size + ' users who had already completed the family');
+  } else {
+    halloweenEventState.family1ReopenExcluded = null;
+    console.error('[halloween-event] family-one relaunch is closed because its eligibility snapshot could not be saved');
+  }
+}
+
 function refreshHalloweenLamps(state, now) {
   if (state.keys >= 5) {
     state.regenAt = now;
@@ -2163,18 +2191,19 @@ function awardHalloweenFamilyIfEligible(user, state, family = 1) {
   const familyState = family === 2 ? state.family2 : state.family;
   const winnerState = family === 2 ? 'iWon2' : 'iWon';
   const winnerList = family === 2 ? halloweenEventState.winners2 : halloweenEventState.winners;
+  const winnerLimit = family === 2 ? HALLOWEEN_FAMILY2_MAX_WINNERS : HALLOWEEN_FAMILY1_MAX_WINNERS;
   const reward = HALLOWEEN_FAMILY_REWARDS[family];
   const complete = familyGhosts.every((ghost) => familyState[ghost]);
   if (!complete || (family === 2 && !HALLOWEEN_FAMILY.every((ghost) => state.family[ghost])) || state[winnerState]) return false;
   const uid = String(user.id);
+  if (family === 1 && !halloweenFamilyOneReopenReady) return false;
+  if (family === 1 && halloweenEventState.family1ReopenExcluded.includes(uid)) return false;
   if (winnerList.includes(uid)) {
     state[winnerState] = true;
     state[family === 2 ? 'wonAt2' : 'wonAt'] = Number(state[family === 2 ? 'wonAt2' : 'wonAt']) || Date.now();
-    user.ton = Number((Number(user.ton || 0) + reward).toFixed(9));
-    persist();
     return false;
   }
-  if (Date.now() >= HALLOWEEN_EVENT_END_MS || winnerList.length >= HALLOWEEN_MAX_WINNERS) return false;
+  if (Date.now() >= HALLOWEEN_EVENT_END_MS || winnerList.length >= winnerLimit) return false;
 
   winnerList.push(uid);
   if (!persistHalloweenEventState()) {
@@ -2202,9 +2231,11 @@ function publicHalloweenEventState(user) {
     family: { ...state.family },
     family2: { ...state.family2 },
     ton: Number(user.ton || 0),
-    winnersLeft: Math.max(0, HALLOWEEN_MAX_WINNERS - halloweenEventState.winners.length),
+    winnersLeft: Math.max(0, HALLOWEEN_FAMILY1_MAX_WINNERS - halloweenEventState.winners.length),
     iWon: state.iWon,
-    winnersLeft2: Math.max(0, HALLOWEEN_MAX_WINNERS - halloweenEventState.winners2.length),
+    family1Eligible: halloweenFamilyOneReopenReady &&
+      !halloweenEventState.family1ReopenExcluded.includes(String(user.id)),
+    winnersLeft2: Math.max(0, HALLOWEEN_FAMILY2_MAX_WINNERS - halloweenEventState.winners2.length),
     iWon2: state.iWon2,
     eventOver: now >= HALLOWEEN_EVENT_END_MS,
     adsLeft: state.adsLeft,
@@ -4059,14 +4090,19 @@ app.post('/api/halloween/claim-family', requireUserFromBody, rejectBannedUser, (
   if (family === 2 && !HALLOWEEN_FAMILY.every((ghost) => player.family[ghost])) {
     return res.status(409).json({ error: 'family_locked' });
   }
+  if (family === 1 && (!halloweenFamilyOneReopenReady ||
+      halloweenEventState.family1ReopenExcluded.includes(String(req.user.id)))) {
+    return res.status(409).json({ error: 'already_completed' });
+  }
   const won = awardHalloweenFamilyIfEligible(req.user, player, family);
   const hasWon = family === 2 ? player.iWon2 : player.iWon;
   const winners = family === 2 ? halloweenEventState.winners2 : halloweenEventState.winners;
+  const winnerLimit = family === 2 ? HALLOWEEN_FAMILY2_MAX_WINNERS : HALLOWEEN_FAMILY1_MAX_WINNERS;
   if (!hasWon && Date.now() < HALLOWEEN_EVENT_END_MS &&
-      winners.length < HALLOWEEN_MAX_WINNERS) {
+      winners.length < winnerLimit) {
     return res.status(409).json({ error: 'family_incomplete' });
   }
-  if (!hasWon && winners.length >= HALLOWEEN_MAX_WINNERS) {
+  if (!hasWon && winners.length >= winnerLimit) {
     return res.status(409).json({ error: 'sold_out' });
   }
   persist();

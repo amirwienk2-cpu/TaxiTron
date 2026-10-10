@@ -410,6 +410,7 @@ Object.assign(T,{
   lock2:L==="fa"?"🔒 اول خانواده ایرانی را کامل کن":L==="de"?"🔒 Erst die persische Familie voll machen":"🔒 Complete the Persian family first",
   moreFam:L==="fa"?"⬇ خانواده دوم ⬇":L==="de"?"⬇ Zweite Familie ⬇":"⬇ Second family ⬇",
   famT2:L==="fa"?"خانواده عثمانی را کامل کن – ۲۰ نفر اول ۲ TON می‌گیرند! 🌙":L==="de"?"Mach die osmanische Familie voll – die ersten 20 bekommen 2 TON! 🌙":"Complete the Ottoman family – the first 20 get 2 TON! 🌙",
+  family1Closed:L==="fa"?"✅ خانواده ایرانی را قبلاً کامل کرده‌ای":L==="de"?"✅ Persische Familie bereits abgeschlossen":"✅ Persian family already completed",
   soldOut:L==="fa"?"هر ۲۰ جایزه TON اهدا شد":L==="de"?"Alle 20 TON-Preise sind vergeben":"All 20 TON prizes have been awarded"
 });
 if(L==="fa") document.documentElement.dir="rtl"; else document.documentElement.lang=L;
@@ -417,7 +418,7 @@ const $=id=>document.getElementById(id);
 const nf=new Intl.NumberFormat("en-US");
 const fmt=n=>nf.format(n||0);
 
-let state={keys:0,ghosts:{},family:{},family2:{},ton:0,winnersLeft:20,winnersLeft2:20,iWon:false,iWon2:false,eventOver:false,field:Array(9).fill(null),adsLeft:CONFIG.adsPerDay};
+let state={keys:0,ghosts:{},family:{},family2:{},ton:0,winnersLeft:20,winnersLeft2:20,family1Eligible:true,iWon:false,iWon2:false,eventOver:false,field:Array(9).fill(null),adsLeft:CONFIG.adsPerDay};
 let demo=false, busy=false, skew=0, refreshing=false, eventAuthToken="";
 
 /* ---------- fit stage to screen ---------- */
@@ -499,7 +500,7 @@ async function api(path, body){
 const DK="iranman_demo_v1";
 function demoLoad(){ let s; try{s=JSON.parse(localStorage.getItem(DK));}catch(e){}
   const d=new Date().toISOString().slice(0,10);
-  if(!s) s={keys:CONFIG.regenCap,regenAt:Date.now(),candy:0,zombies:0,tickets:0,ghosts:{},family:{},family2:{},ton:0,winnersLeft:20,winnersLeft2:20,iWon:false,iWon2:false,field:Array(9).fill(null),day:d,adsLeft:CONFIG.adsPerDay};
+  if(!s) s={keys:CONFIG.regenCap,regenAt:Date.now(),candy:0,zombies:0,tickets:0,ghosts:{},family:{},family2:{},ton:0,winnersLeft:20,winnersLeft2:20,family1Eligible:true,iWon:false,iWon2:false,field:Array(9).fill(null),day:d,adsLeft:CONFIG.adsPerDay};
   s.family2=s.family2||{}; s.winnersLeft2=s.winnersLeft2??20; s.iWon2=!!s.iWon2;
   if(s.day!==d){ s.day=d; s.adsLeft=CONFIG.adsPerDay; } return s; }
 function demoRegen(){
@@ -643,14 +644,14 @@ const fam2Image="../familie2/bilder/familie2-hintergrund.webp";
 function renderFamily(){
     const W=GHOSTS, tot=W.reduce((a,g)=>a+g.w,0), n=famCount(), N=GHOST_ORDER.length, full=n===N;
   $("famHint").textContent=T.famT;
-  $("famLeft").textContent=state.iWon?T.won:state.winnersLeft>0?T.left.replace("{n}",fmt(state.winnersLeft)):T.soldOut;
+  $("famLeft").textContent=state.iWon?T.won:state.family1Eligible===false&&full?T.family1Closed:state.winnersLeft>0?T.left.replace("{n}",fmt(state.winnersLeft)):T.soldOut;
   $("fam").classList.toggle("full",full);
   $("fam").querySelectorAll(".mem").forEach(d=>{ const on=hasFamilyGhost(state.family||{},d.dataset.g); d.classList.toggle("on",on);
     if(on&&famJust===d.dataset.g){ d.classList.remove("just"); void d.offsetWidth; d.classList.add("just"); } });
   $("famchips").innerHTML=GHOST_ORDER.map(g=>{ const on=hasFamilyGhost(state.family||{},g), w=W.find(x=>x.g===g).w;
     return `<div class="chip${on?" on":""}"><span>${T.names[g]}<small>${+(w/tot*100).toFixed(2)}%</small></span><span class="ck">${on?"✅":"🔒"}</span></div>`; }).join("");
   const b=$("b_claim"), c=$("b_close");
-  const can=full&&!state.iWon&&state.winnersLeft>0;
+  const can=full&&!state.iWon&&state.family1Eligible!==false&&state.winnersLeft>0;
   b.classList.toggle("show",can); b.disabled=!can; b.textContent=T.claim;
   c.style.visibility=can?"hidden":"visible";
   c.textContent=T.close;
@@ -676,7 +677,7 @@ function renderFamily2(){
   close.style.visibility=can?"hidden":"visible"; close.textContent=T.close;
 }
 $("b_claim").onclick=async()=>{
-  if(busy||famCount()<GHOST_ORDER.length||state.iWon||state.winnersLeft<=0) return; busy=true; $("b_claim").disabled=true;
+  if(busy||famCount()<GHOST_ORDER.length||state.iWon||state.family1Eligible===false||state.winnersLeft<=0) return; busy=true; $("b_claim").disabled=true;
   try{
     const v=CONFIG.familyTon;
     if(demo){ state.ton=+(state.ton+v).toFixed(6); state.iWon=true; state.winnersLeft--; demoSave(); }
