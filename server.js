@@ -357,7 +357,13 @@ function readJsonFile(file) {
   return parsed;
 }
 
-let halloweenEventState = { winners: [], winners2: [], rareOddsBoost: false, family1ReopenExcluded: null };
+let halloweenEventState = {
+  winners: [],
+  winners2: [],
+  rareOddsMultiplier: 1,
+  rareOddsExpiresAt: 0,
+  family1ReopenExcluded: null,
+};
 if (fs.existsSync(HALLOWEEN_EVENT_FILE)) {
   try {
     const loadedEvent = readJsonFile(HALLOWEEN_EVENT_FILE);
@@ -368,7 +374,12 @@ if (fs.existsSync(HALLOWEEN_EVENT_FILE)) {
       winners2: Array.isArray(loadedEvent.winners2)
         ? [...new Set(loadedEvent.winners2.map(String))].slice(0, HALLOWEEN_FAMILY2_MAX_WINNERS)
         : [],
-      rareOddsBoost: loadedEvent.rareOddsBoost === true,
+      rareOddsMultiplier: [2, 4, 10].includes(loadedEvent.rareOddsMultiplier)
+        ? loadedEvent.rareOddsMultiplier
+        : 1,
+      rareOddsExpiresAt: Number.isFinite(loadedEvent.rareOddsExpiresAt)
+        ? loadedEvent.rareOddsExpiresAt
+        : 0,
       family1ReopenExcluded: Array.isArray(loadedEvent.family1ReopenExcluded)
         ? [...new Set(loadedEvent.family1ReopenExcluded.map(String))]
         : null,
@@ -708,10 +719,28 @@ function persistHalloweenEventState() {
   }
 }
 
+function activeHalloweenRareOdds(now = Date.now()) {
+  const enabled = [2, 4, 10].includes(halloweenEventState.rareOddsMultiplier) &&
+    Number.isFinite(halloweenEventState.rareOddsExpiresAt) &&
+    halloweenEventState.rareOddsExpiresAt > now;
+  return {
+    multiplier: enabled ? halloweenEventState.rareOddsMultiplier : 1,
+    expiresAt: enabled ? halloweenEventState.rareOddsExpiresAt : 0,
+  };
+}
+
 function halloweenDropWeights() {
-  return halloweenEventState.rareOddsBoost
-    ? [100, 100, 160, 800, 3000, 5840]
-    : HALLOWEEN_DROP_WEIGHTS;
+  const { multiplier } = activeHalloweenRareOdds();
+  if (multiplier === 1) return HALLOWEEN_DROP_WEIGHTS;
+  const rareWeightGain = (multiplier - 1) * (HALLOWEEN_DROP_WEIGHTS[0] + HALLOWEEN_DROP_WEIGHTS[1]);
+  return [
+    HALLOWEEN_DROP_WEIGHTS[0] * multiplier,
+    HALLOWEEN_DROP_WEIGHTS[1] * multiplier,
+    HALLOWEEN_DROP_WEIGHTS[2],
+    HALLOWEEN_DROP_WEIGHTS[3],
+    HALLOWEEN_DROP_WEIGHTS[4],
+    HALLOWEEN_DROP_WEIGHTS[5] - rareWeightGain,
+  ];
 }
 
 function publicHalloweenDropWeights() {
@@ -2246,6 +2275,7 @@ function publicHalloweenEventState(user) {
     family: { ...state.family },
     family2: { ...state.family2 },
     dropWeights: publicHalloweenDropWeights(),
+    rareOddsExpiresAt: activeHalloweenRareOdds().expiresAt,
     ton: Number(user.ton || 0),
     winnersLeft: Math.max(0, HALLOWEEN_FAMILY1_MAX_WINNERS - halloweenEventState.winners.length),
     iWon: state.iWon,
@@ -3500,7 +3530,7 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}.daily-status-table{width:100%;border-collapse:collapse;margin-top:10px}.daily-status-table td,.daily-status-table th{padding:8px 10px;border-bottom:1px solid #302d40;text-align:left;font-size:13px}.daily-status-table th{background:#181824;color:#ffd93d}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="loadTournamentDebug">Turnier-Diagnose</button><button id="loadSharedWallets">Geteilte Wallets</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="halloweenOddsToggle" class="small-btn" disabled>🎃 Familien-Drop x2 laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="loadTournamentDebug">Turnier-Diagnose</button><button id="loadSharedWallets">Geteilte Wallets</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div class="toolbar"><button id="halloweenOddsX2" class="small-btn" disabled>🎃 Familien x2 · 1 Stunde</button><button id="halloweenOddsX4" class="small-btn" disabled>🎃 Familien x4 · 1 Stunde</button><button id="halloweenOddsX10" class="small-btn" disabled>🎃 Familien x10 · 1 Stunde</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -3789,15 +3819,20 @@ async function loadTtShopToggleStatus(){const s=secret();if(!s)return;try{const 
 setInterval(loadTtShopToggleStatus,15000);
 document.getElementById('secret').addEventListener('change',loadTtShopToggleStatus);
 loadTtShopToggleStatus();
-let halloweenOddsEnabled=null;
-function updateHalloweenOddsToggle(enabled){
-  halloweenOddsEnabled=enabled===true;
-  const btn=document.getElementById('halloweenOddsToggle');
-  btn.textContent=halloweenOddsEnabled
-    ?'🎃 Familien-Drop x2: AN (1% + 1%)'
-    :'🎃 Familien-Drop x2: AUS (0,1% + 0,3%)';
-  btn.className='small-btn'+(halloweenOddsEnabled?' sound-on':'');
-  btn.disabled=false;
+let halloweenOddsMultiplier=1;
+let halloweenOddsExpiresAt=0;
+function renderHalloweenOddsButtons(){
+  const remaining=Math.max(0,halloweenOddsExpiresAt-Date.now());
+  const minutes=Math.ceil(remaining/60000);
+  [2,4,10].forEach(multiplier=>{
+    const button=document.getElementById('halloweenOddsX'+multiplier);
+    const odds=[0.1*multiplier,0.3*multiplier];
+    const active=halloweenOddsMultiplier===multiplier&&remaining>0;
+    button.textContent=active
+      ?'🎃 x'+multiplier+' AN · '+odds[0]+'% / '+odds[1]+'% · '+minutes+' Min.'
+      :'🎃 x'+multiplier+' · '+odds[0]+'% / '+odds[1]+'% · 1 Stunde';
+    button.className='small-btn'+(active?' sound-on':'');
+  });
 }
 async function loadHalloweenOddsStatus(){
   const s=secret();
@@ -3806,29 +3841,38 @@ async function loadHalloweenOddsStatus(){
     const response=await fetch('/admin/halloween/rare-odds',{headers:{'x-admin-secret':s}});
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'Familien-Chancen konnten nicht geladen werden.');
-    updateHalloweenOddsToggle(data.enabled);
+    halloweenOddsMultiplier=data.multiplier;
+    halloweenOddsExpiresAt=data.expiresAt;
+    renderHalloweenOddsButtons();
+    [2,4,10].forEach(multiplier=>{
+      document.getElementById('halloweenOddsX'+multiplier).disabled=false;
+    });
   }catch(error){status(error.message)}
 }
-document.getElementById('halloweenOddsToggle').onclick=async()=>{
+async function setHalloweenOddsMultiplier(multiplier){
   const s=secret();
   if(!s){status('ADMIN_SECRET eingeben.');return}
-  const button=document.getElementById('halloweenOddsToggle');
-  button.disabled=true;
+  const buttons=[2,4,10].map(value=>document.getElementById('halloweenOddsX'+value));
+  buttons.forEach(button=>button.disabled=true);
   try{
     const response=await fetch('/admin/halloween/rare-odds',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-admin-secret':s},
-      body:JSON.stringify({enabled:!halloweenOddsEnabled})
+      body:JSON.stringify({multiplier})
     });
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||'Familien-Chancen konnten nicht gespeichert werden.');
-    updateHalloweenOddsToggle(data.enabled);
-    status(data.enabled
-      ?'Beide Familien: Kourosh/Süleyman 1%, Atossa/Hürrem 1%.'
-      :'Normale Familien-Chancen wurden wiederhergestellt.');
-  }catch(error){status(error.message)}
-  finally{button.disabled=false}
-};
+    halloweenOddsMultiplier=data.multiplier;
+    halloweenOddsExpiresAt=data.expiresAt;
+    renderHalloweenOddsButtons();
+    status('Familien x'+multiplier+' läuft eine Stunde ('+(0.1*multiplier)+'% / '+(0.3*multiplier)+'%).');
+  }catch(error){status(error.message);buttons.forEach(button=>button.disabled=false)}
+}
+[2,4,10].forEach(multiplier=>{
+  document.getElementById('halloweenOddsX'+multiplier).onclick=()=>setHalloweenOddsMultiplier(multiplier);
+});
+setInterval(renderHalloweenOddsButtons,1000);
+setInterval(loadHalloweenOddsStatus,15000);
 document.getElementById('secret').addEventListener('change',loadHalloweenOddsStatus);
 loadHalloweenOddsStatus();
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
@@ -6821,24 +6865,32 @@ app.get('/api/invite-leaderboard', (req, res) => {
 // Admin (manual payout / oversight) — protected by ADMIN_SECRET
 // ---------------------------------------------------------------
 app.get('/admin/halloween/rare-odds', requireAdmin, (req, res) => {
+  const { multiplier, expiresAt } = activeHalloweenRareOdds();
   res.json({
-    enabled: halloweenEventState.rareOddsBoost,
+    multiplier,
+    expiresAt,
     dropWeights: publicHalloweenDropWeights(),
   });
 });
 
 app.post('/admin/halloween/rare-odds', requireAdmin, (req, res) => {
-  if (!req.body || typeof req.body.enabled !== 'boolean') {
-    return res.status(400).json({ error: 'invalid-enabled' });
+  const multiplier = Number(req.body && req.body.multiplier);
+  if (![2, 4, 10].includes(multiplier)) {
+    return res.status(400).json({ error: 'invalid-multiplier' });
   }
-  const previous = halloweenEventState.rareOddsBoost;
-  halloweenEventState.rareOddsBoost = req.body.enabled;
+  const previousMultiplier = halloweenEventState.rareOddsMultiplier;
+  const previousExpiresAt = halloweenEventState.rareOddsExpiresAt;
+  halloweenEventState.rareOddsMultiplier = multiplier;
+  halloweenEventState.rareOddsExpiresAt = Date.now() + 60 * 60 * 1000;
   if (!persistHalloweenEventState()) {
-    halloweenEventState.rareOddsBoost = previous;
+    halloweenEventState.rareOddsMultiplier = previousMultiplier;
+    halloweenEventState.rareOddsExpiresAt = previousExpiresAt;
     return res.status(500).json({ error: 'settings-save-failed' });
   }
+  const { expiresAt } = activeHalloweenRareOdds();
   res.json({
-    enabled: halloweenEventState.rareOddsBoost,
+    multiplier,
+    expiresAt,
     dropWeights: publicHalloweenDropWeights(),
   });
 });

@@ -362,6 +362,7 @@ const GIMG2={
 const hasFamilyGhost=(family,g)=>family[g]===true||Number(state.ghosts&&state.ghosts[g])>0;
 function familyOneComplete(){ return GHOST_ORDER.every(g=>hasFamilyGhost(state.family||{},g)); }
 function weightsForFamily(base){
+  if(state.rareOddsExpiresAt&&Date.now()+skew>=state.rareOddsExpiresAt)return base;
   const configured=state.dropWeights||{};
   return base.map(item=>{
     const weight=Number(configured[item.g]);
@@ -720,6 +721,12 @@ document.querySelectorAll("#langsw button").forEach(b=>{ b.classList.toggle("on"
   b.onclick=()=>{ try{ localStorage.setItem("iranman_lang",b.dataset.l); }catch(e){} location.reload(); }; });
 const pad=n=>String(n).padStart(2,"0");
 async function tick(){
+  if(state.rareOddsExpiresAt&&Date.now()+skew>=state.rareOddsExpiresAt){
+    state.rareOddsExpiresAt=0;
+    state.dropWeights=null;
+    renderFamily();
+    renderFamily2();
+  }
   // event end, shown in the prizes sheet
   const ems=new Date(CONFIG.eventEnd)-Date.now();
   $("eventEnd").textContent=ems<=0?T.ended:`${T.evEnd} ${Math.floor(ems/864e5)}${T.units[0]==="روز"?" روز":T.units[0]} ${pad(Math.floor(ems/36e5)%24)}:${pad(Math.floor(ems/6e4)%60)}`;
