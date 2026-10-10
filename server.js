@@ -357,7 +357,7 @@ function readJsonFile(file) {
   return parsed;
 }
 
-let halloweenEventState = { winners: [], winners2: [], family1ReopenExcluded: null };
+let halloweenEventState = { winners: [], winners2: [], rareOddsBoost: false, family1ReopenExcluded: null };
 if (fs.existsSync(HALLOWEEN_EVENT_FILE)) {
   try {
     const loadedEvent = readJsonFile(HALLOWEEN_EVENT_FILE);
@@ -368,6 +368,7 @@ if (fs.existsSync(HALLOWEEN_EVENT_FILE)) {
       winners2: Array.isArray(loadedEvent.winners2)
         ? [...new Set(loadedEvent.winners2.map(String))].slice(0, HALLOWEEN_FAMILY2_MAX_WINNERS)
         : [],
+      rareOddsBoost: loadedEvent.rareOddsBoost === true,
       family1ReopenExcluded: Array.isArray(loadedEvent.family1ReopenExcluded)
         ? [...new Set(loadedEvent.family1ReopenExcluded.map(String))]
         : null,
@@ -705,6 +706,20 @@ function persistHalloweenEventState() {
     console.error('[halloween-event] state write failed: ' + error.message);
     return false;
   }
+}
+
+function halloweenDropWeights() {
+  return halloweenEventState.rareOddsBoost
+    ? [100, 100, 160, 800, 3000, 5840]
+    : HALLOWEEN_DROP_WEIGHTS;
+}
+
+function publicHalloweenDropWeights() {
+  const weights = halloweenDropWeights();
+  return Object.fromEntries(
+    [...HALLOWEEN_FAMILY, ...HALLOWEEN_FAMILY2].map((ghost, index) =>
+      [ghost, weights[index % HALLOWEEN_FAMILY.length]])
+  );
 }
 
 function publicChatLikeRound(round, uid) {
@@ -2230,6 +2245,7 @@ function publicHalloweenEventState(user) {
     ghosts: { ...state.ghosts },
     family: { ...state.family },
     family2: { ...state.family2 },
+    dropWeights: publicHalloweenDropWeights(),
     ton: Number(user.ton || 0),
     winnersLeft: Math.max(0, HALLOWEEN_FAMILY1_MAX_WINNERS - halloweenEventState.winners.length),
     iWon: state.iWon,
@@ -3484,7 +3500,7 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}.daily-status-table{width:100%;border-collapse:collapse;margin-top:10px}.daily-status-table td,.daily-status-table th{padding:8px 10px;border-bottom:1px solid #302d40;text-align:left;font-size:13px}.daily-status-table th{background:#181824;color:#ffd93d}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="loadTournamentDebug">Turnier-Diagnose</button><button id="loadSharedWallets">Geteilte Wallets</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="loadTournamentDebug">Turnier-Diagnose</button><button id="loadSharedWallets">Geteilte Wallets</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="halloweenOddsToggle" class="small-btn" disabled>🎃 Familien-Drop x2 laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
@@ -3773,6 +3789,48 @@ async function loadTtShopToggleStatus(){const s=secret();if(!s)return;try{const 
 setInterval(loadTtShopToggleStatus,15000);
 document.getElementById('secret').addEventListener('change',loadTtShopToggleStatus);
 loadTtShopToggleStatus();
+let halloweenOddsEnabled=null;
+function updateHalloweenOddsToggle(enabled){
+  halloweenOddsEnabled=enabled===true;
+  const btn=document.getElementById('halloweenOddsToggle');
+  btn.textContent=halloweenOddsEnabled
+    ?'🎃 Familien-Drop x2: AN (1% + 1%)'
+    :'🎃 Familien-Drop x2: AUS (0,1% + 0,3%)';
+  btn.className='small-btn'+(halloweenOddsEnabled?' sound-on':'');
+  btn.disabled=false;
+}
+async function loadHalloweenOddsStatus(){
+  const s=secret();
+  if(!s)return;
+  try{
+    const response=await fetch('/admin/halloween/rare-odds',{headers:{'x-admin-secret':s}});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Familien-Chancen konnten nicht geladen werden.');
+    updateHalloweenOddsToggle(data.enabled);
+  }catch(error){status(error.message)}
+}
+document.getElementById('halloweenOddsToggle').onclick=async()=>{
+  const s=secret();
+  if(!s){status('ADMIN_SECRET eingeben.');return}
+  const button=document.getElementById('halloweenOddsToggle');
+  button.disabled=true;
+  try{
+    const response=await fetch('/admin/halloween/rare-odds',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-secret':s},
+      body:JSON.stringify({enabled:!halloweenOddsEnabled})
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Familien-Chancen konnten nicht gespeichert werden.');
+    updateHalloweenOddsToggle(data.enabled);
+    status(data.enabled
+      ?'Beide Familien: Kourosh/Süleyman 1%, Atossa/Hürrem 1%.'
+      :'Normale Familien-Chancen wurden wiederhergestellt.');
+  }catch(error){status(error.message)}
+  finally{button.disabled=false}
+};
+document.getElementById('secret').addEventListener('change',loadHalloweenOddsStatus);
+loadHalloweenOddsStatus();
 async function loadChatAdmin(){currentView='chatAdmin';const s=secret();if(!s){status('ADMIN_SECRET eingeben.');return}
 const list=document.getElementById('list');
 list.innerHTML='<div class="toolbar"><button id="chatEnableToggle" class="small-btn">...</button><button id="cardEventEnableToggle" class="small-btn">...</button><button id="islandShopEnableToggle" class="small-btn">...</button></div><div class="toolbar"><input id="chatUserSearch" type="text" placeholder="UID oder Name suchen..."><button id="chatUserSearchBtn">Suchen</button></div><div id="chatUserList"></div>';
@@ -4039,9 +4097,10 @@ app.post('/api/halloween/open', requireUserFromBody, rejectBannedUser, (req, res
   const roll = Math.random() * 10000;
   const secondFamilyUnlocked = HALLOWEEN_FAMILY.every((ghost) => player.family[ghost]);
   const activeFamily = secondFamilyUnlocked ? HALLOWEEN_FAMILY2 : HALLOWEEN_FAMILY;
+  const currentDropWeights = halloweenDropWeights();
   const dropTable = activeFamily.map((ghost, index) => ({
     ghost,
-    weight: HALLOWEEN_DROP_WEIGHTS[index],
+    weight: currentDropWeights[index],
   }));
   let cursor = 0;
   let ghost = dropTable[dropTable.length - 1].ghost;
@@ -6761,6 +6820,29 @@ app.get('/api/invite-leaderboard', (req, res) => {
 // ---------------------------------------------------------------
 // Admin (manual payout / oversight) — protected by ADMIN_SECRET
 // ---------------------------------------------------------------
+app.get('/admin/halloween/rare-odds', requireAdmin, (req, res) => {
+  res.json({
+    enabled: halloweenEventState.rareOddsBoost,
+    dropWeights: publicHalloweenDropWeights(),
+  });
+});
+
+app.post('/admin/halloween/rare-odds', requireAdmin, (req, res) => {
+  if (!req.body || typeof req.body.enabled !== 'boolean') {
+    return res.status(400).json({ error: 'invalid-enabled' });
+  }
+  const previous = halloweenEventState.rareOddsBoost;
+  halloweenEventState.rareOddsBoost = req.body.enabled;
+  if (!persistHalloweenEventState()) {
+    halloweenEventState.rareOddsBoost = previous;
+    return res.status(500).json({ error: 'settings-save-failed' });
+  }
+  res.json({
+    enabled: halloweenEventState.rareOddsBoost,
+    dropWeights: publicHalloweenDropWeights(),
+  });
+});
+
 app.get('/admin/stats', requireAdmin, (req, res) => {
   const all = Object.values(users);
   const pendingWithdrawals = [];

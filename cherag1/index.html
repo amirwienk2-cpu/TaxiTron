@@ -361,7 +361,14 @@ const GIMG2={
 };
 const hasFamilyGhost=(family,g)=>family[g]===true||Number(state.ghosts&&state.ghosts[g])>0;
 function familyOneComplete(){ return GHOST_ORDER.every(g=>hasFamilyGhost(state.family||{},g)); }
-function weightsNow(){ return familyOneComplete()?GHOSTS2:GHOSTS; }
+function weightsForFamily(base){
+  const configured=state.dropWeights||{};
+  return base.map(item=>{
+    const weight=Number(configured[item.g]);
+    return Number.isFinite(weight)&&weight>0?{...item,w:weight}:item;
+  });
+}
+function weightsNow(){ return weightsForFamily(familyOneComplete()?GHOSTS2:GHOSTS); }
 
 const I18N = {
   fa:{names:{king:"کوروش",queen:"آتوسا",archer:"آرش",princess:"ماندانا",scholar:"بزرگمهر",warrior:"رستم"},famT:"خانواده را کامل کن – ۲۰ نفر اول ۱ TON می‌گیرند! 👑",claim:"💎 دریافت ۱ TON",left:"🏆 {n} از ۲۰ جایزه باقی مانده",won:"✅ تو برنده شدی! ۱ TON",soldOut:"همه ۲۰ جایزه داده شد – رویداد تمام شد",over:"رویداد تمام شد 🏁",famLeft:"{n} نفر دیگر",famNew:"خانواده تازه شروع شد!",
@@ -642,7 +649,7 @@ const fam2Image="../familie2/bilder/familie2-hintergrund.webp";
     $("pmore").textContent=T.moreFam; $("b_close2").textContent=T.close;
 })();
 function renderFamily(){
-    const W=GHOSTS, tot=W.reduce((a,g)=>a+g.w,0), n=famCount(), N=GHOST_ORDER.length, full=n===N;
+    const W=weightsForFamily(GHOSTS), tot=W.reduce((a,g)=>a+g.w,0), n=famCount(), N=GHOST_ORDER.length, full=n===N;
   $("famHint").textContent=T.famT;
   $("famLeft").textContent=state.iWon?T.won:state.family1Eligible===false&&full?T.family1Closed:state.winnersLeft>0?T.left.replace("{n}",fmt(state.winnersLeft)):T.soldOut;
   $("fam").classList.toggle("full",full);
@@ -657,7 +664,7 @@ function renderFamily(){
   c.textContent=T.close;
 }
 function renderFamily2(){
-  const W=GHOSTS2, tot=W.reduce((a,g)=>a+g.w,0), n=famCount2(), full=n===GHOST_ORDER2.length;
+  const W=weightsForFamily(GHOSTS2), tot=W.reduce((a,g)=>a+g.w,0), n=famCount2(), full=n===GHOST_ORDER2.length;
   const family2=state.family2||{}, left=state.winnersLeft2??20;
   $("famHint2").textContent=T.famT2;
   $("famLeft2").textContent=state.iWon2?(L==="fa"?"✅ تو برنده شدی! ۲ TON":L==="de"?"✅ Du hast 2 TON gewonnen!":"✅ You won 2 TON!"):left>0?T.left.replace("{n}",fmt(left)):T.soldOut;
