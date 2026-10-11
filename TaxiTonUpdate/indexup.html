@@ -2594,6 +2594,8 @@
   .stkpgrid button{position:relative;overflow:hidden}
   .island-frame-note{margin:7px 2px 2px;color:var(--ink-dim);font-size:11px;line-height:1.35}
   .island-frame-note.unlocked{color:#9be887}
+  .island-frame-timer{display:block;margin:2px 2px 0;color:var(--ink-dim);font-size:11px;font-variant-numeric:tabular-nums}
+  .island-frame-timer[hidden]{display:none}
   .island-frame-preview{display:flex;align-items:center;margin:2px 0 0}
   .island-frame-preview img{width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .pirate-pack-note{margin:7px 2px 2px;color:var(--ink-dim);font-size:11px;line-height:1.35}
@@ -3496,6 +3498,7 @@
             <div class="advc-track"><i id="adVideoBar"></i></div>
             <small id="adVideoNote"></small>
             <small class="island-frame-note" id="islandFrameNote"></small>
+            <small class="island-frame-timer" id="islandFrameTimer"></small>
             <div class="island-frame-preview"><img src="/sprites/rahmeninsel.png" alt="Insel-Rahmen" loading="lazy"></div>
           </div>
           <button class="advc-btn" id="adVideoBtn" aria-label="Watch">▶</button>
@@ -4137,7 +4140,7 @@ const CARS = [
   {id:'luna',   lvl:5, skin:'luna',   price:25, dailyReward:1.66, rewardDays:30, limit:20, body:'#eee8ff', trim:'#b83cff', bonus:45},
   {id:'nikto',  lvl:6, soon:true, price:0, body:'#1a1f4a', trim:'#ff3b4e', bonus:60},
 ];
-const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,isSupporter:false,isDeveloper:false,badge4:false,badge5:false,chatMuted:false,ttShopEnabled:false,adVideosWatched:0,adVideoDay:'',adRewardClaimed:false,stickerPackPirateUnlocked:false,online:false};
+const SHOP_ACCOUNT = {token:'',uid:'',ton:0,tt:0,totalWithdrawnTon:0,lastWithdrawalAt:0,campaignInvites:0,profilePhoto:'',friends:[],friendRequestsIn:[],friendRequestsOut:[],onlineUsers:[],figCount:{},mine:{last:Date.now(),acc:0},ownedSkins:['yellow'],skinRewards:{},tonTodayByLevel:{},zombiesTodayByLevel:{},attemptsByLevel:{},isChatAdmin:false,adminBadge:'boy',isDesigner:false,isSupporter:false,isDeveloper:false,badge4:false,badge5:false,chatMuted:false,ttShopEnabled:false,adVideosWatched:0,adVideoDay:'',adRewardClaimed:false,islandFrameEventEndsAt:Date.parse('2026-10-13T12:31:03.115Z'),stickerPackPirateUnlocked:false,online:false};
 SHOP_ACCOUNT.channelClaims = {news:false,withdraw:false,third:false};
 let globalAnnouncementSource = null;
 function showGlobalAnnouncement(announcement){
@@ -5317,7 +5320,7 @@ function renderChans(){
 // and AdsGram validates each blockId against one specific registered origin
 // - so each origin needs its own blockId, picked at runtime by hostname.
 const ADSGRAM_BLOCK_ID = location.hostname.toLowerCase().replace(/^www\./, '') === 'taxiton.org' ? '52474' : '48235';
-let adVideoBusy = false, adsgramLoadPromise = null;
+let adVideoBusy = false, adsgramLoadPromise = null, islandFrameCountdownTimer = null;
 function loadAdsgramScript(){
   if (window.Adsgram && typeof window.Adsgram.init === 'function') return Promise.resolve();
   if (!adsgramLoadPromise){
@@ -5356,8 +5359,8 @@ function showIslandFrameUnlockedPopup(){
   overlay.hidden = false;
 }
 function renderAdVideoTask(){
-  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar'), frameNote = $('#islandFrameNote');
-  if (!card || !btn || !label || !note || !bar || !frameNote) return;
+  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar'), frameNote = $('#islandFrameNote'), frameTimer = $('#islandFrameTimer');
+  if (!card || !btn || !label || !note || !bar || !frameNote || !frameTimer) return;
   const watched = SHOP_ACCOUNT.adVideosWatched || 0, completed = SHOP_ACCOUNT.adRewardClaimed === true || watched >= 10;
   card.classList.toggle('done', completed);
   label.textContent = S.lang==='de' ? 'Tägliche Videos ansehen' : S.lang==='fa' ? 'تماشای ویدیوهای روزانه' : 'Watch daily videos';
@@ -5365,10 +5368,35 @@ function renderAdVideoTask(){
     ? (S.lang==='de' ? 'Heute erledigt — komm morgen wieder' : S.lang==='fa' ? 'امروز انجام شد — فردا دوباره بیا' : 'Done for today — come back tomorrow')
     : (S.lang==='de' ? `${watched} von 10 Videos` : S.lang==='fa' ? `${watched} از ۱۰ ویدیو` : `${watched} of 10 videos`);
   const hasIslandFrame = Array.isArray(S.items?.frm) && S.items.frm.includes('island');
+  const eventEndsAt = Number(SHOP_ACCOUNT.islandFrameEventEndsAt);
+  const eventOpen = eventEndsAt > Date.now();
   frameNote.textContent = hasIslandFrame
     ? (S.lang==='de' ? 'Insel-Rahmen freigeschaltet ✓' : S.lang==='fa' ? 'قاب جزیره آزاد شد ✓' : 'Island frame unlocked ✓')
-    : (S.lang==='de' ? '10 Videos = Insel-Rahmen 🏝️' : S.lang==='fa' ? '۱۰ ویدیو = قاب جزیره 🏝️' : '10 videos = Island frame 🏝️');
+    : eventOpen
+      ? (S.lang==='de' ? '10 Videos = Insel-Rahmen 🏝️' : S.lang==='fa' ? '۱۰ ویدیو = قاب جزیره 🏝️' : '10 videos = Island frame 🏝️')
+      : (S.lang==='de' ? 'Event beendet — Rahmen nicht mehr verfügbar' : S.lang==='fa' ? 'رویداد تمام شد — قاب دیگر در دسترس نیست' : 'Event ended — frame no longer available');
   frameNote.classList.toggle('unlocked', hasIslandFrame);
+  if ((hasIslandFrame || !eventOpen) && islandFrameCountdownTimer) {
+    window.clearInterval(islandFrameCountdownTimer);
+    islandFrameCountdownTimer = null;
+  }
+  frameTimer.hidden = hasIslandFrame || !eventOpen;
+  if (!hasIslandFrame && eventOpen && !islandFrameCountdownTimer) {
+    const renderCountdown = () => {
+      const remaining = Math.max(0, eventEndsAt - Date.now());
+      const hours = String(Math.floor(remaining / 3600000)).padStart(2, '0');
+      const minutes = String(Math.floor((remaining % 3600000) / 60000)).padStart(2, '0');
+      const seconds = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+      frameTimer.textContent = S.lang==='de' ? `Noch ${hours}:${minutes}:${seconds}` : S.lang==='fa' ? `زمان باقی‌مانده ${hours}:${minutes}:${seconds}` : `${hours}:${minutes}:${seconds} remaining`;
+      if (remaining <= 0) {
+        window.clearInterval(islandFrameCountdownTimer);
+        islandFrameCountdownTimer = null;
+        renderAdVideoTask();
+      }
+    };
+    renderCountdown();
+    islandFrameCountdownTimer = window.setInterval(renderCountdown, 1000);
+  }
   bar.style.width = Math.min(100, (watched / 10) * 100) + '%';
   btn.disabled = completed || adVideoBusy || !SHOP_ACCOUNT.token;
   btn.textContent = completed ? '✓' : '▶';
@@ -8075,6 +8103,7 @@ function itInv(){ if (!S.items || typeof S.items !== 'object') S.items = {}; con
 const itemName = (k, id) => k === 'frm' && id === 'island'
   ? (S.lang === 'de' ? 'Insel-Rahmen' : S.lang === 'fa' ? 'قاب جزیره' : 'Island Frame')
   : t('it_' + k + '_' + id);
+const islandFrameEventOpen = () => Number(SHOP_ACCOUNT.islandFrameEventEndsAt) > Date.now();
 const ownItem = (k, id) => k === 'frm' && id === 'island'
   ? itInv().frm.includes(id)
   : itemsOf(k).find(x => x.id === id)?.price === 0 || itInv()[k].includes(id);
@@ -8108,7 +8137,7 @@ function itemList(k){
       : `<div class="itprev">${avatar(me, false, it.id)}</div>`;
     const btn = on ? `<button class="stkbuy on" disabled>✓<small>${esc(t('it_equipped'))}</small></button>`
       : own ? `<button class="stkbuy own" data-iteq="${k}:${it.id}">${esc(t('it_equip'))}</button>`
-      : k === 'frm' && it.id === 'island' ? `<button class="stkbuy" disabled>🔒<small>${S.lang==='de'?'10 Videos ansehen':S.lang==='fa'?'۱۰ ویدیو تماشا کن':'Watch 10 videos'}</small></button>`
+      : k === 'frm' && it.id === 'island' ? `<button class="stkbuy" disabled>🔒<small>${islandFrameEventOpen() ? (S.lang==='de'?'10 Videos ansehen':S.lang==='fa'?'۱۰ ویدیو تماشا کن':'Watch 10 videos') : (S.lang==='de'?'Event beendet':S.lang==='fa'?'رویداد تمام شد':'Event ended')}</small></button>`
       : `<button class="stkbuy ${poor ? 'poor' : ''}" data-itbuy="${k}:${it.id}"><span class="pr"><img src="assets/tticon.webp" alt=""><bdi class="num" dir="ltr">${fmt(it.price)}</bdi></span><small>${esc(t('tt_buy'))}</small></button>`;
     return `<div class="stkpack itrow ${k === 'ban' ? 'banrow' : ''} ${on ? 'eq' : own ? 'own' : ''}">${prev}
       <div class="stkmid"><h3>${esc(itemName(k, it.id))}</h3>

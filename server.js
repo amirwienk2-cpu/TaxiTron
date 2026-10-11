@@ -117,6 +117,8 @@ const WITHDRAW_MIN_ACCOUNT_AGE_MS = Number(process.env.WITHDRAW_MIN_ACCOUNT_AGE_
 const WITHDRAW_MIN_ACCOUNT_LEVEL = Number(process.env.WITHDRAW_MIN_ACCOUNT_LEVEL || 2);
 const INVITE_EVENT_ENDS_AT = Date.parse(process.env.INVITE_EVENT_ENDS_AT || '2026-09-19T13:50:22.986Z');
 if (!Number.isFinite(INVITE_EVENT_ENDS_AT)) throw new Error('INVITE_EVENT_ENDS_AT must be a valid date');
+const ISLAND_FRAME_EVENT_ENDS_AT = Date.parse(process.env.ISLAND_FRAME_EVENT_END_AT || '2026-10-13T12:31:03.115Z');
+if (!Number.isFinite(ISLAND_FRAME_EVENT_ENDS_AT)) throw new Error('ISLAND_FRAME_EVENT_END_AT must be a valid date');
 const RANDOM_BOT_INTERVAL_MS = Number(process.env.RANDOM_BOT_INTERVAL_MS);
 const RANDOM_BOT_MIN_INTERVAL_MS = 15 * 60 * 1000;
 const RANDOM_BOT_MAX_INTERVAL_MS = 45 * 60 * 1000;
@@ -2820,6 +2822,7 @@ function publicState(user) {
     adVideosWatched: Math.min(10, Math.max(0, Number(user.adVideosWatched) || 0)),
     adVideoDay: typeof user.adVideoDay === 'string' ? user.adVideoDay : '',
     adRewardClaimed: user.adRewardClaimed === true,
+    islandFrameEventEndsAt: ISLAND_FRAME_EVENT_ENDS_AT,
     stickerPackPirateUnlocked: user.stickerPackPirateUnlocked === true,
     stickerPackPirateUnlockedAt: user.stickerPackPirateUnlocked === true && typeof user.stickerPackPirateUnlockedAt === 'string'
       ? user.stickerPackPirateUnlockedAt : '',
@@ -5522,7 +5525,7 @@ app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   ensureDailyReset(user);
   const watched = Math.max(0, Math.min(10, Number(user.adVideosWatched) || 0));
   const completed = user.adRewardClaimed === true || watched >= 10;
-  const frameUnlocked = completed && unlockIslandFrame(user);
+  const frameUnlocked = completed && Date.now() < ISLAND_FRAME_EVENT_ENDS_AT && unlockIslandFrame(user);
   if (frameUnlocked) persist();
   else if (previousDay !== user.adVideoDay) persist();
   res.json({ watched, reward: 0, rewardTT: 0, completed, state: publicState(user) });
@@ -5559,7 +5562,7 @@ app.post('/api/tasks/ad-video-complete', requireUserFromBody, (req, res) => {
   if (user.adVideosWatched === 10) {
     user.adRewardClaimed = true;
     creditTT(user, 250, 'adsgram-reward');
-    unlockIslandFrame(user);
+    if (now < ISLAND_FRAME_EVENT_ENDS_AT) unlockIslandFrame(user);
   }
   if (previousDay !== user.adVideoDay || user.adVideosWatched > 0) persist();
   return res.json({ ok: true, watched: user.adVideosWatched, completed: user.adRewardClaimed === true, state: publicState(user) });
