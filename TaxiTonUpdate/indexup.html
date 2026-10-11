@@ -2540,6 +2540,8 @@
   .uav.fr-pixel i{z-index:2}
   .uav.fr-racer::before{inset:-13%;border-radius:0;background:url(assets/frame-racer.webp) center/contain no-repeat;-webkit-mask:none;mask:none;z-index:1}
   .uav.fr-racer i{z-index:2}
+  .uav.fr-island::before{inset:-18%;border-radius:0;background:url(/sprites/rahmeninsel.png) center/contain no-repeat;-webkit-mask:none;mask:none;z-index:1}
+  .uav.fr-island i{z-index:2}
   .mrow.mine .uav:not(.ghost){display:grid}
   /* Stickers */
   .stkhead{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:linear-gradient(180deg,var(--db15),var(--db10));border:1.5px solid rgba(var(--gl3),.3)}
@@ -2590,23 +2592,25 @@
   .stkpgrid button:disabled{cursor:not-allowed;filter:grayscale(1);opacity:.42}
   .stkpgrid button:disabled::after{content:"🔒";position:absolute;inset:0;display:grid;place-items:center;font-size:20px;background:rgba(5,8,24,.38);border-radius:10px}
   .stkpgrid button{position:relative;overflow:hidden}
+  .island-frame-note{margin:7px 2px 2px;color:var(--ink-dim);font-size:11px;line-height:1.35}
+  .island-frame-note.unlocked{color:#9be887}
+  .island-frame-preview{display:flex;align-items:center;margin:2px 0 0}
+  .island-frame-preview img{width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .pirate-pack-note{margin:7px 2px 2px;color:var(--ink-dim);font-size:11px;line-height:1.35}
   .pirate-pack-note.unlocked{color:#9be887}
-  .pirate-pack-preview{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:2px 0 0}
-  .pirate-pack-preview img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .bub.stkb{background:none!important;border:0!important;padding:0 0 14px;min-width:0}
   .bub.stkb img{display:block;width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
   .bub.pirate-stkb img{width:132px;height:132px}
   .bub.stkb .tm{background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px;bottom:0}
-  .pirate-unlock-overlay{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:rgba(3,6,22,.78);backdrop-filter:blur(7px)}
-  .pirate-unlock-overlay[hidden]{display:none!important}
-  .pirate-unlock-card{position:relative;width:min(420px,100%);padding:22px 18px 18px;border:1px solid rgba(var(--gl3),.4);border-radius:22px;background:linear-gradient(160deg,#171b3d,#090d25);box-shadow:0 18px 70px rgba(0,0,0,.55);text-align:center}
-  .pirate-unlock-card h2{margin:0 28px 6px;color:#ffd54a;font-size:20px}
-  .pirate-unlock-card p{margin:0 0 13px;color:var(--ink-dim);font-size:13px}
-  .pirate-unlock-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:0 auto 14px;max-width:310px}
-  .pirate-unlock-preview img{width:100%;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 3px 5px rgba(0,0,0,.4))}
-  .pirate-unlock-close-x{position:absolute;top:9px;right:10px;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:var(--ink);font-size:18px}
-  .pirate-unlock-close{min-width:130px;padding:9px 18px;border:0;border-radius:12px;background:linear-gradient(180deg,#ffe477,#ffc928);color:#2d2200;font-weight:900}
+  .island-frame-unlock-overlay{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:rgba(3,6,22,.78);backdrop-filter:blur(7px)}
+  .island-frame-unlock-overlay[hidden]{display:none!important}
+  .island-frame-unlock-card{position:relative;width:min(420px,100%);padding:22px 18px 18px;border:1px solid rgba(var(--gl3),.4);border-radius:22px;background:linear-gradient(160deg,#171b3d,#090d25);box-shadow:0 18px 70px rgba(0,0,0,.55);text-align:center}
+  .island-frame-unlock-card h2{margin:0 28px 6px;color:#ffd54a;font-size:20px}
+  .island-frame-unlock-card p{margin:0 0 13px;color:var(--ink-dim);font-size:13px}
+  .island-frame-unlock-preview{display:grid;place-items:center;margin:0 auto 14px;width:180px;height:180px}
+  .island-frame-unlock-preview img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
+  .island-frame-unlock-close-x{position:absolute;top:9px;right:10px;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:var(--ink);font-size:18px}
+  .island-frame-unlock-close{min-width:130px;padding:9px 18px;border:0;border-radius:12px;background:linear-gradient(180deg,#ffe477,#ffc928);color:#2d2200;font-weight:900}
   .chat-reactions{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:7px 0 2px}
   .chat-react-pill,.chat-react-add{min-height:25px;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:2px 7px;border:1px solid rgba(255,255,255,.12);border-radius:99px;background:rgba(0,0,0,.18);color:var(--ink);font:inherit;font-size:12px;line-height:1;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
   .chat-react-pill b{font-size:10px;color:var(--ink-dim)}
@@ -3491,8 +3495,8 @@
             <div class="advc-top"><b id="adVideoText"></b></div>
             <div class="advc-track"><i id="adVideoBar"></i></div>
             <small id="adVideoNote"></small>
-            <small class="pirate-pack-note" id="piratePackNote"></small>
-            <div class="pirate-pack-preview" id="piratePackPreview" aria-label="Pirate sticker pack preview"></div>
+            <small class="island-frame-note" id="islandFrameNote"></small>
+            <div class="island-frame-preview"><img src="/sprites/rahmeninsel.png" alt="Insel-Rahmen" loading="lazy"></div>
           </div>
           <button class="advc-btn" id="adVideoBtn" aria-label="Watch">▶</button>
         </div>
@@ -5329,42 +5333,42 @@ function loadAdsgramScript(){
   }
   return adsgramLoadPromise;
 }
-function showPiratePackUnlockedPopup(){
-  let overlay = $('#pirateUnlockOverlay');
+function showIslandFrameUnlockedPopup(){
+  let overlay = $('#islandFrameUnlockOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
-    overlay.id = 'pirateUnlockOverlay';
-    overlay.className = 'pirate-unlock-overlay';
+    overlay.id = 'islandFrameUnlockOverlay';
+    overlay.className = 'island-frame-unlock-overlay';
     overlay.hidden = true;
-    overlay.innerHTML = `<div class="pirate-unlock-card" role="dialog" aria-modal="true" aria-labelledby="pirateUnlockTitle">
-      <button type="button" class="pirate-unlock-close-x" aria-label="Close">×</button>
-      <h2 id="pirateUnlockTitle">🏴‍☠️ ${S.lang==='de'?'Piraten-Sticker-Pack freigeschaltet!':S.lang==='fa'?'بسته استیکر دزدان دریایی آزاد شد!':'Pirate sticker pack unlocked!'}</h2>
-      <p>${S.lang==='de'?'Deine sechs Sticker sind jetzt dauerhaft im Chat verfügbar.':S.lang==='fa'?'شش استیکر برای همیشه در چت در دسترس شماست.':'Your six stickers are now permanently available in chat.'}</p>
-      <div class="pirate-unlock-preview">${[1,2,3,4,5,6].map(i=>`<img src="${pirateStickerSrc(i)}" alt="${PIRATE_STICKER_NAMES[i-1]}">`).join('')}</div>
-      <button type="button" class="pirate-unlock-close">${S.lang==='de'?'Alles klar':S.lang==='fa'?'باشه':'Got it'}</button>
+    overlay.innerHTML = `<div class="island-frame-unlock-card" role="dialog" aria-modal="true" aria-labelledby="islandFrameUnlockTitle">
+      <button type="button" class="island-frame-unlock-close-x" aria-label="Close">×</button>
+      <h2 id="islandFrameUnlockTitle">🏝️ ${S.lang==='de'?'Insel-Rahmen freigeschaltet!':S.lang==='fa'?'قاب جزیره آزاد شد!':'Island frame unlocked!'}</h2>
+      <p>${S.lang==='de'?'Der Rahmen ist ausgerüstet und in deinem Profil sowie im Chat sichtbar.':S.lang==='fa'?'قاب فعال شد و در پروفایل و چت شما دیده می‌شود.':'The frame is equipped and visible on your profile and in chat.'}</p>
+      <div class="island-frame-unlock-preview"><img src="/sprites/rahmeninsel.png" alt="Island avatar frame"></div>
+      <button type="button" class="island-frame-unlock-close">${S.lang==='de'?'Alles klar':S.lang==='fa'?'باشه':'Got it'}</button>
     </div>`;
     const close = () => { overlay.hidden = true; };
-    overlay.querySelector('.pirate-unlock-close-x').onclick = close;
-    overlay.querySelector('.pirate-unlock-close').onclick = close;
+    overlay.querySelector('.island-frame-unlock-close-x').onclick = close;
+    overlay.querySelector('.island-frame-unlock-close').onclick = close;
     overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
     document.body.appendChild(overlay);
   }
   overlay.hidden = false;
 }
 function renderAdVideoTask(){
-  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar'), packNote = $('#piratePackNote'), packPreview = $('#piratePackPreview');
-  if (!card || !btn || !label || !note || !bar || !packNote || !packPreview) return;
+  const card = $('#adVideoCard'), btn = $('#adVideoBtn'), label = $('#adVideoText'), note = $('#adVideoNote'), bar = $('#adVideoBar'), frameNote = $('#islandFrameNote');
+  if (!card || !btn || !label || !note || !bar || !frameNote) return;
   const watched = SHOP_ACCOUNT.adVideosWatched || 0, completed = SHOP_ACCOUNT.adRewardClaimed === true || watched >= 10;
   card.classList.toggle('done', completed);
   label.textContent = S.lang==='de' ? 'Tägliche Videos ansehen' : S.lang==='fa' ? 'تماشای ویدیوهای روزانه' : 'Watch daily videos';
   note.textContent = completed
     ? (S.lang==='de' ? 'Heute erledigt — komm morgen wieder' : S.lang==='fa' ? 'امروز انجام شد — فردا دوباره بیا' : 'Done for today — come back tomorrow')
     : (S.lang==='de' ? `${watched} von 10 Videos` : S.lang==='fa' ? `${watched} از ۱۰ ویدیو` : `${watched} of 10 videos`);
-  packNote.textContent = SHOP_ACCOUNT.stickerPackPirateUnlocked
-    ? (S.lang==='de' ? 'Sticker-Pack freigeschaltet ✓' : S.lang==='fa' ? 'بسته استیکر آزاد شد ✓' : 'Sticker pack unlocked ✓')
-    : (S.lang==='de' ? '10 Videos = Piraten-Sticker-Pack 🏴‍☠️' : S.lang==='fa' ? '۱۰ ویدیو = بسته استیکر دزدان دریایی 🏴‍☠️' : '10 videos = Pirate sticker pack 🏴‍☠️');
-  packNote.classList.toggle('unlocked', SHOP_ACCOUNT.stickerPackPirateUnlocked);
-  packPreview.innerHTML = [1,2,3,4,5,6].map(i => `<img src="${pirateStickerSrc(i)}" alt="${PIRATE_STICKER_NAMES[i-1]}" loading="lazy">`).join('');
+  const hasIslandFrame = Array.isArray(S.items?.frm) && S.items.frm.includes('island');
+  frameNote.textContent = hasIslandFrame
+    ? (S.lang==='de' ? 'Insel-Rahmen freigeschaltet ✓' : S.lang==='fa' ? 'قاب جزیره آزاد شد ✓' : 'Island frame unlocked ✓')
+    : (S.lang==='de' ? '10 Videos = Insel-Rahmen 🏝️' : S.lang==='fa' ? '۱۰ ویدیو = قاب جزیره 🏝️' : '10 videos = Island frame 🏝️');
+  frameNote.classList.toggle('unlocked', hasIslandFrame);
   bar.style.width = Math.min(100, (watched / 10) * 100) + '%';
   btn.disabled = completed || adVideoBusy || !SHOP_ACCOUNT.token;
   btn.textContent = completed ? '✓' : '▶';
@@ -5394,7 +5398,7 @@ async function watchRewardedAdVideo(){
   const watchedBefore = SHOP_ACCOUNT.adVideosWatched || 0;
   const dayBefore = SHOP_ACCOUNT.adVideoDay;
   const rewardClaimedBefore = SHOP_ACCOUNT.adRewardClaimed;
-  const piratePackBefore = SHOP_ACCOUNT.stickerPackPirateUnlocked;
+  const islandFrameBefore = Array.isArray(S.items?.frm) && S.items.frm.includes('island');
   adVideoBusy = true; renderAdVideoTask();
   try {
     await loadAdsgramScript();
@@ -5411,7 +5415,7 @@ async function watchRewardedAdVideo(){
     const data = await response.json();
     if (!response.ok || !data.state) throw new Error(data.error || 'ad-reward-failed');
     applyShopAccountState(data.state, S.car);
-    if (!piratePackBefore && SHOP_ACCOUNT.stickerPackPirateUnlocked) showPiratePackUnlockedPopup();
+    if (!islandFrameBefore && Array.isArray(S.items?.frm) && S.items.frm.includes('island')) showIslandFrameUnlockedPopup();
   } catch (e) {
     toast(e.message === 'video-claim-too-soon'
       ? (S.lang==='de' ? 'Bitte warte kurz, bevor du das nächste Video startest.' : S.lang==='fa' ? 'لطفاً کمی صبر کن و سپس ویدیوی بعدی را شروع کن.' : 'Please wait a moment before watching the next video.')
@@ -7757,7 +7761,7 @@ function openAllItems(who){
   $('#profSheet').innerHTML = `<div class="aihead"><button class="aiback" id="aiBack" aria-label="Back">‹</button><div class="grow"><b>${esc(t('pf_all'))}</b><small>${esc(u.n)} · <span class="num">${ownCount(P)}</span></small></div><button class="pfx ai" id="pfClose" aria-label="Close">✕</button></div>
     <div class="aibody">
     ${grp('it_bub', P.own.bub, id => { const x = it(BUBBLES, id); return `<div class="aitile" style="--rc:${RCOL[x.r]}">${tick(id === P.bub)}<div class="aiprev"><div class="bub ${bubCls(id)} ibub"><div class="bt">${esc(t('it_hi'))}</div></div></div><b>${esc(t('it_bub_' + id))}</b></div>`; })}
-    ${grp('it_frm', P.own.frm, id => { const x = it(FRAMES, id); return `<div class="aitile" style="--rc:${RCOL[x.r]}">${tick(id === P.frm)}<div class="aiprev">${avatar(u, true, id)}</div><b>${esc(t('it_frm_' + id))}</b></div>`; })}
+    ${grp('it_frm', P.own.frm, id => { const x = it(FRAMES, id); return `<div class="aitile" style="--rc:${RCOL[x.r]}">${tick(id === P.frm)}<div class="aiprev">${avatar(u, true, id)}</div><b>${esc(itemName('frm', id))}</b></div>`; })}
     ${grp('it_ban', P.own.ban, id => { const x = it(BANNERS, id); return `<div class="aitile wide" style="--rc:${RCOL[x.r]}">${tick(id === (P.ban || 'classic'))}<div class="aiban" ${id !== 'classic' ? `style="background-image:url(assets/banner-${id}.webp)"` : ''}></div><b>${esc(t('it_ban_' + id))}</b></div>`; })}
     ${grp('it_stk', P.stk, id => `<div class="aitile" style="--rc:#5be34a"><div class="aiprev"><img src="assets/stk-${id}-${id === 'sara' ? 4 : 1}.webp" alt=""></div><b>${esc(stkName(id))}</b></div>`)}
     </div>`;
@@ -7978,7 +7982,7 @@ function openProfile(who, liveProfile, profileResolved){
     <div class="pfsec pfeqs"><div class="eqhd"><h4>${esc(t('pf_eq'))}</h4><button class="eqall" id="pfAll" ${P.profileLoaded === false && SHOP_ACCOUNT.online ? 'disabled' : ''}>${esc(t('pf_all'))} <b class="num">${ownCount(P)}</b><i>›</i></button></div>
       <div class="eqgrid">${[
         ['it_bub', bub, `<div class="bub ${bubCls(bub.id)} ibub"><div class="bt">${esc(t('it_hi'))}</div></div>`, 'it_bub_' + bub.id],
-        ['it_frm', frm, avatar(u, true, frm.id), 'it_frm_' + frm.id],
+        ['it_frm', frm, avatar(u, true, frm.id), itemName('frm', frm.id)],
         ['it_ban', BANNERS.find(x => x.id === P.ban) || BANNERS[0], P.ban && P.ban !== 'classic' ? `<img src="assets/banner-${P.ban}.webp" alt="">` : '<span class="banprev0"></span>', 'it_ban_' + (P.ban || 'classic')]
       ].map(([k, it, prev, nk], i) => `<div class="eqc ${i === 2 ? 'ban' : ''}" style="--rc:${RCOL[it.r]}">
           <div class="eqpv">${prev}</div>
@@ -8061,14 +8065,19 @@ $('#profOv').addEventListener('click', e => { if (e.target.id === 'profOv') $('#
 /* ---- Items: chat bubbles & avatar frames ---- */
 let itTab = 'stk';
 const BUBBLES = [{id:'classic', price:0, r:'common'}, {id:'autumn', price:2000, r:'epic'}, {id:'cozy', price:2000, r:'epic'}, {id:'fox', price:2000, r:'epic'}, {id:'shadows', price:2000, r:'epic', isNew:true}];
-const FRAMES = [{id:'none', price:0, r:'common'}, {id:'autumn', price:2000, r:'epic'}, {id:'cozy', price:2000, r:'epic'}, {id:'fox', price:2000, r:'epic'}, {id:'shadows', price:2000, r:'epic', isNew:true}];
+const FRAMES = [{id:'none', price:0, r:'common'}, {id:'autumn', price:2000, r:'epic'}, {id:'cozy', price:2000, r:'epic'}, {id:'fox', price:2000, r:'epic'}, {id:'shadows', price:2000, r:'epic', isNew:true}, {id:'island', price:0, r:'legend'}];
 const RCOL = {common:'#9fb3d9', rare:'#3d8bff', epic:'#c86bff', legend:'#ffc61a'};
 const BANNERS = [{id:'classic', price:0, r:'common'}, {id:'autumn', price:2000, r:'epic'}, {id:'cozy', price:2000, r:'epic'}, {id:'fox', price:2000, r:'epic'}, {id:'shadows', price:2000, r:'epic', isNew:true}];
 const itemsOf = k => k === 'bub' ? BUBBLES : k === 'ban' ? BANNERS : FRAMES;
 const banBg = id => id && id !== 'classic' ? `url(assets/banner-${id}.webp)` : '';
 function itInv(){ if (!S.items || typeof S.items !== 'object') S.items = {}; const I = S.items;
   if (!Array.isArray(I.bub)) I.bub = []; if (!Array.isArray(I.frm)) I.frm = []; if (!Array.isArray(I.ban)) I.ban = []; if (!I.eq) I.eq = {bub:'classic', frm:'none'}; if (!I.eq.ban) I.eq.ban = 'classic'; return I; }
-const ownItem = (k, id) => itemsOf(k).find(x => x.id === id)?.price === 0 || itInv()[k].includes(id);
+const itemName = (k, id) => k === 'frm' && id === 'island'
+  ? (S.lang === 'de' ? 'Insel-Rahmen' : S.lang === 'fa' ? 'قاب جزیره' : 'Island Frame')
+  : t('it_' + k + '_' + id);
+const ownItem = (k, id) => k === 'frm' && id === 'island'
+  ? itInv().frm.includes(id)
+  : itemsOf(k).find(x => x.id === id)?.price === 0 || itInv()[k].includes(id);
 const eqItem = k => { const v = itInv().eq[k]; return itemsOf(k).some(x => x.id === v) ? v : itemsOf(k)[0].id; };
 const bubCls = id => id && id !== 'classic' ? 'sk-' + id : '';
 const frmCls = id => id && id !== 'none' ? 'fr-' + id : '';
@@ -8099,9 +8108,10 @@ function itemList(k){
       : `<div class="itprev">${avatar(me, false, it.id)}</div>`;
     const btn = on ? `<button class="stkbuy on" disabled>✓<small>${esc(t('it_equipped'))}</small></button>`
       : own ? `<button class="stkbuy own" data-iteq="${k}:${it.id}">${esc(t('it_equip'))}</button>`
+      : k === 'frm' && it.id === 'island' ? `<button class="stkbuy" disabled>🔒<small>${S.lang==='de'?'10 Videos ansehen':S.lang==='fa'?'۱۰ ویدیو تماشا کن':'Watch 10 videos'}</small></button>`
       : `<button class="stkbuy ${poor ? 'poor' : ''}" data-itbuy="${k}:${it.id}"><span class="pr"><img src="assets/tticon.webp" alt=""><bdi class="num" dir="ltr">${fmt(it.price)}</bdi></span><small>${esc(t('tt_buy'))}</small></button>`;
     return `<div class="stkpack itrow ${k === 'ban' ? 'banrow' : ''} ${on ? 'eq' : own ? 'own' : ''}">${prev}
-      <div class="stkmid"><h3>${esc(t('it_' + k + '_' + it.id))}</h3>
+      <div class="stkmid"><h3>${esc(itemName(k, it.id))}</h3>
         <span class="rtag" style="--rc:${RCOL[it.r]}">${esc(t('rar_' + it.r))}</span>
         ${it.isNew ? `<span class="itnewtag">${esc(t('i_new'))}</span>` : ''}
         <span class="muted">${it.price ? '' : esc(t('i_free'))}</span></div>${btn}</div>`; }).join('')}</div>`;
@@ -8109,7 +8119,7 @@ function itemList(k){
 document.addEventListener('click', async e => {
   const tb = e.target.closest('[data-ittab]'); if (tb) { itTab = tb.dataset.ittab; renderShop(); return; }
   const bb = e.target.closest('[data-itbuy]');
-  if (bb) { const [k, id] = bb.dataset.itbuy.split(':'), it = itemsOf(k).find(x => x.id === id); if (!it || ownItem(k, id)) return;
+  if (bb) { const [k, id] = bb.dataset.itbuy.split(':'), it = itemsOf(k).find(x => x.id === id); if (!it || (k === 'frm' && id === 'island') || ownItem(k, id)) return;
     if ((S.tt || 0) < it.price) return toast(t('tt_poor'));
     if (await itemRequest('/api/items/buy', {kind:k,id})) toast(t('it_got').replace('{n}', t('it_' + k + '_' + id)));
     return; }
@@ -8161,20 +8171,19 @@ function renderStkPick(){
   const pick = $('#stkPick'); pick.hidden = !stkOpen; $('#stkBtn').setAttribute('aria-expanded', stkOpen);
   if (!stkOpen) return;
   const mine = STK_PACKS.filter(p => ownStk(p.id));
-  const tabs = [...mine, {id:'pirate'}];
-  if (!tabs.some(p => p.id === stkSel)) stkSel = tabs[0].id;
+  const tabs = [...mine, ...(SHOP_ACCOUNT.stickerPackPirateUnlocked ? [{id:'pirate'}] : [])];
+  if (!tabs.some(p => p.id === stkSel)) stkSel = tabs.length ? tabs[0].id : null;
   const tabsMarkup = tabs.map(p => {
     const pirate = p.id === 'pirate';
     const src = pirate ? pirateStickerSrc(1) : `assets/stk-${p.id}-1.webp`;
     return `<button data-stktab="${p.id}" aria-label="${pirate ? 'Pirate sticker pack' : esc(stkName(p.id))}" aria-selected="${p.id === stkSel}"><img src="${src}" alt=""></button>`;
   }).join('');
   const isPirate = stkSel === 'pirate';
-  const pirateLocked = isPirate && !SHOP_ACCOUNT.stickerPackPirateUnlocked;
-  const stickersMarkup = isPirate
-    ? `<div class="stkpgrid">${[1,2,3,4,5,6].map(i => `<button data-stksend="pirate-${i}" ${pirateLocked ? 'disabled aria-label="Locked pirate sticker"' : `aria-label="${PIRATE_STICKER_NAMES[i-1]}"`}><img src="${pirateStickerSrc(i)}" alt="${PIRATE_STICKER_NAMES[i-1]}"></button>`).join('')}</div>
-      <p class="pirate-pack-note ${pirateLocked ? '' : 'unlocked'}">${pirateLocked
-        ? (S.lang==='de' ? 'Schau 10 Videos, um dieses Pack freizuschalten' : S.lang==='fa' ? 'برای باز کردن این بسته، ۱۰ ویدیو تماشا کن' : 'Watch 10 videos to unlock this pack')
-        : (S.lang==='de' ? 'Piraten-Sticker-Pack freigeschaltet ✓' : S.lang==='fa' ? 'بسته استیکر دزدان دریایی آزاد شد ✓' : 'Pirate sticker pack unlocked ✓')}</p>`
+  const stickersMarkup = !stkSel
+    ? ''
+    : isPirate
+    ? `<div class="stkpgrid">${[1,2,3,4,5,6].map(i => `<button data-stksend="pirate-${i}" aria-label="${PIRATE_STICKER_NAMES[i-1]}"><img src="${pirateStickerSrc(i)}" alt="${PIRATE_STICKER_NAMES[i-1]}"></button>`).join('')}</div>
+      <p class="pirate-pack-note unlocked">${S.lang==='de' ? 'Piraten-Sticker-Pack freigeschaltet ✓' : S.lang==='fa' ? 'بسته استیکر دزدان دریایی آزاد شد ✓' : 'Pirate sticker pack unlocked ✓'}</p>`
     : `<div class="stkpgrid">${[1,2,3,4,5,6].map(i => `<button data-stksend="${stkSel}-${i}"><img src="assets/stk-${stkSel}-${i}.webp" alt=""></button>`).join('')}</div>`;
   const shopButton = mine.length ? '' : `<div class="stkempty"><span class="muted">${esc(t('stk_none'))}</span><button class="btn" id="stkToShop">${esc(t('shop'))}</button></div>`;
   pick.innerHTML = `<div class="stkptabs">${tabsMarkup}</div>${stickersMarkup}${shopButton}`;

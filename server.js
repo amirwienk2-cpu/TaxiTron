@@ -284,7 +284,7 @@ const TT_SHOP_EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 const TT_SHOP_LTC_ADDRESS = /^(?:[LM3][1-9A-HJ-NP-Za-km-z]{25,34}|ltc1[ac-hj-np-z02-9]{39,59})$/i;
 const TT_CHAT_ITEMS = {
   bub: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000, shadows: 2000 },
-  frm: { none: 0, autumn: 2000, cozy: 2000, fox: 2000, shadows: 2000 },
+  frm: { none: 0, autumn: 2000, cozy: 2000, fox: 2000, shadows: 2000, island: 0 },
   ban: { classic: 0, autumn: 2000, cozy: 2000, fox: 2000, shadows: 2000 },
   stk: { sara: 5000, berlin: 5000, zero: 5000, nova: 5000, luna: 5000, nikto: 5000, zombie: 5000, autumn: 5000 },
 };
@@ -2572,10 +2572,13 @@ function ensureDailyReset(user) {
     user.adVideoClaimIds = [];
   }
 }
-function unlockPirateStickerPack(user) {
-  if (user.stickerPackPirateUnlocked === true) return false;
-  user.stickerPackPirateUnlocked = true;
-  user.stickerPackPirateUnlockedAt = new Date().toISOString();
+function unlockIslandFrame(user) {
+  if (!user.chatItems || typeof user.chatItems !== 'object') user.chatItems = {};
+  if (!Array.isArray(user.chatItems.frm)) user.chatItems.frm = ['none'];
+  if (!user.chatItems.eq || typeof user.chatItems.eq !== 'object') user.chatItems.eq = {};
+  if (user.chatItems.frm.includes('island')) return false;
+  user.chatItems.frm.push('island');
+  user.chatItems.eq.frm = 'island';
   return true;
 }
 function ensureTournamentReset(user) {
@@ -5519,7 +5522,8 @@ app.post('/api/tasks/ad-video-claim', requireUserFromBody, (req, res) => {
   ensureDailyReset(user);
   const watched = Math.max(0, Math.min(10, Number(user.adVideosWatched) || 0));
   const completed = user.adRewardClaimed === true || watched >= 10;
-  if (completed && unlockPirateStickerPack(user)) persist();
+  const frameUnlocked = completed && unlockIslandFrame(user);
+  if (frameUnlocked) persist();
   else if (previousDay !== user.adVideoDay) persist();
   res.json({ watched, reward: 0, rewardTT: 0, completed, state: publicState(user) });
 });
@@ -5555,7 +5559,7 @@ app.post('/api/tasks/ad-video-complete', requireUserFromBody, (req, res) => {
   if (user.adVideosWatched === 10) {
     user.adRewardClaimed = true;
     creditTT(user, 250, 'adsgram-reward');
-    unlockPirateStickerPack(user);
+    unlockIslandFrame(user);
   }
   if (previousDay !== user.adVideoDay || user.adVideosWatched > 0) persist();
   return res.json({ ok: true, watched: user.adVideosWatched, completed: user.adRewardClaimed === true, state: publicState(user) });
