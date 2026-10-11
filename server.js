@@ -2345,6 +2345,14 @@ function settleInviteLeaderboardIfDue() {
   if (winners.length) persist();
   console.log('[invite-campaign] settled: ' + winners.length + ' winner(s) paid out.');
 }
+
+function rankedInviteCampaignUsers() {
+  return Object.values(users)
+    .filter((user) => Number(user.campaignInvites || 0) > 0)
+    .sort((a, b) => (Number(b.campaignInvites) - Number(a.campaignInvites)) ||
+      (Number(a.campaignLastInviteAt || 0) - Number(b.campaignLastInviteAt || 0)));
+}
+
 setInterval(settleInviteLeaderboardIfDue, 60000);
 
 function applyReferral(user, referralCode) {
@@ -3530,10 +3538,38 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#101018;color:#f5f2ff;max-
 .level-controls{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.level-controls button{font-size:11px;padding:5px 7px}.level-controls .owned{background:#3ddc84;color:#062012}.level-controls .missing{background:#3b3850;color:#f5f2ff}
 .player-row>span:last-child{display:flex;flex-direction:column;gap:5px;min-width:150px}.player-row>span:last-child>button{width:100%;margin:0!important}.level-manager{border:1px solid #ffd93d;border-radius:8px;padding:6px;background:#211f16}.level-manager summary{cursor:pointer;color:#ffd93d;font-size:12px;font-weight:700}.level-manager .level-controls{margin-top:6px}
 .chat-admin-row{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #302d40}.chat-admin-row.is-admin{background:rgba(128,0,240,0.1)}.chat-admin-row.is-supporter{background:rgba(142,68,230,0.12)}.chat-admin-row.is-designer{box-shadow:inset 4px 0 #ffd93d}.chat-admin-row.is-muted{background:rgba(255,92,108,0.1)}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}.tag.admin{background:#8000f0;color:#fff}.tag.designer{background:#ffd93d;color:#261f00}.tag.muted{background:#ff5c6c;color:#260b10}.small-btn{padding:6px 10px;font-size:12px}.admin-badge-select{padding:6px 8px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter{padding:6px 10px;font-size:12px;background:#1c1c2a;color:#fff}.level-filter.active{background:#ffd93d;color:#261f00}.daily-status-table{width:100%;border-collapse:collapse;margin-top:10px}.daily-status-table td,.daily-status-table th{padding:8px 10px;border-bottom:1px solid #302d40;text-align:left;font-size:13px}.daily-status-table th{background:#181824;color:#ffd93d}
-</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="loadTournamentDebug">Turnier-Diagnose</button><button id="loadSharedWallets">Geteilte Wallets</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div class="toolbar"><button id="halloweenOddsX2" class="small-btn" disabled>🎃 Familien x2 · 1 Stunde</button><button id="halloweenOddsX4" class="small-btn" disabled>🎃 Familien x4 · 1 Stunde</button><button id="halloweenOddsX10" class="small-btn" disabled>🎃 Familien x10 · 1 Stunde</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
+</style></head><body><h1>TaxiTron Admin</h1><div class="toolbar"><input id="secret" type="password" placeholder="Admin secret"><button id="load">Load players</button><button id="adjustTtTop" class="small-btn">TT geben / nehmen</button><button id="loadPurchases">Level-Käufe</button><button id="loadWithdrawals">Load withdrawals</button><button id="loadRejectedWithdrawals">Rejected withdrawals</button><button id="loadTtWithdrawals">TT-Auszahlungen (Chain)</button><button id="loadTournamentDebug">Turnier-Diagnose</button><button id="loadSharedWallets">Geteilte Wallets</button><button id="withdrawEnableToggle" class="small-btn">⏳ TT-Shop-Status laden...</button><button id="loadChatAdmin">Chat-Admin</button><button id="loadDailyStatus">Tagesstatus prüfen</button><button id="soundToggle" class="sound-off">🔔 Enable sound</button><button id="reset" class="danger">Reset all players</button></div><div class="toolbar"><button id="halloweenOddsX2" class="small-btn" disabled>🎃 Familien x2 · 1 Stunde</button><button id="halloweenOddsX4" class="small-btn" disabled>🎃 Familien x4 · 1 Stunde</button><button id="halloweenOddsX10" class="small-btn" disabled>🎃 Familien x10 · 1 Stunde</button></div><div class="toolbar"><button id="resetInviteCampaignTopFour" class="danger small-btn">Einladungs-Campaign: aktuelle Top 4 auf 0 setzen</button></div><div id="status" class="status"></div><div id="stats" class="stats"></div><div id="list"></div>
 <script>
 const secret=()=>document.getElementById('secret').value;
 const status=(text)=>document.getElementById('status').textContent=text;
+document.getElementById('resetInviteCampaignTopFour').onclick=async()=>{
+  const adminSecret=secret();
+  if(!adminSecret){status('ADMIN_SECRET eingeben.');return}
+  const button=document.getElementById('resetInviteCampaignTopFour');
+  button.disabled=true;
+  try{
+    const previewResponse=await fetch('/admin/invite-leaderboard/top-four',{headers:{'x-admin-secret':adminSecret}});
+    const preview=await previewResponse.json();
+    if(!previewResponse.ok)throw new Error(preview.error||'Campaign-Rangliste konnte nicht geladen werden.');
+    if(preview.settled)throw new Error('Die Einladungs-Campaign ist bereits abgerechnet.');
+    if(!Array.isArray(preview.top)||preview.top.length!==4)throw new Error('Es gibt aktuell nicht genau vier Plätze zum Zurücksetzen.');
+    const rows=preview.top.map((player,index)=>(index+1)+'. '+player.name+' — '+player.invites).join('\n');
+    if(!confirm('Nur die Einladungs-Campaign-Zähler dieser vier Spieler auf 0 setzen?\n\n'+rows+'\n\nTON, andere Zähler und eingeladene Nutzer bleiben unverändert.'))return;
+    const response=await fetch('/admin/invite-leaderboard/reset-top-four',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-secret':adminSecret},
+      body:JSON.stringify({expected:preview.top.map(({uid,invites})=>({uid,invites}))})
+    });
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error==='leaderboard-changed'
+      ?'Die Rangliste hat sich geändert. Bitte erneut prüfen und bestätigen.'
+      :result.error==='campaign-already-settled'
+        ?'Die Einladungs-Campaign ist bereits abgerechnet.'
+        :result.error||'Campaign-Zähler konnten nicht zurückgesetzt werden.');
+    status('Einladungs-Campaign-Zähler von '+result.reset.length+' Spielern wurden auf 0 gesetzt.');
+  }catch(error){status(error.message)}
+  finally{button.disabled=false}
+};
 const announcementComposer=document.createElement('section');
 announcementComposer.style.cssText='margin:16px 0;padding:14px;border:1px solid #3b3850;border-radius:10px;background:#181824';
 const announcementLabel=document.createElement('label');
@@ -6827,9 +6863,7 @@ app.get('/api/leaderboard', (req, res) => {
 // ---- Invite leaderboard campaign: top inviters win TON ----
 app.get('/api/invite-leaderboard', (req, res) => {
   settleInviteLeaderboardIfDue();
-  const ranked = Object.values(users)
-    .filter((u) => Number(u.campaignInvites || 0) > 0)
-    .sort((a, b) => (Number(b.campaignInvites) - Number(a.campaignInvites)) || (Number(a.campaignLastInviteAt || 0) - Number(b.campaignLastInviteAt || 0)));
+  const ranked = rankedInviteCampaignUsers();
   const top = ranked.slice(0, 10).map((u, index) => ({
     name: u.name,
     invites: Number(u.campaignInvites),
@@ -7513,6 +7547,56 @@ app.post('/admin/users/:uid/set-campaign-invites', requireAdmin, (req, res) => {
   persist();
   console.log('[admin] set campaignInvites for user ' + user.id + ': ' + before + ' -> ' + user.campaignInvites);
   res.json({ ok: true, uid: user.id, campaignInvites: user.campaignInvites });
+});
+
+app.get('/admin/invite-leaderboard/top-four', requireAdmin, (req, res) => {
+  settleInviteLeaderboardIfDue();
+  res.json({
+    settled: inviteCampaignState.settled,
+    top: rankedInviteCampaignUsers().slice(0, 4).map((user) => ({
+      uid: String(user.id),
+      name: user.name || ('Player ' + user.id),
+      invites: Number(user.campaignInvites) || 0,
+    })),
+  });
+});
+
+app.post('/admin/invite-leaderboard/reset-top-four', requireAdmin, async (req, res) => {
+  settleInviteLeaderboardIfDue();
+  if (inviteCampaignState.settled) {
+    return res.status(409).json({ error: 'campaign-already-settled' });
+  }
+  const expected = req.body && req.body.expected;
+  if (!Array.isArray(expected) || expected.length !== 4 ||
+      expected.some((entry) => !entry || typeof entry.uid !== 'string' ||
+        !Number.isSafeInteger(entry.invites) || entry.invites <= 0)) {
+    return res.status(400).json({ error: 'invalid-leaderboard-snapshot' });
+  }
+  const top = rankedInviteCampaignUsers().slice(0, 4);
+  const unchanged = top.length === expected.length && top.every((user, index) =>
+    String(user.id) === expected[index].uid &&
+    Number(user.campaignInvites) === expected[index].invites);
+  if (!unchanged) {
+    return res.status(409).json({
+      error: 'leaderboard-changed',
+      top: top.map((user) => ({
+        uid: String(user.id),
+        name: user.name || ('Player ' + user.id),
+        invites: Number(user.campaignInvites) || 0,
+      })),
+    });
+  }
+  const reset = top.map((user) => ({
+    uid: String(user.id),
+    name: user.name || ('Player ' + user.id),
+    previousInvites: Number(user.campaignInvites) || 0,
+  }));
+  top.forEach((user) => { user.campaignInvites = 0; });
+  await persist();
+  reset.forEach((entry) => {
+    console.log('[admin] reset invite campaign count for user ' + entry.uid + ': ' + entry.previousInvites + ' -> 0');
+  });
+  res.json({ ok: true, reset });
 });
 
 app.post('/admin/users/:uid/adjust-ton', requireAdmin, (req, res) => {
