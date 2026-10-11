@@ -107,7 +107,7 @@ const TT_INTEGRITY_EPSILON = 0.01; // TT - rounding slack for the ttBalance <= t
 // Multi-account / shared-wallet withdrawal protection (both /api/withdraw TON
 // and /api/tt/withdraw TT): one wallet address may only ever be linked to one
 // account, per-wallet AND per-account daily caps, and a minimum account
-// age/level before any withdrawal is accepted at all. See walletRegistry below.
+// age/level before a TT withdrawal is accepted. TON withdrawals are not age-gated.
 // ---------------------------------------------------------------------------
 const WITHDRAW_WALLET_DAILY_LIMIT_TT = Number(process.env.WITHDRAW_WALLET_DAILY_LIMIT_TT || 30000);
 const WITHDRAW_ACCOUNT_DAILY_LIMIT_TT = Number(process.env.WITHDRAW_ACCOUNT_DAILY_LIMIT_TT || 30000);
@@ -6039,10 +6039,8 @@ function walletsSharedAcrossAccounts() {
     }))
     .sort((a, b) => b.lastSeenAt - a.lastSeenAt);
 }
-// A brand-new account can't withdraw at all until it's either old enough or
-// has reached a minimum in-game level - raises the cost of spinning up a
-// fresh Telegram account purely to dodge a frozen wallet/account.
-function accountEligibleForWithdrawal(user) {
+// New accounts must age or reach a minimum level before withdrawing TT.
+function accountEligibleForTtWithdrawal(user) {
   const ageMs = Date.now() - (Number(user.createdAt) || 0);
   return ageMs >= WITHDRAW_MIN_ACCOUNT_AGE_MS || (Number(user.level) || 1) >= WITHDRAW_MIN_ACCOUNT_LEVEL;
 }
@@ -6099,7 +6097,6 @@ app.post('/api/withdraw', requireUserFromBody, rejectBannedUser, (req, res) => {
   if (!amt || amt < MIN_WITHDRAW) return res.status(400).json({ error: 'amount-too-small' });
   if (amt > user.ton) return res.status(400).json({ error: 'insufficient-funds' });
   if (user.withdrawalsFrozen === true) return res.status(403).json({ error: 'withdrawal-frozen' });
-  if (!accountEligibleForWithdrawal(user)) return res.status(403).json({ error: 'account-too-new' });
   if (isWalletFrozen(address)) return res.status(403).json({ error: 'wallet-frozen' });
   const conflictUid = walletConflictOwner(address, user.id);
   if (conflictUid) {
@@ -6299,7 +6296,7 @@ app.post('/api/tt/withdraw', requireUserFromBody, rejectBannedUser, async (req, 
   }
 
   if (user.withdrawalsFrozen === true) return res.status(403).json({ error: 'withdrawal-frozen' });
-  if (!accountEligibleForWithdrawal(user)) return res.status(403).json({ error: 'account-too-new' });
+  if (!accountEligibleForTtWithdrawal(user)) return res.status(403).json({ error: 'account-too-new' });
   if (isWalletFrozen(address)) return res.status(403).json({ error: 'wallet-frozen' });
   const conflictUid = walletConflictOwner(address, user.id);
   if (conflictUid) {
