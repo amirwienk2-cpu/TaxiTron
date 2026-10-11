@@ -3553,8 +3553,9 @@ document.getElementById('resetInviteCampaignTopFour').onclick=async()=>{
     if(!previewResponse.ok)throw new Error(preview.error||'Campaign-Rangliste konnte nicht geladen werden.');
     if(preview.settled)throw new Error('Die Einladungs-Campaign ist bereits abgerechnet.');
     if(!Array.isArray(preview.top)||preview.top.length!==4)throw new Error('Es gibt aktuell nicht genau vier Plätze zum Zurücksetzen.');
-    const rows=preview.top.map((player,index)=>(index+1)+'. '+player.name+' — '+player.invites).join('\n');
-    if(!confirm('Nur die Einladungs-Campaign-Zähler dieser vier Spieler auf 0 setzen?\n\n'+rows+'\n\nTON, andere Zähler und eingeladene Nutzer bleiben unverändert.'))return;
+    const lineBreak=String.fromCharCode(10);
+    const rows=preview.top.map((player,index)=>(index+1)+'. '+player.name+' — '+player.invites).join(lineBreak);
+    if(!confirm('Nur die Einladungs-Campaign-Zähler dieser vier Spieler auf 0 setzen?'+lineBreak+lineBreak+rows+lineBreak+lineBreak+'TON, andere Zähler und eingeladene Nutzer bleiben unverändert.'))return;
     const response=await fetch('/admin/invite-leaderboard/reset-top-four',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-admin-secret':adminSecret},
