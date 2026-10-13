@@ -5317,24 +5317,29 @@ app.post('/api/buy-skin', requireUserFromBody, (req, res) => {
   if (!price) return res.status(400).json({ error: 'invalid-skin' });
   const user = req.user;
   if (!Array.isArray(user.ownedSkins)) user.ownedSkins = ['yellow'];
-  if (user.ownedSkins.indexOf(key) !== -1) return res.status(409).json({ error: 'skin-already-owned' });
+  const alreadyOwned = user.ownedSkins.includes(key);
+  if (alreadyOwned) {
+    publicState(user);
+    const remainingDays = Number(user.skinRewards && user.skinRewards[key] && user.skinRewards[key].remainingDays) || 0;
+    if (remainingDays > 0) return res.status(409).json({ error: 'skin-reward-active' });
+  }
   const offer = LIMITED_SKIN_OFFERS[key];
-  if (offer) {
+  if (offer && !alreadyOwned) {
     const sold = limitedSkinSoldCount(key);
     if (sold >= offer.max) return res.status(409).json({ error: 'sold-out', sold, max: offer.max });
   }
   if (user.ton < price) return res.status(400).json({ error: 'insufficient-funds' });
   user.ton -= price;
-  user.ownedSkins.push(key);
+  if (!alreadyOwned) user.ownedSkins.push(key);
   user.level = Math.max(user.level || 1, levels[key]);
   if (!user.skinRewards || typeof user.skinRewards !== 'object') user.skinRewards = {};
   const rewardDays = offer ? offer.rewardDays : 30;
   user.skinRewards[key] = { remainingDays: rewardDays, expiresAt: Date.now() + rewardDays * 86400000, lastCreditDate: berlinDayKey(), lastEarnedDate: '' };
   if (!Array.isArray(user.purchases)) user.purchases = [];
-  user.purchases.push({ ts: Date.now(), key, price, level: levels[key] });
+  user.purchases.push({ ts: Date.now(), key, price, level: levels[key], renewal: alreadyOwned });
   if (user.purchases.length > 200) user.purchases = user.purchases.slice(-200);
   persist();
-  res.json({ state: publicState(user) });
+  res.json({ renewed: alreadyOwned, state: publicState(user) });
 });
 
 function ensureFigureState(user) {

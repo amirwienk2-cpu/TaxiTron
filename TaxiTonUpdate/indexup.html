@@ -7094,8 +7094,13 @@ function renderShop(){
     list.innerHTML = hero + `<div class="lvgrid">` + CARS.map(c => {
       const own = SHOP_ACCOUNT.ownedSkins.includes(c.skin), on = S.car === c.id, afford = SHOP_ACCOUNT.ton + 1e-9 >= c.price;
       const capReached = levelDailyCapReached(c.lvl);
+      const reward = SHOP_ACCOUNT.skinRewards[c.skin];
+      const daysLeft = Math.max(0, Number(reward && reward.remainingDays) || 0);
+      const rewardExpired = own && c.lvl >= 2 && daysLeft <= 0;
       let act, state = '';
       if (c.soon) { act = `<button class="lvbtn dis" disabled>${esc(t('comingSoon'))}</button>`; state = 'soon'; }
+      else if (rewardExpired && !SHOP_ACCOUNT.online) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.offline || SHOP_WORDS.en.offline)}</button>`; state = 'buy'; }
+      else if (rewardExpired) { act = `<button class="lvbtn buy ${afford?'':'poor'}" data-buy-car="${c.id}">${S.lang==='de'?'Erneut kaufen':S.lang==='fa'?'خرید دوباره':esc(t('buy'))}</button>`; state = 'buy'; }
       else if (on && capReached) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.dailyCapReached || SHOP_WORDS.en.dailyCapReached)}</button>`; state = 'capped'; }
       else if (on) { act = `<button class="lvbtn on" disabled>✓ ${esc(t('driving'))}</button>`; state = 'on'; }
       else if (c.lvl === 1 && SHOP_ACCOUNT.ownedSkins.some(skin => skin !== 'yellow')) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.levelUnavailable || SHOP_WORDS.en.levelUnavailable)}</button>`; state = 'locked'; }
@@ -7106,8 +7111,6 @@ function renderShop(){
       else if (!SHOP_ACCOUNT.online) { act = `<button class="lvbtn dis" disabled>${esc(SHOP_WORDS[S.lang]?.offline || SHOP_WORDS.en.offline)}</button>`; state = 'buy'; }
       else { act = `<button class="lvbtn buy ${afford?'':'poor'}" data-buy-car="${c.id}">${esc(t('buy'))}</button>`; state = 'buy'; }
       const lim = c.limit && !own ? (LIM[c.id] ? (LIM[c.id].sold >= LIM[c.id].max ? `<span class="limtag out">${esc(t('lim_out'))}</span>` : `<span class="limtag">🔥 ${esc(t('lim_left').replace('{n}', `${LIM[c.id].max - LIM[c.id].sold}/${LIM[c.id].max}`))}</span>`) : `<span class="limtag">🔥 ${c.limit}</span>`) : '';
-      const reward = SHOP_ACCOUNT.skinRewards[c.skin];
-      const daysLeft = Math.max(0, Number(reward && reward.remainingDays) || 0);
       const today = Math.max(0, Number(SHOP_ACCOUNT.tonTodayByLevel[c.lvl]) || 0);
       const rewardPct = c.dailyReward ? Math.max(0, Math.min(100, Math.round(today / c.dailyReward * 100))) : 0;
       const activeCarLevel = Number((CARS.find(item => item.id === S.car) || CARS[0]).lvl);
@@ -7117,6 +7120,7 @@ function renderShop(){
         <div class="lvreward-row"><span>${own && daysLeft ? esc(SHOP_WORDS[S.lang]?.active || SHOP_WORDS.en.active) : esc(SHOP_WORDS[S.lang]?.offer || SHOP_WORDS.en.offer)}</span>
           <b>+${formatTon(c.dailyReward)} TON/${esc(SHOP_WORDS[S.lang]?.day || SHOP_WORDS.en.day)}</b></div>
         ${own && daysLeft ? `<div class="lvreward-track"><i style="width:${rewardPct}%"></i></div><small>${esc(SHOP_WORDS[S.lang]?.today || SHOP_WORDS.en.today)}: ${formatTon(Math.max(0,c.dailyReward-today))} TON · ${daysLeft} ${esc(SHOP_WORDS[S.lang]?.left || SHOP_WORDS.en.left)}</small>`
+          : rewardExpired ? `<small>${S.lang==='de'?'Belohnung abgelaufen – für 30 Tage erneut kaufen':S.lang==='fa'?'پاداش تمام شده — برای ۳۰ روز دوباره بخرید':'Reward expired — buy again for 30 days'} · ${formatTon(c.price)} TON</small>`
           : !own ? `<small>${formatTon(c.dailyReward)} TON/${esc(SHOP_WORDS[S.lang]?.day || SHOP_WORDS.en.day)} · ${c.rewardDays} ${esc(SHOP_WORDS[S.lang]?.days || SHOP_WORDS.en.days)}</small>` : ''}
       </div>` : '';
       return `<div class="lvcard ${state}" style="--lc:${LC[c.id]}">
@@ -8346,6 +8350,7 @@ document.addEventListener('click', async e => {
       if (!response.ok || !data.state) {
         if (data.error === 'sold-out') LIM[c.id] = {sold:Number(data.sold)||c.limit,max:Number(data.max)||c.limit};
         if (data.error === 'insufficient-funds') toast(t('notEnoughTon'));
+        else if (data.error === 'skin-reward-active') toast(S.lang==='de' ? 'Die Belohnung für dieses Taxi ist noch aktiv.' : S.lang==='fa' ? 'پاداش این تاکسی هنوز فعال است.' : 'This taxi reward is still active.');
         else if (data.error === 'sold-out') toast(t('lim_out'));
         else toast(t('lim_err'));
         await limRefresh();
@@ -8353,7 +8358,9 @@ document.addEventListener('click', async e => {
       }
       applyShopAccountState(data.state, c.id);
       await limRefresh();
-      toast(`${t('bought')}: ${CAR_NAME[c.id]}`);
+      toast(data.renewed
+        ? (S.lang==='de' ? `30-Tage-Belohnung erneuert: ${CAR_NAME[c.id]}` : S.lang==='fa' ? `پاداش ۳۰ روزه تمدید شد: ${CAR_NAME[c.id]}` : `30-day reward renewed: ${CAR_NAME[c.id]}`)
+        : `${t('bought')}: ${CAR_NAME[c.id]}`);
     } catch(e) {
       toast(t('lim_err'));
     } finally {
