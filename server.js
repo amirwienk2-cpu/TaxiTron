@@ -157,8 +157,12 @@ const INVITE_LEADERBOARD_ENDS_AT = Date.parse(
   process.env.INVITE_LEADERBOARD_ENDS_AT ||
   '2026-10-13T21:07:01.362Z'
 );
+const INVITE_LEADERBOARD_CANCELLED_CAMPAIGN_START_AT = Date.parse('2026-10-06T21:07:01.362Z');
+const INVITE_LEADERBOARD_CANCELLED_AT = Date.parse('2026-10-13T12:25:49.293Z');
+const INVITE_LEADERBOARD_CANCELLED = INVITE_LEADERBOARD_STARTS_AT === INVITE_LEADERBOARD_CANCELLED_CAMPAIGN_START_AT;
 if (!Number.isFinite(INVITE_LEADERBOARD_STARTS_AT)) throw new Error('Invite leaderboard campaign start must be a valid date');
 if (!Number.isFinite(INVITE_LEADERBOARD_ENDS_AT)) throw new Error('Invite leaderboard campaign end must be a valid date');
+if (!Number.isFinite(INVITE_LEADERBOARD_CANCELLED_AT)) throw new Error('Invite leaderboard campaign cancellation must be a valid date');
 if (INVITE_LEADERBOARD_ENDS_AT <= INVITE_LEADERBOARD_STARTS_AT) throw new Error('Invite leaderboard campaign end must be after its start');
 const INVITE_LEADERBOARD_REWARDS = [20, 10, 5]; // TON for rank 1 / 2 / 3
 const ON_RAILWAY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
@@ -608,7 +612,7 @@ function persistTtShopSettings() {
 
 // One-time settlement state for the invite leaderboard campaign (payout only
 // happens once, tracked outside of any single user so it survives restarts).
-let inviteCampaignState = { campaignId: null, settled: false, winners: [] };
+let inviteCampaignState = { campaignId: null, settled: false, cancelled: false, winners: [] };
 try {
   if (fs.existsSync(INVITE_CAMPAIGN_FILE)) {
     const loaded = JSON.parse(fs.readFileSync(INVITE_CAMPAIGN_FILE, 'utf8'));
@@ -616,6 +620,7 @@ try {
       inviteCampaignState = {
         campaignId: typeof loaded.campaignId === 'string' ? loaded.campaignId : null,
         settled: !!loaded.settled,
+        cancelled: !!loaded.cancelled,
         winners: Array.isArray(loaded.winners) ? loaded.winners : [],
       };
     }
@@ -951,7 +956,7 @@ if (inviteCampaignState.campaignId !== inviteCampaignId) {
     user.campaignLastInviteAt = 0;
     if (user.referredBy) user.campaignInviteCounted = true;
   });
-  inviteCampaignState = { campaignId: inviteCampaignId, settled: false, winners: [] };
+  inviteCampaignState = { campaignId: inviteCampaignId, settled: false, cancelled: false, winners: [] };
   persistInviteCampaignState();
   persist();
   console.log('[invite-campaign] new campaign started; invite counts reset.');
@@ -2332,20 +2337,22 @@ function ttBalanceIsPlausible(user) {
 // the campaign end date. Idempotent: safe to call from every request and
 // from a periodic timer, since it checks inviteCampaignState.settled first.
 function settleInviteLeaderboardIfDue() {
-  if (inviteCampaignState.settled || Date.now() < INVITE_LEADERBOARD_ENDS_AT) return;
+  if (inviteCampaignState.settled || (!INVITE_LEADERBOARD_CANCELLED && Date.now() < INVITE_LEADERBOARD_ENDS_AT)) return;
   const ranked = Object.values(users)
     .filter((u) => Number(u.campaignInvites || 0) > 0)
     .sort((a, b) => (Number(b.campaignInvites) - Number(a.campaignInvites)) || (Number(a.campaignLastInviteAt || 0) - Number(b.campaignLastInviteAt || 0)));
   const winners = [];
-  ranked.slice(0, INVITE_LEADERBOARD_REWARDS.length).forEach((user, index) => {
+  (INVITE_LEADERBOARD_CANCELLED ? [] : ranked.slice(0, INVITE_LEADERBOARD_REWARDS.length)).forEach((user, index) => {
     const reward = INVITE_LEADERBOARD_REWARDS[index];
     user.ton += reward;
     winners.push({ uid: String(user.id), name: user.name, invites: Number(user.campaignInvites), reward, rank: index + 1 });
   });
-  inviteCampaignState = { settled: true, winners };
+  inviteCampaignState = { campaignId: String(INVITE_LEADERBOARD_STARTS_AT), settled: true, cancelled: INVITE_LEADERBOARD_CANCELLED, winners };
   persistInviteCampaignState();
   if (winners.length) persist();
-  console.log('[invite-campaign] settled: ' + winners.length + ' winner(s) paid out.');
+  console.log(INVITE_LEADERBOARD_CANCELLED
+    ? '[invite-campaign] cancelled; no winners and no payouts.'
+    : '[invite-campaign] settled: ' + winners.length + ' winner(s) paid out.');
 }
 
 function rankedInviteCampaignUsers() {
@@ -2373,7 +2380,7 @@ function syncCampaignInvite(user) {
     user.thirdChannelTaskRewardClaimed !== true
   ) return false;
   const now = Date.now();
-  if (now < INVITE_LEADERBOARD_STARTS_AT || now >= INVITE_LEADERBOARD_ENDS_AT) return false;
+  if (INVITE_LEADERBOARD_CANCELLED || now < INVITE_LEADERBOARD_STARTS_AT || now >= INVITE_LEADERBOARD_ENDS_AT) return false;
   const inviter = users[String(user.referredBy)];
   if (!inviter || String(inviter.id) === String(user.id)) return false;
   inviter.campaignInvites = Number(inviter.campaignInvites || 0) + 1;
@@ -6872,7 +6879,7 @@ app.get('/api/leaderboard', (req, res) => {
 app.get('/api/invite-leaderboard', (req, res) => {
   settleInviteLeaderboardIfDue();
   const ranked = rankedInviteCampaignUsers();
-  const top = ranked.slice(0, 10).map((u, index) => ({
+  const top = (INVITE_LEADERBOARD_CANCELLED ? [] : ranked.slice(0, 10)).map((u, index) => ({
     name: u.name,
     invites: Number(u.campaignInvites),
     reward: INVITE_LEADERBOARD_REWARDS[index] || 0,
@@ -6891,9 +6898,10 @@ app.get('/api/invite-leaderboard', (req, res) => {
 
   res.json({
     startsAt: INVITE_LEADERBOARD_STARTS_AT,
-    endsAt: INVITE_LEADERBOARD_ENDS_AT,
+    endsAt: INVITE_LEADERBOARD_CANCELLED ? INVITE_LEADERBOARD_CANCELLED_AT : INVITE_LEADERBOARD_ENDS_AT,
     rewards: INVITE_LEADERBOARD_REWARDS,
     settled: inviteCampaignState.settled,
+    cancelled: INVITE_LEADERBOARD_CANCELLED,
     winners: inviteCampaignState.winners,
     top,
     you,

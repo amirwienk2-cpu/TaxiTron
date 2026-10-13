@@ -6572,8 +6572,10 @@ async function renderInviteLeaderboard(){
     if (Number.isFinite(Number(data.endsAt))) { CAMP_END = Number(data.endsAt); $('#campLeft').textContent = campLeft(); }
     board.hidden = false;
     board.innerHTML = `<h4>${esc(S.lang === 'de' ? 'Invite-Rangliste' : S.lang === 'fa' ? 'رتبه‌بندی دعوت‌ها' : 'Invite leaderboard')}</h4>` +
-      (data.top.length ? data.top.map((row, index) => `<div class="invrow"><span class="place">${index + 1}</span><b class="grow">${esc(row.name || 'Player')}</b><span class="count">${fmt(row.invites)}</span><span class="reward">${row.reward ? `${fmt(row.reward)} TON` : ''}</span></div>`).join('') : `<div class="muted">${esc(S.lang === 'de' ? 'Noch keine Einladungen' : 'No invites yet')}</div>`) +
-      (data.you ? `<div class="invyou">${esc(S.lang === 'de' ? 'Dein Rang' : S.lang === 'fa' ? 'رتبه شما' : 'Your rank')}: ${data.you.rank || '—'} · ${fmt(data.you.invites || 0)}</div>` : '');
+      (data.cancelled
+        ? `<div class="muted">${esc(S.lang === 'de' ? 'Kampagne abgebrochen — es gibt keine Gewinner.' : S.lang === 'fa' ? 'کمپین لغو شد — برنده‌ای وجود ندارد.' : 'Campaign cancelled — there are no winners.')}</div>`
+        : data.top.length ? data.top.map((row, index) => `<div class="invrow"><span class="place">${index + 1}</span><b class="grow">${esc(row.name || 'Player')}</b><span class="count">${fmt(row.invites)}</span><span class="reward">${row.reward ? `${fmt(row.reward)} TON` : ''}</span></div>`).join('') : `<div class="muted">${esc(S.lang === 'de' ? 'Noch keine Einladungen' : 'No invites yet')}</div>`) +
+      (data.you && !data.cancelled ? `<div class="invyou">${esc(S.lang === 'de' ? 'Dein Rang' : S.lang === 'fa' ? 'رتبه شما' : 'Your rank')}: ${data.you.rank || '—'} · ${fmt(data.you.invites || 0)}</div>` : '');
   } catch (e) {}
 }
 function renderTaskList(){
