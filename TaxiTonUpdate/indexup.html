@@ -5365,8 +5365,8 @@ function renderAdVideoTask(){
   card.classList.toggle('done', completed);
   label.textContent = S.lang==='de' ? 'Tägliche Videos ansehen' : S.lang==='fa' ? 'تماشای ویدیوهای روزانه' : 'Watch daily videos';
   note.textContent = completed
-    ? (S.lang==='de' ? 'Heute erledigt — komm morgen wieder' : S.lang==='fa' ? 'امروز انجام شد — فردا دوباره بیا' : 'Done for today — come back tomorrow')
-    : (S.lang==='de' ? `${watched} von 10 Videos` : S.lang==='fa' ? `${watched} از ۱۰ ویدیو` : `${watched} of 10 videos`);
+    ? (S.lang==='de' ? 'Heute erledigt — 250 TT erhalten. Morgen wiederkommen.' : S.lang==='fa' ? 'امروز کامل شد — ۲۵۰ TT دریافت شد. فردا دوباره بیا.' : 'Done for today — 250 TT received. Come back tomorrow.')
+    : (S.lang==='de' ? `${watched} von 10 Videos · 250 TT bei 10` : S.lang==='fa' ? `${watched} از ۱۰ ویدیو · دریافت ۲۵۰ TT با ۱۰ ویدیو` : `${watched} of 10 videos · 250 TT at 10`);
   const hasIslandFrame = Array.isArray(S.items?.frm) && S.items.frm.includes('island');
   const eventEndsAt = Number(SHOP_ACCOUNT.islandFrameEventEndsAt);
   const eventOpen = eventEndsAt > Date.now();
@@ -5443,6 +5443,7 @@ async function watchRewardedAdVideo(){
     const data = await response.json();
     if (!response.ok || !data.state) throw new Error(data.error || 'ad-reward-failed');
     applyShopAccountState(data.state, S.car);
+    if (data.rewardTT === 250) toast(S.lang==='de' ? '10 Videos geschafft — +250 TT für heute!' : S.lang==='fa' ? '۱۰ ویدیو کامل شد — ۲۵۰ TT برای امروز!' : '10 videos completed — +250 TT for today!');
     if (!islandFrameBefore && Array.isArray(S.items?.frm) && S.items.frm.includes('island')) showIslandFrameUnlockedPopup();
   } catch (e) {
     toast(e.message === 'video-claim-too-soon'

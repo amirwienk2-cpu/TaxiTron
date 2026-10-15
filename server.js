@@ -5571,13 +5571,15 @@ app.post('/api/tasks/ad-video-complete', requireUserFromBody, (req, res) => {
   user.adVideoClaimIds = claimIds.slice(-19).concat(claimId);
   user.adVideoLastClaimAt = now;
   user.adVideosWatched = Math.min(10, Math.max(0, Number(user.adVideosWatched) || 0) + 1);
+  let rewardTT = 0;
   if (user.adVideosWatched === 10) {
     user.adRewardClaimed = true;
-    creditTT(user, 250, 'adsgram-reward');
+    rewardTT = 250;
+    creditTT(user, rewardTT, 'adsgram-reward');
     if (now < ISLAND_FRAME_EVENT_ENDS_AT) unlockIslandFrame(user);
   }
   if (previousDay !== user.adVideoDay || user.adVideosWatched > 0) persist();
-  return res.json({ ok: true, watched: user.adVideosWatched, completed: user.adRewardClaimed === true, state: publicState(user) });
+  return res.json({ ok: true, watched: user.adVideosWatched, completed: user.adRewardClaimed === true, rewardTT, state: publicState(user) });
 });
 
 async function tonApiJson(pathname) {
